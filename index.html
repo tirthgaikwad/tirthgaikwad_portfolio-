@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tirth Gaikwad – AI & Data Science Engineering Student | Portfolio showcasing projects in Java, Python, AI, web development, and data science.">
+    <meta name="keywords" content="Tirth Gaikwad, AI, Data Science, Portfolio, Java, Python, Web Developer, Engineering Student">
+    <meta name="author" content="Tirth Gaikwad">
+    <meta name="theme-color" content="#0a0a1a">
+    <title>Tirth Gaikwad | AI & Data Science Portfolio</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-mode">
+
+    <!-- ============================================ -->
+    <!-- PRELOADER                                     -->
+    <!-- ============================================ -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-spinner"></div>
+            <p class="preloader-text">Loading Portfolio...</p>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- NAVBAR                                        -->
+    <!-- ============================================ -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#home" class="nav-brand">&lt;TG /&gt;</a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#home" class="active">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#roadmap">Roadmap</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#achievements">Achievements</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#resume">Resume</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">🌙</button>
+                <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============================================ -->
+    <!-- HERO SECTION                                  -->
+    <!-- ============================================ -->
+    <section class="hero section" id="home">
+        <!-- Animated Particles Background -->
+        <div class="particles-container" id="particles"></div>
+
+        <!-- Animated Gradient Background -->
+        <div class="hero-bg-gradient"></div>
+
+        <div class="hero-content">
+            <!-- Profile Image -->
+            <div class="hero-image-container">
+                <div class="hero-image glow">
+                    <!-- Placeholder avatar using SVG -->
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="avatar-placeholder">
+                        <defs>
+                            <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00a8ff;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="100" fill="url(#avatarGrad)"/>
+                        <circle cx="100" cy="80" r="35" fill="rgba(255,255,255,0.3)"/>
+                        <ellipse cx="100" cy="155" rx="50" ry="35" fill="rgba(255,255,255,0.3)"/>
+                        <text x="100" y="105" text-anchor="middle" fill="white" font-size="48" font-family="Outfit" font-weight="700">TG</text>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Hero Text -->
+            <div class="hero-text">
+                <h1 class="hero-name">Tirth Gaikwad</h1>
+                <p class="hero-title">AI &amp; Data Science Engineering Student | Java Learner | Future AI Developer</p>
+                <p class="hero-tagline">Building skills in programming, AI, web development, and real-world projects.</p>
+
+                <!-- Typing Animation -->
+                <div class="typing-container">
+                    <span class="typing-prefix">I am a </span>
+                    <span class="typing-text" id="typing-text"></span>
+                    <span class="cursor">|</span>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="hero-buttons">
+                    <a href="#projects" class="btn btn-primary">
+                        <span class="btn-icon">🚀</span> View Projects
+                    </a>
+                    <a href="#resume" class="btn btn-secondary">
+                        <span class="btn-icon">📄</span> Download Resume
+                    </a>
+                    <a href="#contact" class="btn btn-outline">
+                        <span class="btn-icon">✉️</span> Contact Me
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Tech Icons -->
+        <div class="floating-icons">
+            <div class="floating-icon" data-speed="2" style="--delay: 0s; --x: 10%; --y: 20%;">
+                <span>☕</span>
+                <small>Java</small>
+            </div>
+            <div class="floating-icon" data-speed="3" style="--delay: 0.5s; --x: 85%; --y: 15%;">
+                <span>🐍</span>
+                <small>Python</small>
+            </div>
+            <div class="floating-icon" data-speed="1.5" style="--delay: 1s; --x: 75%; --y: 70%;">
+                <span>🤖</span>
+                <small>AI</small>
+            </div>
+            <div class="floating-icon" data-speed="2.5" style="--delay: 1.5s; --x: 15%; --y: 75%;">
+                <span>📊</span>
+                <small>Data Science</small>
+            </div>
+            <div class="floating-icon" data-speed="1" style="--delay: 2s; --x: 50%; --y: 10%;">
+                <span>🌐</span>
+                <small>Web Dev</small>
+            </div>
+            <div class="floating-icon" data-speed="3.5" style="--delay: 2.5s; --x: 90%; --y: 50%;">
+                <span>💻</span>
+                <small>GitHub</small>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator" id="scroll-indicator">
+            <div class="scroll-arrow">
+                <span>↓</span>
+            </div>
+            <small>Scroll Down</small>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- ABOUT SECTION                                 -->
+    <!-- ============================================ -->
+    <section class="section" id="about">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">About Me</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="about-content reveal">
+                <div class="about-text">
+                    <p>I am an Engineering student in AI &amp; Data Science, currently building strong foundations in programming, problem-solving, web development, and artificial intelligence. I am learning Java, C++ with DSA, Python, and AI-based project development. My goal is to become industry-ready by building practical projects, improving my coding skills, and exploring modern AI tools.</p>
+                </div>
+            </div>
+
+            <!-- Highlight Cards -->
+            <div class="highlight-cards">
+                <div class="highlight-card reveal">
+                    <div class="card-icon">🎓</div>
+                    <h3>AI &amp; Data Science Student</h3>
+                    <p>Pursuing engineering with a focus on artificial intelligence and data science from the ground up.</p>
+                </div>
+                <div class="highlight-card reveal">
+                    <div class="card-icon">📈</div>
+                    <h3>Consistent Learner</h3>
+                    <p>Dedicated to daily practice, continuous improvement, and building real-world skills step by step.</p>
+                </div>
+                <div class="highlight-card reveal">
+                    <div class="card-icon">🛠️</div>
+                    <h3>Project-Based Mindset</h3>
+                    <p>Focused on learning through building practical projects, not just theory.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- SKILLS SECTION                                -->
+    <!-- ============================================ -->
+    <section class="section" id="skills">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">My Skills</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="skills-container">
+                <!-- Skill Radar Chart -->
+                <div class="skill-radar reveal">
+                    <h3 class="category-title">Skill Overview</h3>
+                    <div class="radar-chart" id="radar-chart">
+                        <!-- SVG radar chart generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Programming Skills -->
+                <div class="skill-category reveal">
+                    <h3 class="category-title">
+                        <span class="category-icon">💻</span> Programming Languages
+                    </h3>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">Java</span>
+                            <span class="skill-percent">65%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="65"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">Python</span>
+                            <span class="skill-percent">40%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="40"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">C++</span>
+                            <span class="skill-percent">35%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="35"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">C</span>
+                            <span class="skill-percent">30%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="30"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">HTML</span>
+                            <span class="skill-percent">75%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="75"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">CSS</span>
+                            <span class="skill-percent">70%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="70"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-info">
+                            <span class="skill-name">JavaScript</span>
+                            <span class="skill-percent">45%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-progress="45"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Currently Learning -->
+                <div class="skill-category reveal">
+                    <h3 class="category-title">
+                        <span class="category-icon">📚</span> Currently Learning
+                    </h3>
+                    <div class="currently-learning" id="currently-learning">
+                        <div class="learning-item">
+                            <span class="learning-dot"></span>
+                            <span>Java Functions</span>
+                        </div>
+                        <div class="learning-item">
+                            <span class="learning-dot"></span>
+                            <span>Loops &amp; Recursion</span>
+                        </div>
+                        <div class="learning-item">
+                            <span class="learning-dot"></span>
+                            <span>Data Structures &amp; Algorithms</span>
+                        </div>
+                        <div class="learning-item">
+                            <span class="learning-dot"></span>
+                            <span>C++ DSA</span>
+                        </div>
+                        <div class="learning-item">
+                            <span class="learning-dot"></span>
+                            <span>AI/ML Basics</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools -->
+                <div class="skill-category reveal">
+                    <h3 class="category-title">
+                        <span class="category-icon">🔧</span> Tools &amp; Platforms
+                    </h3>
+                    <div class="tools-grid">
+                        <div class="tool-item">
+                            <span class="tool-icon">📝</span>
+                            <span>VS Code</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-icon">🐙</span>
+                            <span>GitHub</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-icon">🎨</span>
+                            <span>Adobe Express</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-icon">🧪</span>
+                            <span>Google Colab</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-icon">🤗</span>
+                            <span>Hugging Face</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-icon">🤖</span>
+                            <span>AI Tools</span>
+                        </div>
+                        <div class="tool-item">
+                            <span class="tool-icon">🐧</span>
+                            <span>Linux Basics</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Soft Skills -->
+                <div class="skill-category reveal">
+                    <h3 class="category-title">
+                        <span class="category-icon">🧠</span> Soft Skills
+                    </h3>
+                    <div class="soft-skills-grid">
+                        <div class="soft-skill-item">
+                            <div class="soft-skill-icon">🧩</div>
+                            <span>Problem Solving</span>
+                        </div>
+                        <div class="soft-skill-item">
+                            <div class="soft-skill-icon">💡</div>
+                            <span>Creativity</span>
+                        </div>
+                        <div class="soft-skill-item">
+                            <div class="soft-skill-icon">🎯</div>
+                            <span>Consistency</span>
+                        </div>
+                        <div class="soft-skill-item">
+                            <div class="soft-skill-icon">💬</div>
+                            <span>Communication</span>
+                        </div>
+                        <div class="soft-skill-item">
+                            <div class="soft-skill-icon">📋</div>
+                            <span>Project Planning</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- LEARNING ROADMAP SECTION                      -->
+    <!-- ============================================ -->
+    <section class="section" id="roadmap">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">My Coding Journey</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="timeline">
+                <!-- Year 1 -->
+                <div class="timeline-item left reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3>📘 Year 1 – Building Foundations</h3>
+                        <ul>
+                            <li>Programming basics &amp; logic building</li>
+                            <li>Java basics – variables, loops, functions</li>
+                            <li>Loops, functions, recursion mastery</li>
+                            <li>Web development basics – HTML, CSS, JS</li>
+                        </ul>
+                        <span class="timeline-badge current">Current Phase</span>
+                    </div>
+                </div>
+
+                <!-- Year 2 -->
+                <div class="timeline-item right reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3>📗 Year 2 – Going Deeper</h3>
+                        <ul>
+                            <li>C++ with Data Structures &amp; Algorithms</li>
+                            <li>Python for AI &amp; Data Science</li>
+                            <li>Advanced data structures and algorithms</li>
+                            <li>Mini projects &amp; team collaborations</li>
+                        </ul>
+                        <span class="timeline-badge upcoming">Coming Up</span>
+                    </div>
+                </div>
+
+                <!-- Next Goals -->
+                <div class="timeline-item left reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3>🚀 Next Goals – Industry Ready</h3>
+                        <ul>
+                            <li>Machine Learning &amp; Deep Learning</li>
+                            <li>Data Analysis &amp; Visualization</li>
+                            <li>Internship-ready portfolio</li>
+                            <li>Open-source contributions</li>
+                        </ul>
+                        <span class="timeline-badge future">Future</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Testimonial -->
+            <div class="testimonial reveal">
+                <div class="testimonial-card">
+                    <span class="quote-mark">"</span>
+                    <p>Motivated learner with strong interest in practical projects and AI-based solutions.</p>
+                    <div class="testimonial-author">
+                        <span>— Self-Assessment</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- PROJECTS SECTION                              -->
+    <!-- ============================================ -->
+    <section class="section" id="projects">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">My Projects</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <!-- Project Filter Buttons -->
+            <div class="projects-filters reveal">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="web">Web</button>
+                <button class="filter-btn" data-filter="java">Java</button>
+                <button class="filter-btn" data-filter="ai">AI</button>
+                <button class="filter-btn" data-filter="ui-ux">UI/UX</button>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="projects-grid">
+
+                <!-- Project 1: Apani Dukan -->
+                <div class="project-card reveal" data-category="web ui-ux">
+                    <div class="project-image">
+                        <div class="project-image-placeholder" style="background: linear-gradient(135deg, #00a8ff 0%, #8b5cf6 100%);">
+                            <span class="project-emoji">🎁</span>
+                            <span class="project-image-text">Apani Dukan</span>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Details</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Apani Dukan Gift Shop Website</h3>
+                        <p>A local gift shop website with festival collections, product pages, customer reviews, WhatsApp inquiry, and Gift Finder Journey.</p>
+                        <div class="project-tags">
+                            <span class="project-tag">HTML</span>
+                            <span class="project-tag">CSS</span>
+                            <span class="project-tag">JavaScript</span>
+                            <span class="project-tag">UI/UX</span>
+                            <span class="project-tag">Business</span>
+                        </div>
+                        <div class="project-links">
+                            <a href="#" class="project-link btn-primary">
+                                <span>🔗</span> View Project
+                            </a>
+                            <a href="#" class="project-link btn-outline">
+                                <span>💻</span> GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2: AI Detection -->
+                <div class="project-card reveal" data-category="ai web">
+                    <div class="project-image">
+                        <div class="project-image-placeholder" style="background: linear-gradient(135deg, #8b5cf6 0%, #00ff88 100%);">
+                            <span class="project-emoji">🤖</span>
+                            <span class="project-image-text">AI Detection</span>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Details</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>AI Image/Text Detection Website</h3>
+                        <p>An AI-based detection platform concept for checking images, videos, and text using AI models.</p>
+                        <div class="project-tags">
+                            <span class="project-tag">AI</span>
+                            <span class="project-tag">Web App</span>
+                            <span class="project-tag">Detection</span>
+                            <span class="project-tag">API</span>
+                        </div>
+                        <div class="project-links">
+                            <a href="#" class="project-link btn-primary">
+                                <span>🔗</span> View Project
+                            </a>
+                            <a href="#" class="project-link btn-outline">
+                                <span>💻</span> GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3: Number Guessing Game -->
+                <div class="project-card reveal" data-category="web java">
+                    <div class="project-image">
+                        <div class="project-image-placeholder" style="background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);">
+                            <span class="project-emoji">🎮</span>
+                            <span class="project-image-text">Number Game</span>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Details</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Number Guessing Game</h3>
+                        <p>An interactive number guessing game with smart hints, themes, animations, and AI narrator concept.</p>
+                        <div class="project-tags">
+                            <span class="project-tag">JavaScript</span>
+                            <span class="project-tag">Game UI</span>
+                            <span class="project-tag">Logic Building</span>
+                        </div>
+                        <div class="project-links">
+                            <a href="#" class="project-link btn-primary">
+                                <span>🔗</span> View Project
+                            </a>
+                            <a href="#" class="project-link btn-outline">
+                                <span>💻</span> GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 4: Restaurant Website -->
+                <div class="project-card reveal" data-category="web ui-ux">
+                    <div class="project-image">
+                        <div class="project-image-placeholder" style="background: linear-gradient(135deg, #00ff88 0%, #00a8ff 100%);">
+                            <span class="project-emoji">🍽️</span>
+                            <span class="project-image-text">Restaurant</span>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Details</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Restaurant Website</h3>
+                        <p>A modern restaurant website with menu filtering, recommendations, bilingual content, and responsive design.</p>
+                        <div class="project-tags">
+                            <span class="project-tag">Web Design</span>
+                            <span class="project-tag">UI/UX</span>
+                            <span class="project-tag">Frontend</span>
+                        </div>
+                        <div class="project-links">
+                            <a href="#" class="project-link btn-primary">
+                                <span>🔗</span> View Project
+                            </a>
+                            <a href="#" class="project-link btn-outline">
+                                <span>💻</span> GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 5: Java Practice Programs -->
+                <div class="project-card reveal" data-category="java">
+                    <div class="project-image">
+                        <div class="project-image-placeholder" style="background: linear-gradient(135deg, #ffa500 0%, #8b5cf6 100%);">
+                            <span class="project-emoji">☕</span>
+                            <span class="project-image-text">Java Programs</span>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Details</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Java Practice Programs</h3>
+                        <p>Collection of Java programs covering loops, functions, recursion, palindrome, reverse number, patterns, and basic problem-solving.</p>
+                        <div class="project-tags">
+                            <span class="project-tag">Java</span>
+                            <span class="project-tag">Logic</span>
+                            <span class="project-tag">Beginner DSA</span>
+                        </div>
+                        <div class="project-links">
+                            <a href="#" class="project-link btn-primary">
+                                <span>🔗</span> View Project
+                            </a>
+                            <a href="#" class="project-link btn-outline">
+                                <span>💻</span> GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 6: AI Portfolio Assistant -->
+                <div class="project-card reveal" data-category="ai ui-ux">
+                    <div class="project-image">
+                        <div class="project-image-placeholder" style="background: linear-gradient(135deg, #8b5cf6 0%, #00a8ff 100%);">
+                            <span class="project-emoji">💬</span>
+                            <span class="project-image-text">AI Assistant</span>
+                        </div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Details</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>AI Portfolio Assistant</h3>
+                        <p>An idea for adding an AI chatbot to a portfolio that can answer questions about skills, projects, and career goals.</p>
+                        <div class="project-tags">
+                            <span class="project-tag">AI Tools</span>
+                            <span class="project-tag">Chatbot</span>
+                            <span class="project-tag">Portfolio</span>
+                        </div>
+                        <div class="project-links">
+                            <a href="#" class="project-link btn-primary">
+                                <span>🔗</span> View Project
+                            </a>
+                            <a href="#" class="project-link btn-outline">
+                                <span>💻</span> GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- ACHIEVEMENTS SECTION                          -->
+    <!-- ============================================ -->
+    <section class="section" id="achievements">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">Achievements &amp; Highlights</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="achievements-grid">
+                <div class="achievement-card reveal">
+                    <div class="card-icon">✅</div>
+                    <h3>Programming Tasks</h3>
+                    <p>Completed multiple beginner programming tasks in Java, building strong logical foundations.</p>
+                </div>
+                <div class="achievement-card reveal">
+                    <div class="card-icon">🏪</div>
+                    <h3>Business Websites</h3>
+                    <p>Built website ideas for local businesses, bridging tech skills with real-world needs.</p>
+                </div>
+                <div class="achievement-card reveal">
+                    <div class="card-icon">🧠</div>
+                    <h3>Early AI Explorer</h3>
+                    <p>Learning AI &amp; Data Science from 1st year, staying ahead of the curve.</p>
+                </div>
+                <div class="achievement-card reveal">
+                    <div class="card-icon">⚡</div>
+                    <h3>AI Tools &amp; Automation</h3>
+                    <p>Exploring AI tools and automation to enhance productivity and learning.</p>
+                </div>
+                <div class="achievement-card reveal">
+                    <div class="card-icon">🎨</div>
+                    <h3>UI/UX Concepts</h3>
+                    <p>Created UI/UX concepts for games, posters, and websites with modern design principles.</p>
+                </div>
+                <div class="achievement-card reveal">
+                    <div class="card-icon">🔬</div>
+                    <h3>Real-World AI Projects</h3>
+                    <p>Interested in building practical, real-world AI projects that solve actual problems.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- SERVICES SECTION                              -->
+    <!-- ============================================ -->
+    <section class="section" id="services">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">What I Can Build</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="services-grid">
+                <div class="service-card reveal">
+                    <div class="card-icon">🌐</div>
+                    <h3>Personal Portfolio Websites</h3>
+                    <p>Clean, modern portfolio websites to showcase skills and projects effectively.</p>
+                </div>
+                <div class="service-card reveal">
+                    <div class="card-icon">🏢</div>
+                    <h3>Business Landing Pages</h3>
+                    <p>Professional landing pages for startups and local businesses with responsive design.</p>
+                </div>
+                <div class="service-card reveal">
+                    <div class="card-icon">🛍️</div>
+                    <h3>Gift Shop / Restaurant Websites</h3>
+                    <p>E-commerce and restaurant websites with product catalogs and menu systems.</p>
+                </div>
+                <div class="service-card reveal">
+                    <div class="card-icon">☕</div>
+                    <h3>Basic Java Programs</h3>
+                    <p>Java programs for logic building, algorithms, and beginner-level problem solving.</p>
+                </div>
+                <div class="service-card reveal">
+                    <div class="card-icon">✏️</div>
+                    <h3>UI/UX Website Concepts</h3>
+                    <p>Modern UI/UX designs and prototypes for web applications and landing pages.</p>
+                </div>
+                <div class="service-card reveal">
+                    <div class="card-icon">🤖</div>
+                    <h3>AI Tool Integration Ideas</h3>
+                    <p>Conceptual designs for integrating AI tools into websites and applications.</p>
+                </div>
+                <div class="service-card reveal">
+                    <div class="card-icon">🎨</div>
+                    <h3>Posters &amp; Product Designs</h3>
+                    <p>Creative poster and product designs using Adobe Express and modern design tools.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- RESUME SECTION                                -->
+    <!-- ============================================ -->
+    <section class="section" id="resume">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">Resume</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="resume-card reveal">
+                <div class="resume-header">
+                    <div class="resume-avatar">
+                        <span>TG</span>
+                    </div>
+                    <div class="resume-intro">
+                        <h3>Tirth Gaikwad</h3>
+                        <p class="resume-subtitle">Engineering Student – AI &amp; Data Science</p>
+                    </div>
+                </div>
+
+                <div class="resume-details">
+                    <h4>Current Focus Areas</h4>
+                    <div class="resume-skills-grid">
+                        <div class="resume-skill-item">
+                            <span class="resume-skill-icon">☕</span>
+                            <span>Java Programming</span>
+                        </div>
+                        <div class="resume-skill-item">
+                            <span class="resume-skill-icon">⚙️</span>
+                            <span>C++ with DSA</span>
+                        </div>
+                        <div class="resume-skill-item">
+                            <span class="resume-skill-icon">🐍</span>
+                            <span>Python for AI/DS</span>
+                        </div>
+                        <div class="resume-skill-item">
+                            <span class="resume-skill-icon">🌐</span>
+                            <span>Web Development</span>
+                        </div>
+                        <div class="resume-skill-item">
+                            <span class="resume-skill-icon">🤖</span>
+                            <span>AI Projects</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resume-download">
+                    <a href="#" class="btn btn-primary btn-lg">
+                        <span class="btn-icon">📄</span> Download Resume
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- CONTACT SECTION                               -->
+    <!-- ============================================ -->
+    <section class="section" id="contact">
+        <div class="container">
+            <h2 class="section-title reveal">
+                <span class="title-text">Get In Touch</span>
+                <span class="title-line"></span>
+            </h2>
+
+            <div class="contact-container">
+                <!-- Contact Form -->
+                <div class="contact-form reveal">
+                    <form id="contact-form">
+                        <div class="form-group">
+                            <input type="text" id="contact-name" name="name" required autocomplete="name">
+                            <label for="contact-name">Your Name</label>
+                            <span class="form-line"></span>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="contact-email" name="email" required autocomplete="email">
+                            <label for="contact-email">Your Email</label>
+                            <span class="form-line"></span>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="contact-message" name="message" rows="5" required></textarea>
+                            <label for="contact-message">Your Message</label>
+                            <span class="form-line"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary submit-btn">
+                            <span class="btn-text">Send Message</span>
+                            <span class="btn-icon">🚀</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Contact Info / Social Links -->
+                <div class="contact-info reveal">
+                    <div class="contact-info-card">
+                        <h3>Let's Connect</h3>
+                        <p>Feel free to reach out for collaborations, project ideas, or just a friendly chat about AI and tech!</p>
+
+                        <div class="social-links">
+                            <a href="https://github.com/" class="social-link" target="_blank" rel="noopener noreferrer">
+                                <span class="social-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                </span>
+                                <span>GitHub</span>
+                            </a>
+                            <a href="https://linkedin.com/" class="social-link" target="_blank" rel="noopener noreferrer">
+                                <span class="social-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                                </span>
+                                <span>LinkedIn</span>
+                            </a>
+                            <a href="https://instagram.com/" class="social-link" target="_blank" rel="noopener noreferrer">
+                                <span class="social-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                                </span>
+                                <span>Instagram</span>
+                            </a>
+                            <a href="mailto:your.email@example.com" class="social-link">
+                                <span class="social-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+                                </span>
+                                <span>Email</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- FOOTER                                        -->
+    <!-- ============================================ -->
+    <footer class="footer" id="footer">
+        <div class="footer-content">
+            <div class="footer-brand">&lt;TG /&gt;</div>
+            <p class="footer-text">Designed &amp; Built by <strong>Tirth Gaikwad</strong></p>
+            <p class="footer-subtitle">AI &amp; Data Science Engineering Student</p>
+            <div class="footer-links">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#projects">Projects</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <p class="footer-copyright">&copy; 2025 Tirth Gaikwad. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Easter Egg Message -->
+    <div class="easter-egg" id="easter-egg">
+        🎮 You found the secret! Keep coding! 🚀
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>
