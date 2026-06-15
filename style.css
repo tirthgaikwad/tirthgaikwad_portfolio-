@@ -416,7 +416,7 @@ input, textarea {
 }
 .profile-img {
   width: 100%;
-  transform: translateX(-4px);
+  transform: translateX(-1px);
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
@@ -2350,6 +2350,42 @@ input, textarea {
     page-break-inside: avoid;
   }
 }
+.project-image {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    border-radius: 20px 20px 0 0;
+    background: #0f172a;
+}
+
+.project-screenshot {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+@media (max-width: 768px) {
+    .projects-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .project-card {
+        max-width: 100%;
+    }
+
+    .project-image {
+        height: 230px;
+    }
+
+    .project-screenshot {
+        object-fit: contain;
+    }
+}
+
+
+
 
 /* ============================================================
    END OF STYLESHEET
