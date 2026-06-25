@@ -896,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  /* --------------------------------------------------------------------
+  /* -------- ----------------------------------------------------------
      20. PERFORMANCE — Debounced Resize Handler
      -------------------------------------------------------------------- */
 
@@ -910,10 +910,142 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', onResize, { passive: true });
   };
 
+  /* ----- 21. SCROLL PROGRESS INDICATOR ---- */
+
+  const initScrollProgress = () => {
+    const indicator = document.createElement('div');
+    indicator.classList.add('scroll-progress');
+    document.body.prepend(indicator);
+
+    const updateProgress = rafThrottle(() => {
+     const scrollTop = window.scrollY;
+     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+     const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+     indicator.style.width = `${scrollPercent}%`;
+    });
+
+    window.addEventListener('scroll', updateProgress, { passive: true });
+  };
+
+  /* ----- 22. 3D CARD TILT EFFECT ---- */
+
+  const initCardTilt = () => {
+    const cards = $$('.highlight-card, .skill-category, .project-card, .achievement-card, .service-card, .timeline-content');
+    if (!cards.length) return;
+
+    cards.forEach((card) => {
+     card.addEventListener(
+       'mousemove',
+       rafThrottle((e) => {
+         const rect = card.getBoundingClientRect();
+         const x = e.clientX - rect.left;
+         const y = e.clientY - rect.top;
+         const centerX = rect.width / 2;
+         const centerY = rect.height / 2;
+         const rotateX = ((y - centerY) / centerY) * 5;
+         const rotateY = ((centerX - x) / centerX) * 5;
+         card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) translateY(-6px)`;
+       }),
+       { passive: true }
+     );
+
+     card.addEventListener('mouseleave', () => {
+       card.style.transform = 'translateZ(0) translateY(0) rotateX(0) rotateY(0)';
+     });
+    });
+  };
+
+  /* --------------------------------------------------------------------
+     INTRO VIDEO POPUP
+     -------------------------------------------------------------------- */
+
+  const initIntroVideo = () => {
+    const overlay = $('#intro-video-overlay');
+    const video = $('#intro-video');
+    const loading = $('#intro-video-loading');
+    const skipBtn = $('#intro-skip-btn');
+    if (!overlay || !video) return;
+
+    // Lock body scroll
+    document.body.classList.add('intro-no-scroll');
+
+    /** Close the popup with a smooth fade-out */
+    const closePopup = () => {
+      // Prevent double-close
+      if (overlay.classList.contains('intro-closing')) return;
+
+      overlay.classList.add('intro-closing');
+
+      // Pause video
+      video.pause();
+
+      // Unlock scroll after fade-out animation completes
+      const onTransitionEnd = () => {
+        overlay.style.display = 'none';
+        document.body.classList.remove('intro-no-scroll');
+        overlay.removeEventListener('transitionend', onTransitionEnd);
+      };
+      overlay.addEventListener('transitionend', onTransitionEnd);
+
+      // Fallback: if transitionend doesn't fire, force cleanup
+      setTimeout(() => {
+        if (overlay.style.display !== 'none') {
+          overlay.style.display = 'none';
+          document.body.classList.remove('intro-no-scroll');
+        }
+      }, 800);
+    };
+
+    /** Show the video once it's ready to play */
+    const onVideoReady = () => {
+      // Hide loading spinner
+      if (loading) loading.classList.add('intro-loading-hidden');
+
+      // Show video
+      video.classList.add('intro-video-ready');
+
+      // Start playback from the beginning
+      video.currentTime = 0;
+      const playPromise = video.play();
+
+      // Handle autoplay errors gracefully
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Autoplay blocked — video is still visible, user can skip
+          video.classList.add('intro-video-ready');
+        });
+      }
+    };
+
+    // Listen for video ready
+    if (video.readyState >= 3) {
+      // Already loaded enough
+      onVideoReady();
+    } else {
+      video.addEventListener('canplaythrough', onVideoReady, { once: true });
+    }
+
+    // Auto-close when video finishes (play only once, no loop)
+    video.addEventListener('ended', closePopup, { once: true });
+
+    // Skip button
+    if (skipBtn) {
+      skipBtn.addEventListener('click', closePopup);
+    }
+
+    // Also close on overlay click (outside video)
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        closePopup();
+      }
+    });
+  };
+
   /* ====================================================================
      INIT — Wire everything up
      ==================================================================== */
 
+  initIntroVideo();
   initPreloader();
   initNavbar();
   initMobileNav();
@@ -933,4 +1065,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initLearningPulse();
   initResizeHandler();
   initKonamiCode();
+  
+  // 3D & Premium Effects
+  initScrollProgress();
+  initCardTilt();
 });

@@ -20,6 +20,33 @@
 <body class="dark-mode">
 
     <!-- ============================================ -->
+    <!-- INTRO VIDEO POPUP                             -->
+    <!-- ============================================ -->
+    <div class="intro-video-overlay" id="intro-video-overlay">
+        <div class="intro-video-container" id="intro-video-container">
+            <!-- Loading State -->
+            <div class="intro-video-loading" id="intro-video-loading">
+                <div class="intro-loading-spinner"></div>
+                <p class="intro-loading-text">Initializing Experience...</p>
+            </div>
+            <!-- Video Element -->
+            <video
+                id="intro-video"
+                class="intro-video"
+                src="intro-video.mp4"
+                muted
+                playsinline
+                preload="auto"
+            ></video>
+            <!-- Skip Button -->
+            <button class="intro-skip-btn" id="intro-skip-btn" aria-label="Skip intro">
+                <span class="intro-skip-text">SKIP</span>
+                <span class="intro-skip-icon">⟩⟩</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
     <!-- PRELOADER                                     -->
     <!-- ============================================ -->
     <div class="preloader" id="preloader">

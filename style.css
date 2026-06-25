@@ -1,34 +1,7 @@
 /* ============================================================
-   TIRTH GAIKWAD — Personal Portfolio Stylesheet
+   TIRTH GAIKWAD — Premium 3D Portfolio Stylesheet
    AI & Data Science Engineering Student
-   ============================================================
-   Table of Contents
-   -----------------
-   0.  Imports & Variables
-   1.  Reset & Base
-   2.  Preloader
-   3.  Navbar
-   4.  Hero Section (#home)
-   5.  Shared Section Styles
-   6.  About Section (#about)
-   7.  Skills Section (#skills)
-   8.  Roadmap / Timeline (#roadmap)
-   9.  Projects Section (#projects)
-   10. Achievements Section (#achievements)
-   11. Services Section (#services)
-   12. Resume Section (#resume)
-   13. Contact Section (#contact)
-   14. Footer
-   15. Utility Classes (reveal, glow, buttons)
-   16. Animations (@keyframes)
-   17. Responsive — Tablet (≤1024px)
-   18. Responsive — Mobile (≤768px)
-   19. Responsive — Small Mobile (≤480px)
    ============================================================ */
-
-/* ==========================================================
-   0. IMPORTS & CSS VARIABLES
-   ========================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -46,24 +19,27 @@
   --accent-blue: #00a8ff;
   --accent-purple: #8b5cf6;
   --accent-green: #00ff88;
+  --accent-cyan: #00d4ff;
+  --accent-pink: #ff006e;
 
   /* ---- Gradients ---- */
   --gradient-1: linear-gradient(135deg, #00a8ff, #8b5cf6);
   --gradient-2: linear-gradient(135deg, #8b5cf6, #00ff88);
   --gradient-3: linear-gradient(135deg, #00a8ff, #00ff88);
+  --gradient-neon: linear-gradient(135deg, #00d4ff, #8b5cf6, #ff006e);
 
   /* ---- Glassmorphism ---- */
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --glass-glow: 0 0 20px rgba(0, 212, 255, 0.1);
 
   /* ---- Misc ---- */
   --border-radius: 16px;
-  --transition: all 0.3s ease;
+  --transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   --navbar-height: 72px;
 }
 
-/* ---------- Light-mode overrides ---------- */
 .light-mode {
   --bg-primary: #f0f2f5;
   --bg-secondary: #ffffff;
@@ -74,10 +50,6 @@
   --glass-border: rgba(0, 0, 0, 0.1);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
-
-/* ==========================================================
-   1. RESET & BASE STYLES
-   ========================================================== */
 
 *,
 *::before,
@@ -91,6 +63,9 @@ html {
   scroll-behavior: smooth;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
 }
 
 body {
@@ -101,6 +76,7 @@ body {
   overflow-x: hidden;
   transition: background-color 0.5s ease, color 0.5s ease;
   min-height: 100vh;
+  transform-style: preserve-3d;
 }
 
 /* Subtle animated gradient background */
@@ -1987,7 +1963,202 @@ input, textarea {
 }
 
 /* ==========================================================
-   17. RESPONSIVE — TABLET (≤ 1024px)
+   17. 3D SCROLL EFFECTS & PARALLAX
+   ========================================================== */
+
+/* 3D Card Tilt Effect */
+.card-tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease-out;
+}
+
+.card-tilt:hover {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+}
+
+/* Hero section 3D depth */
+.hero {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.hero-content {
+  transform-style: preserve-3d;
+}
+
+.hero-text {
+  animation: slideInLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hero-image-container {
+  animation: slideInRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+@keyframes slideInLeft {
+  from {
+   opacity: 0;
+   transform: translateX(-60px) translateZ(-50px);
+  }
+  to {
+   opacity: 1;
+   transform: translateX(0) translateZ(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+   opacity: 0;
+   transform: translateX(60px) translateZ(-50px);
+  }
+  to {
+   opacity: 1;
+   transform: translateX(0) translateZ(0);
+  }
+}
+
+/* 3D Card Effects */
+.highlight-card,
+.skill-category,
+.project-card,
+.achievement-card,
+.service-card,
+.timeline-content {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.highlight-card:hover,
+.skill-category:hover,
+.achievement-card:hover,
+.service-card:hover,
+.timeline-content:hover {
+  transform: translateY(-8px) translateZ(20px) rotateX(2deg);
+}
+
+.project-card:hover {
+  transform: translateY(-12px) translateZ(30px) rotateX(3deg) rotateY(1deg);
+}
+
+/* 3D Scroll Parallax */
+section[id] {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.section {
+  transform-style: preserve-3d;
+}
+
+/* Reveal animations with 3D depth */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px) translateZ(-30px) rotateX(10deg);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0) translateZ(0) rotateX(0deg);
+}
+
+/* Stagger children with depth */
+.reveal:nth-child(1) { 
+  transition-delay: 0s;
+  transform: translateY(40px) translateZ(-40px) rotateX(15deg);
+}
+.reveal:nth-child(2) { 
+  transition-delay: 0.1s;
+  transform: translateY(40px) translateZ(-35px) rotateX(13deg);
+}
+.reveal:nth-child(3) { 
+  transition-delay: 0.2s;
+  transform: translateY(40px) translateZ(-30px) rotateX(11deg);
+}
+.reveal:nth-child(4) { 
+  transition-delay: 0.3s;
+  transform: translateY(40px) translateZ(-25px) rotateX(9deg);
+}
+.reveal:nth-child(5) { 
+  transition-delay: 0.4s;
+  transform: translateY(40px) translateZ(-20px) rotateX(7deg);
+}
+.reveal:nth-child(6) { 
+  transition-delay: 0.5s;
+  transform: translateY(40px) translateZ(-15px) rotateX(5deg);
+}
+
+.reveal.active:nth-child(1),
+.reveal.active:nth-child(2),
+.reveal.active:nth-child(3),
+.reveal.active:nth-child(4),
+.reveal.active:nth-child(5),
+.reveal.active:nth-child(6) {
+  transform: translateY(0) translateZ(0) rotateX(0deg);
+}
+
+/* Premium Glass Card Glow */
+.highlight-card,
+.skill-category,
+.project-card,
+.achievement-card,
+.service-card,
+.timeline-content,
+.resume-card,
+.contact-form {
+  position: relative;
+  box-shadow: 
+   0 8px 32px rgba(0, 0, 0, 0.3),
+   inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.highlight-card:hover,
+.skill-category:hover,
+.achievement-card:hover,
+.service-card:hover,
+.timeline-content:hover {
+  box-shadow: 
+   0 20px 60px rgba(0, 0, 0, 0.4),
+   inset 0 1px 1px rgba(255, 255, 255, 0.15),
+   0 0 30px rgba(0, 168, 255, 0.2);
+  border: 1px solid rgba(0, 168, 255, 0.3);
+}
+
+.project-card:hover {
+  box-shadow: 
+   0 30px 80px rgba(0, 0, 0, 0.5),
+   inset 0 1px 1px rgba(255, 255, 255, 0.15),
+   0 0 40px rgba(0, 168, 255, 0.3);
+}
+
+/* Enhanced button glow on hover */
+.btn-primary:hover,
+.btn-secondary:hover,
+.resume-download:hover,
+.submit-btn:hover {
+  box-shadow: 
+   0 0 30px currentColor,
+   0 8px 40px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+/* Smooth scroll progress indicator */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--gradient-1);
+  z-index: 999;
+  width: 0%;
+  transition: width 0.1s ease;
+}
+
+/* ==========================================================
+   18. RESPONSIVE — TABLET (≤ 1024px)
    ========================================================== */
 
 @media (max-width: 1024px) {
@@ -2205,6 +2376,32 @@ input, textarea {
   }
 }
 
+/* Mobile 3D Optimizations */
+@media (max-width: 1024px) {
+  /* Reduce 3D transforms on mobile for better performance */
+  .highlight-card:hover,
+  .skill-category:hover,
+  .achievement-card:hover,
+  .service-card:hover,
+  .timeline-content:hover {
+   transform: translateY(-4px) !important;
+  }
+
+  .project-card:hover {
+   transform: translateY(-6px) !important;
+  }
+
+  /* Disable complex card tilt on mobile */
+  .card-tilt {
+   transform: none !important;
+  }
+
+  /* Simplify reveal animations for mobile */
+  .reveal.active {
+   transform: translateY(0) !important;
+  }
+}
+
 /* ==========================================================
    19. RESPONSIVE — SMALL MOBILE (≤ 480px)
    ========================================================== */
@@ -2385,6 +2582,332 @@ input, textarea {
 }
 
 
+/* ==========================================================
+   INTRO VIDEO POPUP — Premium Cyber/AI Style
+   ========================================================== */
+
+/* No-scroll state while popup is open */
+body.intro-no-scroll {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+/* --- Overlay --- */
+.intro-video-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 2, 15, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  opacity: 0;
+  animation: introFadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.intro-video-overlay.intro-closing {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* --- Video Container Card --- */
+.intro-video-container {
+  position: relative;
+  width: 85%;
+  max-width: 900px;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #08081a;
+  /* Neon blue-purple glow border */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow:
+    0 0 30px rgba(0, 168, 255, 0.25),
+    0 0 60px rgba(139, 92, 246, 0.15),
+    0 0 120px rgba(0, 212, 255, 0.08),
+    inset 0 0 30px rgba(0, 0, 0, 0.4);
+  outline: 2px solid rgba(0, 168, 255, 0.4);
+  outline-offset: -2px;
+  transform: scale(0.92) translateY(20px);
+  animation: introCardIn 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Animated neon glow border using pseudo-element */
+.intro-video-container::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 22px;
+  background: conic-gradient(
+    from 0deg,
+    #00a8ff,
+    #8b5cf6,
+    #00d4ff,
+    #ff006e,
+    #8b5cf6,
+    #00a8ff
+  );
+  z-index: -1;
+  animation: introGlowRotate 4s linear infinite;
+  opacity: 0.7;
+}
+
+.intro-video-container::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 22px;
+  background: conic-gradient(
+    from 0deg,
+    #00a8ff,
+    #8b5cf6,
+    #00d4ff,
+    #ff006e,
+    #8b5cf6,
+    #00a8ff
+  );
+  z-index: -2;
+  animation: introGlowRotate 4s linear infinite;
+  filter: blur(20px);
+  opacity: 0.4;
+}
+
+/* --- Video Element --- */
+.intro-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.intro-video.intro-video-ready {
+  opacity: 1;
+}
+
+/* --- Loading State --- */
+.intro-video-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(8, 8, 26, 0.95);
+  border-radius: 18px;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.intro-video-loading.intro-loading-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.intro-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(139, 92, 246, 0.2);
+  border-top-color: #00a8ff;
+  border-right-color: #8b5cf6;
+  animation: introSpinnerRotate 0.8s linear infinite;
+}
+
+.intro-loading-text {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(176, 176, 208, 0.8);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  animation: introTextPulse 1.8s ease-in-out infinite;
+}
+
+/* --- Skip Button --- */
+.intro-skip-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+  animation: introSkipFadeIn 0.5s 1s ease forwards;
+}
+
+.intro-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(0, 168, 255, 0.5);
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 168, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.intro-skip-icon {
+  font-size: 0.9rem;
+  transition: transform 0.3s ease;
+}
+
+.intro-skip-btn:hover .intro-skip-icon {
+  transform: translateX(3px);
+}
+
+/* --- Keyframe Animations --- */
+@keyframes introFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes introCardIn {
+  from {
+    transform: scale(0.92) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes introGlowRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes introSpinnerRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes introTextPulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes introSkipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Responsive: Tablet --- */
+@media (max-width: 1024px) {
+  .intro-video-container {
+    width: 90%;
+  }
+}
+
+/* --- Responsive: Mobile --- */
+@media (max-width: 768px) {
+  .intro-video-container {
+    width: 95%;
+    border-radius: 14px;
+  }
+
+  .intro-video-container::before,
+  .intro-video-container::after {
+    border-radius: 16px;
+  }
+
+  .intro-video {
+    border-radius: 12px;
+  }
+
+  .intro-video-loading {
+    border-radius: 12px;
+  }
+
+  .intro-skip-btn {
+    top: 10px;
+    right: 10px;
+    padding: 6px 14px;
+    font-size: 0.7rem;
+  }
+}
+
+/* --- Responsive: Small Mobile --- */
+@media (max-width: 480px) {
+  .intro-video-container {
+    width: 96%;
+    border-radius: 12px;
+  }
+
+  .intro-video-container::before,
+  .intro-video-container::after {
+    border-radius: 14px;
+    inset: -2px;
+  }
+
+  .intro-video {
+    border-radius: 10px;
+  }
+
+  .intro-video-loading {
+    border-radius: 10px;
+  }
+
+  .intro-loading-spinner {
+    width: 36px;
+    height: 36px;
+  }
+
+  .intro-loading-text {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+  }
+
+  .intro-skip-btn {
+    top: 8px;
+    right: 8px;
+    padding: 5px 12px;
+    font-size: 0.65rem;
+  }
+}
 
 
 /* ============================================================
