@@ -13,3 +13,6 @@ This is my personal portfolio website built using HTML, CSS, and JavaScript.
 - HTML
 - CSS
 - JavaScript
+
+
+# site is live at https://tirthgaikwad.github.io/tirthgaikwad_portfolio-/
