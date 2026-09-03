@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProPartner | College Network</title>
+    
+    <!-- Professional Font Stack -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+
+    <style>
+        /* Light Theme - Sleek Professional Colors */
+        :root { 
+            --bg: #FFFFFF; 
+            --surface: rgba(255, 255, 255, 0.9); 
+            --card-bg: #FFFFFF;
+            --border: #E5E5E5; 
+            --primary: #4F46E5; 
+            --secondary: #333333; 
+            --accent: #E5E5E5; 
+            --text: #000000; 
+            --text-dim: #666666; 
+            --header-bg: rgba(255, 255, 255, 0.85);
+            --input-bg: #F5F5F5;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Dark Theme - Totally Dark Mode (No Blue Tints) */
+        [data-theme="dark"] {
+            --bg: #000000; 
+            --surface: rgba(0, 0, 0, 0.85); 
+            --card-bg: #000000;
+            --border: #333333; 
+            --text: #F8FAFC; 
+            --text-dim: #999999;
+            --header-bg: rgba(0, 0, 0, 0.85);
+            --input-bg: #111111;
+            --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
+            --shadow-md: 0 4px 12px rgba(255, 255, 255, 0.05);
+            --shadow-lg: 0 12px 32px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Premium Custom Scrollbar */
+        ::-webkit-scrollbar { 
+            width: 6px; 
+            height: 6px; 
+        }
+
+        ::-webkit-scrollbar-track { 
+            background: transparent; 
+        }
+
+        ::-webkit-scrollbar-thumb { 
+            background: var(--border); 
+            border-radius: 10px; 
+        }
+
+        ::-webkit-scrollbar-thumb:hover { 
+            background: var(--text-dim); 
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            overflow-x: hidden; 
+            transition: background-color 0.2s ease, color 0.2s ease; 
+        }
+
+        /* HEADER STYLES */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 16px 5%; 
+            background: var(--header-bg); 
+            backdrop-filter: blur(12px); 
+            border-bottom: 1px solid var(--border); 
+            box-shadow: var(--shadow-sm); 
+            z-index: 100; 
+            position: relative; 
+            transition: background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+
+        header h2 { 
+            font-weight: 800; 
+            color: var(--primary);
+            font-size: 1.5rem; 
+            letter-spacing: -0.5px;
+        }
+
+        nav { 
+            display: flex; 
+            gap: 6px; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            justify-content: flex-end;
+        }
+
+        nav a:not(.btn-logout) { 
+            color: var(--text-dim); 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: all 0.2s ease; 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: transparent;
+        }
+
+        nav a:not(.btn-logout):hover {
+            color: var(--text);
+            background: var(--input-bg);
+        }
+
+        nav a:not(.btn-logout).active { 
+            background: var(--text); 
+            color: var(--card-bg); 
+        }
+
+        .btn-logout { 
+            background: transparent; 
+            color: #ef4444; 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            border: 1px solid transparent; 
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+
+        .btn-logout:hover { 
+            background: rgba(239, 68, 68, 0.08); 
+        }
+
+        .theme-toggle { 
+            cursor: pointer; 
+            color: var(--text-dim); 
+            transition: 0.2s; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-right: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            background: transparent;
+        }
+
+        .theme-toggle:hover { 
+            color: var(--text); 
+            background: var(--input-bg);
+        }
+
+        .theme-toggle svg { width: 18px; height: 18px; }
+
+        .nav-bell-container { 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            margin-right: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            background: transparent;
+            transition: 0.2s;
+        }
+
+        .nav-bell-container:hover {
+            background: var(--input-bg);
+        }
+
+        .nav-bell-icon { width: 18px; height: 18px; color: var(--text-dim); transition: 0.2s; }
+        .nav-bell-container:hover .nav-bell-icon { color: var(--text); }
+
+        .notification-badge { 
+            position: absolute; 
+            top: 2px; 
+            right: 2px; 
+            background: #ef4444; 
+            color: white; 
+            font-size: 0.65rem; 
+            font-weight: bold; 
+            width: 16px; 
+            height: 16px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            opacity: 0; 
+            transition: 0.2s; 
+        }
+
+        .notification-badge.active { opacity: 1; }
+
+        .notification-dropdown { 
+            position: absolute; 
+            top: 45px; 
+            right: 0; 
+            width: 340px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            box-shadow: var(--shadow-lg); 
+            display: none; 
+            flex-direction: column; 
+            z-index: 1000; 
+            overflow: hidden; 
+            transition: 0.3s; 
+        }
+
+        .notification-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notif-header { 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border); 
+            font-weight: 700; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--input-bg);
+            font-size: 0.9rem;
+        }
+
+        .notif-header span { 
+            font-size: 0.75rem; 
+            color: var(--primary); 
+            cursor: pointer; 
+            font-weight: 600;
+        }
+
+        .notif-list { max-height: 350px; overflow-y: auto; }
+
+        .notif-item { 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border); 
+            transition: background 0.2s ease; 
+            font-size: 0.85rem; 
+            color: var(--text); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            cursor: pointer;
+        }
+
+        .notif-item:hover { background: var(--input-bg); }
+        .notif-item.unread { background: rgba(150, 150, 150, 0.1); font-weight: 600; border-left: 3px solid var(--primary); }
+        .notif-time { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
+        .notif-empty { padding: 40px; text-align: center; color: var(--text-dim); font-size: 0.9rem; font-weight: 500; }
+
+        /* Pull Tab Header */
+        .header-toggle-tab {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background: var(--header-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            z-index: 1000;
+            transition: 0.2s;
+        }
+        
+        .header-toggle-tab:hover { color: var(--text); }
+        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
+        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
+
+        /* ==========================================
+           PAGE SPECIFIC: HERO & SEARCH
+           ========================================== */
+        .hero { 
+            text-align: center; 
+            padding: 60px 5% 40px 5%; 
+            position: relative;
+            z-index: 2;
+        }
+
+        #collegeSubtitle { 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            color: var(--text); 
+            margin-bottom: 30px; 
+            letter-spacing: -1px; 
+        }
+        
+        .search-bar-wrapper { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            position: relative;
+        }
+
+        .search-bar-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+
+        .search-bar-wrapper input { 
+            width: 100%; 
+            padding: 14px 20px 14px 48px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            background: var(--card-bg); 
+            color: var(--text); 
+            font-size: 1rem; 
+            outline: none; 
+            transition: all 0.3s ease; 
+            box-shadow: var(--shadow-sm); 
+            font-weight: 500; 
+        }
+
+        .search-bar-wrapper input:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 4px rgba(150, 150, 150, 0.2); 
+            transform: translateY(-2px); 
+        }
+
+        .search-bar-wrapper input::placeholder {
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
+
+        /* LIVE SUGGESTION DROPDOWN STYLES */
+        .search-suggestions {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            display: none;
+            z-index: 50;
+            text-align: left;
+        }
+
+        .search-suggestions.active {
+            display: block;
+            animation: slideDown 0.2s ease forwards;
+        }
+
+        .suggestion-item {
+            padding: 14px 24px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .suggestion-item:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .suggestion-item:hover {
+            background: var(--input-bg);
+            color: var(--primary);
+        }
+
+        .suggestion-item svg {
+            color: var(--text-dim);
+            transition: color 0.2s ease;
+        }
+
+        .suggestion-item:hover svg {
+            color: var(--primary);
+        }
+
+        /* ==========================================
+           PAGE SPECIFIC: RESULTS GRID
+           ========================================== */
+        .main-container { 
+            padding: 0 5% 60px 5%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .results-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 24px; 
+        }
+        
+        .dev-card { 
+            background: transparent; 
+            border: 1px solid var(--border); 
+            border-radius: 16px; 
+            display: flex; 
+            flex-direction: column; 
+            transition: all 0.3s ease; 
+            text-decoration: none; 
+            overflow: hidden; 
+        }
+
+        .dev-card:hover { 
+            background: var(--card-bg); 
+            border-color: var(--primary); 
+            box-shadow: var(--shadow-md); 
+            transform: translateY(-4px); 
+        }
+        
+        .dev-banner { 
+            height: 80px; 
+            width: 100%; 
+            background-size: cover; 
+            background-position: center; 
+        }
+
+        .dev-avatar { 
+            width: 72px; 
+            height: 72px; 
+            border-radius: 50%; 
+            background: linear-gradient(135deg, var(--border), var(--input-bg)); 
+            color: var(--text); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 700; 
+            font-size: 1.2rem; 
+            border: 3px solid var(--card-bg); 
+            margin: -36px auto 12px auto; 
+            flex-shrink: 0;
+            background-size: cover; 
+            background-position: center; 
+            box-shadow: var(--shadow-sm); 
+            position: relative; 
+            z-index: 2;
+        }
+        
+        .dev-info { 
+            padding: 0 20px 24px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            flex-grow: 1; 
+            text-align: center; 
+        }
+
+        .dev-name { 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            color: var(--text); 
+            margin-bottom: 4px; 
+            letter-spacing: -0.3px; 
+        }
+
+        .dev-college { 
+            font-size: 0.8rem; 
+            color: var(--text-dim); 
+            margin-bottom: 4px; 
+            font-weight: 500; 
+            display: -webkit-box; 
+            -webkit-line-clamp: 1; 
+            -webkit-box-orient: vertical; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+
+        .dev-dept { 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            color: var(--primary); 
+            margin-bottom: 16px; 
+            display: -webkit-box; 
+            -webkit-line-clamp: 1; 
+            -webkit-box-orient: vertical; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+        }
+        
+        .dev-skills { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 6px; 
+            margin-bottom: 24px; 
+            flex-grow: 1; 
+        }
+
+        .dev-skill { 
+            background: var(--input-bg); 
+            color: var(--text); 
+            padding: 4px 12px; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            font-weight: 500; 
+            border: 1px solid var(--border); 
+        }
+
+        .dev-actions { 
+            display: flex; 
+            gap: 8px; 
+            width: 100%; 
+            margin-top: auto;
+        }
+        
+        .btn-outline { 
+            flex: 1; 
+            padding: 8px; 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            background: transparent; 
+            color: var(--text); 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            text-align: center; 
+            text-decoration: none; 
+            transition: 0.2s;
+        }
+        
+        .btn-outline:hover { 
+            background: var(--input-bg); 
+        }
+        
+        .btn-team { 
+            flex: 1; 
+            padding: 8px; 
+            border: none; 
+            border-radius: 8px; 
+            background: var(--primary); 
+            color: white; 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            transition: 0.2s;
+        }
+        
+        .btn-team:hover { 
+            filter: brightness(1.1); 
+        }
+
+        .loader-text { 
+            grid-column: 1/-1; 
+            text-align: center; 
+            color: var(--text-dim); 
+            padding: 60px; 
+            font-size: 1rem; 
+            font-weight: 500; 
+        }
+
+        /* MODAL */
+        .modal-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            background: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(4px); 
+            z-index: 2000; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        .modal-overlay.active { 
+            display: flex; 
+        }
+
+        .custom-modal { 
+            background: var(--card-bg); 
+            padding: 32px; 
+            border-radius: 16px; 
+            width: 90%; 
+            max-width: 400px; 
+            box-shadow: var(--shadow-lg); 
+            border: 1px solid var(--border); 
+        }
+
+        .custom-modal h3 { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            margin-bottom: 20px; 
+            font-weight: 800;
+        }
+
+        .form-group { 
+            margin-bottom: 16px; 
+        }
+
+        .form-group label { 
+            display: block; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            color: var(--text-dim); 
+        }
+
+        .form-group select, 
+        .form-group input { 
+            width: 100%; 
+            padding: 10px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border); 
+            background: var(--input-bg); 
+            color: var(--text); 
+            outline: none; 
+        }
+
+        .modal-buttons { 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 12px; 
+            margin-top: 24px; 
+        }
+    </style>
+</head>
+<body>
+
+    <header id="mainHeader">
+        <a href="index.html" style="text-decoration: none;">
+            <h2 class="logo">ProPartner</h2>
+        </a>
+        
+        <nav>
+            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
+                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </div>
+
+            <div class="nav-bell-container" id="notifBellBtn">
+                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                <div class="notification-badge" id="notifBadge">0</div>
+                <div class="notification-dropdown" id="notifDropdown">
+                    <div class="notif-header">Notifications</div>
+                    <div class="notif-list" id="notifList"></div>
+                </div>
+            </div>
+
+            <a href="search.html">Search</a>
+            <a href="board.html">Opportunities Board</a>
+            <a href="team.html">My Teams</a>
+            <a href="register.html">Sign Up</a>
+            <a href="college.html" class="active">My College</a>
+            <a href="department.html">My Department</a>
+            <a href="global.html">Global Network</a>
+            <a href="network.html">My Network</a>
+            <a href="saved.html">Saved Profiles</a>
+            <a href="inbox.html">Inbox</a>
+            <a href="history.html">History</a>
+            <a href="profile.html">My Profile</a>
+            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
+        </nav>
+
+        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+            </svg>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1 id="collegeSubtitle">Loading College Data...</h1>
+        <div class="search-bar-wrapper">
+            <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input type="text" id="collegeSearchInput" placeholder="Search college developers by name or tech skills..." autocomplete="off">
+            
+            <!-- LIVE SUGGESTIONS DROPDOWN -->
+            <div class="search-suggestions" id="searchSuggestions">
+                <!-- Javascript injected items -->
+            </div>
+        </div>
+    </div>
+
+    <main class="main-container">
+        <div class="results-grid" id="resultsGrid">
+            <div class="loader-text">Loading developers...</div>
+        </div>
+    </main>
+
+    <!-- ADD TO TEAM MODAL -->
+    <div class="modal-overlay" id="teamModal">
+        <div class="custom-modal">
+            <h3>Add to Workspace</h3>
+            <form id="addTeamForm">
+                <input type="hidden" id="targetUserId">
+                <div class="form-group">
+                    <label>Select Team</label>
+                    <select id="teamSelect" required>
+                        <option value="">Loading teams...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assign Role</label>
+                    <input type="text" id="roleInput" placeholder="e.g. Frontend, Backend, UI/UX" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-outline" onclick="closeModal()" style="border-color: var(--border);">Cancel</button>
+                    <button type="submit" class="btn-team" style="flex: none; padding: 10px 20px;">Add Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // HEADER TOGGLE LOGIC
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('mainHeader');
+            const toggleTab = document.getElementById('headerToggleTab');
+            let isHeaderCollapsed = false;
+
+            if (toggleTab) {
+                toggleTab.addEventListener('click', () => {
+                    if (!isHeaderCollapsed) {
+                        const headerHeight = header.offsetHeight;
+                        header.style.marginTop = `-${headerHeight}px`;
+                        header.classList.add('collapsed');
+                        isHeaderCollapsed = true;
+                    } else {
+                        header.style.marginTop = '0px';
+                        header.classList.remove('collapsed');
+                        isHeaderCollapsed = false;
+                    }
+                });
+
+                window.addEventListener('resize', () => {
+                    if (isHeaderCollapsed) {
+                        header.style.transition = 'none';
+                        header.style.marginTop = '0px';
+                        
+                        setTimeout(() => {
+                            const newHeight = header.offsetHeight;
+                            header.style.marginTop = `-${newHeight}px`;
+                            
+                            setTimeout(() => {
+                                header.style.transition = 'background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                            }, 50);
+                        }, 10);
+                    }
+                });
+            }
+        });
+
+        // ==========================================
+        // UI & THEME LOGIC
+        // ==========================================
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const moonIcon = document.getElementById('moonIcon');
+        const sunIcon = document.getElementById('sunIcon');
+
+        if (localStorage.getItem('theme') === 'dark') {
+            moonIcon.style.display = 'none';
+            sunIcon.style.display = 'block';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                moonIcon.style.display = 'none';
+                sunIcon.style.display = 'block';
+            }
+        });
+
+        // ==========================================
+        // NETWORK, SUGGESTION & TEAM LOGIC
+        // ==========================================
+        let allProfiles = [];
+        let suggestionsArray = [];
+        let myTeams = [];
+        const currentUserId = parseInt(localStorage.getItem('currentUserId'));
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (currentUserId) {
+                initNotifications(currentUserId);
+                fetchMyTeams();
+            } else {
+                window.location.href = 'login.html';
+            }
+
+            try {
+                // Fetch ALL profiles from backend first
+                const res = await fetch(`http://127.0.0.1:8000/api/profiles`, { 
+                    credentials: 'include' 
+                });
+                
+                if (res.ok) {
+                    const allFetchedProfiles = await res.json();
+                    
+                    // Automatically find the current user's college from the database
+                    const myProfile = allFetchedProfiles.find(p => p.id === currentUserId);
+                    const myCollege = (myProfile && myProfile.college_name) ? myProfile.college_name : 'Amrutvahini College of Engineering, Sangamner';
+                    
+                    const element = document.getElementById('collegeSubtitle');
+                    if(element) {
+                        element.textContent = `Developers at ${myCollege}`;
+                    }
+
+                    // Filter the global list to only show people from the user's exact college
+                    allProfiles = allFetchedProfiles.filter(p => p.college_name === myCollege);
+                    renderCards(allProfiles);
+
+                    // Build suggestions array from names and skills for the search bar
+                    let availableSuggestions = new Set();
+                    allProfiles.forEach(p => {
+                        if(p.name) availableSuggestions.add(p.name);
+                        if (p.skills) {
+                            p.skills.split(',').forEach(s => {
+                                if(s.trim()) availableSuggestions.add(s.trim());
+                            });
+                        }
+                    });
+                    suggestionsArray = Array.from(availableSuggestions);
+                }
+            } catch (e) {
+                document.getElementById('resultsGrid').innerHTML = '<div class="loader-text" style="color: #ef4444;">Failed to fetch network.</div>';
+            }
+
+            // AUTOCOMPLETE DROPDOWN AND LIVE FILTER LOGIC
+            const searchInput = document.getElementById('collegeSearchInput');
+            const suggestionsBox = document.getElementById('searchSuggestions');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+                    
+                    // 1. Live Filter Cards
+                    const filtered = allProfiles.filter(p => {
+                        const matchesName = p.name.toLowerCase().includes(query);
+                        const matchesSkills = p.skills && p.skills.toLowerCase().includes(query);
+                        return matchesName || matchesSkills;
+                    });
+                    renderCards(filtered);
+
+                    // 2. Suggestion Dropdown Logic
+                    if (!query) {
+                        suggestionsBox.classList.remove('active');
+                        return;
+                    }
+                    
+                    const matches = suggestionsArray.filter(item => item.toLowerCase().includes(query)).slice(0, 5);
+                    
+                    if (matches.length > 0) {
+                        suggestionsBox.innerHTML = matches.map(match => `
+                            <div class="suggestion-item" onclick="selectSuggestion('${match.replace(/'/g, "\\'")}')">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                ${match}
+                            </div>
+                        `).join('');
+                        suggestionsBox.classList.add('active');
+                    } else {
+                        suggestionsBox.classList.remove('active');
+                    }
+                });
+            }
+
+            // Click outside to close suggestions
+            document.addEventListener('click', (e) => {
+                if (searchInput && suggestionsBox) {
+                    if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                        suggestionsBox.classList.remove('active');
+                    }
+                }
+            });
+        });
+
+        // Exposed to global scope for the inline onclick handler
+        window.selectSuggestion = function(val) {
+            const searchInput = document.getElementById('collegeSearchInput');
+            const suggestionsBox = document.getElementById('searchSuggestions');
+            
+            searchInput.value = val;
+            suggestionsBox.classList.remove('active');
+            
+            // Trigger the filter based on selected suggestion
+            const query = val.toLowerCase().trim();
+            const filtered = allProfiles.filter(p => {
+                const matchesName = p.name.toLowerCase().includes(query);
+                const matchesSkills = p.skills && p.skills.toLowerCase().includes(query);
+                return matchesName || matchesSkills;
+            });
+            renderCards(filtered);
+        };
+
+        function getInitials(name) {
+            if (!name) return "?";
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+
+        function renderCards(profiles) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            
+            const currentUserId = parseInt(localStorage.getItem('currentUserId'));
+            const filtered = profiles.filter(p => p.id !== currentUserId);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="loader-text">No developers found matching that search.</div>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'dev-card';
+                
+                const bannerStyle = p.banner_pic 
+                    ? `background-image: url('${p.banner_pic}');` 
+                    : `background: linear-gradient(135deg, var(--border), var(--input-bg));`;
+                
+                const avatarHtml = p.profile_pic 
+                    ? `<div class="dev-avatar" style="background-image: url('${p.profile_pic}');"></div>` 
+                    : `<div class="dev-avatar">${getInitials(p.name)}</div>`;
+                
+                const skillsArray = p.skills ? p.skills.split(',').filter(s => s.trim() !== '') : [];
+                
+                const skillsHtml = skillsArray.slice(0, 4).map(s => {
+                    return `<span class="dev-skill">${s.trim()}</span>`;
+                }).join('');
+                
+                let extraSkills = '';
+                if (skillsArray.length > 4) {
+                    extraSkills = `<span class="dev-skill" style="background: var(--text); color: var(--card-bg); border-color: var(--text);">+${skillsArray.length - 4}</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="dev-banner" style="${bannerStyle}"></div>
+                    ${avatarHtml}
+                    <div class="dev-info">
+                        <div class="dev-name">${p.name}</div>
+                        <div class="dev-college">🎓 ${p.college_name}</div>
+                        <div class="dev-dept">${p.department}</div>
+                        <div class="dev-skills">${skillsHtml}${extraSkills}</div>
+                        <div class="dev-actions">
+                            <a href="profile.html?id=${p.id}" class="btn-outline">View Profile</a>
+                            <button class="btn-team" onclick="openTeamModal(${p.id})">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 5v14M5 12h14"></path></svg>
+                                Add to Team
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // TEAM LOGIC & MODALS
+        // ==========================================
+        async function fetchMyTeams() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/teams', { credentials: 'include' });
+                if (res.ok) {
+                    myTeams = await res.json();
+                }
+            } catch (e) { console.error("Failed to load teams", e); }
+        }
+
+        window.openTeamModal = function(targetId) {
+            if (myTeams.length === 0) {
+                alert("You don't have any teams yet! Create one in the 'My Teams' workspace first.");
+                return;
+            }
+            document.getElementById('targetUserId').value = targetId;
+            const select = document.getElementById('teamSelect');
+            select.innerHTML = myTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            document.getElementById('teamModal').classList.add('active');
+        }
+
+        window.closeModal = function() {
+            document.getElementById('teamModal').classList.remove('active');
+            document.getElementById('addTeamForm').reset();
+        }
+
+        document.getElementById('addTeamForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const targetId = document.getElementById('targetUserId').value;
+            const teamId = document.getElementById('teamSelect').value;
+            const role = document.getElementById('roleInput').value;
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/teams/${teamId}/members`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: parseInt(targetId), role: role })
+                });
+
+                if (res.ok) {
+                    alert('Developer successfully added to your workspace!');
+                    closeModal();
+                } else {
+                    const err = await res.json();
+                    alert(`Failed: ${err.detail}`);
+                }
+            } catch (e) {
+                alert("Server connection error.");
+            }
+        });
+
+        // ==========================================
+        // NOTIFICATIONS SYSTEM
+        // ==========================================
+        let unreadCount = 0;
+        let notifSocket = null;
+
+        async function initNotifications(userId) {
+            const bellBtn = document.getElementById('notifBellBtn');
+            const dropdown = document.getElementById('notifDropdown');
+            
+            bellBtn.addEventListener('click', (e) => { 
+                e.stopPropagation(); 
+                dropdown.classList.toggle('active'); 
+            });
+            
+            document.addEventListener('click', (e) => { 
+                if (!bellBtn.contains(e.target)) {
+                    dropdown.classList.remove('active'); 
+                }
+            });
+            
+            dropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            await fetchAndRenderNotifications(userId);
+
+            notifSocket = new WebSocket(`ws://127.0.0.1:8000/api/ws/notifications/${userId}`);
+            
+            notifSocket.onmessage = function(event) {
+                const incomingNotif = JSON.parse(event.data);
+                insertNotificationUI(incomingNotif, true);
+                unreadCount++; 
+                updateBadge();
+            };
+        }
+
+        async function fetchAndRenderNotifications(userId) {
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/notifications/${userId}`, { 
+                    credentials: 'include' 
+                });
+                
+                if (res.ok) {
+                    const notifs = await res.json();
+                    const notifList = document.getElementById('notifList');
+                    notifList.innerHTML = ''; 
+                    unreadCount = 0;
+                    
+                    if(notifs.length === 0) { 
+                        notifList.innerHTML = `<div class="notif-empty">No notifications yet.</div>`; 
+                        return; 
+                    }
+                    
+                    notifs.forEach(n => { 
+                        if (n.is_read === 0) {
+                            unreadCount++; 
+                        }
+                        insertNotificationUI(n, false); 
+                    });
+                    
+                    updateBadge();
+                }
+            } catch (err) {
+                console.error("Notification fetch failed");
+            }
+        }
+
+        function insertNotificationUI(notif, prepend = false) {
+            const notifList = document.getElementById('notifList');
+            const emptyState = notifList.querySelector('.notif-empty');
+            
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const dateObj = new Date(notif.timestamp);
+            const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const div = document.createElement('div');
+            div.className = `notif-item ${notif.is_read === 0 ? 'unread' : ''}`;
+            
+            div.innerHTML = `
+                <div>${notif.content}</div>
+                <div class="notif-time">${timeStr}</div>
+            `;
+            
+            div.addEventListener('click', async () => {
+                if (div.classList.contains('unread')) {
+                    try {
+                        await fetch(`http://127.0.0.1:8000/api/notifications/${notif.id}/read`, { 
+                            method: 'PUT', 
+                            credentials: 'include' 
+                        });
+                        
+                        div.classList.remove('unread'); 
+                        unreadCount = Math.max(0, unreadCount - 1); 
+                        updateBadge();
+                        
+                        if(notif.type === 'message') {
+                            window.location.href = 'inbox.html';
+                        }
+                        if(notif.type === 'follow') {
+                            window.location.href = 'network.html';
+                        }
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+            });
+            
+            if (prepend) {
+                notifList.prepend(div); 
+            } else {
+                notifList.appendChild(div);
+            }
+        }
+
+        function updateBadge() {
+            const badge = document.getElementById('notifBadge');
+            
+            if (unreadCount > 0) { 
+                badge.textContent = unreadCount; 
+                badge.classList.add('active'); 
+            } else {
+                badge.classList.remove('active');
+            }
+        }
+
+        async function logout() {
+            try { 
+                await fetch('http://127.0.0.1:8000/api/logout', { 
+                    method: 'POST', 
+                    credentials: 'include' 
+                }); 
+            } catch (err) {}
+            
+            localStorage.removeItem('currentUserId');
+            window.location.href = 'login.html';
+        }
+    </script>
+
+</body>
+</html>

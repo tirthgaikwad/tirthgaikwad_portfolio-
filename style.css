@@ -1,0 +1,415 @@
+/* Reset basic browser margins and set a modern font */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* 1. Header Navigation Styling */
+header {
+    background-color: #ffffff;
+    padding: 20px 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+header h2 {
+    color: #2563eb;
+    font-size: 24px;
+    letter-spacing: -0.5px;
+}
+
+nav a {
+    text-decoration: none;
+    color: #555;
+    margin-left: 25px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: #2563eb;
+}
+
+/* 2. Main Container Styling */
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 50px 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    color: #111;
+}
+
+p {
+    color: #666;
+    margin-bottom: 30px;
+}
+
+/* 3. Search Bar Styling */
+.search-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+#searchBtn {
+    padding: 14px 28px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 0 8px 8px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#searchBtn:hover {
+    background-color: #1d4ed8;
+}
+
+/* 4. Filter Buttons */
+.filter-container {
+    margin-bottom: 40px;
+}
+
+.filter-btn {
+    padding: 8px 18px;
+    margin: 0 5px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    color: #555;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.filter-btn.active {
+    background-color: #2563eb;
+    color: white;
+}
+
+/* 5. Results Area */
+hr {
+    border: 0;
+    height: 1px;
+    background: #eaeaea;
+    margin: 40px 0;
+}
+
+h3 {
+    text-align: left;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* 6. INDIVIDUAL PROFILE PAGE STYLING */
+.profile-card {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    margin-top: 20px;
+}
+
+.profile-header {
+    position: relative;
+    margin-bottom: 60px;
+}
+
+.banner {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #2563eb, #38bdf8); 
+}
+
+.avatar {
+    width: 130px;
+    height: 130px;
+    border: 5px solid white;
+    border-radius: 50%;
+    position: absolute;
+    bottom: -50px;
+    left: 40px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background-color: white;
+}
+
+.profile-details {
+    padding: 0 40px 40px 40px;
+    text-align: left;
+}
+
+/* 7. AUTO-SUGGEST DROPDOWN STYLING */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+}
+
+#skillSearchInput {
+    padding: 14px 20px;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px 0 0 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#skillSearchInput:focus {
+    border-color: #2563eb;
+}
+
+.suggestions-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    text-align: left;
+    display: none;
+}
+
+.suggestion-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    color: #555;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f9ff;
+    color: #2563eb;
+    font-weight: bold;
+}
+
+/* 8. PROFILE ACTION BUTTONS */
+.action-buttons {
+    position: absolute;
+    bottom: -35px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    background-color: white;
+    cursor: pointer;
+    font-weight: bold;
+    color: #555;
+    font-size: 14px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.action-btn:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.action-btn.starred {
+    background-color: #fef08a;
+    color: #ca8a04;
+    border-color: #fde047;
+}
+
+.action-btn.saved {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border-color: #bae6fd;
+}
+
+/* 9. REGISTRATION FORM STYLING */
+.form-container {
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    text-align: left;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-group.half {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #444;
+    font-size: 14px;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+    border-color: #2563eb;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+    background-color: #1d4ed8;
+}
+
+/* 10. HISTORY DASHBOARD STYLING */
+.history-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.history-list {
+    list-style-type: none; /* Removes default bullet points */
+    padding: 0;
+}
+
+.history-item {
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+/* Icons or badges for different action types */
+.action-badge {
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 15px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.action-search { background-color: #f1f5f9; color: #475569; }
+.action-star { background-color: #fef08a; color: #ca8a04; }
+.action-save { background-color: #e0f2fe; color: #0284c7; }
+
+.history-detail {
+    flex-grow: 1;
+    font-size: 15px;
+    color: #333;
+}
+
+.history-time {
+    font-size: 12px;
+    color: #999;
+}
+
+/* 11. LANDING PAGE STYLING */
+.landing-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Takes up the full height of the screen */
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    margin: 0;
+}
+
+.landing-container {
+    background-color: white;
+    padding: 50px 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.1);
+    text-align: center;
+    max-width: 450px;
+    width: 90%;
+}
+
+.auth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-btn {
+    text-decoration: none;
+    text-align: center;
+    display: block;
+}
+
+.signup-btn {
+    text-decoration: none;
+    text-align: center;
+    display: block;
+    background-color: white;
+    color: #2563eb;
+    border: 2px solid #2563eb;
+}
+
+.signup-btn:hover {
+    background-color: #f8fafc;
+}

@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProPartner | My Profile</title>
+    
+    <!-- Professional Font Stack -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+
+    <style>
+        /* Light Theme - Sleek Professional Colors */
+        :root { 
+            --bg: #FFFFFF; 
+            --surface: rgba(255, 255, 255, 0.9); 
+            --card-bg: #FFFFFF;
+            --border: #E5E5E5; 
+            --primary: #4F46E5; 
+            --secondary: #818CF8; 
+            --accent: #E5E5E5; 
+            --text: #000000; 
+            --text-dim: #666666; 
+            --header-bg: rgba(255, 255, 255, 0.85);
+            --input-bg: #F5F5F5;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Dark Theme - Totally Dark OLED Mode */
+        [data-theme="dark"] {
+            --bg: #000000; 
+            --surface: rgba(0, 0, 0, 0.85); 
+            --card-bg: #000000;
+            --border: #333333; 
+            --primary: #4F46E5; 
+            --secondary: #818CF8; 
+            --text: #F8FAFC; 
+            --text-dim: #999999;
+            --header-bg: rgba(0, 0, 0, 0.85);
+            --input-bg: #111111;
+            --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
+            --shadow-md: 0 4px 12px rgba(255, 255, 255, 0.05);
+            --shadow-lg: 0 12px 32px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Premium Custom Scrollbar */
+        ::-webkit-scrollbar { 
+            width: 6px; 
+            height: 6px; 
+        }
+
+        ::-webkit-scrollbar-track { 
+            background: transparent; 
+        }
+
+        ::-webkit-scrollbar-thumb { 
+            background: var(--border); 
+            border-radius: 10px; 
+        }
+
+        ::-webkit-scrollbar-thumb:hover { 
+            background: var(--text-dim); 
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            overflow-x: hidden; 
+            transition: background-color 0.2s ease, color 0.2s ease; 
+        }
+
+        /* HEADER STYLES */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 16px 5%; 
+            background: var(--header-bg); 
+            backdrop-filter: blur(12px); 
+            border-bottom: 1px solid var(--border); 
+            box-shadow: var(--shadow-sm); 
+            z-index: 100; 
+            position: relative; 
+            transition: background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+
+        header h2 { 
+            font-weight: 800; 
+            color: var(--primary);
+            font-size: 1.5rem; 
+            letter-spacing: -0.5px;
+        }
+
+        nav { 
+            display: flex; 
+            gap: 6px; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            justify-content: flex-end;
+        }
+
+        nav a:not(.btn-logout) { 
+            color: var(--text-dim); 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: all 0.2s ease; 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: transparent;
+        }
+
+        nav a:not(.btn-logout):hover {
+            color: var(--text);
+            background: var(--input-bg);
+        }
+
+        nav a:not(.btn-logout).active { 
+            background: var(--text); 
+            color: var(--card-bg); 
+        }
+
+        .btn-logout { 
+            background: transparent; 
+            color: #ef4444; 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            border: 1px solid transparent; 
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+
+        .btn-logout:hover { 
+            background: rgba(239, 68, 68, 0.08); 
+        }
+
+        .theme-toggle { 
+            cursor: pointer; 
+            color: var(--text-dim); 
+            transition: 0.2s; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-right: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            background: transparent;
+        }
+
+        .theme-toggle:hover { 
+            color: var(--text); 
+            background: var(--input-bg);
+        }
+
+        .theme-toggle svg { width: 18px; height: 18px; }
+
+        .nav-bell-container { 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            margin-right: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            background: transparent;
+            transition: 0.2s;
+        }
+
+        .nav-bell-container:hover {
+            background: var(--input-bg);
+        }
+
+        .nav-bell-icon { width: 18px; height: 18px; color: var(--text-dim); transition: 0.2s; }
+        .nav-bell-container:hover .nav-bell-icon { color: var(--text); }
+
+        .notification-badge { 
+            position: absolute; 
+            top: 2px; 
+            right: 2px; 
+            background: #ef4444; 
+            color: white; 
+            font-size: 0.65rem; 
+            font-weight: bold; 
+            width: 16px; 
+            height: 16px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            opacity: 0; 
+            transition: 0.2s; 
+        }
+
+        .notification-badge.active { opacity: 1; }
+        
+        /* NOTIFICATION DROPDOWN FIXED POSITIONING */
+        .notification-dropdown { 
+            position: absolute; 
+            top: 45px; 
+            left: -10px; 
+            width: 340px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            box-shadow: var(--shadow-lg); 
+            display: none; 
+            flex-direction: column; 
+            z-index: 1000; 
+            overflow: hidden; 
+            transition: 0.3s; 
+        }
+
+        .notification-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notif-header { 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border); 
+            font-weight: 700; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--input-bg);
+            font-size: 0.9rem;
+        }
+
+        .notif-header span { 
+            font-size: 0.75rem; 
+            color: var(--primary); 
+            cursor: pointer; 
+            font-weight: 600;
+        }
+
+        .notif-list { max-height: 350px; overflow-y: auto; }
+
+        .notif-item { 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border); 
+            transition: background 0.2s ease; 
+            font-size: 0.85rem; 
+            color: var(--text); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            cursor: pointer;
+        }
+
+        .notif-item:hover { background: var(--input-bg); }
+        .notif-item.unread { background: rgba(79, 70, 229, 0.04); font-weight: 600; border-left: 3px solid var(--primary); }
+        .notif-time { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
+        .notif-empty { padding: 40px; text-align: center; color: var(--text-dim); font-size: 0.9rem; font-weight: 500; }
+
+        .header-toggle-tab {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background: var(--header-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            z-index: 1000;
+            transition: 0.2s;
+        }
+        
+        .header-toggle-tab:hover { color: var(--text); }
+        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
+        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
+
+        /* MAIN LAYOUT */
+        main { 
+            flex-grow: 1; 
+            padding: 40px 5%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            width: 100%; 
+            display: grid; 
+            grid-template-columns: 320px 1fr; 
+            gap: 32px; 
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            main { grid-template-columns: 1fr; }
+        }
+        
+        /* SIDEBAR (Profile Card) */
+        .profile-sidebar { 
+            position: sticky; 
+            top: 40px;
+            overflow: hidden; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 16px; 
+            box-shadow: var(--shadow-sm); 
+            text-align: center; 
+            padding-bottom: 32px; 
+            transition: all 0.3s ease;
+        }
+        
+        .banner-placeholder { 
+            position: relative; 
+            width: 100%; 
+            height: 120px;
+            background: linear-gradient(135deg, var(--border), var(--input-bg)); 
+            background-size: cover; 
+            background-position: center; 
+            z-index: 1; 
+        }
+
+        .banner-upload-label { 
+            position: absolute; 
+            top: 12px; 
+            right: 12px; 
+            z-index: 5; 
+            background: rgba(0,0,0,0.65); 
+            color: #fff; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            font-weight: 500; 
+            cursor: pointer; 
+            backdrop-filter: blur(4px); 
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .banner-upload-label:hover { background: rgba(0,0,0,0.85); }
+        
+        .avatar-placeholder { 
+            position: relative; 
+            z-index: 2; 
+            margin: -50px auto 16px auto;
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%; 
+            background: var(--input-bg); 
+            background-size: cover; 
+            background-position: center; 
+            border: 4px solid var(--card-bg);
+            flex-shrink: 0;
+            transition: box-shadow 0.3s ease;
+        }
+
+        /* FOUNDER GOLDEN AURA EFFECT */
+        .founder-golden-aura {
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.7), inset 0 0 15px rgba(255, 215, 0, 0.4) !important;
+            border-color: #FFD700 !important;
+            animation: pulseGold 2s infinite alternate;
+        }
+
+        .founder-sidebar-aura {
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.15) !important;
+            border: 1px solid rgba(255, 215, 0, 0.4) !important;
+        }
+
+        @keyframes pulseGold {
+            0% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3); }
+            100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.9), inset 0 0 20px rgba(255, 215, 0, 0.6); }
+        }
+
+        .pic-upload-label { 
+            display: inline-flex; 
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer; 
+            color: var(--text-dim); 
+            font-size: 0.8rem; 
+            font-weight: 500; 
+            margin-bottom: 24px; 
+            transition: all 0.2s ease; 
+            position: relative; 
+            z-index: 3;
+        }
+
+        .pic-upload-label:hover { color: var(--text); }
+        
+        .profile-name { 
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            color: var(--text); 
+            margin-bottom: 4px; 
+            letter-spacing: -0.5px; 
+            position: relative; 
+            z-index: 3; 
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .verified-badge {
+            color: #1DA1F2;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            font-size: 1.1rem;
+            vertical-align: middle;
+        }
+
+        .btn-verify {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 12px;
+            display: inline-block;
+        }
+
+        .btn-verify:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .profile-roll { 
+            color: var(--text-dim); 
+            font-weight: 500; 
+            font-size: 0.85rem; 
+            margin-bottom: 24px; 
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            gap: 4px;
+            position: relative; 
+            z-index: 3;
+        }
+        
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 3;
+            padding: 0 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stat-box:hover { color: var(--text); }
+
+        .stat-box span {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 3;
+            padding: 0 24px;
+            flex-wrap: wrap;
+        }
+
+        .btn-follow {
+            flex: 1;
+            background: var(--text);
+            color: var(--card-bg);
+            border: 1px solid var(--text);
+            padding: 8px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: none;
+        }
+
+        .btn-follow:hover { opacity: 0.9; }
+
+        .btn-follow.following {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-follow.following:hover { border-color: #ef4444; color: #ef4444; }
+
+        .btn-save-profile {
+            flex: 1;
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: none;
+        }
+
+        .btn-save-profile:hover { background: var(--input-bg); }
+
+        .btn-save-profile.saved {
+            background: var(--input-bg);
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .profile-bio { 
+            color: var(--text-dim); 
+            line-height: 1.5; 
+            font-size: 0.9rem; 
+            font-weight: 400;
+            padding: 0 24px; 
+            position: relative; 
+            z-index: 3;
+        }
+
+        /* MAIN CONTENT SECTION */
+        .profile-main { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 24px; 
+            min-width: 0;
+        }
+
+        .data-card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 16px; 
+            padding: 32px; 
+            box-shadow: var(--shadow-sm); 
+        }
+
+        .data-card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 24px; 
+        }
+
+        .data-card h3 { 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            color: var(--text); 
+            letter-spacing: -0.3px;
+        }
+
+        .data-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 24px 16px; 
+        }
+
+        .data-item { 
+            background: transparent;
+            padding: 0 0 0 16px;
+            border-left: 2px solid var(--border);
+        }
+
+        .data-label { 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            color: var(--text-dim); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            margin-bottom: 4px; 
+        }
+
+        .data-value { 
+            font-size: 1rem; 
+            font-weight: 500; 
+            color: var(--text); 
+            line-height: 1.4;
+        }
+
+        .skills-container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+        }
+
+        .skill-tag { 
+            background: var(--input-bg); 
+            border: 1px solid var(--border); 
+            color: var(--text); 
+            padding: 6px 14px; 
+            border-radius: 6px; 
+            font-weight: 500; 
+            font-size: 0.85rem; 
+            transition: all 0.2s ease;
+        }
+
+        .skill-tag:hover {
+            border-color: var(--text-dim);
+        }
+
+        /* GITHUB CARD STYLES */
+        .github-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .github-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .github-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+
+        .github-stats-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .gh-stat-chip {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .gh-stat-chip strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .github-heatmap {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            background: var(--input-bg);
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .github-heatmap img {
+            width: 100%;
+            min-width: 600px;
+            display: block;
+            border-radius: 2px;
+        }
+        [data-theme="dark"] .github-heatmap img { filter: invert(1) hue-rotate(180deg) brightness(1.2); }
+
+        .gh-repos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .gh-repo-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gh-repo-card:hover {
+            border-color: var(--text-dim);
+        }
+
+        .gh-repo-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .gh-repo-desc {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+            flex-grow: 1;
+            line-height: 1.5;
+        }
+
+        .gh-repo-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-dim);
+        }
+
+        .btn-action {
+            background: transparent;
+            color: var(--text);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            display: none;
+        }
+        .btn-action:hover { background: var(--input-bg); }
+
+        /* PROJECT CARDS */
+        .projects-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 16px; 
+        }
+
+        .project-card { 
+            background: transparent; 
+            border: 1px solid var(--border); 
+            border-radius: 16px; 
+            padding: 24px; 
+            display: flex; 
+            gap: 24px; 
+            align-items: stretch; 
+            position: relative;
+        }
+
+        .project-image-container { 
+            width: 240px; 
+            flex-shrink: 0; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+
+        .project-image { 
+            width: 100%; 
+            height: 160px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            border: 1px solid var(--border); 
+        }
+
+        .project-image-gallery { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 8px; 
+        }
+
+        .project-image-gallery img { 
+            width: 100%; 
+            height: 80px; 
+            object-fit: cover; 
+            border-radius: 6px; 
+            border: 1px solid var(--border); 
+        }
+
+        .project-image-gallery img:first-child { 
+            grid-column: span 2; 
+            height: 160px; 
+        }
+
+        .project-content { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .project-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 8px; 
+        }
+
+        .project-title { 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            color: var(--text); 
+            letter-spacing: -0.3px;
+        }
+
+        .btn-delete-project { 
+            background: transparent; 
+            color: #ef4444; 
+            border: 1px solid transparent; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            font-size: 0.8rem;
+        }
+
+        .btn-delete-project:hover { background: rgba(239, 68, 68, 0.08); }
+
+        .project-desc { 
+            color: var(--text-dim); 
+            font-size: 0.9rem; 
+            line-height: 1.5; 
+            margin-bottom: 16px; 
+        }
+
+        .project-links { 
+            display: flex; 
+            gap: 12px; 
+            margin-top: auto; 
+        }
+
+        .project-link { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            color: var(--text); 
+            text-decoration: none; 
+            background: var(--input-bg); 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .project-link:hover { border-color: var(--border); }
+
+        @media (max-width: 850px) {
+            .project-card { flex-direction: column; gap: 16px; padding: 16px; }
+            .project-image-container { width: 100%; }
+            .project-image, .project-image-gallery img:first-child { height: auto; aspect-ratio: 16/9; }
+        }
+
+        /* MODALS & LOADERS */
+        #loader { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: var(--bg); display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 3000; 
+            transition: opacity 0.5s ease; 
+        }
+
+        .spinner { 
+            width: 40px; height: 40px; 
+            border: 3px solid var(--border); 
+            border-top-color: var(--text); 
+            border-radius: 50%; 
+            animation: spin 0.8s linear infinite; 
+            margin-bottom: 16px; 
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(0, 0, 0, 0.6); z-index: 2000; align-items: center; justify-content: center; 
+            backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .custom-modal { 
+            background: var(--card-bg); padding: 32px; border-radius: 16px; width: 90%; max-width: 500px; 
+            box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; 
+            border: 1px solid var(--border);
+        }
+
+        .custom-modal h3 { font-weight: 700; margin-bottom: 24px; color: var(--text); font-size: 1.2rem;}
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; }
+        
+        .form-group input, .form-group textarea { 
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; 
+            font-size: 0.9rem; background: transparent; 
+            color: var(--text); outline: none; transition: all 0.2s ease;
+        }
+
+        .form-group input[type="file"] { padding: 8px; cursor: pointer; }
+
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--text); }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+        .btn-cancel { 
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; 
+            background: transparent; color: var(--text-dim); font-weight: 500; transition: all 0.2s ease; font-size: 0.9rem;
+        }
+        .btn-cancel:hover { color: var(--text); }
+
+        .btn-save { 
+            padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; background: var(--text); 
+            color: var(--card-bg); font-weight: 600; transition: all 0.2s ease; font-size: 0.9rem;
+        }
+        .btn-save:hover { opacity: 0.9; }
+        
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 12px; }
+        .preview-item { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--input-bg); }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-remove-preview { position: absolute; top: 4px; right: 4px; background: rgba(0, 0, 0, 0.6); color: #fff; border: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+        .follow-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto;}
+        .follow-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;}
+        .follow-item:hover { background: var(--input-bg); }
+        .follow-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--input-bg); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0;}
+        .follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .follow-info { flex-grow: 1; }
+        .follow-name { font-weight: 600; color: var(--text); font-size: 0.9rem; margin-bottom: 2px;}
+        .follow-dept { font-size: 0.8rem; color: var(--text-dim); }
+        .empty-follow { text-align: center; color: var(--text-dim); padding: 20px; font-size: 0.9rem;}
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <h3 style="color: var(--text-dim); font-weight: 500; font-size: 0.9rem;">Loading Profile...</h3>
+    </div>
+
+    <!-- ABC ID Verification Modal -->
+    <div class="modal-overlay" id="verifyModalOverlay">
+        <div class="custom-modal">
+            <h3>Verify Student Status</h3>
+            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">
+                Enter your 12-digit government issued APAAR / ABC ID to get the verified student badge on your profile.
+            </p>
+            <form id="verifyStudentForm">
+                <div class="form-group">
+                    <label>12-Digit ABC ID</label>
+                    <input type="text" id="abcIdInput" required placeholder="e.g. 1234 5678 9012" maxlength="14">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeVerifyModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Verify Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Basic Info Modal -->
+    <div class="modal-overlay" id="basicInfoModalOverlay">
+        <div class="custom-modal" style="max-width: 450px;">
+            <h3>Edit Profile Info</h3>
+            <form id="editBasicInfoForm">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editNameInput" required placeholder="Your full name">
+                </div>
+                <div class="form-group">
+                    <label>Roll Number</label>
+                    <input type="text" id="editRollInput" placeholder="e.g. 128">
+                </div>
+                <div class="form-group">
+                    <label>Bio / Headline</label>
+                    <textarea id="editBioInput" placeholder="A short bio about yourself..." style="min-height: 80px;"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeBasicInfoModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Academic Profile Modal -->
+    <div class="modal-overlay" id="academicModalOverlay">
+        <div class="custom-modal" style="max-width: 450px;">
+            <h3>Edit Academic Profile</h3>
+            <form id="editAcademicForm">
+                <div class="form-group">
+                    <label>Institution / College</label>
+                    <input type="text" id="editCollegeInput" required placeholder="e.g. Amrutvahini College of Engineering">
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="editDeptInput" placeholder="e.g. Artificial Intelligence & Data Science">
+                </div>
+                <div class="form-group">
+                    <label>Division</label>
+                    <input type="text" id="editDivInput" placeholder="e.g. A">
+                </div>
+                <div class="form-group">
+                    <label>Base Location (City)</label>
+                    <input type="text" id="editCityInput" placeholder="e.g. Sangamner">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeAcademicModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Skills Modal -->
+    <div class="modal-overlay" id="skillsModalOverlay">
+        <div class="custom-modal" style="max-width: 450px;">
+            <h3>Edit Technical Skills</h3>
+            <form id="editSkillsForm">
+                <div class="form-group">
+                    <label>Your Skills (Comma separated)</label>
+                    <input type="text" id="skillsInput" required placeholder="e.g. Python, React, Machine Learning">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeSkillsModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Skills</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Followers / Following Modal WITH SEARCH -->
+    <div class="modal-overlay" id="followModalOverlay">
+        <div class="custom-modal" style="max-width: 450px;">
+            <h3 id="followModalTitle">Followers</h3>
+            
+            <!-- Live Search Input for the Modal -->
+            <div class="form-group" style="margin-bottom: 16px;">
+                <input type="text" id="modalSearchInput" placeholder="Search by name or dept..." autocomplete="off" style="padding: 10px 14px; border-radius: 8px; width: 100%; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
+            </div>
+
+            <div class="follow-list" id="followListContainer" style="max-height: 300px; overflow-y: auto;">
+                <div class="spinner" style="margin: 20px auto;"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeFollowModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Cropper Modal -->
+    <div class="modal-overlay" id="cropperModalOverlay">
+        <div class="custom-modal" style="text-align: center; max-width: 500px;">
+            <h3>Crop Image</h3>
+            <div style="width: 100%; height: 350px; background: var(--input-bg); margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden;">
+                <img id="cropperImage" style="max-width: 100%; display: block;">
+            </div>
+            <div class="modal-buttons" style="justify-content: center;">
+                <button class="btn-cancel" id="btnCancelCrop">Cancel</button>
+                <button class="btn-save" id="btnSaveCrop">Save Image</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link GitHub Modal -->
+    <div class="modal-overlay" id="githubModalOverlay">
+        <div class="custom-modal" style="max-width: 400px;">
+            <h3>Link GitHub Account</h3>
+            <form id="linkGithubForm">
+                <div class="form-group">
+                    <label>GitHub Username</label>
+                    <input type="text" id="githubUsernameInput" required placeholder="e.g. octocat">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeGithubModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Link Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal-overlay" id="projectModalOverlay">
+        <div class="custom-modal">
+            <h3>Add New Project</h3>
+            <form id="addProjectForm">
+                <div class="form-group">
+                    <label>Project Screenshots (Multiple Allowed)</label>
+                    <input type="file" id="projImage" accept="image/png, image/jpeg, image/jpg" multiple>
+                    <div class="preview-grid" id="imagePreviewWrapper"></div>
+                </div>
+                <div class="form-group">
+                    <label>Project Title *</label>
+                    <input type="text" id="projTitle" required placeholder="e.g. AI Content Generator">
+                </div>
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="projDesc" required placeholder="What problem does this solve?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Tech Stack (comma separated) *</label>
+                    <input type="text" id="projTech" required placeholder="Python, React, FastAPI">
+                </div>
+                <div class="form-group">
+                    <label>GitHub URL (optional)</label>
+                    <input type="url" id="projGit" placeholder="https://github.com/...">
+                </div>
+                <div class="form-group">
+                    <label>Live Demo URL (optional)</label>
+                    <input type="url" id="projLive" placeholder="https://...">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" id="btnCancelProject">Cancel</button>
+                    <button type="submit" class="btn-save">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <header id="mainHeader">
+        <a href="index.html" style="text-decoration: none;">
+            <h2 class="logo">ProPartner</h2>
+        </a>
+        
+        <nav>
+            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
+                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </div>
+
+            <div class="nav-bell-container" id="notifBellBtn">
+                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                <div class="notification-badge" id="notifBadge">0</div>
+                <div class="notification-dropdown" id="notifDropdown">
+                    <div class="notif-header">Notifications</div>
+                    <div class="notif-list" id="notifList"></div>
+                </div>
+            </div>
+
+            <a href="search.html">Search</a>
+            <a href="board.html">Opportunities Board</a>
+            <a href="team.html">My Teams</a>
+            <a href="college.html">My College</a>
+            <a href="department.html">My Department</a>
+            <a href="global.html">Global Network</a>
+            <a href="network.html">My Network</a>
+            <a href="saved.html">Saved Profiles</a>
+            <a href="inbox.html">Inbox</a>
+            <a href="history.html">History</a>
+            <a href="profile.html" class="active">My Profile</a>
+            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
+        </nav>
+
+        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+        </div>
+    </header>
+
+    <main>
+        <aside class="profile-sidebar">
+            <div class="banner-placeholder" id="ui-banner-container"></div>
+            <input type="file" id="bannerUpload" style="display: none;" accept="image/png, image/jpeg, image/jpg">
+            <label for="bannerUpload" class="banner-upload-label" id="bannerUploadLabel">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Edit Banner
+            </label>
+            
+            <div class="avatar-placeholder" id="ui-avatar-container"></div>
+            <input type="file" id="picUpload" style="display: none;" accept="image/png, image/jpeg, image/jpg">
+            <label for="picUpload" class="pic-upload-label" id="picUploadLabel">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> Edit Profile Pic
+            </label>
+
+            <h1 class="profile-name" id="ui-name">Loading...</h1>
+            
+            <div class="profile-stats">
+                <div class="stat-box" onclick="openFollowModal('followers')">
+                    <span id="ui-followers-count">0</span> Followers
+                </div>
+                <div class="stat-box" onclick="openFollowModal('following')">
+                    <span id="ui-following-count">0</span> Following
+                </div>
+            </div>
+            
+            <div class="profile-roll" id="ui-roll">Loading...</div>
+
+            <div class="action-buttons">
+                <button id="btnFollowToggle" class="btn-follow" onclick="toggleFollow()">Follow</button>
+                <button id="btnSaveToggle" class="btn-save-profile" onclick="toggleSave()">Save Profile</button>
+                <button id="btnEditBasicInfo" class="btn-action" style="display: none; width: 100%; justify-content: center;">Edit Profile</button>
+            </div>
+
+            <p class="profile-bio" id="ui-bio">Loading...</p>
+        </aside>
+
+        <section class="profile-main">
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h3>Academic Profile</h3>
+                    <button class="btn-action" id="btnEditAcademic">Edit Info</button>
+                </div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">Institution</div>
+                        <div class="data-value" id="ui-college">Loading...</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Department</div>
+                        <div class="data-value" id="ui-dept">Loading...</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Division</div>
+                        <div class="data-value" id="ui-div">Loading...</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Base Location</div>
+                        <div class="data-value" id="ui-city">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="data-card-header" style="margin-bottom: 16px;">
+                    <h3>Technical Skills</h3>
+                    <button class="btn-action" id="btnEditSkills">Edit Skills</button>
+                </div>
+                <div class="skills-container" id="ui-skills"></div>
+            </div>
+
+            <div class="github-card" id="githubSection" style="display: none;">
+                <div class="github-header">
+                    <h3>GitHub Integration</h3>
+                    <button class="btn-action" id="btnLinkGithub">Link GitHub</button>
+                </div>
+                <div id="githubContent">
+                    <!-- Content will be injected here via JS -->
+                </div>
+            </div>
+
+            <div class="data-card" style="padding-bottom: 40px;">
+                <div class="data-card-header" style="margin-bottom: 16px;">
+                    <h3>Project Portfolio</h3>
+                    <button class="btn-action" id="btnAddProject" style="display: block;">Add Project</button>
+                </div>
+                <div class="projects-grid" id="ui-projects">
+                    <p style="color: var(--text-dim); font-size: 0.9rem;">Loading projects...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        // ==========================================
+        // HEADER TOGGLE LOGIC
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('mainHeader');
+            const toggleTab = document.getElementById('headerToggleTab');
+            let isHeaderCollapsed = false;
+
+            if (toggleTab) {
+                toggleTab.addEventListener('click', () => {
+                    if (!isHeaderCollapsed) {
+                        const headerHeight = header.offsetHeight;
+                        header.style.marginTop = `-${headerHeight}px`;
+                        header.classList.add('collapsed');
+                        isHeaderCollapsed = true;
+                    } else {
+                        header.style.marginTop = '0px';
+                        header.classList.remove('collapsed');
+                        isHeaderCollapsed = false;
+                    }
+                });
+
+                window.addEventListener('resize', () => {
+                    if (isHeaderCollapsed) {
+                        header.style.transition = 'none';
+                        header.style.marginTop = '0px';
+                        
+                        setTimeout(() => {
+                            const newHeight = header.offsetHeight;
+                            header.style.marginTop = `-${newHeight}px`;
+                            
+                            setTimeout(() => {
+                                header.style.transition = 'background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                            }, 50);
+                        }, 10);
+                    }
+                });
+            }
+        });
+
+        // ==========================================
+        // DARK MODE LOGIC
+        // ==========================================
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const moonIcon = document.getElementById('moonIcon');
+        const sunIcon = document.getElementById('sunIcon');
+
+        if (localStorage.getItem('theme') === 'dark') {
+            moonIcon.style.display = 'none';
+            sunIcon.style.display = 'block';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                moonIcon.style.display = 'none';
+                sunIcon.style.display = 'block';
+            }
+        });
+
+        // ==========================================
+        // CORE PROFILE LOGIC & VERIFICATION
+        // ==========================================
+        let viewedUserId = null;
+        let isCurrentlyFollowing = false;
+        let isCurrentlySaved = false;
+        let isOwnProfile = false;
+        let currentProfileData = {};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loader = document.getElementById('loader');
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetId = urlParams.get('id');
+            const currentUserId = localStorage.getItem('currentUserId');
+            
+            viewedUserId = targetId || currentUserId;
+
+            if (!viewedUserId) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            isOwnProfile = !targetId || targetId === currentUserId;
+            
+            if (!isOwnProfile) {
+                document.getElementById('picUploadLabel').style.display = 'none';
+                document.getElementById('bannerUploadLabel').style.display = 'none';
+                document.getElementById('btnFollowToggle').style.display = 'block';
+                document.getElementById('btnSaveToggle').style.display = 'block';
+                document.getElementById('btnAddProject').style.display = 'none';
+                document.getElementById('btnEditBasicInfo').style.display = 'none';
+                document.getElementById('btnEditAcademic').style.display = 'none';
+                document.getElementById('btnEditSkills').style.display = 'none';
+            } else {
+                document.getElementById('btnAddProject').style.display = 'block';
+                document.getElementById('btnEditBasicInfo').style.display = 'flex';
+                document.getElementById('btnEditAcademic').style.display = 'block';
+                document.getElementById('btnEditSkills').style.display = 'block';
+            }
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/profiles/${viewedUserId}`, {
+                    method: 'GET', 
+                    credentials: 'include', 
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (res.status === 401) { 
+                    await logout(); 
+                    return; 
+                }
+
+                if (res.ok) {
+                    currentProfileData = await res.json();
+                    
+                    let badgeHtml = '';
+                    
+                    // FOUNDER OVERRIDE LOGIC
+                    if (currentProfileData.id === 1) { 
+                        badgeHtml = `<span style="background: linear-gradient(135deg, #FFD700, #F7931A); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; margin-left: 8px; vertical-align: middle; box-shadow: 0 2px 12px rgba(255, 215, 0, 0.6); display: inline-flex; align-items: center; gap: 4px;"><svg fill="currentColor" viewBox="0 0 20 20" width="10" height="10"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> Founder & CEO</span>`;
+                        document.getElementById('ui-avatar-container').classList.add('founder-golden-aura');
+                        document.querySelector('.profile-sidebar').classList.add('founder-sidebar-aura');
+                    } else if (currentProfileData.account_type === 'founder') {
+                        badgeHtml = `<span style="background: linear-gradient(135deg, #FFD700, #F7931A); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; margin-left: 8px; vertical-align: middle; box-shadow: 0 2px 8px rgba(255, 215, 0, 0.25); display: inline-flex; align-items: center; gap: 4px;"><svg fill="currentColor" viewBox="0 0 20 20" width="10" height="10"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg> Founder</span>`;
+                    } else if (currentProfileData.account_type === 'premium') {
+                        badgeHtml = `<span style="background: var(--primary); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; margin-left: 8px; vertical-align: middle; display: inline-flex; align-items: center; gap: 4px;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="10" height="10" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> Premium</span>`;
+                    }
+                    
+                    let verifiedHtml = currentProfileData.is_verified === 1 
+                        ? `<span class="verified-badge" title="Verified College Student"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.5 12l-2.07-2.45.47-3.18-3.15-.72-1.63-2.78-3.12.98L12 2.5 8.99 3.85 5.88 2.87 4.25 5.65 1.1 6.37l.47 3.18L-.5 12l2.07 2.45-.47 3.18 3.15.72 1.63 2.78 3.12-.98L12 21.5l3.01-1.35 3.12.98 1.63-2.78 3.15-.72-.47-3.18L22.5 12zm-11.4 5.3l-4.2-4.2 1.4-1.4 2.8 2.8 7.2-7.2 1.4 1.4-8.6 8.6z"></path></svg></span>` 
+                        : '';
+
+                    document.getElementById('ui-name').innerHTML = currentProfileData.name + verifiedHtml + badgeHtml;
+
+                    if (currentProfileData.is_verified === 0 && isOwnProfile) {
+                        const verifyBtn = `<button class="btn-verify" onclick="openVerifyModal()">Verify Academic Status</button>`;
+                        document.getElementById('ui-roll').innerHTML = `Roll no. ${currentProfileData.roll_no || ''} <br> ${verifyBtn}`;
+                    } else {
+                        document.getElementById('ui-roll').textContent = `Roll no. ${currentProfileData.roll_no || ''}`;
+                    }
+
+                    document.getElementById('ui-bio').textContent = currentProfileData.bio || 'No bio provided.';
+                    document.getElementById('ui-college').textContent = currentProfileData.college_name || 'N/A';
+                    document.getElementById('ui-dept').textContent = currentProfileData.department || 'N/A';
+                    document.getElementById('ui-div').textContent = currentProfileData.division || 'N/A';
+                    document.getElementById('ui-city').textContent = currentProfileData.city || 'N/A';
+
+                    document.getElementById('ui-followers-count').textContent = currentProfileData.followers_count;
+                    document.getElementById('ui-following-count').textContent = currentProfileData.following_count;
+                    
+                    isCurrentlyFollowing = currentProfileData.is_following;
+                    isCurrentlySaved = currentProfileData.is_saved;
+                    
+                    updateFollowButtonUI();
+                    updateSaveButtonUI();
+
+                    renderSkills(currentProfileData.skills || "");
+
+                    if (currentProfileData.profile_pic) {
+                        document.getElementById('ui-avatar-container').style.backgroundImage = `url('${currentProfileData.profile_pic}')`;
+                    }
+                    
+                    if (currentProfileData.banner_pic) {
+                        document.getElementById('ui-banner-container').style.backgroundImage = `url('${currentProfileData.banner_pic}')`;
+                    }
+
+                    if (currentProfileData.github_username) {
+                        document.getElementById('githubSection').style.display = 'block';
+                        if (isOwnProfile) {
+                            document.getElementById('btnLinkGithub').style.display = 'block';
+                            document.getElementById('btnLinkGithub').textContent = 'Edit GitHub';
+                        }
+                        fetchGitHubStats(currentProfileData.github_username);
+                    } else if (isOwnProfile) {
+                        document.getElementById('githubSection').style.display = 'block';
+                        document.getElementById('btnLinkGithub').style.display = 'block';
+                        document.getElementById('githubContent').innerHTML = '<p style="color: var(--text-dim); font-size: 0.9rem;">Link your GitHub account to show off your repositories and commit heatmap.</p>';
+                    }
+                }
+
+                fetchProjects(viewedUserId, isOwnProfile);
+
+                if (currentUserId) {
+                    initNotifications(currentUserId);
+                }
+
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 300);
+
+            } catch (err) {
+                console.error("Network Error:", err);
+                alert("Cannot connect to the central database.");
+            }
+        });
+
+        // ==========================================
+        // EDIT PROFILE LOGIC (BASIC INFO, ACADEMIC, SKILLS)
+        // ==========================================
+        document.getElementById('btnEditBasicInfo').addEventListener('click', () => {
+            document.getElementById('editNameInput').value = currentProfileData.name || '';
+            document.getElementById('editRollInput').value = currentProfileData.roll_no || '';
+            document.getElementById('editBioInput').value = currentProfileData.bio || '';
+            document.getElementById('basicInfoModalOverlay').classList.add('active');
+        });
+
+        window.closeBasicInfoModal = function() {
+            document.getElementById('basicInfoModalOverlay').classList.remove('active');
+        }
+
+        document.getElementById('editBasicInfoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            const originalText = btn.textContent;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const payload = {
+                name: document.getElementById('editNameInput').value.trim(),
+                roll_no: document.getElementById('editRollInput').value.trim(),
+                bio: document.getElementById('editBioInput').value.trim()
+            };
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/profiles/${currentUserId}`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    window.location.reload(); 
+                } else {
+                    alert("Failed to update profile.");
+                }
+            } catch (err) {
+                alert("Server error.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('btnEditAcademic').addEventListener('click', () => {
+            document.getElementById('editCollegeInput').value = currentProfileData.college_name || '';
+            document.getElementById('editDeptInput').value = currentProfileData.department || '';
+            document.getElementById('editDivInput').value = currentProfileData.division || '';
+            document.getElementById('editCityInput').value = currentProfileData.city || '';
+            document.getElementById('academicModalOverlay').classList.add('active');
+        });
+
+        window.closeAcademicModal = function() {
+            document.getElementById('academicModalOverlay').classList.remove('active');
+        }
+
+        document.getElementById('editAcademicForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            const originalText = btn.textContent;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const payload = {
+                college_name: document.getElementById('editCollegeInput').value.trim(),
+                department: document.getElementById('editDeptInput').value.trim(),
+                division: document.getElementById('editDivInput').value.trim(),
+                city: document.getElementById('editCityInput').value.trim()
+            };
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/profiles/${currentUserId}`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    window.location.reload(); 
+                } else {
+                    alert("Failed to update academic profile.");
+                }
+            } catch (err) {
+                alert("Server error.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        function renderSkills(skillsString) {
+            const skillsContainer = document.getElementById('ui-skills');
+            skillsContainer.innerHTML = ''; 
+            
+            if (skillsString && skillsString.trim() !== "") {
+                skillsString.split(',').forEach(skill => {
+                    if (skill.trim() !== "") {
+                        const span = document.createElement('span');
+                        span.className = 'skill-tag';
+                        span.textContent = skill.trim();
+                        skillsContainer.appendChild(span);
+                    }
+                });
+            }
+
+            if (skillsContainer.innerHTML === '') {
+                skillsContainer.innerHTML = '<span style="color: var(--text-dim); font-size: 0.9rem;">No skills added yet.</span>';
+            }
+        }
+
+        window.openSkillsModal = function() {
+            document.getElementById('skillsInput').value = currentProfileData.skills || "";
+            document.getElementById('skillsModalOverlay').classList.add('active');
+        }
+
+        window.closeSkillsModal = function() {
+            document.getElementById('skillsModalOverlay').classList.remove('active');
+        }
+
+        document.getElementById('btnEditSkills').addEventListener('click', openSkillsModal);
+
+        document.getElementById('editSkillsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            const originalText = btn.textContent;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const newSkills = document.getElementById('skillsInput').value.trim();
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/profiles/${currentUserId}`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ skills: newSkills })
+                });
+                
+                if (res.ok) {
+                    closeSkillsModal();
+                    currentProfileData.skills = newSkills; 
+                    renderSkills(newSkills); 
+                } else {
+                    alert("Failed to update skills.");
+                }
+            } catch (err) {
+                alert("Server error.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // FOLLOWERS / FOLLOWING MODAL & SEARCH LOGIC
+        // ==========================================
+        let currentModalUsers = []; 
+
+        window.openFollowModal = async function(type) {
+            const modal = document.getElementById('followModalOverlay');
+            const title = document.getElementById('followModalTitle');
+            const list = document.getElementById('followListContainer');
+            const searchInput = document.getElementById('modalSearchInput');
+            
+            modal.classList.add('active');
+            title.textContent = type === 'followers' ? 'Followers' : 'Following';
+            list.innerHTML = '<div class="spinner" style="margin: 30px auto;"></div>';
+            
+            if (searchInput) searchInput.value = ''; 
+
+            try {
+                // Primary endpoint attempt with fallback
+                let res = await fetch(`http://127.0.0.1:8000/api/users/${viewedUserId}/${type}`, { credentials: 'include' });
+                if (!res.ok) {
+                    res = await fetch(`http://127.0.0.1:8000/api/${type}/${viewedUserId}`, { credentials: 'include' });
+                }
+
+                if (res.ok) {
+                    currentModalUsers = await res.json();
+                    renderModalUsers(currentModalUsers, type);
+                } else {
+                    list.innerHTML = `<div class="empty-follow">No ${type} found.</div>`;
+                }
+            } catch(e) {
+                list.innerHTML = `<div class="empty-follow">No ${type} found.</div>`;
+            }
+        }
+
+        function renderModalUsers(users, type) {
+            const list = document.getElementById('followListContainer');
+            list.innerHTML = '';
+
+            if (!users || users.length === 0) {
+                list.innerHTML = `<div class="empty-follow">No ${type === 'search' ? 'matching users' : type} found.</div>`;
+                return;
+            }
+
+            users.forEach(u => {
+                const avatarHtml = u.profile_pic 
+                    ? `<div class="follow-avatar" style="background-image: url('${u.profile_pic}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>` 
+                    : `<div class="follow-avatar" style="flex-shrink: 0;">${getInitials(u.name)}</div>`;
+                
+                const div = document.createElement('div');
+                div.className = 'follow-item';
+                
+                div.onclick = () => {
+                    window.location.href = `profile.html?id=${u.id}`;
+                };
+                
+                div.innerHTML = `
+                    ${avatarHtml}
+                    <div class="follow-info">
+                        <div class="follow-name">${u.name}</div>
+                        <div class="follow-dept">${u.department || 'Developer'}</div>
+                    </div>
+                `;
+                
+                list.appendChild(div);
+            });
+        }
+
+        window.closeFollowModal = function() {
+            document.getElementById('followModalOverlay').classList.remove('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalSearchInput = document.getElementById('modalSearchInput');
+            if (modalSearchInput) {
+                modalSearchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+                    const filtered = currentModalUsers.filter(u => {
+                        const matchesName = u.name && u.name.toLowerCase().includes(query);
+                        const matchesDept = u.department && u.department.toLowerCase().includes(query);
+                        return matchesName || matchesDept;
+                    });
+                    renderModalUsers(filtered, 'search');
+                });
+            }
+        });
+
+        // ==========================================
+        // ABC ID VERIFICATION LOGIC
+        // ==========================================
+        window.openVerifyModal = function() {
+            document.getElementById('verifyModalOverlay').classList.add('active');
+        }
+
+        window.closeVerifyModal = function() {
+            document.getElementById('verifyModalOverlay').classList.remove('active');
+        }
+
+        document.getElementById('verifyStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            const originalText = btn.textContent;
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+
+            const abcId = document.getElementById('abcIdInput').value;
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/verify-student`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ abc_id: abcId })
+                });
+                
+                if (res.ok) {
+                    closeVerifyModal();
+                    window.location.reload(); 
+                } else {
+                    const error = await res.json();
+                    alert(error.detail || "Verification failed.");
+                }
+            } catch (err) {
+                alert("Server error.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // GITHUB LINKING & FETCH LOGIC
+        // ==========================================
+        window.openGithubModal = function() {
+            document.getElementById('githubModalOverlay').classList.add('active');
+        }
+
+        window.closeGithubModal = function() {
+            document.getElementById('githubModalOverlay').classList.remove('active');
+        }
+
+        document.getElementById('btnLinkGithub').addEventListener('click', openGithubModal);
+
+        document.getElementById('linkGithubForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            const originalText = btn.textContent;
+            btn.textContent = 'Linking...';
+            btn.disabled = true;
+
+            const username = document.getElementById('githubUsernameInput').value.trim();
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/user/github?github_username=${encodeURIComponent(username)}`, {
+                    method: 'PUT',
+                    credentials: 'include'
+                });
+                
+                if (res.ok) {
+                    closeGithubModal();
+                    document.getElementById('githubSection').style.display = 'block';
+                    fetchGitHubStats(username);
+                    document.getElementById('btnLinkGithub').textContent = 'Edit GitHub';
+                } else {
+                    alert("Failed to link GitHub account.");
+                }
+            } catch (err) {
+                alert("Server error.");
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        async function fetchGitHubStats(username) {
+            const container = document.getElementById('githubContent');
+            container.innerHTML = '<div class="spinner" style="margin: 20px 0; width: 30px; height: 30px;"></div>';
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/github/${username}`);
+                if (res.ok) {
+                    const ghData = await res.json();
+                    
+                    let reposHtml = '';
+                    if (ghData.top_repos && ghData.top_repos.length > 0) {
+                        reposHtml = '<div class="gh-repos-grid">';
+                        ghData.top_repos.forEach(repo => {
+                            reposHtml += `
+                                <a href="${repo.html_url}" target="_blank" class="gh-repo-card">
+                                    <div class="gh-repo-title">
+                                        <svg fill="currentColor" viewBox="0 0 24 24" width="16" height="16"><path d="M4.5 5A2.5 2.5 0 107 7.5a2.48 2.48 0 00-.73-1.73l6.02-6.02A2.48 2.48 0 0014 2.5 2.5 2.5 0 1011.5 5c0 .26.04.51.11.75l-4.73 4.73A2.5 2.5 0 004.5 10a2.5 2.5 0 100-5z"/></svg>
+                                        ${repo.name}
+                                    </div>
+                                    <div class="gh-repo-desc">${repo.description}</div>
+                                    <div class="gh-repo-meta">
+                                        <span>★ ${repo.stargazers_count}</span>
+                                        <span>⑂ ${repo.forks_count}</span>
+                                        <span style="color: var(--text);">● ${repo.language}</span>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        reposHtml += '</div>';
+                    } else {
+                        reposHtml = '<p style="color: var(--text-dim); font-size: 0.9rem;">No public repositories found.</p>';
+                    }
+
+                    container.innerHTML = `
+                        <div class="github-stats-bar">
+                            <div class="gh-stat-chip"><strong>@${ghData.username}</strong></div>
+                            <div class="gh-stat-chip"><strong>${ghData.public_repos}</strong> Repos</div>
+                            <div class="gh-stat-chip"><strong>${ghData.followers}</strong> Followers</div>
+                        </div>
+                        <div class="github-heatmap">
+                            <p style="font-size: 0.75rem; color: var(--text-dim); font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Commit Activity</p>
+                            <img src="${ghData.heatmap_url}" alt="GitHub Heatmap">
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-dim); font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Pinned Repositories</p>
+                        ${reposHtml}
+                    `;
+                } else {
+                    container.innerHTML = '<p style="color: #ef4444; font-size: 0.9rem;">GitHub profile not found. Please check the username.</p>';
+                }
+            } catch (err) {
+                container.innerHTML = '<p style="color: #ef4444; font-size: 0.9rem;">Error loading GitHub data.</p>';
+            }
+        }
+
+        // ==========================================
+        // FOLLOW SYSTEM LOGIC
+        // ==========================================
+        function updateFollowButtonUI() {
+            const btn = document.getElementById('btnFollowToggle');
+            
+            if (isCurrentlyFollowing) {
+                btn.textContent = 'Following';
+                btn.classList.add('following');
+            } else {
+                btn.textContent = 'Follow';
+                btn.classList.remove('following');
+            }
+        }
+
+        window.toggleFollow = async function() {
+            const btn = document.getElementById('btnFollowToggle');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/follow/${viewedUserId}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const followerCountSpan = document.getElementById('ui-followers-count');
+                    let currentCount = parseInt(followerCountSpan.textContent);
+
+                    if (data.status === 'followed') {
+                        isCurrentlyFollowing = true;
+                        followerCountSpan.textContent = currentCount + 1;
+                    } else {
+                        isCurrentlyFollowing = false;
+                        followerCountSpan.textContent = currentCount - 1;
+                    }
+                    
+                    updateFollowButtonUI();
+                } else {
+                    const error = await res.json();
+                    alert(error.detail || "Error toggling follow status.");
+                }
+            } catch (e) {
+                console.error("Follow error:", e);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // SAVE PROFILE LOGIC
+        // ==========================================
+        function updateSaveButtonUI() {
+            const btn = document.getElementById('btnSaveToggle');
+            
+            if (isCurrentlySaved) {
+                btn.textContent = 'Saved';
+                btn.classList.add('saved');
+            } else {
+                btn.textContent = 'Save Profile';
+                btn.classList.remove('saved');
+            }
+        }
+
+        window.toggleSave = async function() {
+            const btn = document.getElementById('btnSaveToggle');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/save/${viewedUserId}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    if (data.status === 'saved') {
+                        isCurrentlySaved = true;
+                    } else {
+                        isCurrentlySaved = false;
+                    }
+                    
+                    updateSaveButtonUI();
+                } else {
+                    const error = await res.json();
+                    alert(error.detail || "Error saving profile.");
+                }
+            } catch (e) {
+                console.error("Save error:", e);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // NOTIFICATIONS SYSTEM
+        // ==========================================
+        let unreadCount = 0;
+        let notifSocket = null;
+
+        async function initNotifications(userId) {
+            const bellBtn = document.getElementById('notifBellBtn');
+            const dropdown = document.getElementById('notifDropdown');
+            
+            bellBtn.addEventListener('click', (e) => { 
+                e.stopPropagation(); 
+                dropdown.classList.toggle('active'); 
+            });
+            
+            document.addEventListener('click', (e) => { 
+                if (!bellBtn.contains(e.target)) {
+                    dropdown.classList.remove('active'); 
+                }
+            });
+            
+            dropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            await fetchAndRenderNotifications(userId);
+
+            notifSocket = new WebSocket(`ws://127.0.0.1:8000/api/ws/notifications/${userId}`);
+            
+            notifSocket.onmessage = function(event) {
+                const incomingNotif = JSON.parse(event.data);
+                insertNotificationUI(incomingNotif, true);
+                unreadCount++; 
+                updateBadge();
+            };
+        }
+
+        async function fetchAndRenderNotifications(userId) {
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/notifications/${userId}`, { 
+                    credentials: 'include' 
+                });
+                
+                if (res.ok) {
+                    const notifs = await res.json();
+                    const notifList = document.getElementById('notifList');
+                    notifList.innerHTML = ''; 
+                    unreadCount = 0;
+                    
+                    if (notifs.length === 0) { 
+                        notifList.innerHTML = `<div class="notif-empty">No notifications.</div>`; 
+                        return; 
+                    }
+                    
+                    notifs.forEach(n => { 
+                        if (n.is_read === 0) {
+                            unreadCount++; 
+                        }
+                        insertNotificationUI(n, false); 
+                    });
+                    
+                    updateBadge();
+                }
+            } catch (err) {
+                console.error("Notification fetch failed");
+            }
+        }
+
+        function insertNotificationUI(notif, prepend = false) {
+            const notifList = document.getElementById('notifList');
+            const emptyState = notifList.querySelector('.notif-empty');
+            
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const dateObj = new Date(notif.timestamp);
+            const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const div = document.createElement('div');
+            div.className = `notif-item ${notif.is_read === 0 ? 'unread' : ''}`;
+            
+            div.innerHTML = `
+                <div>${notif.content}</div>
+                <div class="notif-time">${timeStr}</div>
+            `;
+            
+            div.addEventListener('click', async () => {
+                if (div.classList.contains('unread')) {
+                    try {
+                        await fetch(`http://127.0.0.1:8000/api/notifications/${notif.id}/read`, { 
+                            method: 'PUT', 
+                            credentials: 'include' 
+                        });
+                        
+                        div.classList.remove('unread'); 
+                        unreadCount = Math.max(0, unreadCount - 1); 
+                        updateBadge();
+                        
+                        if(notif.type === 'message') {
+                            window.location.href = 'inbox.html';
+                        }
+                        if(notif.type === 'follow') {
+                            window.location.href = 'network.html';
+                        }
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+            });
+            
+            if (prepend) {
+                notifList.prepend(div); 
+            } else {
+                notifList.appendChild(div);
+            }
+        }
+
+        function updateBadge() {
+            const badge = document.getElementById('notifBadge');
+            
+            if (unreadCount > 0) { 
+                badge.textContent = unreadCount; 
+                badge.classList.add('active'); 
+            } else {
+                badge.classList.remove('active');
+            }
+        }
+
+        // ==========================================
+        // PROJECT PORTFOLIO LOGIC
+        // ==========================================
+        const projectModal = document.getElementById('projectModalOverlay');
+        const projectForm = document.getElementById('addProjectForm');
+        let selectedProjectFiles = [];
+        const projImageInput = document.getElementById('projImage');
+        const imagePreviewWrapper = document.getElementById('imagePreviewWrapper');
+
+        projImageInput.addEventListener('change', function() {
+            const files = Array.from(this.files);
+            selectedProjectFiles = selectedProjectFiles.concat(files);
+            renderPreviews();
+            this.value = ''; 
+        });
+
+        function renderPreviews() {
+            imagePreviewWrapper.innerHTML = '';
+            
+            selectedProjectFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'preview-item';
+                    
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="preview">
+                        <button type="button" class="btn-remove-preview" onclick="removePreview(${index})" title="Remove image">&times;</button>
+                    `;
+                    
+                    imagePreviewWrapper.appendChild(div);
+                }
+                
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.removePreview = function(index) {
+            selectedProjectFiles.splice(index, 1);
+            renderPreviews();
+        }
+
+        document.getElementById('btnAddProject').addEventListener('click', () => {
+            projectModal.classList.add('active');
+        });
+        
+        document.getElementById('btnCancelProject').addEventListener('click', () => {
+            projectModal.classList.remove('active');
+            projectForm.reset();
+            selectedProjectFiles = [];
+            renderPreviews();
+        });
+
+        projectForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = projectForm.querySelector('.btn-save');
+            const originalText = btn.textContent;
+            
+            btn.textContent = 'Uploading...';
+            btn.disabled = true;
+
+            let uploadedUrls = [];
+
+            try {
+                if (selectedProjectFiles.length > 0) {
+                    const uploadPromises = selectedProjectFiles.map(async (file) => {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        
+                        const res = await fetch('http://127.0.0.1:8000/api/upload/project-pic', { 
+                            method: 'POST', 
+                            credentials: 'include', 
+                            body: formData 
+                        });
+                        
+                        if (res.ok) {
+                            return (await res.json()).url;
+                        }
+                        return null;
+                    });
+                    
+                    const results = await Promise.all(uploadPromises);
+                    uploadedUrls = results.filter(url => url !== null);
+                }
+
+                btn.textContent = 'Saving Project...';
+                
+                const payload = {
+                    title: document.getElementById('projTitle').value.trim(),
+                    description: document.getElementById('projDesc').value.trim(),
+                    tech_stack: document.getElementById('projTech').value.trim(),
+                    github_link: document.getElementById('projGit').value.trim(),
+                    live_link: document.getElementById('projLive').value.trim(),
+                    image_url: uploadedUrls.join(',')
+                };
+
+                const res = await fetch('http://127.0.0.1:8000/api/projects', {
+                    method: 'POST', 
+                    credentials: 'include', 
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    }, 
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    projectModal.classList.remove('active');
+                    projectForm.reset();
+                    selectedProjectFiles = [];
+                    renderPreviews();
+                    fetchProjects(localStorage.getItem('currentUserId'), true);
+                } else {
+                    alert("Failed to save project data.");
+                }
+            } catch (error) { 
+                alert("Server error."); 
+            } finally { 
+                btn.textContent = originalText; 
+                btn.disabled = false; 
+            }
+        });
+
+        async function fetchProjects(userId, isOwnProfile) {
+            const projectsContainer = document.getElementById('ui-projects');
+            
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/projects/${userId}`, { 
+                    credentials: 'include' 
+                });
+                
+                if (res.ok) {
+                    const projects = await res.json();
+                    projectsContainer.innerHTML = '';
+                    
+                    if (projects.length === 0) {
+                        projectsContainer.innerHTML = `<p style="color: var(--text-dim); font-size: 0.95rem; font-weight: 500;">No projects added yet.</p>`;
+                        return;
+                    }
+
+                    projects.forEach(proj => {
+                        const card = document.createElement('div');
+                        card.className = 'project-card';
+                        
+                        let tagsHtml = proj.tech_stack.split(',').map(tag => {
+                            return `<span class="skill-tag" style="padding: 6px 14px; font-size: 0.8rem; border-color: transparent;">${tag.trim()}</span>`;
+                        }).join(' ');
+                        
+                        let linksHtml = '';
+                        
+                        if (proj.github_link) {
+                            linksHtml += `<a href="${proj.github_link}" target="_blank" class="project-link">
+                                <svg fill="currentColor" viewBox="0 0 24 24" width="14" height="14"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> GitHub
+                            </a>`;
+                        }
+                        
+                        if (proj.live_link) {
+                            linksHtml += `<a href="${proj.live_link}" target="_blank" class="project-link">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg> Live Demo
+                            </a>`;
+                        }
+
+                        let imgHtml = '';
+                        
+                        if (proj.image_url) {
+                            const urls = proj.image_url.split(',');
+                            
+                            if (urls.length === 1) {
+                                imgHtml = `<img src="${urls[0]}" class="project-image" alt="${proj.title}">`;
+                            } else {
+                                imgHtml = `<div class="project-image-gallery">`;
+                                urls.forEach(url => { 
+                                    if (url.trim() !== '') {
+                                        imgHtml += `<img src="${url}">`; 
+                                    }
+                                });
+                                imgHtml += `</div>`;
+                            }
+                        }
+
+                        let deleteBtnHtml = '';
+                        
+                        if (isOwnProfile) {
+                            deleteBtnHtml = `<button class="btn-delete-project" onclick="deleteProject(${proj.id})">Remove</button>`;
+                        }
+
+                        card.innerHTML = `
+                            ${imgHtml ? `<div class="project-image-container">${imgHtml}</div>` : ''}
+                            <div class="project-content">
+                                <div class="project-header">
+                                    <div class="project-title">${proj.title}</div>
+                                    ${deleteBtnHtml}
+                                </div>
+                                <div class="project-desc">${proj.description}</div>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">${tagsHtml}</div>
+                                <div class="project-links">${linksHtml}</div>
+                            </div>
+                        `;
+                        
+                        projectsContainer.appendChild(card);
+                    });
+                }
+            } catch (error) { 
+                console.error("Error fetching projects", error); 
+            }
+        }
+
+        window.deleteProject = async function(projectId) {
+            if (!confirm("Are you sure you want to delete this project?")) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/projects/${projectId}`, { 
+                    method: 'DELETE', 
+                    credentials: 'include' 
+                });
+                
+                if (res.ok) {
+                    fetchProjects(localStorage.getItem('currentUserId'), true);
+                } else {
+                    alert("Failed to delete project.");
+                }
+            } catch (err) { 
+                console.error(err); 
+                alert("Server error while deleting."); 
+            }
+        }
+
+        // ==========================================
+        // IMAGE UPLOAD LOGIC
+        // ==========================================
+        let cropper = null;
+        let currentUploadType = null; 
+        const cropperModal = document.getElementById('cropperModalOverlay');
+        const cropperImage = document.getElementById('cropperImage');
+
+        document.getElementById('picUpload').addEventListener('change', (e) => handleFileSelect(e, 'profile'));
+        document.getElementById('bannerUpload').addEventListener('change', (e) => handleFileSelect(e, 'banner'));
+
+        function handleFileSelect(event, type) {
+            const file = event.target.files[0];
+            
+            if (!file) {
+                return;
+            }
+            
+            currentUploadType = type;
+            cropperImage.src = URL.createObjectURL(file);
+            cropperModal.classList.add('active');
+            
+            if (cropper) {
+                cropper.destroy();
+            }
+            
+            cropper = new Cropper(cropperImage, { 
+                aspectRatio: type === 'profile' ? 1 / 1 : 3 / 1, 
+                viewMode: 1, 
+                dragMode: 'move', 
+                autoCropArea: 1, 
+                guides: true, 
+                center: true, 
+                highlight: false, 
+                cropBoxMovable: false, 
+                cropBoxResizable: false 
+            });
+            
+            event.target.value = '';
+        }
+
+        document.getElementById('btnCancelCrop').addEventListener('click', () => {
+            cropperModal.classList.remove('active');
+            
+            if (cropper) { 
+                cropper.destroy(); 
+                cropper = null; 
+            }
+        });
+
+        document.getElementById('btnSaveCrop').addEventListener('click', () => {
+            if (!cropper) {
+                return;
+            }
+            
+            const btn = document.getElementById('btnSaveCrop');
+            const originalText = btn.textContent;
+            
+            btn.textContent = 'Uploading...';
+            btn.disabled = true;
+
+            cropper.getCroppedCanvas({ 
+                width: currentUploadType === 'profile' ? 400 : 1200, 
+                height: currentUploadType === 'profile' ? 400 : 400 
+            }).toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append("file", blob, `${currentUploadType}.jpg`); 
+                const endpoint = currentUploadType === 'profile' ? '/api/upload/profile-pic' : '/api/upload/banner-pic';
+
+                try {
+                    const uploadRes = await fetch(`http://127.0.0.1:8000${endpoint}`, { 
+                        method: 'POST', 
+                        credentials: 'include', 
+                        body: formData 
+                    });
+                    
+                    if (uploadRes.ok) {
+                        const result = await uploadRes.json();
+                        
+                        if (currentUploadType === 'profile') {
+                            document.getElementById('ui-avatar-container').style.backgroundImage = `url('${result.url}')`;
+                        } else {
+                            document.getElementById('ui-banner-container').style.backgroundImage = `url('${result.url}')`;
+                        }
+                        
+                        cropperModal.classList.remove('active');
+                        cropper.destroy(); 
+                        cropper = null;
+                    } else {
+                        alert("Upload failed.");
+                    }
+                } catch (err) { 
+                    alert("Server error."); 
+                } finally { 
+                    btn.textContent = originalText; 
+                    btn.disabled = false; 
+                }
+            }, 'image/jpeg', 0.9); 
+        });
+
+        window.logout = async function() {
+            try { 
+                await fetch('http://127.0.0.1:8000/api/logout', { 
+                    method: 'POST', 
+                    credentials: 'include' 
+                }); 
+            } catch (err) {
+                console.error("Logout Error:", err);
+            }
+            
+            localStorage.removeItem('currentUserId');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

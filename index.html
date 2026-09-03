@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProPartner | Find Your Teammate</title>
+    
+    <!-- Premium Font Stack -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        // Default to LIGHT mode on first visit
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    </script>
+
+    <style>
+        /* ==========================================
+           TECH GIANT DESIGN SYSTEM (CLEAN & SIMPLE)
+           ========================================== */
+        :root, [data-theme="light"] { 
+            --bg: #ffffff; 
+            --surface: rgba(255, 255, 255, 0.7); 
+            --panel-bg: rgba(255, 255, 255, 0.6);
+            --border: rgba(0, 0, 0, 0.1); 
+            --border-hover: rgba(0, 0, 0, 0.3);
+            --primary: #2563eb; 
+            --secondary: #0ea5e9; 
+            --text: #0f172a; 
+            --text-dim: #475569; 
+            --header-bg: rgba(255, 255, 255, 0.7);
+            
+            /* Buttons */
+            --btn-bg: #0f172a;
+            --btn-text: #ffffff;
+            --btn-hover: #1e293b;
+
+            /* Effects */
+            --shadow-glow: rgba(255, 255, 255, 1);
+            --vignette-color: #ffffff;
+            
+            /* 3D Wave Colors */
+            --wave-color-high: 37, 99, 235;  
+            --wave-color-low: 139, 92, 246;  
+        }
+
+        [data-theme="dark"] {
+            --bg: #050505; 
+            --surface: rgba(20, 20, 20, 0.5); 
+            --panel-bg: rgba(15, 15, 15, 0.5);
+            --border: rgba(255, 255, 255, 0.15); 
+            --border-hover: rgba(255, 255, 255, 0.4);
+            --primary: #3b82f6; 
+            --secondary: #38bdf8; 
+            --text: #f8fafc; 
+            --text-dim: #94a3b8;
+            --header-bg: rgba(5, 5, 5, 0.7);
+            
+            /* Buttons */
+            --btn-bg: #ffffff;
+            --btn-text: #000000;
+            --btn-hover: #e2e8f0;
+
+            /* Effects */
+            --shadow-glow: rgba(0, 0, 0, 0.9);
+            --vignette-color: #050505;
+
+            /* 3D Wave Colors */
+            --wave-color-high: 59, 130, 246; 
+            --wave-color-low: 147, 51, 234;  
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            overflow-x: hidden; 
+            transition: background-color 0.5s ease, color 0.5s ease; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection { background: rgba(37, 99, 235, 0.3); color: inherit; }
+
+        /* ==========================================
+           CINEMATIC EFFECTS & PERFECT READABILITY
+           ========================================== */
+        
+        .shadow-text {
+            text-shadow: 0 4px 30px var(--shadow-glow), 0 1px 4px var(--shadow-glow), 0 0 10px var(--shadow-glow);
+        }
+
+        .base-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg); z-index: -10; transition: background-color 0.5s ease;
+        }
+        
+        #parallax-canvas-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            z-index: -5; pointer-events: none;
+        }
+
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, transparent 30%, var(--vignette-color) 140%);
+            z-index: -4; pointer-events: none; transition: background 0.5s ease;
+        }
+
+        /* ==========================================
+           HEADER
+           ========================================== */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 16px 5%; background: var(--header-bg); 
+            backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); 
+            z-index: 100; position: fixed; width: 100%; top: 0;
+            transition: all 0.4s ease;
+        }
+        
+        header h2 { 
+            font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .logo-dot { width: 12px; height: 12px; background: var(--primary); border-radius: 50%; display: inline-block;}
+
+        nav { display: flex; gap: 16px; align-items: center; }
+
+        .theme-toggle { 
+            cursor: pointer; color: var(--text-dim); transition: 0.3s; display: flex; 
+            align-items: center; justify-content: center; padding: 8px; border-radius: 50%; 
+        }
+        .theme-toggle:hover { color: var(--text); }
+        .theme-toggle svg { width: 20px; height: 20px; }
+
+        .btn-nav { 
+            color: var(--text-dim); text-decoration: none; font-weight: 500; transition: 0.3s; 
+            font-size: 0.95rem; cursor: pointer; padding: 8px 16px; border-radius: 8px;
+        }
+        .btn-nav:hover { color: var(--text); }
+
+        .btn-primary { 
+            background: var(--btn-bg); color: var(--btn-text) !important; padding: 10px 24px; border-radius: 8px; 
+            font-weight: 600; text-decoration: none; font-size: 0.95rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; border: 1px solid transparent;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); background: var(--btn-hover); }
+
+        /* ==========================================
+           ANIMATIONS
+           ========================================== */
+        .reveal-up { opacity: 0; transform: translateY(40px); transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal-up.active { opacity: 1; transform: translateY(0); }
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+
+        /* ==========================================
+           LAYOUT & TYPOGRAPHY
+           ========================================== */
+        main { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 80px;}
+        
+        section { 
+            width: 100%; max-width: 1200px; padding: 100px 5%; display: flex; flex-direction: column; 
+            position: relative; z-index: 2; align-items: flex-start; text-align: left;
+        }
+
+        .badge {
+            background: transparent; color: var(--text-dim); padding: 0;
+            font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em;
+            margin-bottom: 24px; border: none;
+        }
+
+        /* ==========================================
+           HERO SECTION (LEFT ALIGNED)
+           ========================================== */
+        .hero-section { min-height: 85vh; justify-content: center; }
+        
+        .hero-content { display: flex; flex-direction: column; align-items: flex-start; max-width: 900px; z-index: 10; width: 100%; }
+        
+        .hero-title { 
+            font-size: clamp(3.5rem, 7vw, 6rem); font-weight: 800; letter-spacing: -0.04em; margin-bottom: 24px; line-height: 1.05; color: var(--text);
+        }
+
+        .hero-subtitle { font-size: clamp(1.2rem, 2vw, 1.4rem); max-width: 700px; margin-bottom: 48px; color: var(--text-dim); line-height: 1.6;}
+
+        .hero-buttons { display: flex; gap: 16px; justify-content: flex-start; align-items: center; width: 100%; }
+
+        .btn-secondary {
+            background: transparent; color: var(--text) !important; padding: 12px 32px; border-radius: 8px;
+            font-weight: 600; text-decoration: none; transition: all 0.3s ease;
+            border: 1px solid var(--border-hover); font-size: 1.05rem; backdrop-filter: blur(12px);
+        }
+        .btn-secondary:hover { border-color: var(--text); transform: translateY(-2px); background: var(--surface); }
+        .hero-btn-primary { padding: 12px 36px; font-size: 1.05rem; }
+
+        /* ==========================================
+           THE ORIGIN (STICKY SPLIT LAYOUT)
+           ========================================== */
+        .split-section { display: flex; gap: 80px; width: 100%; align-items: flex-start; margin-bottom: 60px;}
+        
+        .split-left { flex: 1; position: sticky; top: 120px; max-width: 400px; }
+        .split-left h2 { font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 800; color: var(--text); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 20px;}
+
+        .split-right { flex: 1.2; display: flex; flex-direction: column; gap: 32px; }
+        
+        .text-block { background: var(--panel-bg); border: 1px solid var(--border); padding: 40px; border-radius: 24px; backdrop-filter: blur(20px); transition: 0.3s; }
+        .text-block:hover { border-color: var(--border-hover); transform: translateX(5px); }
+
+        .text-block h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+        .text-block p { font-size: 1.1rem; line-height: 1.7; color: var(--text-dim); font-weight: 400; }
+        
+        .founder-tag { display: inline-block; margin-top: 20px; font-size: 0.9rem; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
+
+        @media (max-width: 900px) {
+            .split-section { flex-direction: column; gap: 40px; }
+            .split-left { position: relative; top: 0; max-width: 100%; }
+        }
+
+        /* ==========================================
+           THE VALUE (ZIG-ZAG ASYMMETRY)
+           ========================================== */
+        .zigzag-container { display: flex; flex-direction: column; gap: 60px; width: 100%; margin-top: 40px;}
+        
+        .zig-row { display: flex; align-items: center; gap: 80px; width: 100%; }
+        .zig-row.reverse { flex-direction: row-reverse; }
+
+        .zig-text { flex: 1; }
+        .zig-text h3 { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.02em; }
+        .zig-text p { font-size: 1.15rem; color: var(--text-dim); line-height: 1.7;}
+
+        .zig-glass {
+            flex: 1; min-height: 300px; background: var(--panel-bg); border: 1px solid var(--border);
+            border-radius: 24px; backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center;
+            transition: 0.4s ease;
+        }
+        .zig-row:hover .zig-glass { border-color: var(--border-hover); transform: scale(1.02); }
+
+        .zig-icon { width: 64px; height: 64px; color: var(--text); opacity: 0.8; }
+        .zig-row:hover .zig-icon { color: var(--primary); opacity: 1; }
+
+        @media (max-width: 768px) {
+            .zig-row, .zig-row.reverse { flex-direction: column; gap: 30px; }
+            .zig-glass { width: 100%; min-height: 200px; }
+        }
+
+        /* ==========================================
+           HOW IT WORKS (LEFT ALIGNED LIST)
+           ========================================== */
+        .step-list { display: flex; flex-direction: column; width: 100%; gap: 0; margin-top: 40px; border-top: 1px solid var(--border); }
+
+        .step-item {
+            display: flex; gap: 40px; padding: 60px 0; border-bottom: 1px solid var(--border);
+            transition: 0.3s ease; align-items: flex-start;
+        }
+        
+        .step-item:hover { padding-left: 20px; border-bottom-color: var(--border-hover);}
+
+        .step-number { font-family: monospace; font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-top: 5px; }
+        
+        .step-content { flex: 1; }
+        .step-content h3 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.02em; }
+        .step-content p { font-size: 1.15rem; color: var(--text-dim); line-height: 1.6; max-width: 700px; }
+
+        @media (max-width: 600px) {
+            .step-item { flex-direction: column; gap: 16px; padding: 40px 0; }
+            .step-item:hover { padding-left: 0; }
+        }
+
+        /* ==========================================
+           FOOTER
+           ========================================== */
+        footer { 
+            padding: 60px 5%; text-align: left; color: var(--text-dim); 
+            font-size: 0.95rem; margin-top: auto; backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; border-top: 1px solid var(--border);
+        }
+        @media (max-width: 600px) {
+            footer { flex-direction: column; gap: 20px; }
+        }
+    </style>
+    
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div class="base-bg"></div>
+    <div class="vignette"></div>
+    
+    <!-- 3D Fluid Data Wave Container (Untouched) -->
+    <div id="parallax-canvas-container"></div>
+
+    <header>
+        <a href="index.html" style="text-decoration: none;">
+            <h2><span class="logo-dot"></span> ProPartner</h2>
+        </a>
+        
+        <nav>
+            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Theme">
+                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </div>
+            <a href="login.html" class="btn-nav">Log In</a>
+            <a href="register.html" class="btn-primary">Get Started</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- HERO SECTION (LEFT ALIGNED) -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="badge shadow-text reveal-up">The Collaborative Network</div>
+                <h1 class="hero-title shadow-text reveal-up delay-100">Find your perfect project partner.</h1>
+                <p class="hero-subtitle shadow-text reveal-up delay-200">
+                    Whether you are building a startup, joining a hackathon, or working on an assignment, ProPartner makes it effortless to find teammates with the exact skills you need.
+                </p>
+                <div class="hero-buttons reveal-up delay-300">
+                    <a href="register.html" class="btn-primary hero-btn-primary">Start Building</a>
+                    <a href="#genesis" class="btn-secondary shadow-text">See How It Works</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- THE STORY (WHY IT WAS MADE) -->
+        <section id="genesis">
+            <div class="split-section">
+                <div class="split-left reveal-up">
+                    <div class="badge shadow-text">The Origin Story</div>
+                    <h2 class="shadow-text">Built from real frustration.</h2>
+                </div>
+                
+                <div class="split-right reveal-up delay-100">
+                    <div class="text-block">
+                        <h3 class="shadow-text">The Problem</h3>
+                        <p class="shadow-text">
+                            Finding a reliable teammate for a project shouldn't rely on luck. Our founder, Omkar Gopale, realized that brilliant people were missing out on great ideas simply because they couldn't find the right people to build them with. Asking around in noisy group chats or messy forums just wasn't working.
+                        </p>
+                    </div>
+                    
+                    <div class="text-block">
+                        <h3 class="shadow-text">The Solution</h3>
+                        <p class="shadow-text">
+                            We built this platform to bridge that gap. ProPartner is designed to make it incredibly simple for anyone to find trustworthy collaborators, form a team instantly, and bring their ideas to life without the hassle.
+                        </p>
+                        <span class="founder-tag shadow-text">— Designed for creators.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- THE VALUE (WHY IT'S USEFUL - ZIGZAG) -->
+        <section id="value">
+            <div class="badge shadow-text reveal-up">Why ProPartner</div>
+            <h2 class="section-title shadow-text reveal-up delay-100" style="margin-bottom: 10px;">Everything you need to succeed.</h2>
+            
+            <div class="zigzag-container">
+                <!-- Feature 1 -->
+                <div class="zig-row reveal-up">
+                    <div class="zig-text">
+                        <h3 class="shadow-text">Smart Search</h3>
+                        <p class="shadow-text">Stop relying on luck. Search for exactly what you need—like a UI Designer, a Python coder, or a Marketing student—and find the best matches instantly based on verified skills.</p>
+                    </div>
+                    <div class="zig-glass">
+                        <svg class="zig-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="zig-row reverse reveal-up">
+                    <div class="zig-text">
+                        <h3 class="shadow-text">Real Portfolios</h3>
+                        <p class="shadow-text">Know exactly who you are working with. Profiles showcase actual past projects, GitHub links, and school credentials so you can trust your new teammate from day one.</p>
+                    </div>
+                    <div class="zig-glass">
+                        <svg class="zig-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="zig-row reveal-up">
+                    <div class="zig-text">
+                        <h3 class="shadow-text">Built-in Workspaces</h3>
+                        <p class="shadow-text">Everything you need to collaborate is in one place. Once you connect with a partner, you can chat, share files, and hop on video calls without ever having to leave the website.</p>
+                    </div>
+                    <div class="zig-glass">
+                        <svg class="zig-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- THE PROTOCOL (HOW IT WORKS - LIST) -->
+        <section id="protocol" style="margin-bottom: 80px;">
+            <div class="badge shadow-text reveal-up">How it Works</div>
+            <h2 class="section-title shadow-text reveal-up delay-100" style="margin-bottom: 10px;">Three easy steps to launch.</h2>
+            
+            <div class="step-list reveal-up delay-200">
+                <div class="step-item">
+                    <div class="step-number shadow-text">01</div>
+                    <div class="step-content">
+                        <h3 class="shadow-text">Set Up Your Profile</h3>
+                        <p class="shadow-text">Create your account and tell the community what you know. Add your school, list the software tools you use, and link to projects you're proud of.</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number shadow-text">02</div>
+                    <div class="step-content">
+                        <h3 class="shadow-text">Find Your Match</h3>
+                        <p class="shadow-text">Browse the global network for specific skills, or post your own project idea on the Opportunities Board so other developers can find you and apply to help.</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number shadow-text">03</div>
+                    <div class="step-content">
+                        <h3 class="shadow-text">Connect and Create</h3>
+                        <p class="shadow-text">Send a connection request to the right person. Once they accept, a private workspace opens up where you can start chatting and building your project together.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-left">ProPartner &copy; 2026. Built for creators.</div>
+        <div class="footer-right">Connecting developers globally.</div>
+    </footer>
+
+    <!-- INTERSECTION OBSERVER SCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) { entry.target.classList.add('active'); }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.reveal-up').forEach(el => observer.observe(el));
+        });
+    </script>
+
+    <!-- PREMIUM 3D FLUID DATA WAVE ENGINE (UNTOUCHED INFINITE TREADMILL) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('parallax-canvas-container');
+            if (!container) return;
+
+            // 1. Scene & Camera Setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
+            
+            camera.position.set(0, 400, 1200);
+            camera.lookAt(0, -200, 0);
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // 2. Theme Icon Setup
+            const themeBtn = document.getElementById('themeToggleBtn');
+            const moonIcon = document.getElementById('moonIcon');
+            const sunIcon = document.getElementById('sunIcon');
+
+            function updateThemeIcons() {
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    moonIcon.style.display = 'none';
+                    sunIcon.style.display = 'block';
+                } else {
+                    moonIcon.style.display = 'block';
+                    sunIcon.style.display = 'none';
+                }
+            }
+            updateThemeIcons();
+
+            // 3. Dynamic Theme Colors
+            function getThemeColors() {
+                const styles = getComputedStyle(document.documentElement);
+                return {
+                    colorHigh: styles.getPropertyValue('--wave-color-high').trim() || '37, 99, 235',
+                    colorLow: styles.getPropertyValue('--wave-color-low').trim() || '14, 165, 233'
+                };
+            }
+            
+            function parseRGB(rgbStr) {
+                const [r, g, b] = rgbStr.split(',').map(n => parseInt(n.trim()) / 255);
+                return new THREE.Vector3(r, g, b);
+            }
+
+            let colors = getThemeColors();
+
+            // Soft glowing particle texture
+            function createCircleTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 32; canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+                ctx.beginPath(); ctx.arc(16, 16, 14, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFFFFF'; ctx.fill();
+                return new THREE.CanvasTexture(canvas);
+            }
+            const circleTexture = createCircleTexture();
+
+            // 4. Generating the Grid Wave
+            const gridWidth = 150;
+            const gridDepth = 150;
+            const spacing = 35;
+            const particleCount = gridWidth * gridDepth;
+            
+            const posArray = new Float32Array(particleCount * 3);
+            const offsetArray = new Float32Array(particleCount); 
+            
+            let idx = 0;
+            for(let i=0; i<gridWidth; i++) {
+                for(let j=0; j<gridDepth; j++) {
+                    const x = (i - gridWidth/2) * spacing;
+                    const z = (j - gridDepth/2) * spacing;
+                    
+                    posArray[idx*3] = x;
+                    posArray[idx*3+1] = 0; // Height generated in shader
+                    posArray[idx*3+2] = z;
+                    
+                    offsetArray[idx] = Math.random() * Math.PI * 2;
+                    idx++;
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            geometry.setAttribute('aOffset', new THREE.BufferAttribute(offsetArray, 1));
+
+            // Custom GLSL Shader for infinite scrolling mathematical waves
+            const shaderMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uScroll: { value: 0 },
+                    uMouse: { value: new THREE.Vector2(0,0) },
+                    uColorHigh: { value: parseRGB(colors.colorHigh) },
+                    uColorLow: { value: parseRGB(colors.colorLow) },
+                    uTexture: { value: circleTexture }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform float uScroll;
+                    uniform vec2 uMouse;
+                    
+                    uniform vec3 uColorHigh;
+                    uniform vec3 uColorLow;
+
+                    attribute float aOffset; 
+
+                    varying vec3 vColor;
+                    varying float vAlpha;
+
+                    void main() {
+                        vec3 pos = position;
+                        
+                        // INFINITE TREADMILL
+                        float zWrapDistance = 5250.0; // Grid depth (150 * 35)
+                        float halfZ = zWrapDistance / 2.0;
+                        
+                        pos.z += uScroll * 0.8;
+                        pos.z = mod(pos.z + halfZ, zWrapDistance) - halfZ;
+
+                        // Math Wave Calculation 
+                        float wave1 = sin(pos.x * 0.003 + uTime * 0.4) * 150.0;
+                        float wave2 = cos(pos.z * 0.004 - uTime * 0.3) * 150.0;
+                        float wave3 = sin((pos.x + pos.z) * 0.002 + uTime * 0.2 + aOffset) * 100.0;
+                        
+                        pos.y = wave1 + wave2 + wave3;
+
+                        // Mouse Interaction
+                        vec2 worldMouse = vec2(uMouse.x * 2000.0, uMouse.y * -2000.0);
+                        float distToMouse = distance(vec2(pos.x, pos.z), worldMouse);
+                        float mouseInfluence = smoothstep(600.0, 0.0, distToMouse);
+                        pos.y -= mouseInfluence * 150.0;
+
+                        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                        gl_Position = projectionMatrix * mvPosition;
+
+                        // Size attenuation
+                        gl_PointSize = 6.0 * (1000.0 / -mvPosition.z);
+
+                        // Color mapping based on Y height
+                        float heightNormalized = smoothstep(-150.0, 150.0, pos.y);
+                        vColor = mix(uColorLow, uColorHigh, heightNormalized);
+
+                        // Fade edges so the infinite wrapping is invisible
+                        float distToCenter = length(pos.xz);
+                        float edgeFade = 1.0 - smoothstep(1000.0, 3000.0, distToCenter);
+                        
+                        // Fade particles close to camera to ensure text readability
+                        float depthFade = smoothstep(100.0, 500.0, -mvPosition.z);
+                        
+                        vAlpha = edgeFade * depthFade * 0.6; // Max opacity 60%
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D uTexture;
+                    varying vec3 vColor;
+                    varying float vAlpha;
+                    
+                    void main() {
+                        vec4 texColor = texture2D(uTexture, gl_PointCoord);
+                        gl_FragColor = vec4(vColor, vAlpha) * texColor;
+                    }
+                `,
+                transparent: true,
+                depthWrite: false,
+                blending: document.documentElement.getAttribute('data-theme') === 'dark' ? THREE.AdditiveBlending : THREE.NormalBlending
+            });
+
+            const waveMesh = new THREE.Points(geometry, shaderMaterial);
+            waveMesh.rotation.x = -0.1;
+            waveMesh.position.y = -200;
+            scene.add(waveMesh);
+
+            // 5. Window Resize & Theme Toggle Logic
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                
+                if (isDark) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                    shaderMaterial.blending = THREE.NormalBlending;
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    shaderMaterial.blending = THREE.AdditiveBlending;
+                }
+                
+                updateThemeIcons();
+                shaderMaterial.needsUpdate = true;
+                
+                // Update Shader Colors
+                setTimeout(() => {
+                    colors = getThemeColors();
+                    shaderMaterial.uniforms.uColorHigh.value = parseRGB(colors.colorHigh);
+                    shaderMaterial.uniforms.uColorLow.value = parseRGB(colors.colorLow);
+                }, 50);
+            });
+
+            // 6. Animation Loop & Parallax
+            let mouseX = 0; let mouseY = 0;
+            let targetX = 0; let targetY = 0;
+            let scrollY = window.scrollY; let targetScrollY = window.scrollY;
+
+            document.addEventListener('mousemove', (event) => {
+                targetX = (event.clientX / window.innerWidth) * 2 - 1;
+                targetY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            document.addEventListener('scroll', () => {
+                targetScrollY = window.scrollY;
+            });
+
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                const time = clock.getElapsedTime();
+                
+                // Smooth interpolation
+                mouseX += (targetX - mouseX) * 0.05;
+                mouseY += (targetY - mouseY) * 0.05;
+                scrollY += (targetScrollY - scrollY) * 0.05;
+
+                // Pass variables to shader
+                shaderMaterial.uniforms.uTime.value = time;
+                shaderMaterial.uniforms.uScroll.value = scrollY;
+                shaderMaterial.uniforms.uMouse.value.set(mouseX, mouseY);
+
+                // Camera Parallax: Keep camera perfectly steady vertically.
+                camera.position.x = mouseX * 200;
+                camera.position.y = 400 - (scrollY * 0.05); // Tiny shift for parallax depth
+                
+                camera.lookAt(0, -200, 0);
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProPartner | My Followers</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: #f8fafc; color: #0f172a; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; position: relative; }
+        
+        .bg-glow { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.5; z-index: -1; animation: pulse 12s infinite alternate; }
+        .glow-1 { width: 600px; height: 600px; background: linear-gradient(135deg, #dbeafe, #93c5fd); top: -200px; left: -100px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 16px 5%; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(226, 232, 240, 0.6); position: sticky; top: 0; z-index: 100; }
+        header h2 { font-weight: 800; color: #1e40af; font-size: 1.5rem; }
+        nav { display: flex; gap: 35px; }
+        nav a { color: #64748b; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+        nav a:hover, nav a.active { color: #2563eb; }
+
+        main { padding: 60px 20px; width: 100%; max-width: 900px; margin: 0 auto; }
+        .page-header { margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+        .page-header h1 { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .results-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        
+        .dev-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-direction: column; transition: transform 0.2s; }
+        .dev-card:hover { transform: translateY(-5px); border-color: #bfdbfe; box-shadow: 0 15px 35px rgba(37,99,235,0.1); }
+        .dev-name { color: #0f172a; font-weight: 800; font-size: 1.25rem; margin-bottom: 5px; }
+        .dev-college { color: #64748b; font-size: 0.9rem; margin-bottom: 15px; }
+        .btn-view { display: inline-block; background: #f8fafc; color: #0f172a; text-align: center; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 600; border: 1px solid #e2e8f0; margin-top: auto; }
+        .btn-view:hover { background: #0f172a; color: white; }
+
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px; background: rgba(255,255,255,0.6); border: 2px dashed #cbd5e1; border-radius: 20px; }
+        .empty-state h4 { font-size: 1.4rem; color: #1e293b; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="bg-glow glow-1"></div>
+    <header>
+        <h2>ProPartner</h2>
+        <nav>
+            <a href="search.html">Search</a>
+            <a href="followers.html" class="active">Network</a>
+            <a href="inbox.html">Inbox</a>
+            <a href="history.html">History</a>
+            <a href="profile.html">My Profile</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h1>My Network</h1>
+            <p>Developers who are following your profile.</p>
+        </div>
+        <div id="followersContainer" class="results-container"></div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userId = localStorage.getItem('currentUserId');
+            const container = document.getElementById('followersContainer');
+
+            if (!userId) {
+                container.innerHTML = `<div class="empty-state"><h4>Please Log In</h4><p>You need to be logged in to view your followers.</p></div>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/followers/${userId}`);
+                const followers = await res.json();
+
+                if (followers.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><h4>No Followers Yet</h4><p>When someone follows your profile, they will appear here.</p></div>`;
+                    return;
+                }
+
+                followers.forEach(dev => {
+                    container.innerHTML += `
+                        <div class="dev-card">
+                            <div class="dev-name">${dev.name}</div>
+                            <div class="dev-college">🎓 ${dev.college_name}</div>
+                            <div style="margin-bottom: 20px; color:#2563eb; font-size: 0.9rem;">${dev.skills}</div>
+                            <a href="profile.html?id=${dev.id}" class="btn-view">View Profile</a>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                container.innerHTML = `<div class="empty-state"><h4>Network Error</h4><p>Could not load followers.</p></div>`;
+            }
+        });
+    </script>
+</body>
+</html>
