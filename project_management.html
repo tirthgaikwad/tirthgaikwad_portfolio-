@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProPartner | Project Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
+    <style>
+        /* ProPartner Native Theme */
+        :root { 
+            --bg: #F8FAFC; --surface: rgba(255, 255, 255, 0.9); --card-bg: #ffffff;
+            --border: #E2E8F0; --primary: #4F46E5; --secondary: #818CF8; 
+            --text: #0F172A; --text-dim: #64748B; --header-bg: rgba(255, 255, 255, 0.85);
+            --input-bg: #F1F5F9; --nav-active-bg: #0F172A; --nav-active-text: #ffffff;
+            --kanban-col-bg: #F1F5F9; --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
+            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.03); --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.04);
+        }
+
+        [data-theme="dark"] {
+            --bg: #000000; --surface: rgba(0, 0, 0, 0.85); --card-bg: #000000;
+            --border: #333333; --primary: #5A52FF; --text: #F8FAFC; --text-dim: #94A3B8;
+            --header-bg: rgba(0, 0, 0, 0.85); --input-bg: #111111;
+            --nav-active-bg: #333333; --kanban-col-bg: #0A0A0A;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3); --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
+
+        /* ==========================================
+           GLOBAL HEADER
+           ========================================== */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; padding: 16px 5%; 
+            background: var(--header-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); 
+            box-shadow: var(--shadow-sm); z-index: 100; position: relative; transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0;
+        }
+        header h2 { font-weight: 800; color: #5A52FF; font-size: 1.5rem; letter-spacing: -0.5px; }
+        nav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        nav a:not(.btn-logout) { color: var(--text-dim); text-decoration: none; font-weight: 600; transition: all 0.2s ease; font-size: 0.85rem; cursor: pointer; padding: 8px 16px; border-radius: 8px; background: transparent; }
+        nav a:not(.btn-logout):hover { color: var(--text); background: var(--input-bg); }
+        nav a:not(.btn-logout).active { background: var(--text); color: var(--bg); }
+        .btn-logout { background: transparent; color: #ef4444; padding: 8px 16px; border-radius: 8px; font-weight: 600; border: 1px solid transparent; transition: all 0.2s ease; font-size: 0.85rem; margin-left: 8px; cursor:pointer;}
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.08); }
+
+        .theme-toggle, .nav-bell-container { cursor: pointer; color: var(--text-dim); transition: 0.2s; display: flex; align-items: center; justify-content: center; margin-right: 8px; padding: 8px; border-radius: 8px; background: transparent; }
+        .theme-toggle:hover, .nav-bell-container:hover { color: var(--text); background: var(--input-bg); }
+        .theme-toggle svg, .nav-bell-icon { width: 18px; height: 18px; }
+        .notification-badge { position: absolute; top: 2px; right: 2px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; }
+        .notification-badge.active { opacity: 1; }
+
+        .header-toggle-tab {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 40px; height: 20px;
+            background: var(--header-bg); border: 1px solid var(--border); border-top: none;
+            border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: flex;
+            justify-content: center; align-items: center; cursor: pointer; color: var(--text-dim); z-index: 1000; transition: 0.2s;
+        }
+        .header-toggle-tab:hover { color: var(--text); }
+        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
+        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
+
+        /* ==========================================
+           MAIN WORKSPACE
+           ========================================== */
+        .pm-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 24px 5%; }
+        .pm-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-shrink: 0;}
+        .pm-title h1 { font-size: 2rem; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px;}
+        .pm-title p { color: var(--text-dim); font-size: 1rem; }
+        .pm-controls { display: flex; gap: 16px; align-items: center; }
+        
+        .view-tabs { display: flex; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .view-tab { padding: 10px 24px; font-size: 0.9rem; font-weight: 600; color: var(--text-dim); cursor: pointer; border-radius: 8px; transition: all 0.2s ease; border: none; background: transparent; outline: none;}
+        .view-tab.active { background: var(--card-bg); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 700; }
+        .view-tab:hover:not(.active) { color: var(--text); }
+
+        .btn-primary { background: #5A52FF; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; outline: none;}
+        .btn-primary:hover { background: #4740D4; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(90, 82, 255, 0.2); }
+
+        .pm-content { flex: 1; overflow: hidden; position: relative; }
+        .view-section { display: none; height: 100%; width: 100%; animation: fadeIn 0.3s ease; }
+        .view-section.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ==========================================
+           1. KANBAN BOARD VIEW
+           ========================================== */
+        .kanban-board { display: flex; gap: 24px; height: 100%; overflow-x: auto; padding-bottom: 16px; width: 100%; }
+        .kanban-column { flex: 1; min-width: 280px; max-width: 350px; background: var(--kanban-col-bg); border-radius: 16px; display: flex; flex-direction: column; border: 1px solid var(--border); overflow: hidden;}
+        .col-header { padding: 16px 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--card-bg);}
+        .task-count { background: var(--bg); color: var(--text-dim); font-size: 0.8rem; padding: 2px 8px; border-radius: 12px; border: 1px solid var(--border);}
+        .col-body { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .task-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; cursor: grab; box-shadow: var(--shadow-sm); transition: 0.2s; }
+        .task-card:hover { border-color: #5A52FF; box-shadow: var(--shadow-md); transform: translateY(-2px);}
+        .task-card:active { cursor: grabbing; }
+        .task-tag { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .tag-frontend { background: rgba(90, 82, 255, 0.1); color: #5A52FF; }
+        .tag-backend { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+        .tag-design { background: rgba(236, 72, 153, 0.1); color: #EC4899; }
+        .task-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; color: var(--text);}
+        .task-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+        .task-assignee { width: 28px; height: 28px; border-radius: 50%; background: #5A52FF; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;}
+
+        /* ==========================================
+           2. PLAN PROJECT (ULTIMATE WHITEBOARD ENGINE)
+           ========================================== */
+        .whiteboard-wrapper {
+            display: flex; flex-direction: column; height: 100%; width: 100%; 
+            background: var(--bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; 
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Top File & Collaboration Menu */
+        .wb-topbar {
+            height: 48px; background: var(--card-bg); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 20;
+        }
+        
+        .wb-menu-group { display: flex; gap: 8px; align-items: center; position: relative;}
+        .wb-menu-btn {
+            background: transparent; border: none; color: var(--text); font-weight: 600; font-size: 0.85rem;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        }
+        .wb-menu-btn:hover { background: var(--input-bg); }
+        
+        .wb-dropdown {
+            position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--card-bg);
+            border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg);
+            display: none; flex-direction: column; min-width: 160px; overflow: hidden;
+        }
+        .wb-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards;}
+        .wb-dropdown a {
+            padding: 10px 16px; font-size: 0.85rem; font-weight: 500; color: var(--text);
+            text-decoration: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .wb-dropdown a:hover { background: var(--input-bg); color: #5A52FF; }
+
+        /* Collaboration Avatars */
+        .wb-collab { display: flex; align-items: center; gap: 12px; }
+        .avatar-stack { display: flex; flex-direction: row-reverse; }
+        .wb-avatar {
+            width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card-bg);
+            color: white; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center;
+            justify-content: center; margin-left: -8px; position: relative;
+        }
+        .wb-avatar:hover { z-index: 10; transform: translateY(-2px); }
+        .btn-share {
+            background: rgba(90, 82, 255, 0.1); color: #5A52FF; border: none; padding: 6px 16px;
+            border-radius: 20px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
+        }
+        .btn-share:hover { background: #5A52FF; color: white; }
+
+        /* Canvas & Toolbar Layout */
+        .wb-body { flex: 1; display: flex; position: relative; overflow: hidden; }
+
+        .whiteboard-toolbar { 
+            position: absolute; left: 16px; top: 16px; 
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; 
+            padding: 8px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow-md); z-index: 10; 
+        }
+        .wb-tool { 
+            width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; color: var(--text-dim); transition: all 0.2s; border: none; background: transparent; 
+        }
+        .wb-tool:hover { background: var(--input-bg); color: var(--text); }
+        .wb-tool.active { background: rgba(90, 82, 255, 0.1); color: #5A52FF; }
+        .wb-tool svg { width: 20px; height: 20px; }
+
+        .whiteboard-canvas { 
+            flex: 1; position: relative; overflow: auto; cursor: default;
+            background-image: radial-gradient(var(--text-dim) 1px, transparent 1px);
+            background-size: 24px 24px; background-position: -12px -12px; opacity: 0.8;
+        }
+
+        /* Remote Real-Time Cursor */
+        .remote-cursor {
+            position: absolute; pointer-events: none; z-index: 9999; display: flex; flex-direction: column;
+            transition: top 0.1s linear, left 0.1s linear; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        .remote-cursor svg { width: 18px; height: 18px; fill: #EC4899; stroke: white; stroke-width: 1.5; transform: rotate(-20deg);}
+        .remote-cursor-label {
+            background: #EC4899; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
+            border-radius: 4px; margin-left: 12px; margin-top: -4px; white-space: nowrap;
+        }
+
+        /* Draggable & Resizable Shapes */
+        .wb-item { 
+            position: absolute; padding: 12px; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            cursor: grab; transition: box-shadow 0.2s;
+        }
+        .wb-item:active { cursor: grabbing; box-shadow: var(--shadow-lg); }
+        
+        .wb-item textarea { 
+            width: 100%; height: 100%; border: none; background: transparent; color: var(--text); 
+            resize: none; outline: none; font-family: 'Inter', sans-serif; font-size: 0.95rem; 
+            font-weight: 500; text-align: center; pointer-events: auto; /* ALLOWS TYPING */
+        }
+
+        /* Specific Shape Styling */
+        .wb-sticky { background: #FEF3C7; color: #92400E; border-bottom-right-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 4px; }
+        [data-theme="dark"] .wb-sticky { background: #451A03; color: #FDE68A; }
+        .wb-sticky textarea { color: inherit; }
+
+        .wb-rect { background: var(--card-bg); border: 2px solid #5A52FF; border-radius: 8px; }
+        .wb-circle { background: var(--card-bg); border: 2px solid #10B981; border-radius: 50%; }
+        
+        /* New Database Cylinder Tool */
+        .wb-db { background: var(--card-bg); border: 2px solid #8B5CF6; border-radius: 50% / 15%; position: relative; }
+        .wb-db::before { content:''; position:absolute; top:0; left:-2px; width:100%; height:20px; border:2px solid #8B5CF6; border-radius:50%; }
+
+        /* New Data Parallelogram Tool */
+        .wb-data { background: var(--card-bg); border: 2px solid #F59E0B; transform: skew(-15deg); border-radius: 4px;}
+        .wb-data textarea { transform: skew(15deg); }
+
+        .wb-diamond { background: var(--card-bg); border: 2px solid #EC4899; transform: rotate(45deg); width: 120px; height: 120px; }
+        .wb-diamond textarea { transform: rotate(-45deg); }
+        
+        .wb-text { border: none; background: transparent; padding: 4px; }
+        .wb-text textarea { text-align: left; font-size: 1.1rem; font-weight: 600; }
+
+        .wb-connector { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+        /* ==========================================
+           3. INTEGRATIONS VIEW
+           ========================================== */
+        .integration-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; width: 100%; overflow-y: auto; align-content: start;}
+        .integration-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; transition: 0.2s; box-shadow: var(--shadow-sm);}
+        .integration-card:hover { border-color: #5A52FF; box-shadow: var(--shadow-md); transform: translateY(-2px);}
+        .int-header { display: flex; align-items: center; gap: 16px; }
+        .int-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--bg); border: 1px solid var(--border);}
+        .int-title { font-weight: 800; font-size: 1.1rem; }
+        .int-desc { color: var(--text-dim); font-size: 0.9rem; line-height: 1.4;}
+        .int-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); color: #10B981; align-self: flex-start;}
+
+        /* MODALS */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .custom-modal { background: var(--card-bg); padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+        .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800;}
+        .custom-modal p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.4; }
+        .form-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; margin-bottom: 16px;}
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+        .btn-outline { padding: 10px 20px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); font-weight: 600; cursor: pointer; transition: 0.2s;}
+        .btn-outline:hover { background: var(--input-bg); }
+    </style>
+</head>
+<body>
+
+    <!-- GLOBAL HEADER -->
+    <header id="mainHeader">
+        <a href="index.html" style="text-decoration: none;">
+            <h2 class="logo">ProPartner</h2>
+        </a>
+        
+        <nav>
+            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
+                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </div>
+            <div class="nav-bell-container" id="notifBellBtn">
+                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                <div class="notification-badge" id="notifBadge">0</div>
+            </div>
+            <a href="search.html">Search</a>
+            <a href="board.html">Opportunities Board</a>
+            <a href="team.html">My Teams</a>
+            <a href="project_management.html" class="active">Project Management</a>
+            <a href="college.html">My College</a>
+            <a href="department.html">My Department</a>
+            <a href="global.html">Global Network</a>
+            <a href="network.html">My Network</a>
+            <a href="saved.html">Saved Profiles</a>
+            <a href="inbox.html">Inbox</a>
+            <a href="history.html">History</a>
+            <a href="profile.html">My Profile</a>
+            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
+        </nav>
+
+        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+        </div>
+    </header>
+
+    <!-- PROJECT MANAGEMENT WORKSPACE -->
+    <main class="pm-container">
+        
+        <div class="pm-header">
+            <div class="pm-title">
+                <h1>Workspace & Planning</h1>
+                <p>Track tasks, map out project flow, and manage integrations for <strong id="currentTeamDisplay" style="color:var(--text);">Connect2Minds v1.0</strong></p>
+            </div>
+            <div class="pm-controls">
+                <div class="view-tabs">
+                    <button class="view-tab" onclick="window.switchView('kanban', this)">Kanban Board</button>
+                    <button class="view-tab active" onclick="window.switchView('brainstorm', this)">Plan Project</button>
+                    <button class="view-tab" onclick="window.switchView('integrations', this)">Integrations</button>
+                </div>
+                <button class="btn-primary" onclick="addNewItem()">+ New Item</button>
+            </div>
+        </div>
+
+        <div class="pm-content">
+            
+            <!-- 1. KANBAN BOARD VIEW -->
+            <section id="view-kanban" class="view-section kanban-board">
+                <div class="kanban-column" id="col-todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="col-header">To Do <span class="task-count">3</span></div>
+                    <div class="col-body">
+                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task1">
+                            <span class="task-tag tag-frontend">Frontend</span>
+                            <div class="task-title">Design user profile dashboard UI</div>
+                            <div class="task-footer">
+                                <svg width="16" height="16" fill="none" stroke="var(--text-dim)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                <div class="task-assignee">OG</div>
+                            </div>
+                        </div>
+                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task2">
+                            <span class="task-tag tag-backend">Backend</span>
+                            <div class="task-title">Setup PostgreSQL database schema for Teams</div>
+                            <div class="task-footer">
+                                <span style="font-size: 0.75rem; color:var(--text-dim); font-weight:600;">Due Sep 10</span>
+                                <div class="task-assignee" style="background:#10B981;">AB</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kanban-column" id="col-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="col-header">In Progress <span class="task-count">1</span></div>
+                    <div class="col-body">
+                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task4">
+                            <span class="task-tag tag-backend">Backend</span>
+                            <div class="task-title">Integrate FastAPI WebSockets for chat</div>
+                            <div class="task-footer">
+                                <span style="font-size: 0.75rem; color:var(--text-dim); font-weight:600;">In review</span>
+                                <div class="task-assignee">OG</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kanban-column" id="col-review" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="col-header">Review / QA <span class="task-count">0</span></div>
+                    <div class="col-body"></div>
+                </div>
+
+                <div class="kanban-column" id="col-done" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="col-header">Done <span class="task-count">1</span></div>
+                    <div class="col-body">
+                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task5" style="opacity: 0.7;">
+                            <span class="task-tag tag-frontend">Frontend</span>
+                            <div class="task-title" style="text-decoration: line-through;">Implement Light/Dark theme toggle</div>
+                            <div class="task-footer">
+                                <div></div>
+                                <div class="task-assignee">OG</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. PLAN PROJECT (ULTIMATE WHITEBOARD ENGINE) -->
+            <section id="view-brainstorm" class="view-section active">
+                <div class="whiteboard-wrapper">
+                    
+                    <!-- Top File & Collaboration Menu -->
+                    <div class="wb-topbar">
+                        <div class="wb-menu-group">
+                            <button class="wb-menu-btn" onclick="toggleWbMenu(event)">File ▾</button>
+                            <div class="wb-dropdown" id="wbFileMenu">
+                                <a onclick="wbNewPlan()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg> New Plan</a>
+                                <a onclick="wbSavePlan()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Plan</a>
+                                <a onclick="wbOpenPlan()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Open Plan</a>
+                            </div>
+                            <span style="color: var(--text-dim); font-size: 0.9rem; margin-left: 12px; font-weight:500;">Sprint 1 Architecture</span>
+                        </div>
+                        
+                        <div class="wb-collab">
+                            <div class="avatar-stack">
+                                <div class="wb-avatar" style="background: #10B981; z-index: 3;" title="Anjali">AB</div>
+                                <div class="wb-avatar" style="background: #4F46E5; z-index: 2;" title="Omkar (You)">OG</div>
+                            </div>
+                            <button class="btn-share" onclick="openShareModal()">Invite</button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Body -->
+                    <div class="wb-body">
+                        <div class="whiteboard-toolbar">
+                            <button class="wb-tool active" title="Select / Move" onclick="setWbTool('select', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path></svg>
+                            </button>
+                            <button class="wb-tool" title="Draw Arrow" onclick="setWbTool('arrow', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 19L19 5M19 5v10M19 5H9"></path></svg>
+                            </button>
+                            <button class="wb-tool" title="Text Box" onclick="setWbTool('text', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline stroke-linecap="round" stroke-linejoin="round" points="4 7 4 4 20 4 20 7"></polyline><line stroke-linecap="round" stroke-linejoin="round" x1="9" y1="20" x2="15" y2="20"></line><line stroke-linecap="round" stroke-linejoin="round" x1="12" y1="4" x2="12" y2="20"></line></svg>
+                            </button>
+                            <button class="wb-tool" title="Sticky Note" onclick="setWbTool('sticky', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
+                            </button>
+                            <button class="wb-tool" title="Process Rectangle" onclick="setWbTool('rect', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect></svg>
+                            </button>
+                            <button class="wb-tool" title="Database Cylinder" onclick="setWbTool('capsule', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                            </button>
+                            <button class="wb-tool" title="Data / Input Parallelogram" onclick="setWbTool('data', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 22 4 18 20 2 20"></polygon></svg>
+                            </button>
+                            <button class="wb-tool" title="Circle Node" onclick="setWbTool('circle', this)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>
+                            </button>
+                            
+                            <hr style="border:0; border-top:1px solid var(--border); margin: 4px 0;">
+                            <button class="wb-tool" title="Clear Canvas" onclick="window.wbNewPlan()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline stroke-linecap="round" stroke-linejoin="round" points="3 6 5 6 21 6"></polyline><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="whiteboard-canvas" id="wbCanvas">
+                            
+                            <!-- Real-Time Cursor Simulation -->
+                            <div class="remote-cursor" id="simCursor" style="top: 150px; left: 400px;">
+                                <svg viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path></svg>
+                                <div class="remote-cursor-label">Anjali</div>
+                            </div>
+
+                            <svg class="wb-connector" width="100%" height="100%">
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--text)" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. INTEGRATIONS VIEW -->
+            <section id="view-integrations" class="view-section integration-grid">
+                <div class="integration-card">
+                    <div class="int-header">
+                        <div class="int-icon" style="color: #F24E1E;">🎨</div>
+                        <div>
+                            <div class="int-title">Figma</div>
+                            <div class="int-desc">UI/UX Mockups</div>
+                        </div>
+                    </div>
+                    <div class="int-desc">Link your Figma files so front-end developers always have access to the latest UI assets and color codes.</div>
+                    <div class="int-status">Connected</div>
+                </div>
+                <div class="integration-card">
+                    <div class="int-header">
+                        <div class="int-icon" style="color: var(--text);">🐙</div>
+                        <div>
+                            <div class="int-title">GitHub</div>
+                            <div class="int-desc">Version Control</div>
+                        </div>
+                    </div>
+                    <div class="int-desc">Connect the main private repository. View pull requests and merge statuses directly from this dashboard.</div>
+                    <div class="int-status">Connected</div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- SHARE MODAL -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="custom-modal">
+            <h3>Invite Teammates</h3>
+            <p>Allow other developers in your workspace to view, edit, and collaborate on this plan in real-time.</p>
+            <div class="form-group">
+                <input type="text" placeholder="Search by name or email...">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-outline" onclick="closeShareModal()">Cancel</button>
+                <button class="btn-primary" onclick="closeShareModal()">Send Invite</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store globals
+        window.currentView = 'brainstorm';
+        window.currentWbTool = 'select';
+        
+        // Drawing state variables
+        let isDrawing = false;
+        let startX, startY;
+        let currentDrawElement = null;
+
+        // ==========================================
+        // UI SWITCHING LOGIC
+        // ==========================================
+        window.switchView = function(viewId, btnElement) {
+            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+
+            document.querySelectorAll('.view-section').forEach(sec => {
+                sec.classList.remove('active');
+                sec.style.display = 'none'; 
+            });
+            
+            const targetSection = document.getElementById('view-' + viewId);
+            if(targetSection) {
+                targetSection.classList.add('active');
+                targetSection.style.display = 'flex'; 
+            }
+            window.currentView = viewId;
+        };
+
+        // ==========================================
+        // WHITEBOARD: DRAG-TO-DRAW ENGINE
+        // ==========================================
+        window.setWbTool = function(tool, btn) {
+            window.currentWbTool = tool;
+            document.querySelectorAll('.wb-tool').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const canvas = document.getElementById('wbCanvas');
+            canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
+        };
+
+        const canvas = document.getElementById('wbCanvas');
+
+        canvas.addEventListener('mousedown', function(e) {
+            if(window.currentWbTool === 'select') return;
+            // Ignore click if clicking on an already placed item or cursor
+            if(e.target.closest('.wb-item') || e.target.closest('.remote-cursor')) return;
+
+            const rect = this.getBoundingClientRect();
+            startX = e.clientX - rect.left + this.scrollLeft;
+            startY = e.clientY - rect.top + this.scrollTop;
+            isDrawing = true;
+
+            if(window.currentWbTool === 'arrow') {
+                const svg = this.querySelector('.wb-connector');
+                currentDrawElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                currentDrawElement.setAttribute('x1', startX);
+                currentDrawElement.setAttribute('y1', startY);
+                currentDrawElement.setAttribute('x2', startX);
+                currentDrawElement.setAttribute('y2', startY);
+                currentDrawElement.setAttribute('stroke', 'var(--text)');
+                currentDrawElement.setAttribute('stroke-width', '2');
+                currentDrawElement.setAttribute('marker-end', 'url(#arrowhead)');
+                svg.appendChild(currentDrawElement);
+            } else {
+                currentDrawElement = document.createElement('div');
+                currentDrawElement.className = 'wb-item';
+                
+                if (window.currentWbTool === 'sticky') currentDrawElement.classList.add('wb-sticky');
+                else if (window.currentWbTool === 'rect') currentDrawElement.classList.add('wb-rect');
+                else if (window.currentWbTool === 'circle') currentDrawElement.classList.add('wb-circle');
+                else if (window.currentWbTool === 'capsule') currentDrawElement.classList.add('wb-db');
+                else if (window.currentWbTool === 'data') currentDrawElement.classList.add('wb-data');
+                else if (window.currentWbTool === 'text') currentDrawElement.classList.add('wb-text');
+
+                currentDrawElement.style.left = startX + 'px';
+                currentDrawElement.style.top = startY + 'px';
+                currentDrawElement.style.width = '0px';
+                currentDrawElement.style.height = '0px';
+                currentDrawElement.style.zIndex = '2';
+                
+                this.appendChild(currentDrawElement);
+            }
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+            if(!isDrawing || !currentDrawElement) return;
+
+            const rect = this.getBoundingClientRect();
+            const currentX = e.clientX - rect.left + this.scrollLeft;
+            const currentY = e.clientY - rect.top + this.scrollTop;
+
+            if(window.currentWbTool === 'arrow') {
+                currentDrawElement.setAttribute('x2', currentX);
+                currentDrawElement.setAttribute('y2', currentY);
+            } else {
+                const width = currentX - startX;
+                const height = currentY - startY;
+
+                currentDrawElement.style.width = Math.abs(width) + 'px';
+                currentDrawElement.style.height = Math.abs(height) + 'px';
+                currentDrawElement.style.left = (width < 0 ? currentX : startX) + 'px';
+                currentDrawElement.style.top = (height < 0 ? currentY : startY) + 'px';
+            }
+        });
+
+        canvas.addEventListener('mouseup', function(e) {
+            if(!isDrawing) return;
+            isDrawing = false;
+
+            if(window.currentWbTool !== 'arrow' && currentDrawElement) {
+                // Enforce minimum size if they just clicked without dragging
+                if(parseInt(currentDrawElement.style.width) < 50) {
+                    currentDrawElement.style.width = '180px';
+                    if(window.currentWbTool === 'circle') {
+                        currentDrawElement.style.height = '180px';
+                    } else {
+                        currentDrawElement.style.height = '80px';
+                    }
+                }
+
+                let placeholder = "Type here...";
+                if(window.currentWbTool === 'sticky') placeholder = "Brainstorm...";
+                if(window.currentWbTool === 'rect') placeholder = "Process Step";
+                if(window.currentWbTool === 'capsule') placeholder = "Database";
+                if(window.currentWbTool === 'data') placeholder = "Input/Output";
+                if(window.currentWbTool === 'circle') placeholder = "Node";
+                
+                const ta = document.createElement('textarea');
+                ta.placeholder = placeholder;
+                currentDrawElement.appendChild(ta);
+
+                window.makeDraggable(currentDrawElement);
+                ta.focus();
+            }
+            currentDrawElement = null;
+            window.setWbTool('select', document.querySelector('.wb-tool[title="Select / Move"]'));
+        });
+
+        window.makeDraggable = function(el) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            el.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                // VITAL FIX: Do not drag if clicking inside textarea. Allows typing/highlighting!
+                if(e.target.tagName.toLowerCase() === 'textarea') return; 
+                
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                
+                document.querySelectorAll('.wb-item').forEach(i => i.style.zIndex = '2');
+                el.style.zIndex = '3';
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                el.style.top = (el.offsetTop - pos2) + "px";
+                el.style.left = (el.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        };
+
+        // ==========================================
+        // WHITEBOARD: FILE MENU LOGIC
+        // ==========================================
+        window.toggleWbMenu = function(e) {
+            e.stopPropagation();
+            document.getElementById('wbFileMenu').classList.toggle('active');
+        };
+        
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('wbFileMenu');
+            if(menu && !e.target.closest('.wb-menu-group')) menu.classList.remove('active');
+        });
+
+        window.wbNewPlan = function() {
+            if(confirm('Clear the current plan and start fresh?')) {
+                const canvas = document.getElementById('wbCanvas');
+                const svg = canvas.querySelector('.wb-connector');
+                const cursor = canvas.querySelector('.remote-cursor');
+                canvas.innerHTML = '';
+                if(svg) canvas.appendChild(svg);
+                if(cursor) canvas.appendChild(cursor);
+            }
+        };
+
+        window.wbSavePlan = function() {
+            alert('Plan saved successfully to ProPartner Cloud!');
+            document.getElementById('wbFileMenu').classList.remove('active');
+        };
+
+        window.wbOpenPlan = function() {
+            alert('File directory opening soon!');
+            document.getElementById('wbFileMenu').classList.remove('active');
+        };
+
+        // Share Modal
+        window.openShareModal = function() { document.getElementById('shareModal').classList.add('active'); };
+        window.closeShareModal = function() { document.getElementById('shareModal').classList.remove('active'); };
+
+        // ==========================================
+        // MULTI-CURSOR SIMULATION
+        // ==========================================
+        // This simulates a teammate ("Anjali") moving her cursor around to show collaboration
+        let simX = 400; let simY = 150;
+        setInterval(() => {
+            const cursor = document.getElementById('simCursor');
+            if(cursor && window.currentView === 'brainstorm') {
+                simX += (Math.random() - 0.5) * 80;
+                simY += (Math.random() - 0.5) * 80;
+                // Keep inside bounds
+                simX = Math.max(50, Math.min(800, simX));
+                simY = Math.max(50, Math.min(500, simY));
+                
+                cursor.style.left = simX + 'px';
+                cursor.style.top = simY + 'px';
+            }
+        }, 1500);
+
+        // Header Collapse Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('mainHeader');
+            const toggleTab = document.getElementById('headerToggleTab');
+            let isHeaderCollapsed = false;
+
+            if (toggleTab) {
+                toggleTab.addEventListener('click', () => {
+                    if (!isHeaderCollapsed) {
+                        header.style.marginTop = `-${header.offsetHeight}px`;
+                        header.classList.add('collapsed');
+                        isHeaderCollapsed = true;
+                    } else {
+                        header.style.marginTop = '0px';
+                        header.classList.remove('collapsed');
+                        isHeaderCollapsed = false;
+                    }
+                });
+            }
+
+            // Dark Mode
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const moonIcon = document.getElementById('moonIcon');
+            const sunIcon = document.getElementById('sunIcon');
+            if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                moonIcon.style.display = 'none';
+                sunIcon.style.display = 'block';
+            }
+            themeToggleBtn.addEventListener('click', () => {
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    sunIcon.style.display = 'none';
+                    moonIcon.style.display = 'block';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    moonIcon.style.display = 'none';
+                    sunIcon.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
