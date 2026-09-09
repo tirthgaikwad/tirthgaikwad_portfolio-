@@ -200,7 +200,7 @@
         .wb-item textarea { 
             width: 100%; height: 100%; border: none; background: transparent; color: var(--text); 
             resize: none; outline: none; font-family: 'Inter', sans-serif; font-size: 0.95rem; 
-            font-weight: 500; text-align: center; pointer-events: auto; /* ALLOWS TYPING */
+            font-weight: 500; text-align: center; pointer-events: auto; 
         }
 
         /* Specific Shape Styling */
@@ -211,11 +211,9 @@
         .wb-rect { background: var(--card-bg); border: 2px solid #5A52FF; border-radius: 8px; }
         .wb-circle { background: var(--card-bg); border: 2px solid #10B981; border-radius: 50%; }
         
-        /* New Database Cylinder Tool */
         .wb-db { background: var(--card-bg); border: 2px solid #8B5CF6; border-radius: 50% / 15%; position: relative; }
         .wb-db::before { content:''; position:absolute; top:0; left:-2px; width:100%; height:20px; border:2px solid #8B5CF6; border-radius:50%; }
 
-        /* New Data Parallelogram Tool */
         .wb-data { background: var(--card-bg); border: 2px solid #F59E0B; transform: skew(-15deg); border-radius: 4px;}
         .wb-data textarea { transform: skew(15deg); }
 
@@ -239,16 +237,23 @@
         .int-desc { color: var(--text-dim); font-size: 0.9rem; line-height: 1.4;}
         .int-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); color: #10B981; align-self: flex-start;}
 
-        /* MODALS */
+        /* ==========================================
+           MODALS (CUSTOM ALERTS & SHARE)
+           ========================================== */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-        .custom-modal { background: var(--card-bg); padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
-        .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800;}
-        .custom-modal p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.4; }
+        .custom-modal { background: var(--card-bg); padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); animation: slideDown 0.3s ease; }
+        .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem;}
+        .custom-modal p { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
         .form-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; margin-bottom: 16px;}
         .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
         .btn-outline { padding: 10px 20px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); font-weight: 600; cursor: pointer; transition: 0.2s;}
         .btn-outline:hover { background: var(--input-bg); }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -421,7 +426,7 @@
                             
                             <hr style="border:0; border-top:1px solid var(--border); margin: 4px 0;">
                             <button class="wb-tool" title="Clear Canvas" onclick="window.wbNewPlan()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline stroke-linecap="round" stroke-linejoin="round" points="3 6 5 6 21 6"></polyline><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline stroke-linecap="round" stroke-linejoin="round" points="3 6 5 6 21 6"></polyline><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
                             </button>
                         </div>
 
@@ -474,6 +479,18 @@
         </div>
     </main>
 
+    <!-- CUSTOM SYSTEM ALERTS MODAL -->
+    <div class="modal-overlay" id="systemModal">
+        <div class="custom-modal">
+            <h3 id="systemModalTitle">Notification</h3>
+            <p id="systemModalMessage">Message goes here.</p>
+            <div class="modal-buttons">
+                <button class="btn-outline" id="systemModalCancel" onclick="closeSystemModal()" style="display: none;">Cancel</button>
+                <button class="btn-primary" id="systemModalConfirm">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SHARE MODAL -->
     <div class="modal-overlay" id="shareModal">
         <div class="custom-modal">
@@ -498,6 +515,39 @@
         let isDrawing = false;
         let startX, startY;
         let currentDrawElement = null;
+
+        // ==========================================
+        // CUSTOM SYSTEM MODAL LOGIC (Replaces alerts)
+        // ==========================================
+        window.showSystemModal = function(title, message, type = 'alert', onConfirm = null) {
+            const modal = document.getElementById('systemModal');
+            const titleEl = document.getElementById('systemModalTitle');
+            const msgEl = document.getElementById('systemModalMessage');
+            const cancelBtn = document.getElementById('systemModalCancel');
+            const confirmBtn = document.getElementById('systemModalConfirm');
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+
+            if (type === 'confirm') {
+                cancelBtn.style.display = 'block';
+                confirmBtn.textContent = 'Confirm';
+                confirmBtn.onclick = () => {
+                    closeSystemModal();
+                    if (onConfirm) onConfirm();
+                };
+            } else {
+                cancelBtn.style.display = 'none';
+                confirmBtn.textContent = 'OK';
+                confirmBtn.onclick = closeSystemModal;
+            }
+
+            modal.classList.add('active');
+        };
+
+        window.closeSystemModal = function() {
+            document.getElementById('systemModal').classList.remove('active');
+        };
 
         // ==========================================
         // UI SWITCHING LOGIC
@@ -666,7 +716,7 @@
         };
 
         // ==========================================
-        // WHITEBOARD: FILE MENU LOGIC
+        // WHITEBOARD: FILE MENU LOGIC (UPDATED)
         // ==========================================
         window.toggleWbMenu = function(e) {
             e.stopPropagation();
@@ -679,23 +729,24 @@
         });
 
         window.wbNewPlan = function() {
-            if(confirm('Clear the current plan and start fresh?')) {
+            window.showSystemModal('Start Fresh?', 'Are you sure you want to clear the current plan and start a new one? This action cannot be undone.', 'confirm', () => {
                 const canvas = document.getElementById('wbCanvas');
                 const svg = canvas.querySelector('.wb-connector');
                 const cursor = canvas.querySelector('.remote-cursor');
                 canvas.innerHTML = '';
                 if(svg) canvas.appendChild(svg);
                 if(cursor) canvas.appendChild(cursor);
-            }
+            });
+            document.getElementById('wbFileMenu').classList.remove('active');
         };
 
         window.wbSavePlan = function() {
-            alert('Plan saved successfully to ProPartner Cloud!');
+            window.showSystemModal('Success', 'Plan saved successfully to ProPartner Cloud!', 'alert');
             document.getElementById('wbFileMenu').classList.remove('active');
         };
 
         window.wbOpenPlan = function() {
-            alert('File directory opening soon!');
+            window.showSystemModal('Coming Soon', 'File directory integration is launching soon!', 'alert');
             document.getElementById('wbFileMenu').classList.remove('active');
         };
 

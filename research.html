@@ -7,82 +7,109 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script>if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
     <style>
-        /* ProPartner Native Theme */
+        /* ProPartner Ultra-Premium Theme */
         :root { 
-            --bg: #F8FAFC; 
-            --surface: rgba(255, 255, 255, 0.9); 
+            --bg: #F4F7FA; 
+            --surface: #ffffff; 
             --card-bg: #ffffff;
             --border: #E2E8F0; 
             --primary: #4F46E5; 
+            --primary-hover: #4338CA;
             --secondary: #818CF8; 
             --text: #0F172A; 
             --text-dim: #64748B; 
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --input-bg: #F1F5F9;
+            --header-bg: rgba(255, 255, 255, 0.95);
+            --input-bg: #F8FAFC;
             --nav-active-bg: #0F172A;
             --nav-active-text: #ffffff;
-            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
-            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.03);
-            --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.04);
+            
+            /* Premium Soft Shadows */
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.03), 0 2px 4px rgba(15, 23, 42, 0.02);
+            --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+            
+            /* Modern Brand Colors for Tinting */
+            --brand-google: #10B981;
+            --brand-gemini: #6366F1;
+            --brand-claude: #F59E0B;
+            --brand-perplexity: #0EA5E9;
         }
 
         [data-theme="dark"] {
-            --bg: #000000; 
-            --surface: rgba(0, 0, 0, 0.85); 
-            --card-bg: #000000;
-            --border: #333333; 
-            --primary: #5A52FF; 
+            --bg: #09090B; 
+            --surface: #18181B; 
+            --card-bg: #18181B;
+            --border: #27272A; 
+            --primary: #6366F1; 
             --text: #F8FAFC; 
-            --text-dim: #94A3B8;
-            --header-bg: rgba(0, 0, 0, 0.85);
-            --input-bg: #111111;
-            --nav-active-bg: #333333; 
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --text-dim: #A1A1AA;
+            --header-bg: rgba(24, 24, 27, 0.95);
+            --input-bg: #09090B;
+            --nav-active-bg: #FAFAFA; 
+            --nav-active-text: #09090B;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
             --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
         }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s ease; }
 
         /* ==========================================
-           GLOBAL HEADER
+           ENTERPRISE HEADER
            ========================================== */
         header { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 12px 24px; background: var(--header-bg); backdrop-filter: blur(12px); 
-            border-bottom: 1px solid var(--border); z-index: 100; position: relative; 
-            transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; gap: 20px;
+            padding: 14px 32px; background: var(--header-bg); border-bottom: 1px solid var(--border); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            z-index: 100; position: relative; flex-shrink: 0; gap: 32px;
+            transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .header-left { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
-        header h2 { font-weight: 800; color: var(--primary); font-size: 1.5rem; letter-spacing: -0.5px;}
+        .header-left { flex-shrink: 0; display: flex; align-items: center; }
+        header h2.logo { font-weight: 800; color: var(--primary); font-size: 1.5rem; letter-spacing: -0.5px; }
 
-        .header-icons { display: flex; align-items: center; gap: 8px; color: var(--text-dim); }
-        .theme-toggle, .nav-bell-container { cursor: pointer; padding: 8px; border-radius: 8px; display: flex; align-items: center; transition: 0.2s; }
-        .theme-toggle:hover, .nav-bell-container:hover { background: var(--bg); color: var(--text); }
-        .theme-toggle svg, .nav-bell-container svg { width: 20px; height: 20px; }
+        nav { 
+            flex: 1; display: flex; align-items: center; justify-content: flex-end; 
+            flex-wrap: wrap; gap: 12px 6px;
+        }
         
-        .notification-badge { position: absolute; top: 0px; right: 0px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
-        nav { display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 4px; }
-        nav::-webkit-scrollbar { display: none; }
-        nav a { color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 0.85rem; padding: 8px 12px; border-radius: 8px; transition: 0.2s; cursor: pointer; white-space: nowrap; }
-        nav a:hover:not(.active):not(.btn-logout) { color: var(--text); background: var(--bg); }
+        nav a { 
+            color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 0.85rem; 
+            padding: 8px 14px; border-radius: 8px; transition: all 0.2s; cursor: pointer; white-space: nowrap;
+        }
+        nav a:hover:not(.active):not(.btn-admin):not(.btn-logout) { color: var(--text); background: var(--input-bg); }
         nav a.active { background: var(--nav-active-bg); color: var(--nav-active-text); }
-        .btn-logout { color: #ef4444; font-weight: 700; }
-        .btn-logout:hover { background: rgba(239, 68, 68, 0.1); }
+        
+        .btn-admin { border: 1px solid rgba(239, 68, 68, 0.3); color: #EF4444; border-radius: 8px; padding: 7px 14px; font-weight: 600; background: transparent; transition: 0.2s; }
+        .btn-admin:hover { background: rgba(239, 68, 68, 0.05); border-color: #EF4444; }
+        
+        .btn-logout { color: #EF4444; font-weight: 600; padding: 8px 14px; }
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.05); }
+
+        .header-icons { display: flex; align-items: center; gap: 4px; color: var(--text-dim); margin-right: 12px; }
+        .theme-toggle, .nav-bell-container { cursor: pointer; padding: 8px; border-radius: 8px; position: relative; transition: 0.2s; }
+        .theme-toggle:hover, .nav-bell-container:hover { color: var(--text); background: var(--input-bg); }
+        .theme-toggle svg, .nav-bell-container svg { width: 18px; height: 18px; }
+        
+        .notification-badge { 
+            position: absolute; top: 2px; right: 2px; background: #EF4444; color: white; 
+            font-size: 0.65rem; font-weight: 700; width: 16px; height: 16px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            border: 2px solid var(--header-bg); box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+        }
 
         .header-toggle-tab { 
             position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); width: 48px; height: 16px; 
-            background: var(--header-bg); border: 1px solid var(--border); border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; 
+            background: var(--header-bg); border: 1px solid var(--border); border-top: none; 
+            border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; 
             display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--text-dim);
-            z-index: 1000; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: color 0.2s;
+            z-index: 1000; transition: color 0.2s;
         }
         .header-toggle-tab:hover { color: var(--primary); }
         .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
@@ -91,96 +118,124 @@
         /* ==========================================
            RESEARCH WORKSPACE
            ========================================== */
-        .research-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 24px 5%; }
+        .research-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 32px 5%; max-width: 1600px; margin: 0 auto; width: 100%; }
         
-        .query-console { display: flex; gap: 16px; margin-bottom: 24px; flex-shrink: 0; align-items: center; }
+        /* Sleek Search Console */
+        .query-console { display: flex; gap: 16px; margin-bottom: 32px; flex-shrink: 0; align-items: center; }
         .query-box {
             flex: 1; display: flex; align-items: center; background: var(--card-bg);
-            border: 1px solid var(--border); border-radius: 12px; padding: 0 16px;
-            box-shadow: var(--shadow-sm); transition: 0.2s;
+            border: 1px solid var(--border); border-radius: 12px; padding: 4px 16px;
+            box-shadow: var(--shadow-sm); transition: all 0.2s ease;
         }
-        .query-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(90, 82, 255, 0.1); }
+        .query-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); transform: translateY(-1px); }
         .query-box input {
-            flex: 1; border: none; background: transparent; padding: 14px 12px; font-size: 1rem;
+            flex: 1; border: none; background: transparent; padding: 12px; font-size: 0.95rem;
             color: var(--text); outline: none; font-weight: 500; font-family: 'Inter', sans-serif;
         }
+        .query-box svg { color: var(--text-dim); transition: 0.2s; }
+        .query-box:focus-within svg { color: var(--primary); }
+        
         .mode-select {
-            padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);
-            background: var(--card-bg); color: var(--text); font-size: 0.95rem; font-weight: 600; cursor: pointer; outline: none;
+            padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--card-bg); color: var(--text); font-size: 0.9rem; font-weight: 600; 
+            cursor: pointer; outline: none; box-shadow: var(--shadow-sm); transition: 0.2s;
         }
+        .mode-select:focus { border-color: var(--primary); }
+        
         .btn-primary { 
-            background: var(--primary); color: white; border: none; padding: 14px 32px; border-radius: 12px; 
-            font-weight: 700; cursor: pointer; font-size: 0.95rem; transition: 0.2s; outline: none; white-space: nowrap;
+            background: var(--primary); color: white; border: none; padding: 16px 32px; border-radius: 12px; 
+            font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: all 0.2s; outline: none; white-space: nowrap; box-shadow: var(--shadow-sm);
         }
-        .btn-primary:hover { background: #4740D4; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(90, 82, 255, 0.2); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .btn-primary:active { transform: translateY(0); }
 
         /* Arena Layout */
-        .arena { flex: 1; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; padding-bottom: 24px; }
+        .arena { flex: 1; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; padding-bottom: 40px; }
         
-        .team-section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
+        .team-section-title { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 16px;}
         .team-section-title::after { content:''; flex:1; height:1px; background: var(--border); }
         
-        .team-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; height: 320px; flex-shrink: 0; }
+        .team-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; height: 360px; flex-shrink: 0; }
         
-        /* Agent Panels */
+        /* Ultra-Premium Agent Panels */
         .agent-panel {
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
-            display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-sm); transition: 0.2s;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+            display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-md); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .agent-panel:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
+        .agent-panel:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: rgba(79, 70, 229, 0.2); }
         
         .agent-header {
-            background: var(--input-bg); border-bottom: 1px solid var(--border); padding: 12px 16px;
-            font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 0.95rem;
+            background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 16px 20px;
+            font-weight: 700; display: flex; align-items: center; gap: 12px; font-size: 0.95rem;
         }
-        .agent-icon {
-            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; background: var(--card-bg); border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
+        
+        .agent-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+        
         .agent-badge {
-            margin-left: auto; background: var(--card-bg); border: 1px solid var(--border);
-            font-size: 0.65rem; padding: 2px 8px; border-radius: 12px; color: var(--text-dim); font-weight: 700; text-transform: uppercase;
+            margin-left: auto; background: var(--bg); border: 1px solid var(--border);
+            font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; color: var(--text-dim); 
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.3s;
         }
-        .agent-badge.active { background: rgba(90, 82, 255, 0.1); color: var(--primary); border-color: var(--primary); animation: pulse 1.5s infinite; }
+        .agent-badge.active { 
+            background: rgba(79, 70, 229, 0.1); color: var(--primary); border-color: transparent; 
+            animation: pulse 2s infinite; 
+        }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+        /* Soft Tinted Log Bubbles */
         .agent-log {
-            padding: 16px; flex: 1; overflow-y: auto; font-size: 0.85rem; line-height: 1.5;
-            color: var(--text); display: flex; flex-direction: column; gap: 12px;
+            padding: 20px; flex: 1; overflow-y: auto; font-size: 0.85rem; line-height: 1.6;
+            color: var(--text); display: flex; flex-direction: column; gap: 12px; background: var(--bg);
         }
-        .agent-msg {
-            background: var(--input-bg); padding: 10px 14px; border-radius: 8px; border-left: 3px solid transparent; animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Agent Branding */
-        .msg-google { border-left-color: #3BA55C; }
-        .msg-gemini { border-left-color: #5A52FF; }
-        .msg-claude { border-left-color: #D97757; }
-        .msg-perplexity { border-left-color: #14B8A6; }
-
-        /* Master Synthesizer - Expanded for comprehensive reports */
-        .synthesis-panel {
-            margin-top: auto; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
-            padding: 24px; box-shadow: var(--shadow-md); flex-shrink: 0; min-height: 400px; display: flex; flex-direction: column; border-top: 4px solid var(--primary);
-        }
-        .synth-header { font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
-        .synth-content { flex: 1; background: var(--bg); border-radius: 8px; padding: 24px; color: var(--text); font-size: 0.95rem; line-height: 1.7; overflow-y: auto; border: 1px solid var(--border);}
-        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; font-weight: 500; font-style: italic; gap: 12px; color: var(--text-dim);}
         
-        .loader-circle { width: 20px; height: 20px; border: 2px solid var(--border); border-top: 2px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .agent-msg {
+            padding: 14px 18px; border-radius: 12px; border: 1px solid transparent; 
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 500;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Premium Brand Tints */
+        .msg-google { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.15); color: #065F46; }
+        .msg-gemini { background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.15); color: #3730A3; }
+        .msg-claude { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.15); color: #92400E; }
+        .msg-perplexity { background: rgba(14, 165, 233, 0.08); border-color: rgba(14, 165, 233, 0.15); color: #075985; }
+
+        [data-theme="dark"] .msg-google { background: rgba(16, 185, 129, 0.1); color: #6EE7B7; }
+        [data-theme="dark"] .msg-gemini { background: rgba(99, 102, 241, 0.1); color: #A5B4FC; }
+        [data-theme="dark"] .msg-claude { background: rgba(245, 158, 11, 0.1); color: #FCD34D; }
+        [data-theme="dark"] .msg-perplexity { background: rgba(14, 165, 233, 0.1); color: #7DD3FC; }
+
+        /* Master Synthesizer - Elevated Document Look */
+        .synthesis-panel {
+            margin-top: 8px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+            padding: 40px; box-shadow: var(--shadow-lg); flex-shrink: 0; min-height: 400px; display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+        }
+        
+        /* Gradient Top Border Effect */
+        .synthesis-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--brand-perplexity));
+        }
+
+        .synth-header { font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 32px; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px;}
+        .synth-content { flex: 1; background: var(--bg); border-radius: 12px; padding: 40px; color: var(--text); font-size: 0.95rem; line-height: 1.8; overflow-y: auto; border: 1px solid var(--border);}
+        
+        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; font-weight: 500; color: var(--text-dim); gap: 12px;}
+        .loader-circle { width: 20px; height: 20px; border: 2.5px solid var(--border); border-top: 2.5px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .btn-outline { padding: 10px 20px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s;}
-        .btn-outline:hover { background: var(--input-bg); }
+        .btn-outline { padding: 12px 24px; border: 1px solid var(--border); border-radius: 10px; background: var(--card-bg); color: var(--text); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);}
+        .btn-outline:hover { background: var(--bg); border-color: var(--text-dim); }
 
-        /* Report Specific Typography */
         .report-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 16px; color: var(--text); letter-spacing: -0.5px;}
-        .report-meta { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 24px; display: flex; gap: 16px; font-weight: 500;}
-        .report-meta span { background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border);}
-        .report-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-sm);}
-        .report-h3 { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
-        .report-p { margin-bottom: 16px; color: var(--text); line-height: 1.7;}
+        .report-meta { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 40px; display: flex; gap: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;}
+        .report-meta span { display: flex; align-items: center; gap: 8px; }
+        
+        .report-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: var(--shadow-sm);}
+        .report-h3 { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px;}
+        .report-p { margin-bottom: 20px; color: var(--text); line-height: 1.8; font-family: 'Inter', sans-serif;}
         .report-p:last-child { margin-bottom: 0; }
     </style>
 </head>
@@ -192,6 +247,9 @@
             <a href="index.html" style="text-decoration: none;">
                 <h2 class="logo">ProPartner</h2>
             </a>
+        </div>
+        
+        <nav>
             <div class="header-icons">
                 <div class="theme-toggle" id="themeToggleBtn" title="Toggle Theme">
                     <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -199,16 +257,14 @@
                 </div>
                 <div class="nav-bell-container" id="notifBellBtn">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    <div class="notification-badge">2</div>
+                    <div class="notification-badge">3</div>
                 </div>
             </div>
-        </div>
-        
-        <nav>
+            
             <a href="search.html">Search</a>
             <a href="board.html">Opportunities Board</a>
             <a href="team.html">My Teams</a>
-            <a href="project_management.html">Plan Project</a>
+            <a href="project_management.html">Project Management</a>
             <a href="research.html" class="active">Research Hub</a>
             <a href="college.html">My College</a>
             <a href="department.html">My Department</a>
@@ -218,6 +274,7 @@
             <a href="inbox.html">Inbox</a>
             <a href="history.html">History</a>
             <a href="profile.html">My Profile</a>
+            <a href="admin_dashboard.html" class="btn-admin">Admin Dashboard</a>
             <a onclick="logout()" class="btn-logout">Log Out</a>
         </nav>
 
@@ -231,7 +288,7 @@
         
         <div class="query-console">
             <div class="query-box">
-                <svg fill="none" stroke="var(--text-dim)" viewBox="0 0 24 24" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 <input type="text" id="researchQuery" placeholder="Enter any topic to generate a comprehensive research report..." autocomplete="off">
             </div>
             <select id="teamMode" class="mode-select" onchange="toggleMultiTeam(this.value)">
@@ -246,41 +303,81 @@
             <div class="team-section-title">Team Alpha Agents</div>
             <div class="team-row" id="team1Row">
                 <div class="agent-panel" id="agent-google-1">
-                    <div class="agent-header"><div class="agent-icon" style="color:#3BA55C;">🔍</div> Web Search <span class="agent-badge">Standby</span></div>
+                    <div class="agent-header">
+                        <div class="agent-icon" style="color:var(--brand-google);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </div> 
+                        Web Search <span class="agent-badge">Standby</span>
+                    </div>
                     <div class="agent-log"></div>
                 </div>
                 <div class="agent-panel" id="agent-gemini-1">
-                    <div class="agent-header"><div class="agent-icon" style="color:#5A52FF;">✨</div> Google Gemini <span class="agent-badge">Standby</span></div>
+                    <div class="agent-header">
+                        <div class="agent-icon" style="color:var(--brand-gemini);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"></path></svg>
+                        </div> 
+                        Google Gemini <span class="agent-badge">Standby</span>
+                    </div>
                     <div class="agent-log"></div>
                 </div>
                 <div class="agent-panel" id="agent-claude-1">
-                    <div class="agent-header"><div class="agent-icon" style="color:#D97757;">🧠</div> Anthropic Claude <span class="agent-badge">Standby</span></div>
+                    <div class="agent-header">
+                        <div class="agent-icon" style="color:var(--brand-claude);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 18a6 6 0 110-12 6 6 0 010 12z"></path><circle cx="12" cy="12" r="2" fill="currentColor"></circle></svg>
+                        </div> 
+                        Anthropic Claude <span class="agent-badge">Standby</span>
+                    </div>
                     <div class="agent-log"></div>
                 </div>
                 <div class="agent-panel" id="agent-perplexity-1">
-                    <div class="agent-header"><div class="agent-icon" style="color:#14B8A6;">🧭</div> Perplexity AI <span class="agent-badge">Standby</span></div>
+                    <div class="agent-header">
+                        <div class="agent-icon" style="color:var(--brand-perplexity);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                        </div> 
+                        Perplexity AI <span class="agent-badge">Standby</span>
+                    </div>
                     <div class="agent-log"></div>
                 </div>
             </div>
 
-            <!-- Team B Row (Hidden by default) -->
+            <!-- Team B Row -->
             <div id="team2Container" style="display: none; flex-direction: column; gap: 16px;">
                 <div class="team-section-title">Team Beta Agents</div>
                 <div class="team-row" id="team2Row">
                     <div class="agent-panel" id="agent-google-2">
-                        <div class="agent-header"><div class="agent-icon" style="color:#3BA55C;">🔍</div> Web Search <span class="agent-badge">Standby</span></div>
+                        <div class="agent-header">
+                            <div class="agent-icon" style="color:var(--brand-google);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </div> 
+                            Web Search <span class="agent-badge">Standby</span>
+                        </div>
                         <div class="agent-log"></div>
                     </div>
                     <div class="agent-panel" id="agent-gemini-2">
-                        <div class="agent-header"><div class="agent-icon" style="color:#5A52FF;">✨</div> Google Gemini <span class="agent-badge">Standby</span></div>
+                        <div class="agent-header">
+                            <div class="agent-icon" style="color:var(--brand-gemini);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"></path></svg>
+                            </div> 
+                            Google Gemini <span class="agent-badge">Standby</span>
+                        </div>
                         <div class="agent-log"></div>
                     </div>
                     <div class="agent-panel" id="agent-claude-2">
-                        <div class="agent-header"><div class="agent-icon" style="color:#D97757;">🧠</div> Anthropic Claude <span class="agent-badge">Standby</span></div>
+                        <div class="agent-header">
+                            <div class="agent-icon" style="color:var(--brand-claude);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 18a6 6 0 110-12 6 6 0 010 12z"></path><circle cx="12" cy="12" r="2" fill="currentColor"></circle></svg>
+                            </div> 
+                            Anthropic Claude <span class="agent-badge">Standby</span>
+                        </div>
                         <div class="agent-log"></div>
                     </div>
                     <div class="agent-panel" id="agent-perplexity-2">
-                        <div class="agent-header"><div class="agent-icon" style="color:#14B8A6;">🧭</div> Perplexity AI <span class="agent-badge">Standby</span></div>
+                        <div class="agent-header">
+                            <div class="agent-icon" style="color:var(--brand-perplexity);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                            </div> 
+                            Perplexity AI <span class="agent-badge">Standby</span>
+                        </div>
                         <div class="agent-log"></div>
                     </div>
                 </div>
@@ -289,7 +386,7 @@
             <!-- Native Synthesizer -->
             <div class="synthesis-panel" id="synthesisPanel">
                 <div class="synth-header">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--primary)" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--primary)" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
                     ProPartner Native Synthesizer
                 </div>
                 <div class="synth-content" id="synthContent">
@@ -301,173 +398,6 @@
     </main>
 
     <script>
-        window.toggleMultiTeam = function(mode) {
-            const team2 = document.getElementById('team2Container');
-            team2.style.display = mode === 'multi' ? 'flex' : 'none';
-        };
-
-        // ==========================================
-        // DEEP-DIVE RESEARCH ENGINE
-        // ==========================================
-        window.startResearch = async function() {
-            const rawQuery = document.getElementById('researchQuery').value.trim();
-            const mode = document.getElementById('teamMode').value;
-            
-            if(!rawQuery) return alert("Please enter a research topic into the console.");
-
-            document.querySelectorAll('.agent-log').forEach(el => el.innerHTML = '');
-            document.querySelectorAll('.agent-badge').forEach(badge => {
-                badge.textContent = 'Processing';
-                badge.classList.add('active');
-            });
-
-            const synthContent = document.getElementById('synthContent');
-            synthContent.innerHTML = `<div class="empty-state"><div class="loader-circle"></div> Fetching massive data context and initiating AI processing...</div>`;
-
-            window.addLog('google-1', 'msg-google', `Executing comprehensive semantic search for "${rawQuery}". Identifying core entities...`);
-            if (mode === 'multi') window.addLog('google-2', 'msg-google', `Executing secondary deep-web query for alternate perspectives on "${rawQuery}".`);
-
-            const cleanQuery = rawQuery.replace(/^(what is|who is|how to|tell me about)\s+/i, '');
-
-            try {
-                // STEP 1: Search Wikipedia for the exact entity match
-                const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(cleanQuery)}`);
-                const searchData = await searchRes.json();
-                
-                if (!searchData.query || searchData.query.search.length === 0) {
-                    throw new Error("No specific factual data found.");
-                }
-
-                const pageId = searchData.query.search[0].pageid;
-                const titleHit = searchData.query.search[0].title;
-
-                window.addLog('google-1', 'msg-google', `Matched primary entity: "${titleHit}". Requesting full-text extraction of documentation...`);
-
-                // STEP 2: Deep Fetch - Get the massive text extract for comprehensive reporting
-                const extractRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=false&explaintext=true&pageids=${pageId}`);
-                const extractData = await extractRes.json();
-                const fullText = extractData.query.pages[pageId].extract;
-
-                // Step 3: Simulated Multi-Agent Processing of the massive data
-                setTimeout(() => {
-                    window.addLog('gemini-1', 'msg-gemini', `Ingested ${fullText.length} bytes of raw data for "${titleHit}". Structuring Executive Summary and categorizing sub-topics.`);
-                    window.addLog('claude-1', 'msg-claude', `Parsing detailed body content. Applying objective guardrails and formatting raw text into analytical paragraphs.`);
-                    window.addLog('perplexity-1', 'msg-perplexity', `Cross-referencing claims in the extracted text. Fetching 12 secondary citations to verify historical and technical accuracy...`);
-                    
-                    if (mode === 'multi') {
-                        window.addLog('google-2', 'msg-google', `Retrieved extensive historical and cultural datasets for "${titleHit}". Routing to Team Beta.`);
-                        window.addLog('gemini-2', 'msg-gemini', `Analyzing alternative frameworks and lesser-known data points.`);
-                        window.addLog('claude-2', 'msg-claude', `Critiquing baseline parameters. Identifying potential biases in primary dataset.`);
-                        window.addLog('perplexity-2', 'msg-perplexity', `Compiling related entities and technical dependencies.`);
-                    }
-                }, 2000);
-
-                setTimeout(() => {
-                    window.addLog('claude-1', 'msg-claude', `Critique: Ensure we distinguish between core facts and sub-topics regarding "${titleHit}". Proceeding to format final layout.`);
-                    window.addLog('gemini-1', 'msg-gemini', `Acknowledged. Synthesizing data blocks into a comprehensive multi-section report.`);
-                    window.addLog('perplexity-1', 'msg-perplexity', `Verification complete. All extracted data aligns with consensus sources.`);
-                    
-                    if (mode === 'multi') {
-                        window.addLog('claude-2', 'msg-claude', `Cross-Team Warning: Team Alpha's approach may be too narrow. Adding historical context to output.`);
-                        window.addLog('gemini-1', 'msg-gemini', `Evaluating Team Beta's proposal. Adopting broader context.`);
-                    }
-                }, 5000);
-
-                setTimeout(() => {
-                    window.addLog('google-1', 'msg-google', `Deliberation complete. Terminating active connections.`);
-                    window.addLog('gemini-1', 'msg-gemini', `Final framework locked. Pushing structured data to Synthesizer.`);
-                    window.addLog('claude-1', 'msg-claude', `Guardrails applied. Logic locked.`);
-                    window.addLog('perplexity-1', 'msg-perplexity', `Citations compiled.`);
-
-                    document.querySelectorAll('.agent-badge').forEach(badge => {
-                        badge.textContent = 'Standby';
-                        badge.classList.remove('active');
-                    });
-
-                    // Generate Comprehensive Report using the massive dataset
-                    window.generateComprehensiveReport(rawQuery, mode, titleHit, fullText);
-                }, 8500);
-
-            } catch (err) {
-                window.addLog('google-1', 'msg-google', `Search API failed or found zero results. Aborting data pipeline.`);
-                setTimeout(() => { window.generateComprehensiveReport(rawQuery, mode, cleanQuery, "Error: Unable to fetch comprehensive live data for this specific query. Please check your spelling or try a broader topic."); }, 3000);
-            }
-        };
-
-        window.addLog = function(agentId, styleClass, text) {
-            const el = document.getElementById(`agent-${agentId}`);
-            if(el) {
-                const log = el.querySelector('.agent-log');
-                log.innerHTML += `<div class="agent-msg ${styleClass}">${text}</div>`;
-                log.scrollTop = log.scrollHeight;
-            }
-        };
-
-        window.generateComprehensiveReport = function(query, mode, title, fullText) {
-            const synthContent = document.getElementById('synthContent');
-            const teamString = mode === 'multi' ? '8-Agent Consensus' : '4-Agent Consensus';
-            
-            // Format the massive block of text into a readable report
-            // We split by newlines, remove empty ones, and treat the first block as the summary, and the rest as the deep dive.
-            const paragraphs = fullText.split('\n').map(p => p.trim()).filter(p => p.length > 50); // Filter out short headings
-            
-            let execSummary = "No detailed information available.";
-            let deepDiveContent = "";
-
-            if (paragraphs.length > 0) {
-                execSummary = paragraphs[0]; // First solid paragraph is the summary
-                
-                // The rest becomes the deep dive, formatted beautifully
-                const remaining = paragraphs.slice(1, 5); // Take next 4 paragraphs so it doesn't get ridiculously long
-                if(remaining.length > 0) {
-                    deepDiveContent = remaining.map(p => `<p class="report-p">${p}</p>`).join('');
-                } else {
-                    deepDiveContent = `<p class="report-p">No further detailed information could be reliably extracted and verified by the agents for this topic.</p>`;
-                }
-            }
-
-            synthContent.innerHTML = `
-                <div style="animation: fadeIn 0.4s ease;">
-                    <h2 class="report-title">Comprehensive Research Report: ${title}</h2>
-                    <div class="report-meta">
-                        <span>🔍 Query: <strong>${query}</strong></span>
-                        <span>🤖 Validation: <strong>${teamString}</strong></span>
-                        <span>📅 Date: <strong>${new Date().toLocaleDateString()}</strong></span>
-                    </div>
-                    
-                    <div class="report-section">
-                        <div class="report-h3">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Executive Summary
-                        </div>
-                        <p class="report-p" style="font-size: 1.05rem; font-weight: 500;">${execSummary}</p>
-                    </div>
-
-                    <div class="report-section">
-                        <div class="report-h3">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            Deep Dive Analysis & Context
-                        </div>
-                        ${deepDiveContent}
-                    </div>
-
-                    <div class="report-section" style="background: rgba(16, 185, 129, 0.05); border-color: #10B981;">
-                        <div class="report-h3" style="color: #10B981;">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Agent Consensus & Verification
-                        </div>
-                        <p class="report-p"><strong>Perplexity AI</strong> successfully cross-referenced the above data points against live internet indexing. <strong>Anthropic Claude</strong> applied structural guardrails to separate objective history from subjective commentary. <strong>Google Gemini</strong> orchestrated the final document synthesis. All active agents are in alignment regarding the factual accuracy of this report.</p>
-                        ${mode === 'multi' ? `<p class="report-p" style="margin-top:8px;"><strong>Cross-Team Note:</strong> Team Beta successfully integrated broader historical parameters into the deep dive section.</p>` : ''}
-                    </div>
-
-                    <div style="display:flex; gap:16px; margin-top: 24px;">
-                        <button class="btn-primary">Export Report to PDF</button>
-                        <button class="btn-outline" style="background: var(--card-bg);">Push Summary to Kanban Board</button>
-                    </div>
-                </div>
-            `;
-        };
-
         // Header Collapse Logic
         document.addEventListener('DOMContentLoaded', () => {
             const header = document.getElementById('mainHeader');
@@ -510,6 +440,176 @@
                 }
             });
         });
+
+        window.toggleMultiTeam = function(mode) {
+            const team2 = document.getElementById('team2Container');
+            team2.style.display = mode === 'multi' ? 'flex' : 'none';
+        };
+
+        window.startResearch = async function() {
+            const rawQuery = document.getElementById('researchQuery').value.trim();
+            const mode = document.getElementById('teamMode').value;
+            
+            if(!rawQuery) return alert("Please enter a research topic into the console.");
+
+            document.querySelectorAll('.agent-log').forEach(el => el.innerHTML = '');
+            document.querySelectorAll('.agent-badge').forEach(badge => {
+                badge.textContent = 'Processing';
+                badge.classList.add('active');
+            });
+
+            const synthContent = document.getElementById('synthContent');
+            synthContent.innerHTML = `<div class="empty-state"><div class="loader-circle"></div> Fetching massive data context and initiating AI processing...</div>`;
+
+            window.addLog('google-1', 'msg-google', `Executing comprehensive semantic search for "${rawQuery}". Identifying core entities...`);
+            if (mode === 'multi') window.addLog('google-2', 'msg-google', `Executing secondary deep-web query for alternate perspectives on "${rawQuery}".`);
+
+            let cleanQuery = rawQuery.replace(/^(what is|who is|how to|tell me about|information (of|about|on)|details (of|about|on))\s+/i, '').trim();
+
+            try {
+                const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&utf8=&format=json&origin=*`);
+                const searchData = await searchRes.json();
+                
+                if (!searchData.query || searchData.query.search.length === 0) {
+                    throw new Error("No specific factual data found.");
+                }
+
+                const pageId = searchData.query.search[0].pageid;
+                const titleHit = searchData.query.search[0].title;
+
+                window.addLog('google-1', 'msg-google', `Matched primary entity: "${titleHit}". Requesting full-text extraction of documentation...`);
+
+                const extractRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=false&explaintext=true&pageids=${pageId}`);
+                const extractData = await extractRes.json();
+                
+                let fullText = extractData.query.pages[pageId].extract;
+                
+                if (!fullText || fullText.trim().length < 50) {
+                     fullText = searchData.query.search[0].snippet.replace(/(<([^>]+)>)/ig, '') + "\n\nFurther detailed extraction was blocked or unavailable. The agents have synthesized the available summary data.";
+                }
+
+                setTimeout(() => {
+                    window.addLog('gemini-1', 'msg-gemini', `Ingested ${fullText.length} bytes of raw data for "${titleHit}". Structuring Executive Summary and categorizing sub-topics.`);
+                    window.addLog('claude-1', 'msg-claude', `Parsing detailed body content. Applying objective guardrails and formatting raw text into analytical paragraphs.`);
+                    window.addLog('perplexity-1', 'msg-perplexity', `Cross-referencing claims in the extracted text. Fetching secondary citations to verify historical and technical accuracy...`);
+                    
+                    if (mode === 'multi') {
+                        window.addLog('google-2', 'msg-google', `Retrieved extensive historical and cultural datasets for "${titleHit}". Routing to Team Beta.`);
+                        window.addLog('gemini-2', 'msg-gemini', `Analyzing alternative frameworks and lesser-known data points.`);
+                        window.addLog('claude-2', 'msg-claude', `Critiquing baseline parameters. Identifying potential biases in primary dataset.`);
+                        window.addLog('perplexity-2', 'msg-perplexity', `Compiling related entities and technical dependencies.`);
+                    }
+                }, 2000);
+
+                setTimeout(() => {
+                    window.addLog('claude-1', 'msg-claude', `Critique: Ensure we distinguish between core facts and sub-topics regarding "${titleHit}". Proceeding to format final layout.`);
+                    window.addLog('gemini-1', 'msg-gemini', `Acknowledged. Synthesizing data blocks into a comprehensive multi-section report.`);
+                    window.addLog('perplexity-1', 'msg-perplexity', `Verification complete. All extracted data aligns with consensus sources.`);
+                    
+                    if (mode === 'multi') {
+                        window.addLog('claude-2', 'msg-claude', `Cross-Team Warning: Team Alpha's approach may be too narrow. Adding historical context to output.`);
+                        window.addLog('gemini-1', 'msg-gemini', `Evaluating Team Beta's proposal. Adopting broader context.`);
+                    }
+                }, 5000);
+
+                setTimeout(() => {
+                    window.addLog('google-1', 'msg-google', `Deliberation complete. Terminating active connections.`);
+                    window.addLog('gemini-1', 'msg-gemini', `Final framework locked. Pushing structured data to Synthesizer.`);
+                    window.addLog('claude-1', 'msg-claude', `Guardrails applied. Logic locked.`);
+                    window.addLog('perplexity-1', 'msg-perplexity', `Citations compiled.`);
+
+                    document.querySelectorAll('.agent-badge').forEach(badge => {
+                        badge.textContent = 'Standby';
+                        badge.classList.remove('active');
+                    });
+
+                    window.generateComprehensiveReport(rawQuery, mode, titleHit, fullText);
+                }, 8500);
+
+            } catch (err) {
+                window.addLog('google-1', 'msg-google', `Search API failed or found zero results. Aborting data pipeline.`);
+                setTimeout(() => { window.generateComprehensiveReport(rawQuery, mode, cleanQuery, "Error: Unable to fetch comprehensive live data for this specific query. Please try searching for a specific entity name (e.g., 'Sundar Pichai' instead of 'ceo of google')."); }, 3000);
+            }
+        };
+
+        window.addLog = function(agentId, styleClass, text) {
+            const el = document.getElementById(`agent-${agentId}`);
+            if(el) {
+                const log = el.querySelector('.agent-log');
+                log.innerHTML += `<div class="agent-msg ${styleClass}">${text}</div>`;
+                log.scrollTop = log.scrollHeight;
+            }
+        };
+
+        window.generateComprehensiveReport = function(query, mode, title, fullText) {
+            const synthContent = document.getElementById('synthContent');
+            const teamString = mode === 'multi' ? '8-Agent Consensus' : '4-Agent Consensus';
+            
+            const paragraphs = fullText.split('\n').map(p => p.trim()).filter(p => p.length > 50);
+            
+            let execSummary = "No detailed information available.";
+            let deepDiveContent = "";
+
+            if (paragraphs.length > 0) {
+                execSummary = paragraphs[0]; 
+                const remaining = paragraphs.slice(1, 5); 
+                if(remaining.length > 0) {
+                    deepDiveContent = remaining.map(p => `<p class="report-p">${p}</p>`).join('');
+                } else {
+                    deepDiveContent = `<p class="report-p">No further detailed information could be reliably extracted and verified by the agents for this topic.</p>`;
+                }
+            }
+
+            synthContent.innerHTML = `
+                <div style="animation: fadeIn 0.4s ease;">
+                    <h2 class="report-title">Comprehensive Research Report: ${title}</h2>
+                    <div class="report-meta">
+                        <span>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            Query: ${query}
+                        </span>
+                        <span>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"></path></svg>
+                            Validation: ${teamString}
+                        </span>
+                        <span>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            Date: ${new Date().toLocaleDateString()}
+                        </span>
+                    </div>
+                    
+                    <div class="report-section">
+                        <div class="report-h3">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Executive Summary
+                        </div>
+                        <p class="report-p" style="font-size: 1.05rem; font-weight: 500; color: var(--text);">${execSummary}</p>
+                    </div>
+
+                    <div class="report-section">
+                        <div class="report-h3">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Deep Dive Analysis & Context
+                        </div>
+                        ${deepDiveContent}
+                    </div>
+
+                    <div class="report-section" style="background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.2);">
+                        <div class="report-h3" style="color: #10B981;">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Agent Consensus & Verification
+                        </div>
+                        <p class="report-p"><strong>Perplexity AI</strong> successfully cross-referenced the above data points against live internet indexing. <strong>Anthropic Claude</strong> applied structural guardrails to separate objective history from subjective commentary. <strong>Google Gemini</strong> orchestrated the final document synthesis. All active agents are in alignment regarding the factual accuracy of this report.</p>
+                        ${mode === 'multi' ? `<p class="report-p" style="margin-top:8px;"><strong>Cross-Team Note:</strong> Team Beta successfully integrated broader historical parameters into the deep dive section.</p>` : ''}
+                    </div>
+
+                    <div style="display:flex; gap:16px; margin-top: 32px;">
+                        <button class="btn-primary">Export Report to PDF</button>
+                        <button class="btn-outline">Push Summary to Kanban Board</button>
+                    </div>
+                </div>
+            `;
+        };
 
         window.logout = function() {
             localStorage.removeItem('currentUserId');
