@@ -1,1205 +1,729 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPartner | Department Network</title>
-    
-    <!-- Professional Font Stack -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <script>
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-    </script>
-
-    <style>
-        /* Light Theme - Sleek Professional Colors */
-        :root { 
-            --bg: #FFFFFF; 
-            --surface: rgba(255, 255, 255, 0.9); 
-            --card-bg: #FFFFFF;
-            --border: #E5E5E5; 
-            --primary: #4F46E5; 
-            --secondary: #333333; 
-            --accent: #E5E5E5; 
-            --text: #000000; 
-            --text-dim: #666666; 
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --input-bg: #F5F5F5;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.03);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.04);
-        }
-
-        /* Dark Theme - Totally Dark Mode (No Blue Tints) */
-        [data-theme="dark"] {
-            --bg: #000000; 
-            --surface: rgba(0, 0, 0, 0.85); 
-            --card-bg: #000000;
-            --border: #333333; 
-            --primary: #F8FAFC; 
-            --secondary: #CCCCCC; 
-            --accent: #222222; 
-            --text: #F8FAFC; 
-            --text-dim: #999999;
-            --header-bg: rgba(0, 0, 0, 0.85);
-            --input-bg: #111111;
-            --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
-            --shadow-md: 0 4px 12px rgba(255, 255, 255, 0.05);
-            --shadow-lg: 0 12px 32px rgba(255, 255, 255, 0.05);
-        }
-
-        /* Premium Custom Scrollbar */
-        ::-webkit-scrollbar { 
-            width: 6px; 
-            height: 6px; 
-        }
-
-        ::-webkit-scrollbar-track { 
-            background: transparent; 
-        }
-
-        ::-webkit-scrollbar-thumb { 
-            background: var(--border); 
-            border-radius: 10px; 
-        }
-
-        ::-webkit-scrollbar-thumb:hover { 
-            background: var(--text-dim); 
-        }
-
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
-        }
-
-        body { 
-            background-color: var(--bg); 
-            color: var(--text); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            overflow-x: hidden; 
-            transition: background-color 0.2s ease, color 0.2s ease; 
-        }
-
-        /* HEADER STYLES */
-        header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 16px 5%; 
-            background: var(--header-bg); 
-            backdrop-filter: blur(12px); 
-            border-bottom: 1px solid var(--border); 
-            box-shadow: var(--shadow-sm); 
-            z-index: 100; 
-            position: relative; 
-            transition: background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
-
-        header h2 { 
-            font-weight: 800; 
-            color: #4F46E5;
-            font-size: 1.5rem; 
-            letter-spacing: -0.5px;
-        }
-
-        nav { 
-            display: flex; 
-            gap: 6px; 
-            align-items: center; 
-            flex-wrap: wrap; 
-            justify-content: flex-end;
-        }
-
-        nav a:not(.btn-logout) { 
-            color: var(--text-dim); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: all 0.2s ease; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            padding: 8px 16px;
-            border-radius: 8px;
-            background: transparent;
-        }
-
-        nav a:not(.btn-logout):hover {
-            color: var(--text);
-            background: var(--input-bg);
-        }
-
-        nav a:not(.btn-logout).active { 
-            background: var(--text); 
-            color: var(--card-bg); 
-        }
-
-        .btn-logout { 
-            background: transparent; 
-            color: #ef4444; 
-            padding: 8px 16px; 
-            border-radius: 8px; 
-            font-weight: 600; 
-            border: 1px solid transparent; 
-            transition: all 0.2s ease;
-            font-size: 0.85rem;
-            margin-left: 8px;
-        }
-
-        .btn-logout:hover { 
-            background: rgba(239, 68, 68, 0.08); 
-        }
-
-        .theme-toggle { 
-            cursor: pointer; 
-            color: var(--text-dim); 
-            transition: 0.2s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-right: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            background: transparent;
-        }
-
-        .theme-toggle:hover { 
-            color: var(--text); 
-            background: var(--input-bg);
-        }
-
-        .theme-toggle svg { width: 18px; height: 18px; }
-
-        .nav-bell-container { 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            margin-right: 12px;
-            padding: 8px;
-            border-radius: 8px;
-            background: transparent;
-            transition: 0.2s;
-        }
-
-        .nav-bell-container:hover {
-            background: var(--input-bg);
-        }
-
-        .nav-bell-icon { width: 18px; height: 18px; color: var(--text-dim); transition: 0.2s; }
-        .nav-bell-container:hover .nav-bell-icon { color: var(--text); }
-
-        .notification-badge { 
-            position: absolute; 
-            top: 2px; 
-            right: 2px; 
-            background: #ef4444; 
-            color: white; 
-            font-size: 0.65rem; 
-            font-weight: bold; 
-            width: 16px; 
-            height: 16px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            opacity: 0; 
-            transition: 0.2s; 
-        }
-
-        .notification-badge.active { opacity: 1; }
-
-        .notification-dropdown { 
-            position: absolute; 
-            top: 45px; 
-            right: 0; 
-            width: 340px; 
-            background: var(--card-bg); 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            box-shadow: var(--shadow-lg); 
-            display: none; 
-            flex-direction: column; 
-            z-index: 1000; 
-            overflow: hidden; 
-            transition: 0.3s; 
-        }
-
-        .notification-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards; }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .notif-header { 
-            padding: 16px 20px; 
-            border-bottom: 1px solid var(--border); 
-            font-weight: 700; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: var(--input-bg);
-            font-size: 0.9rem;
-        }
-
-        .notif-header span { 
-            font-size: 0.75rem; 
-            color: #4F46E5; 
-            cursor: pointer; 
-            font-weight: 600;
-        }
-
-        .notif-list { max-height: 350px; overflow-y: auto; }
-
-        .notif-item { 
-            padding: 16px 20px; 
-            border-bottom: 1px solid var(--border); 
-            transition: background 0.2s ease; 
-            font-size: 0.85rem; 
-            color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            cursor: pointer;
-        }
-
-        .notif-item:hover { background: var(--input-bg); }
-        .notif-item.unread { background: rgba(79, 70, 229, 0.04); font-weight: 600; border-left: 3px solid #4F46E5; }
-        .notif-time { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
-        .notif-empty { padding: 40px; text-align: center; color: var(--text-dim); font-size: 0.9rem; font-weight: 500; }
-
-        /* Pull Tab Header */
-        .header-toggle-tab {
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 20px;
-            background: var(--header-bg);
-            border: 1px solid var(--border);
-            border-top: none;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            color: var(--text-dim);
-            z-index: 1000;
-            transition: 0.2s;
-        }
-        
-        .header-toggle-tab:hover { color: var(--text); }
-        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
-        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
-
-        /* PAGE SPECIFIC: HERO & SEARCH */
-        .dept-hero { 
-            text-align: center; 
-            padding: 60px 5% 40px 5%; 
-        }
-
-        #deptSubtitle { 
-            font-size: 2.2rem; 
-            font-weight: 800; 
-            color: var(--text); 
-            margin-bottom: 30px; 
-            letter-spacing: -1px; 
-        }
-        
-        .search-bar-wrapper { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            position: relative;
-        }
-
-        .search-bar-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-dim);
-        }
-
-        .search-bar-wrapper input { 
-            width: 100%; 
-            padding: 14px 20px 14px 48px; 
-            border-radius: 12px; 
-            border: 1px solid var(--border); 
-            background: var(--card-bg); 
-            color: var(--text); 
-            font-size: 1rem; 
-            outline: none; 
-            transition: all 0.3s ease; 
-            box-shadow: var(--shadow-sm); 
-            font-weight: 500; 
-        }
-
-        .search-bar-wrapper input:focus { 
-            border-color: #4F46E5; 
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); 
-            transform: translateY(-2px); 
-        }
-
-        .search-bar-wrapper input::placeholder {
-            color: var(--text-dim);
-            opacity: 0.7;
-        }
-
-        /* LIVE SUGGESTION DROPDOWN STYLES */
-        .search-suggestions {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            width: 100%;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            display: none;
-            z-index: 50;
-            text-align: left;
-        }
-
-        .search-suggestions.active {
-            display: block;
-            animation: slideDown 0.2s ease forwards;
-        }
-
-        .suggestion-item {
-            padding: 14px 24px;
-            color: var(--text);
-            font-size: 0.95rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .suggestion-item:not(:last-child) {
-            border-bottom: 1px solid var(--border);
-        }
-
-        .suggestion-item:hover {
-            background: var(--input-bg);
-            color: #4F46E5;
-        }
-
-        .suggestion-item svg {
-            color: var(--text-dim);
-            transition: color 0.2s ease;
-        }
-
-        .suggestion-item:hover svg {
-            color: #4F46E5;
-        }
-
-        /* PAGE SPECIFIC: RESULTS GRID */
-        .main-container { 
-            padding: 0 5% 60px 5%; 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            width: 100%;
-        }
-
-        .results-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 24px; 
-        }
-        
-        .dev-card { 
-            background: transparent; 
-            border: 1px solid var(--border); 
-            border-radius: 16px; 
-            display: flex; 
-            flex-direction: column; 
-            transition: all 0.3s ease; 
-            text-decoration: none; 
-            overflow: hidden; 
-        }
-
-        .dev-card:hover { 
-            background: var(--card-bg); 
-            border-color: #4F46E5; 
-            box-shadow: var(--shadow-md); 
-            transform: translateY(-4px); 
-        }
-        
-        .dev-banner { 
-            height: 80px; 
-            width: 100%; 
-            background-size: cover; 
-            background-position: center; 
-        }
-
-        .dev-avatar { 
-            width: 72px; 
-            height: 72px; 
-            border-radius: 50%; 
-            background: linear-gradient(135deg, var(--border), var(--input-bg)); 
-            color: var(--text); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 700; 
-            font-size: 1.2rem; 
-            border: 3px solid var(--card-bg); 
-            margin: -36px auto 12px auto; 
-            flex-shrink: 0;
-            background-size: cover; 
-            background-position: center; 
-            box-shadow: var(--shadow-sm); 
-            position: relative; 
-            z-index: 2;
-        }
-        
-        .dev-info { 
-            padding: 0 20px 24px 20px; 
-            display: flex; 
-            flex-direction: column; 
-            flex-grow: 1; 
-            text-align: center; 
-        }
-
-        .dev-name { 
-            font-size: 1.1rem; 
-            font-weight: 700; 
-            color: var(--text); 
-            margin-bottom: 4px; 
-            letter-spacing: -0.3px; 
-        }
-
-        .dev-college { 
-            font-size: 0.8rem; 
-            color: var(--text-dim); 
-            margin-bottom: 4px; 
-            font-weight: 500; 
-            display: -webkit-box; 
-            -webkit-line-clamp: 1; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-        }
-
-        .dev-dept { 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: #4F46E5; 
-            margin-bottom: 16px; 
-            display: -webkit-box; 
-            -webkit-line-clamp: 1; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            text-overflow: ellipsis;
-        }
-        
-        .dev-skills { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 6px; 
-            margin-bottom: 24px; 
-            flex-grow: 1; 
-        }
-
-        .dev-skill { 
-            background: var(--input-bg); 
-            color: var(--text); 
-            padding: 4px 12px; 
-            border-radius: 6px; 
-            font-size: 0.75rem; 
-            font-weight: 500; 
-            border: 1px solid var(--border); 
-        }
-
-        .dev-actions { 
-            display: flex; 
-            gap: 8px; 
-            width: 100%; 
-            margin-top: auto;
-        }
-        
-        .btn-outline { 
-            flex: 1; 
-            padding: 8px; 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            background: transparent; 
-            color: var(--text); 
-            font-weight: 600; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            text-align: center; 
-            text-decoration: none; 
-            transition: 0.2s;
-        }
-        
-        .btn-outline:hover { 
-            background: var(--input-bg); 
-        }
-        
-        .btn-team { 
-            flex: 1; 
-            padding: 8px; 
-            border: none; 
-            border-radius: 8px; 
-            background: #4F46E5; 
-            color: white; 
-            font-weight: 600; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 6px; 
-            transition: 0.2s;
-        }
-        
-        .btn-team:hover { 
-            filter: brightness(1.1); 
-        }
-
-        .loader-text { 
-            grid-column: 1/-1; 
-            text-align: center; 
-            color: var(--text-dim); 
-            padding: 60px; 
-            font-size: 1rem; 
-            font-weight: 500; 
-        }
-
-        /* MODAL */
-        .modal-overlay { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            background: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(4px); 
-            z-index: 2000; 
-            align-items: center; 
-            justify-content: center; 
-        }
-
-        .modal-overlay.active { 
-            display: flex; 
-        }
-
-        .custom-modal { 
-            background: var(--card-bg); 
-            padding: 32px; 
-            border-radius: 16px; 
-            width: 90%; 
-            max-width: 400px; 
-            box-shadow: var(--shadow-lg); 
-            border: 1px solid var(--border); 
-        }
-
-        .custom-modal h3 { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            margin-bottom: 20px; 
-            font-weight: 800;
-        }
-
-        .form-group { 
-            margin-bottom: 16px; 
-        }
-
-        .form-group label { 
-            display: block; 
-            font-size: 0.85rem; 
-            font-weight: 600; 
-            margin-bottom: 8px; 
-            color: var(--text-dim); 
-        }
-
-        .form-group select, 
-        .form-group input { 
-            width: 100%; 
-            padding: 10px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border); 
-            background: var(--input-bg); 
-            color: var(--text); 
-            outline: none; 
-        }
-
-        .modal-buttons { 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 12px; 
-            margin-top: 24px; 
-        }
-    </style>
-</head>
-<body>
-
-    <header id="mainHeader">
-        <a href="index.html" style="text-decoration: none;">
-            <h2 class="logo">ProPartner</h2>
-        </a>
-        
-        <nav>
-            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
-                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                </svg>
-                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-            </div>
-
-            <div class="nav-bell-container" id="notifBellBtn">
-                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <div class="notification-badge" id="notifBadge">0</div>
-                <div class="notification-dropdown" id="notifDropdown">
-                    <div class="notif-header">Notifications</div>
-                    <div class="notif-list" id="notifList"></div>
-                </div>
-            </div>
-
-            <a href="search.html">Search</a>
-            <a href="board.html">Opportunities Board</a>
-            <a href="team.html">My Teams</a>
-            <a href="register.html">Sign Up</a>
-            <a href="college.html">My College</a>
-            <a href="department.html" class="active">My Department</a>
-            <a href="global.html">Global Network</a>
-            <a href="network.html">My Network</a>
-            <a href="saved.html">Saved Profiles</a>
-            <a href="inbox.html">Inbox</a>
-            <a href="history.html">History</a>
-            <a href="profile.html">My Profile</a>
-            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
-        </nav>
-
-        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-            </svg>
-        </div>
-    </header>
-
-    <div class="dept-hero">
-        <h1 id="deptSubtitle">Loading Department Data...</h1>
-        <div class="search-bar-wrapper">
-            <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-            <input type="text" id="deptSearchInput" placeholder="Search department developers by name or tech skills..." autocomplete="off">
-            
-            <!-- LIVE SUGGESTIONS DROPDOWN -->
-            <div class="search-suggestions" id="searchSuggestions">
-                <!-- Javascript injected items -->
-            </div>
-        </div>
-    </div>
-
-    <main class="main-container">
-        <div class="results-grid" id="resultsGrid">
-            <div class="loader-text">Loading developers...</div>
-        </div>
-    </main>
-
-    <!-- ADD TO TEAM MODAL -->
-    <div class="modal-overlay" id="teamModal">
-        <div class="custom-modal">
-            <h3>Add to Workspace</h3>
-            <form id="addTeamForm">
-                <input type="hidden" id="targetUserId">
-                <div class="form-group">
-                    <label>Select Team</label>
-                    <select id="teamSelect" required>
-                        <option value="">Loading teams...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Assign Role</label>
-                    <input type="text" id="roleInput" placeholder="e.g. Frontend, Backend, UI/UX" required>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn-outline" onclick="closeModal()" style="border-color: var(--border);">Cancel</button>
-                    <button type="submit" class="btn-team" style="flex: none; padding: 10px 20px;">Add Member</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // ==========================================
-        // HEADER TOGGLE LOGIC
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const header = document.getElementById('mainHeader');
-            const toggleTab = document.getElementById('headerToggleTab');
-            let isHeaderCollapsed = false;
-
-            if (toggleTab) {
-                toggleTab.addEventListener('click', () => {
-                    if (!isHeaderCollapsed) {
-                        const headerHeight = header.offsetHeight;
-                        header.style.marginTop = `-${headerHeight}px`;
-                        header.classList.add('collapsed');
-                        isHeaderCollapsed = true;
-                    } else {
-                        header.style.marginTop = '0px';
-                        header.classList.remove('collapsed');
-                        isHeaderCollapsed = false;
-                    }
-                });
-
-                window.addEventListener('resize', () => {
-                    if (isHeaderCollapsed) {
-                        header.style.transition = 'none';
-                        header.style.marginTop = '0px';
-                        
-                        setTimeout(() => {
-                            const newHeight = header.offsetHeight;
-                            header.style.marginTop = `-${newHeight}px`;
-                            
-                            setTimeout(() => {
-                                header.style.transition = 'background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                            }, 50);
-                        }, 10);
-                    }
-                });
-            }
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-xs shrink-0"><img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span></div><nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary"><a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="discover-talent" href="#">Discover Talent</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="#">Opportunities Board</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="my-teams" href="#">My Teams</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="#">Project Hub</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="#">Campus Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="#">Research Collab</a></nav></div><div class="flex items-center gap-space-sm"><div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span><kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd></div><div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div><a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="#"><span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a><button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span></button><button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></button><div class="relative flex items-center gap-space-xs pl-space-2xs"><div class="relative cursor-pointer"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span></div></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-Navigation / Department Context Bar -->
+<section class="w-full bg-surface-container-lowest shadow-sm">
+<div class="max-w-container-max mx-auto px-gutter-desktop py-space-sm flex flex-wrap items-center justify-between gap-space-md">
+<!-- Breadcrumbs & Accreditation Badge -->
+<div class="flex items-center gap-space-sm flex-wrap">
+<div class="flex items-center gap-space-2xs font-body-sm text-body-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+            Institutions
+          </a>
+<span class="text-outline-variant">/</span>
+<span class="hover:text-primary cursor-pointer transition-colors">AVCOE Sangamner</span>
+<span class="text-outline-variant">/</span>
+<span class="font-semibold text-primary">Department of AI &amp; Data Science</span>
+</div>
+<span class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+          NBA Accredited Tier-1
+        </span>
+</div>
+<!-- Quick Action Controls -->
+<div class="flex items-center gap-space-xs">
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-md text-label-md transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+          Export Roster (CSV)
+        </button>
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md transition-colors shadow-sm hover:opacity-95" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+          Register Student Profile
+        </button>
+</div>
+</div>
+</section>
+<!-- Hero Header & Department Identity -->
+<section class="w-full bg-surface-container-low py-space-2xl">
+<div class="max-w-container-max mx-auto px-gutter-desktop text-center flex flex-col items-center">
+<!-- Pill Badge -->
+<div class="inline-flex items-center gap-2 bg-primary-fixed text-on-primary-fixed-variant px-space-md py-1 rounded-full font-label-sm text-label-sm font-bold tracking-wide uppercase mb-space-sm shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">memory</span>
+        Official Academic Department Hub
+      </div>
+<!-- Main Headline matching screenshot exact text -->
+<h1 class="font-display-hero text-display-hero-mobile md:text-display-hero text-on-surface max-w-4xl tracking-tight leading-tight">
+        Developers in Artificial Intelligence &amp; Data Science at Amrutvahini College of Engineering (AVCOE), Sangamner
+      </h1>
+<p class="mt-space-sm font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+        Connect, recruit, and collaborate with verified student AI engineers, data scientists, and ML researchers from the AI&amp;DS department roster.
+      </p>
+<!-- Department Performance Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md w-full max-w-4xl mt-space-xl">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm text-left flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]">group</span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-md text-headline-md text-on-surface">142</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant truncate">AI&amp;DS Engineers</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm text-left flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface-variant shrink-0">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-md text-headline-md text-on-surface">12</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant truncate">Published Papers</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm text-left flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shrink-0">
+<span class="material-symbols-outlined text-[24px]">rocket_launch</span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-md text-headline-md text-on-surface">9 Squads</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant truncate">SIH 2025 Incubated</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm text-left flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
+<span class="material-symbols-outlined text-[24px]">workspace_premium</span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-md text-headline-md text-on-surface">Top 1%</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant truncate">Kaggle Campus Rank</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Search and Dynamic Filters -->
+<section class="w-full max-w-container-max mx-auto px-gutter-desktop -mt-6 z-10">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-md flex flex-col gap-space-md">
+<!-- Search Input matching screenshot pill bar -->
+<div class="relative flex items-center w-full bg-surface-container-low rounded-lg p-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant ml-3 text-[22px]">search</span>
+<input class="w-full bg-transparent px-3 py-2 text-on-surface font-body-md text-body-md placeholder-on-surface-variant/60 focus:outline-none" id="search-input" placeholder="Search department developers by name or tech skills (e.g. C++, Python, PyTorch, LangChain)..." type="text"/>
+<button class="hidden sm:inline-flex items-center gap-1.5 bg-primary text-on-primary px-space-md py-2 rounded-lg font-label-md text-label-md hover:opacity-95 transition-opacity shrink-0" type="button">
+          Find Talent
+        </button>
+</div>
+<!-- Filter Controls & Segmented Tags -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs">
+<!-- AI Sub-domain Chips -->
+<div class="flex flex-wrap items-center gap-space-xs" id="domain-filters">
+<button class="domain-pill active px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm transition-colors" type="button">
+            All AI&amp;DS (142)
+          </button>
+<button class="domain-pill px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" type="button">
+            Machine Learning (54)
+          </button>
+<button class="domain-pill px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" type="button">
+            Computer Vision (28)
+          </button>
+<button class="domain-pill px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" type="button">
+            NLP &amp; LLMs (36)
+          </button>
+<button class="domain-pill px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" type="button">
+            MLOps &amp; Cloud (24)
+          </button>
+</div>
+<!-- Secondary Dropdowns and Toggles -->
+<div class="flex items-center gap-space-sm ml-auto">
+<div class="flex items-center gap-1.5 bg-surface-container px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>Academic Year: <b>All Years</b></span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md text-label-md cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">sort</span>
+<span>Sort: <b>Most Active</b></span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Developer Profile Cards Grid -->
+<section class="w-full max-w-container-max mx-auto px-gutter-desktop py-space-2xl">
+<div class="flex items-center justify-between mb-space-lg">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Verified Student Roster</h2>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-semibold">142 Members</span>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span>Showing 6 featured candidates</span>
+</div>
+</div>
+<!-- The 6 Cards Grid (Faithfully featuring OG 2 and DON SHRI from screenshot) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="profile-grid">
+<!-- CARD 1: OG 2 (Faithfully reproduced from screenshot) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+<!-- Banner Header (Subtle dark tech / architectural banner) -->
+<div class="relative h-28 w-full bg-surface-container-highest overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="Modern dark architectural interior with soft neon ambient highlights and sunset glow through floor-to-ceiling glass windows, high resolution, minimalist tech environment." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAWXNRJMbGaYP2pXL0vuadH1UZus-aB9zhu6oHREOKTn32B5Vkuaxytd2FWq7ywtj7BQQKy6RdWvcJbjNf4UA-BGkna1ORTK4grL6gaorb3rAp_9er9WLVLGEU2w2z5j5wbzaLEqvYDLRyfkl1bwmB1iAcdBfnS0rc_0rXGdPz7bUuCXgIPYaLr_4tVbpVgbAbqpqfrgeop_YaFZGGv1H5XPr-G86EXVuKjoOmmL4eaPwVXKCwBCoT2')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-0.5 rounded text-[11px] font-bold text-on-surface">
+            TE • 3rd Year
+          </div>
+</div>
+<!-- Avatar Overlap -->
+<div class="relative flex justify-center -mt-10 px-space-md">
+<div class="relative">
+<div class="w-20 h-20 rounded-full shadow-md overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Digital circular gamer style avatar of a pixelated green landscape with blocky architecture under a calm sky, crisp square framing inside circle." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKI2rL4edGQNEWgYP_M1XEkhRxwTO9O4c6wGQUQf6D5_cY-CkCfpb5VK-lwmsnL1xeeO7OJzqRhU2Dr1Wp80_lyAC3WFJkRHoiBRwSJcsHQHWrl4KfAYSnZXIzh2gH7-CyPJomp5w-wuWnNGr7uoWTLMJtqY1TSNO3HWQC_uBCEafQbro_P-qoMb1B8k1Cow0BggJdreTEu6w1dy8EoA74PeWFOyMCqkzPWOPE1pRRiDLy5eRulAUK"/>
+</div>
+<!-- Online status green beacon -->
+<span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-tertiary ring-2 ring-surface-container-lowest" title="Available for Hackathons"></span>
+</div>
+</div>
+<!-- Identity Information -->
+<div class="p-space-md flex flex-col items-center text-center flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 hover:text-primary cursor-pointer transition-colors">
+            OG 2
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">school</span>
+            Amrutvahini College of Engineering...
+          </p>
+<span class="font-label-md text-label-md text-primary font-semibold mt-1">
+            Artificial Intelligence &amp; Data Science
+          </span>
+<!-- Skills Cluster as in screenshot (Focused C++) -->
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-1.5 w-full">
+<span class="font-skill-pill text-skill-pill px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              C++
+            </span>
+<span class="font-skill-pill text-skill-pill px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              Python
+            </span>
+<span class="font-skill-pill text-skill-pill px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              OpenCV
+            </span>
+<span class="font-skill-pill text-skill-pill px-2 py-1.5 rounded-lg bg-surface-container text-on-surface-variant font-medium">
+              +2
+            </span>
+</div>
+<!-- Academic & Hackathon Highlights -->
+<div class="grid grid-cols-3 gap-2 w-full mt-space-md py-space-xs bg-surface-container-low/50 rounded-lg text-center">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">12</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Projects</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">6</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Hackathons</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-primary font-bold">9.1</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">CGPA</div>
+</div>
+</div>
+</div>
+<!-- Split Action Buttons Footer (Exact screenshot replica) -->
+<div class="px-space-md pb-space-md pt-space-xs flex items-center gap-space-xs bg-surface-container-lowest">
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+            View Profile
+          </button>
+<button aria-label="Message OG 2" class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+</button>
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+            Add to Team
+          </button>
+</div>
+</div>
+<!-- CARD 2: DON SHRI (Faithfully reproduced from screenshot) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+<!-- Banner Header (Recreating the exact HELLO WORLD tech graphic banner) -->
+<div class="relative h-28 w-full bg-primary overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="Digital futuristic network banner with cyan and deep blue glowing geometric nodes, text banner reads 'HELLO WORLD Connecting &amp; Innovating Creative Solutions', high-tech cyberspace aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC_YM640uabyX0LsUiv1VZoGIAUlO-RALFxDzgVEaJWte1WOnSHz4FqkiDXKVaN_wH_WX3aA9hzc9tg_xiPuzLbcGUXvI3Pfma0n3OAhNnNlcX8Z9m0krZc6-gntzvutaR9k259G4Sa8uXKejZt5bCZgDYoIREYZRJahnrNGKMs9faBWMPqfLNxtiI6ykXQE7YpOnyJXkQ9Xx44rZxPFeoBruZHlylp3kFaDs2QVQzTMKy78yxQNM8X')"></div>
+<div class="absolute inset-0 bg-primary/40 mix-blend-multiply"></div>
+<div class="absolute top-2 right-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-0.5 rounded text-[11px] font-bold text-on-surface">
+            TE • 3rd Year
+          </div>
+</div>
+<!-- Avatar Overlap (Monogram DS as in screenshot) -->
+<div class="relative flex justify-center -mt-10 px-space-md">
+<div class="relative">
+<div class="w-20 h-20 rounded-full shadow-md overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-wider">DS</span>
+</div>
+<!-- Verified check badge -->
+<span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center ring-2 ring-surface-container-lowest" title="Department Verified Student">
+<span class="material-symbols-outlined text-[13px] font-bold">check</span>
+</span>
+</div>
+</div>
+<!-- Identity Information -->
+<div class="p-space-md flex flex-col items-center text-center flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 hover:text-primary cursor-pointer transition-colors">
+            DON SHRI
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">school</span>
+            Amrutvahini College of Engineering...
+          </p>
+<span class="font-label-md text-label-md text-primary font-semibold mt-1">
+            Artificial Intelligence &amp; Data Science
+          </span>
+<!-- Skills Cluster as in screenshot (ADVANCE PYTHON, CPP, JAVA, JSON, +11) -->
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-1.5 w-full">
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm uppercase">
+              ADVANCE PYTHON
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm uppercase">
+              CPP
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm uppercase">
+              JAVA
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm uppercase">
+              JSON
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-on-background text-on-primary font-bold shadow-sm">
+              +11
+            </span>
+</div>
+<!-- Academic & Hackathon Highlights -->
+<div class="grid grid-cols-3 gap-2 w-full mt-space-md py-space-xs bg-surface-container-low/50 rounded-lg text-center">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">15</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Projects</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">4</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Hackathons</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-primary font-bold">9.4</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">CGPA</div>
+</div>
+</div>
+</div>
+<!-- Split Action Buttons Footer (Exact screenshot replica) -->
+<div class="px-space-md pb-space-md pt-space-xs flex items-center gap-space-xs bg-surface-container-lowest">
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+            View Profile
+          </button>
+<button aria-label="Message DON SHRI" class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+</button>
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+            Add to Team
+          </button>
+</div>
+</div>
+<!-- CARD 3: Neha Joshi (Published Researcher) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+<div class="relative h-28 w-full bg-surface-container-highest overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="Deep learning neural network topology visualization with softly pulsing nodes and mathematical tensor diagrams in warm amber and indigo illumination." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCCpbFQnA3NjYqMyiDSedth1IGz6yxoSG-3q1cBexY3qFPsI61wyKZUh8CMeO39-p9ev50qdpwm7whibSzaXCBKCqITgS6EILH_C6GZM5g_Wb3AC05AYqkLbrseCa7ioddE20mdCa0AaImREpBdZUMTIl26ZEOODuv47In4OFVLe4c09_CtFdGGYmvqZwyJnJXRHT6VP-IyWDlk4eMbvdDN4JiJu6V65EWzr4qtC_041M3sebPPn7Hv')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded text-[11px] font-bold">
+            BE • Final Year
+          </div>
+</div>
+<div class="relative flex justify-center -mt-10 px-space-md">
+<div class="relative">
+<div class="w-20 h-20 rounded-full shadow-md overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Professional collegiate portrait of a female Indian computer science researcher wearing modern blazer against soft university library background, warm natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZkyN62ahnNbhniKfPGfaZbzspZoYYFCosmJ-8MyKIqAzsl5NUDtfYdYc_x8irQlcfFrzAU68ypwc8WYdnQi-A338T9PrnWzoJGitn7gI--19LOjCXgQKfffbGR3rKs0T2O3R6xCj0XrbNpDZcj0Gg1OncvUUSE9uKBiGZK5mgIdLa2yCBXR2LGTkH_JdQ8QOblUGxINTodfafwzy56JkVPiOfZGhEmNhFxDO2Ymn5nwaCYm_6bf5c"/>
+</div>
+<span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center ring-2 ring-surface-container-lowest" title="IEEE Published Researcher">
+<span class="material-symbols-outlined text-[13px] font-bold">workspace_premium</span>
+</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col items-center text-center flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 hover:text-primary cursor-pointer transition-colors">
+            Neha Joshi
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">school</span>
+            Amrutvahini College of Engineering...
+          </p>
+<span class="font-label-md text-label-md text-primary font-semibold mt-1">
+            Artificial Intelligence &amp; Data Science
+          </span>
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-1.5 w-full">
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              PyTorch
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              HuggingFace
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              NLP &amp; LLMs
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              CUDA
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-medium">
+              +8
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 w-full mt-space-md py-space-xs bg-surface-container-low/50 rounded-lg text-center">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">9</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Papers</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">5</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Hackathons</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-primary font-bold">9.6</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">CGPA</div>
+</div>
+</div>
+</div>
+<div class="px-space-md pb-space-md pt-space-xs flex items-center gap-space-xs bg-surface-container-lowest">
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+            View Profile
+          </button>
+<button aria-label="Message Neha" class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+</button>
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+            Add to Team
+          </button>
+</div>
+</div>
+<!-- CARD 4: Aryan Kadam (Computer Vision & Robotics) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+<div class="relative h-28 w-full bg-surface-container-highest overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="Autonomous robotics lab with robotic arms, camera sensors, and real-time bounding box computer vision data streams on laboratory monitors, high technology aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAMOt57Q5CKqHuBT0p6mk0UNqq56waL6Xl_3T2CnMdScRn9ruX-w4HZWMbLE9mHkJ-37j7aGFQhGaZx--1ImoY7K49_XXpkmeE0WO4FRhxmuM2RDRDzzWircTC7VPFgzyNXW274Ox3zAjTmMXqtd3PF7fWp1eKiohooNv3CdfTCMpuT22jlyiJQbgJFPqpftY0uBODi9wiskUknbXLVmYFjeNMwd9P8XDgTgqFdeI6UzzVSJVFSbINj')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-0.5 rounded text-[11px] font-bold text-on-surface">
+            TE • 3rd Year
+          </div>
+</div>
+<div class="relative flex justify-center -mt-10 px-space-md">
+<div class="relative">
+<div class="w-20 h-20 rounded-full shadow-md overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Young male software engineering student smiling with glasses in an innovation maker lab, wearing smart casual navy shirt." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiQu5K-3DoicQ1bdWhGjy_n8U7A_F0HCSCaWrlDjIqjCz35AJqDiY2y5UO_HcowJBVM53q9eapvZNx3r_5AnfVa7aQuvlTdPIvAKz4WAF9zECzpEtBtdyqHx0b5coNmLsO_P2AiIpZozTUn8FWl-Xi7sqzU8i9C5PohQ8dd7YgAJBYMLe3J6BRgG3hNn9B_rd4VBPCzPFacXLKxlVQofPKdo4BBz0uLqAcd-DJVmEsZAgK0-vmrd8w"/>
+</div>
+<span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-tertiary ring-2 ring-surface-container-lowest" title="Available for Hackathons"></span>
+</div>
+</div>
+<div class="p-space-md flex flex-col items-center text-center flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 hover:text-primary cursor-pointer transition-colors">
+            Aryan Kadam
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">school</span>
+            Amrutvahini College of Engineering...
+          </p>
+<span class="font-label-md text-label-md text-primary font-semibold mt-1">
+            Artificial Intelligence &amp; Data Science
+          </span>
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-1.5 w-full">
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              YOLOv8
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              ROS2
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              OpenCV
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              C++
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-medium">
+              +5
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 w-full mt-space-md py-space-xs bg-surface-container-low/50 rounded-lg text-center">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">8</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Projects</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">3</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Hackathons</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-primary font-bold">8.9</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">CGPA</div>
+</div>
+</div>
+</div>
+<div class="px-space-md pb-space-md pt-space-xs flex items-center gap-space-xs bg-surface-container-lowest">
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+            View Profile
+          </button>
+<button aria-label="Message Aryan" class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+</button>
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+            Add to Team
+          </button>
+</div>
+</div>
+<!-- CARD 5: Tanvi Shinde (Data Analytics & MLOps) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+<div class="relative h-28 w-full bg-surface-container-highest overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="Cloud computing data pipelines chart diagram with modern isometric server racks and streaming telemetry telemetry graphics in clean light aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC94ZtJ8T9JZfZVT_IC_cGr6-jSQzzinkGZyWD4ZeSf1Coq2d9vPogITP4wCC6LSDrHs_FIjWEMetMnDuPxF8JvooawoqbFp_Qbqmayemum5pcdvji-uq3r4hpAEvuTYMi-MGCE8MH0Oqif0r77lXZt8jG-G2FAuf11iuHUQdILIVFB5ZUbrUWw2RNrCokBl7zKmp0F03aibk06LS3iv_RO4uXhEqc4W1jBu9BhyaKBOVu1zapUbLb0')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-0.5 rounded text-[11px] font-bold text-on-surface">
+            SE • 2nd Year
+          </div>
+</div>
+<div class="relative flex justify-center -mt-10 px-space-md">
+<div class="relative">
+<div class="w-20 h-20 rounded-full shadow-md overflow-hidden bg-surface-container-highest flex items-center justify-center bg-secondary-container text-on-secondary-container">
+<span class="font-headline-lg text-headline-lg font-bold">TS</span>
+</div>
+<span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-tertiary ring-2 ring-surface-container-lowest" title="Available for Hackathons"></span>
+</div>
+</div>
+<div class="p-space-md flex flex-col items-center text-center flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 hover:text-primary cursor-pointer transition-colors">
+            Tanvi Shinde
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">school</span>
+            Amrutvahini College of Engineering...
+          </p>
+<span class="font-label-md text-label-md text-primary font-semibold mt-1">
+            Artificial Intelligence &amp; Data Science
+          </span>
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-1.5 w-full">
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              Pandas
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              Scikit-Learn
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              SQL / MLOps
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              AWS
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-medium">
+              +4
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 w-full mt-space-md py-space-xs bg-surface-container-low/50 rounded-lg text-center">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">6</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Projects</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">2</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Hackathons</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-primary font-bold">9.3</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">CGPA</div>
+</div>
+</div>
+</div>
+<div class="px-space-md pb-space-md pt-space-xs flex items-center gap-space-xs bg-surface-container-lowest">
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+            View Profile
+          </button>
+<button aria-label="Message Tanvi" class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+</button>
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+            Add to Team
+          </button>
+</div>
+</div>
+<!-- CARD 6: Sanket Patil (GenAI & Agentic Workflows) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+<div class="relative h-28 w-full bg-surface-container-highest overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="Abstract dynamic generative artificial intelligence algorithmic waveform particles glowing against a modern high-contrast corporate indigo background." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCC3BeO8aPnQgBcSSzpavYogqN8dbNj7nvfhUYGHNwb-KH9xMlY2jCPLcCOBfCVScKftAcw3t9-w_-k1f398-TCUGEl6ttqZ3xwlHnareim5fvw6c27u8ZWe--0y0H-QewPt96rW2Wt6ySN_COzALFx171WyhUU5W_K1PAjBCCZ-fip_F_YH3GmHLWsJAN3iUxvsvTFigSm3uwyyTgX1k9IenF5aGd_j3-R4UccdOM9TzTnb9wjcF_9')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-0.5 rounded text-[11px] font-bold text-on-surface">
+            TE • 3rd Year
+          </div>
+</div>
+<div class="relative flex justify-center -mt-10 px-space-md">
+<div class="relative">
+<div class="w-20 h-20 rounded-full shadow-md overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Modern friendly Indian tech student headshot with headphone around neck, bright natural daylight studio setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvBYBmmjrCspVGHfqp07DwUxnbhgEduenejWPDP9k6t4IbxgZzcWPKcOVd_iXIyNnrM0zKu_oSnO_-xLegDHSrDCYrXx8ifsWyxpWjYmc7OYV7-cUi8cJvm3OXgBOeYHLj-t4xo0l_td_-UlG5v1OfqZvxHalZFwu8MYh6kUsmGL-2PYjKDS42hYKGYC5a6Im0qf9rjJ3ohLB1RPayAILlAXpPukaB-Qd_-wwGIrlE-81vlHO8G1Is"/>
+</div>
+<span class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center ring-2 ring-surface-container-lowest" title="Department Verified Student">
+<span class="material-symbols-outlined text-[13px] font-bold">check</span>
+</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col items-center text-center flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 hover:text-primary cursor-pointer transition-colors">
+            Sanket Patil
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">school</span>
+            Amrutvahini College of Engineering...
+          </p>
+<span class="font-label-md text-label-md text-primary font-semibold mt-1">
+            Artificial Intelligence &amp; Data Science
+          </span>
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-1.5 w-full">
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              LangChain
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              Llama-Index
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              FastAPI
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-semibold shadow-sm">
+              ChromaDB
+            </span>
+<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-medium">
+              +7
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 w-full mt-space-md py-space-xs bg-surface-container-low/50 rounded-lg text-center">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">10</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Projects</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">5</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Hackathons</div>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-primary font-bold">9.0</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">CGPA</div>
+</div>
+</div>
+</div>
+<div class="px-space-md pb-space-md pt-space-xs flex items-center gap-space-xs bg-surface-container-lowest">
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+            View Profile
+          </button>
+<button aria-label="Message Sanket" class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+</button>
+<button class="flex-1 py-2 px-space-sm rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+            Add to Team
+          </button>
+</div>
+</div>
+</div>
+<!-- Pagination Footer -->
+<div class="mt-space-2xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-outline-variant/30">
+<span class="font-body-sm text-body-sm text-on-surface-variant">
+        Showing <b>1 - 6</b> of <b>142</b> AI&amp;DS registered developers
+      </span>
+<div class="flex items-center gap-1">
+<button class="p-2 rounded-lg text-on-surface-variant/40 cursor-not-allowed" disabled="" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-bold" type="button">1</button>
+<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors" type="button">2</button>
+<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors" type="button">3</button>
+<span class="px-1 text-on-surface-variant">...</span>
+<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors" type="button">24</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Department AI Research & Hackathon Spotlight Section -->
+<section class="w-full bg-surface-container-lowest py-space-2xl">
+<div class="max-w-container-max mx-auto px-gutter-desktop">
+<div class="bg-primary text-on-primary rounded-2xl p-space-xl flex flex-col lg:flex-row items-center justify-between gap-space-xl shadow-lg relative overflow-hidden">
+<!-- Abstract decorative glowing vector backdrop -->
+<div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-10 pointer-events-none">
+<svg class="w-full h-full" fill="none" viewbox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+<circle cx="200" cy="200" r="180" stroke="currentColor" stroke-dasharray="8 8" stroke-width="2"></circle>
+<circle cx="200" cy="200" r="120" stroke="currentColor" stroke-width="2"></circle>
+<circle cx="200" cy="200" r="60" stroke="currentColor" stroke-dasharray="4 4" stroke-width="2"></circle>
+</svg>
+</div>
+<div class="relative z-10 max-w-2xl">
+<span class="inline-flex items-center gap-1.5 bg-primary-container text-on-primary-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold uppercase tracking-wider mb-space-sm">
+<span class="material-symbols-outlined text-[15px]">psychology</span>
+            AI&amp;DS Innovation Lab &amp; Incubation
+          </span>
+<h2 class="font-headline-lg text-headline-lg text-on-primary tracking-tight">
+            Building a Smart India Hackathon (SIH) or GenAI Product?
+          </h2>
+<p class="mt-space-xs font-body-md text-body-md text-on-primary/80">
+            Connect directly with faculty mentors, GPU cluster administrators, and team captains from AVCOE's AI&amp;DS department to recruit specialized talent for inter-college hackathons and research grants.
+          </p>
+<div class="flex flex-wrap items-center gap-space-md mt-space-md">
+<button class="px-space-lg py-2.5 rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md font-bold hover:bg-surface-container-low transition-colors shadow-sm" type="button">
+              Post Department Hackathon Call
+            </button>
+<a class="inline-flex items-center gap-1 font-label-md text-label-md text-on-primary hover:underline" href="#">
+<span>View Department Lab Guidelines</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<div class="relative z-10 shrink-0 w-full sm:w-auto bg-primary-container/40 p-space-md rounded-xl backdrop-blur">
+<div class="font-label-md text-label-md text-on-primary font-semibold mb-2">Department AI Faculty Mentors</div>
+<div class="flex items-center gap-space-xs">
+<div class="flex -space-x-2 overflow-hidden">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs shadow-sm">HOD</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-xs shadow-sm">ML</div>
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold text-xs shadow-sm">DL</div>
+</div>
+<div class="ml-2 font-body-sm text-body-sm text-on-primary/90">
+<div class="font-bold">Prof. &amp; Research Coordinators</div>
+<div class="text-xs text-on-primary/70">Office Hours: Mon - Fri 10am - 4pm</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Interactive JavaScript for micro-interactions -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Domain filter pills toggle
+      const pills = document.querySelectorAll('.domain-pill');
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pills.forEach(p => {
+            p.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+            p.classList.add('bg-surface-container', 'text-on-surface-variant');
+          });
+          pill.classList.remove('bg-surface-container', 'text-on-surface-variant');
+          pill.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
         });
+      });
 
-        // ==========================================
-        // UI & THEME LOGIC
-        // ==========================================
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const moonIcon = document.getElementById('moonIcon');
-        const sunIcon = document.getElementById('sunIcon');
-
-        if (localStorage.getItem('theme') === 'dark') {
-            moonIcon.style.display = 'none';
-            sunIcon.style.display = 'block';
-        }
-
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                moonIcon.style.display = 'none';
-                sunIcon.style.display = 'block';
-            }
+      // Quick feedback on "Add to Team" buttons
+      const addButtons = document.querySelectorAll('#profile-grid button:last-child');
+      addButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const originalContent = btn.innerHTML;
+          btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">check_circle</span> Added!`;
+          btn.classList.add('bg-tertiary');
+          setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.classList.remove('bg-tertiary');
+          }, 2000);
         });
+      });
 
-        // ==========================================
-        // NETWORK, SUGGESTION & TEAM LOGIC
-        // ==========================================
-        let allProfiles = [];
-        let suggestionsArray = [];
-        let myTeams = [];
-        const currentUserId = parseInt(localStorage.getItem('currentUserId'));
-        
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (currentUserId) {
-                initNotifications(currentUserId);
-                fetchMyTeams();
+      // Dynamic search filtering simulator
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const val = e.target.value.toLowerCase();
+          const cards = document.querySelectorAll('#profile-grid > div');
+          cards.forEach(card => {
+            const cardText = card.textContent.toLowerCase();
+            if (cardText.includes(val)) {
+              card.style.display = 'flex';
             } else {
-                window.location.href = 'login.html';
+              card.style.display = 'none';
             }
-
-            try {
-                // Fetch ALL profiles from backend first
-                const res = await fetch(`http://127.0.0.1:8000/api/profiles`, { 
-                    credentials: 'include' 
-                });
-                
-                if (res.ok) {
-                    const allFetchedProfiles = await res.json();
-                    
-                    // Automatically find the current user's profile to extract their exact department and college
-                    const myProfile = allFetchedProfiles.find(p => p.id === currentUserId);
-                    
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const myDept = urlParams.get('dept') || (myProfile && myProfile.department ? myProfile.department : 'Artificial Intelligence & Data Science');
-                    const myCollege = urlParams.get('college') || (myProfile && myProfile.college_name ? myProfile.college_name : 'Amrutvahini College of Engineering');
-                    
-                    const element = document.getElementById('deptSubtitle');
-                    if (element) {
-                        element.textContent = `Developers in ${myDept} at ${myCollege}`;
-                    }
-
-                    // Flexible match to handle minor string formatting differences
-                    allProfiles = allFetchedProfiles.filter(p => {
-                        const matchDept = p.department && p.department.toLowerCase().includes(myDept.toLowerCase());
-                        const matchCollege = p.college_name && p.college_name.toLowerCase().includes(myCollege.toLowerCase());
-                        return matchDept && matchCollege;
-                    });
-
-                    renderCards(allProfiles);
-
-                    // Build suggestions array from names and skills for the search bar
-                    let availableSuggestions = new Set();
-                    allProfiles.forEach(p => {
-                        if (p.name) availableSuggestions.add(p.name);
-                        if (p.skills) {
-                            p.skills.split(',').forEach(s => {
-                                if (s.trim()) availableSuggestions.add(s.trim());
-                            });
-                        }
-                    });
-                    suggestionsArray = Array.from(availableSuggestions);
-                }
-            } catch (e) {
-                document.getElementById('resultsGrid').innerHTML = '<div class="loader-text" style="color: #ef4444;">Failed to fetch network.</div>';
-            }
-
-            // AUTOCOMPLETE DROPDOWN AND LIVE FILTER LOGIC
-            const searchInput = document.getElementById('deptSearchInput');
-            const suggestionsBox = document.getElementById('searchSuggestions');
-            
-            if (searchInput) {
-                searchInput.addEventListener('input', (e) => {
-                    const query = e.target.value.toLowerCase().trim();
-                    
-                    // 1. Live Filter Cards
-                    const filtered = allProfiles.filter(p => {
-                        const matchesName = p.name && p.name.toLowerCase().includes(query);
-                        const matchesSkills = p.skills && p.skills.toLowerCase().includes(query);
-                        return matchesName || matchesSkills;
-                    });
-                    renderCards(filtered);
-
-                    // 2. Suggestion Dropdown Logic
-                    if (!query || !suggestionsBox) {
-                        if (suggestionsBox) suggestionsBox.classList.remove('active');
-                        return;
-                    }
-                    
-                    const matches = suggestionsArray.filter(item => item.toLowerCase().includes(query)).slice(0, 5);
-                    
-                    if (matches.length > 0) {
-                        suggestionsBox.innerHTML = matches.map(match => `
-                            <div class="suggestion-item" onclick="selectSuggestion('${match.replace(/'/g, "\\'")}')">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                                ${match}
-                            </div>
-                        `).join('');
-                        suggestionsBox.classList.add('active');
-                    } else {
-                        suggestionsBox.classList.remove('active');
-                    }
-                });
-            }
-
-            // Click outside to close suggestions
-            document.addEventListener('click', (e) => {
-                if (searchInput && suggestionsBox) {
-                    if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                        suggestionsBox.classList.remove('active');
-                    }
-                }
-            });
+          });
         });
-
-        // Exposed to global scope for the inline onclick handler
-        window.selectSuggestion = function(val) {
-            const searchInput = document.getElementById('deptSearchInput');
-            const suggestionsBox = document.getElementById('searchSuggestions');
-            
-            if (searchInput) searchInput.value = val;
-            if (suggestionsBox) suggestionsBox.classList.remove('active');
-            
-            // Trigger the filter based on selected suggestion
-            const query = val.toLowerCase().trim();
-            const filtered = allProfiles.filter(p => {
-                const matchesName = p.name && p.name.toLowerCase().includes(query);
-                const matchesSkills = p.skills && p.skills.toLowerCase().includes(query);
-                return matchesName || matchesSkills;
-            });
-            renderCards(filtered);
-        };
-
-        function getInitials(name) {
-            if (!name) return "?";
-            const parts = name.trim().split(' ');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[1][0]).toUpperCase();
-            }
-            return parts[0].substring(0, 2).toUpperCase();
-        }
-
-        function renderCards(profiles) {
-            const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '';
-            
-            const filtered = profiles.filter(p => p.id !== currentUserId);
-
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div class="loader-text">No developers found matching that search.</div>';
-                return;
-            }
-
-            filtered.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'dev-card';
-                
-                const bannerStyle = p.banner_pic 
-                    ? `background-image: url('${p.banner_pic}');` 
-                    : `background: linear-gradient(135deg, var(--border), var(--input-bg));`;
-                
-                const avatarHtml = p.profile_pic 
-                    ? `<div class="dev-avatar" style="background-image: url('${p.profile_pic}');"></div>` 
-                    : `<div class="dev-avatar">${getInitials(p.name)}</div>`;
-                
-                const skillsArray = p.skills ? p.skills.split(',').filter(s => s.trim() !== '') : [];
-                
-                const skillsHtml = skillsArray.slice(0, 4).map(s => {
-                    return `<span class="dev-skill">${s.trim()}</span>`;
-                }).join('');
-                
-                let extraSkills = '';
-                if (skillsArray.length > 4) {
-                    extraSkills = `<span class="dev-skill" style="background: var(--text); color: var(--card-bg); border-color: var(--text);">+${skillsArray.length - 4}</span>`;
-                }
-
-                card.innerHTML = `
-                    <div class="dev-banner" style="${bannerStyle}"></div>
-                    ${avatarHtml}
-                    <div class="dev-info">
-                        <div class="dev-name">${p.name}</div>
-                        <div class="dev-college">🎓 ${p.college_name}</div>
-                        <div class="dev-dept">${p.department}</div>
-                        <div class="dev-skills">${skillsHtml}${extraSkills}</div>
-                        <div class="dev-actions">
-                            <a href="profile.html?id=${p.id}" class="btn-outline">View Profile</a>
-                            <button class="btn-team" onclick="openTeamModal(${p.id})">
-                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 5v14M5 12h14"></path></svg>
-                                Add to Team
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                grid.appendChild(card);
-            });
-        }
-
-        // ==========================================
-        // TEAM LOGIC & MODALS
-        // ==========================================
-        async function fetchMyTeams() {
-            try {
-                const res = await fetch('http://127.0.0.1:8000/api/teams', { credentials: 'include' });
-                if (res.ok) {
-                    myTeams = await res.json();
-                }
-            } catch (e) { console.error("Failed to load teams", e); }
-        }
-
-        window.openTeamModal = function(targetId) {
-            if (myTeams.length === 0) {
-                alert("You don't have any teams yet! Create one in the 'My Teams' workspace first.");
-                return;
-            }
-            document.getElementById('targetUserId').value = targetId;
-            const select = document.getElementById('teamSelect');
-            select.innerHTML = myTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-            document.getElementById('teamModal').classList.add('active');
-        }
-
-        window.closeModal = function() {
-            document.getElementById('teamModal').classList.remove('active');
-            document.getElementById('addTeamForm').reset();
-        }
-
-        document.getElementById('addTeamForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const targetId = document.getElementById('targetUserId').value;
-            const teamId = document.getElementById('teamSelect').value;
-            const role = document.getElementById('roleInput').value;
-
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/teams/${teamId}/members`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: parseInt(targetId), role: role })
-                });
-
-                if (res.ok) {
-                    alert('Developer successfully added to your workspace!');
-                    closeModal();
-                } else {
-                    const err = await res.json();
-                    alert(`Failed: ${err.detail}`);
-                }
-            } catch (e) {
-                alert("Server connection error.");
-            }
-        });
-
-        // ==========================================
-        // NOTIFICATIONS SYSTEM
-        // ==========================================
-        let unreadCount = 0;
-        let notifSocket = null;
-
-        async function initNotifications(userId) {
-            const bellBtn = document.getElementById('notifBellBtn');
-            const dropdown = document.getElementById('notifDropdown');
-            
-            bellBtn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                dropdown.classList.toggle('active'); 
-            });
-            
-            document.addEventListener('click', (e) => { 
-                if (!bellBtn.contains(e.target)) {
-                    dropdown.classList.remove('active'); 
-                }
-            });
-            
-            dropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-
-            await fetchAndRenderNotifications(userId);
-
-            notifSocket = new WebSocket(`ws://127.0.0.1:8000/api/ws/notifications/${userId}`);
-            
-            notifSocket.onmessage = function(event) {
-                const incomingNotif = JSON.parse(event.data);
-                insertNotificationUI(incomingNotif, true);
-                unreadCount++; 
-                updateBadge();
-            };
-        }
-
-        async function fetchAndRenderNotifications(userId) {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/notifications/${userId}`, { 
-                    credentials: 'include' 
-                });
-                
-                if (res.ok) {
-                    const notifs = await res.json();
-                    const notifList = document.getElementById('notifList');
-                    notifList.innerHTML = ''; 
-                    unreadCount = 0;
-                    
-                    if (notifs.length === 0) { 
-                        notifList.innerHTML = `<div class="notif-empty">No notifications yet.</div>`; 
-                        return; 
-                    }
-                    
-                    notifs.forEach(n => { 
-                        if (n.is_read === 0) {
-                            unreadCount++; 
-                        }
-                        insertNotificationUI(n, false); 
-                    });
-                    
-                    updateBadge();
-                }
-            } catch (err) {
-                console.error("Notification fetch failed");
-            }
-        }
-
-        function insertNotificationUI(notif, prepend = false) {
-            const notifList = document.getElementById('notifList');
-            const emptyState = notifList.querySelector('.notif-empty');
-            
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const dateObj = new Date(notif.timestamp);
-            const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const div = document.createElement('div');
-            div.className = `notif-item ${notif.is_read === 0 ? 'unread' : ''}`;
-            
-            div.innerHTML = `
-                <div>${notif.content}</div>
-                <div class="notif-time">${timeStr}</div>
-            `;
-            
-            div.addEventListener('click', async () => {
-                if (div.classList.contains('unread')) {
-                    try {
-                        await fetch(`http://127.0.0.1:8000/api/notifications/${notif.id}/read`, { 
-                            method: 'PUT', 
-                            credentials: 'include' 
-                        });
-                        
-                        div.classList.remove('unread'); 
-                        unreadCount = Math.max(0, unreadCount - 1); 
-                        updateBadge();
-                        
-                        if(notif.type === 'message') {
-                            window.location.href = 'inbox.html';
-                        }
-                        if(notif.type === 'follow') {
-                            window.location.href = 'network.html';
-                        }
-                    } catch(e) {
-                        console.error(e);
-                    }
-                }
-            });
-            
-            if (prepend) {
-                notifList.prepend(div); 
-            } else {
-                notifList.appendChild(div);
-            }
-        }
-
-        function updateBadge() {
-            const badge = document.getElementById('notifBadge');
-            
-            if (unreadCount > 0) { 
-                badge.textContent = unreadCount; 
-                badge.classList.add('active'); 
-            } else {
-                badge.classList.remove('active');
-            }
-        }
-
-        async function logout() {
-            try { 
-                await fetch('http://127.0.0.1:8000/api/logout', { 
-                    method: 'POST', 
-                    credentials: 'include' 
-                }); 
-            } catch (err) {}
-            
-            localStorage.removeItem('currentUserId');
-            window.location.href = 'login.html';
-        }
-    </script>
-</body>
-</html>
+      }
+    });
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer></body></html>
