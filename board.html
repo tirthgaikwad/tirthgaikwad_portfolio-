@@ -1,1206 +1,736 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPartner | Project & Hackathon Board</title>
-    
-    <!-- Professional Font Stack -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <script>
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-    </script>
-
-    <style>
-        /* Light Theme - Sleek Professional Colors */
-        :root { 
-            --bg: #F8FAFC; 
-            --surface: rgba(255, 255, 255, 0.9); 
-            --card-bg: #ffffff;
-            --border: #E2E8F0; 
-            --primary: #4F46E5; 
-            --secondary: #818CF8; 
-            --accent: #C7D2FE; 
-            --text: #0F172A; 
-            --text-dim: #64748B; 
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --input-bg: #F1F5F9;
-            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
-            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.03);
-            --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.04);
-        }
-
-        /* Dark Theme - Totally Dark Mode (No Blue Tints) */
-        [data-theme="dark"] {
-            --bg: #000000; 
-            --surface: rgba(0, 0, 0, 0.85); 
-            --card-bg: #000000;
-            --border: #333333; 
-            --text: #F8FAFC; 
-            --text-dim: #94A3B8;
-            --header-bg: rgba(0, 0, 0, 0.85);
-            --input-bg: #111111;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Premium Custom Scrollbar */
-        ::-webkit-scrollbar { 
-            width: 6px; 
-            height: 6px; 
-        }
-
-        ::-webkit-scrollbar-track { 
-            background: transparent; 
-        }
-
-        ::-webkit-scrollbar-thumb { 
-            background: var(--border); 
-            border-radius: 10px; 
-        }
-
-        ::-webkit-scrollbar-thumb:hover { 
-            background: var(--text-dim); 
-        }
-
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
-        }
-
-        body { 
-            background-color: var(--bg); 
-            color: var(--text); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            overflow-x: hidden; 
-            transition: background-color 0.2s ease, color 0.2s ease; 
-        }
-
-        /* HEADER STYLES */
-        header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 16px 5%; 
-            background: var(--header-bg); 
-            backdrop-filter: blur(12px); 
-            border-bottom: 1px solid var(--border); 
-            box-shadow: var(--shadow-sm); 
-            z-index: 100; 
-            position: relative; 
-            transition: background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
-
-        header h2 { 
-            font-weight: 800; 
-            color: var(--primary);
-            font-size: 1.5rem; 
-            letter-spacing: -0.5px;
-        }
-
-        nav { 
-            display: flex; 
-            gap: 6px; 
-            align-items: center; 
-            flex-wrap: wrap; 
-            justify-content: flex-end;
-        }
-
-        nav a:not(.btn-logout) { 
-            color: var(--text-dim); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: all 0.2s ease; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            padding: 8px 16px;
-            border-radius: 8px;
-            background: transparent;
-        }
-
-        nav a:not(.btn-logout):hover {
-            color: var(--text);
-            background: var(--input-bg);
-        }
-
-        nav a:not(.btn-logout).active { 
-            background: var(--text); 
-            color: var(--card-bg); 
-        }
-
-        .btn-logout { 
-            background: transparent; 
-            color: #ef4444; 
-            padding: 8px 16px; 
-            border-radius: 8px; 
-            font-weight: 600; 
-            border: 1px solid transparent; 
-            transition: all 0.2s ease;
-            font-size: 0.85rem;
-            margin-left: 8px;
-        }
-
-        .btn-logout:hover { 
-            background: rgba(239, 68, 68, 0.08); 
-        }
-
-        .theme-toggle { 
-            cursor: pointer; 
-            color: var(--text-dim); 
-            transition: 0.2s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-right: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            background: transparent;
-        }
-
-        .theme-toggle:hover { 
-            color: var(--text); 
-            background: var(--input-bg);
-        }
-
-        .theme-toggle svg { width: 18px; height: 18px; }
-
-        .nav-bell-container { 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            margin-right: 12px;
-            padding: 8px;
-            border-radius: 8px;
-            background: transparent;
-            transition: 0.2s;
-        }
-
-        .nav-bell-container:hover {
-            background: var(--input-bg);
-        }
-
-        .nav-bell-icon { width: 18px; height: 18px; color: var(--text-dim); transition: 0.2s; }
-        .nav-bell-container:hover .nav-bell-icon { color: var(--text); }
-
-        .notification-badge { 
-            position: absolute; 
-            top: 2px; 
-            right: 2px; 
-            background: #ef4444; 
-            color: white; 
-            font-size: 0.65rem; 
-            font-weight: bold; 
-            width: 16px; 
-            height: 16px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            opacity: 0; 
-            transition: 0.2s; 
-        }
-
-        .notification-badge.active { opacity: 1; }
-
-        .notification-dropdown { 
-            position: absolute; 
-            top: 45px; 
-            left: -10px; 
-            width: 340px; 
-            background: var(--card-bg); 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            box-shadow: var(--shadow-lg); 
-            display: none; 
-            flex-direction: column; 
-            z-index: 1000; 
-            overflow: hidden; 
-            transition: 0.3s; 
-        }
-
-        .notification-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards; }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .notif-header { 
-            padding: 16px 20px; 
-            border-bottom: 1px solid var(--border); 
-            font-weight: 700; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: var(--input-bg);
-            font-size: 0.9rem;
-        }
-
-        .notif-header span { 
-            font-size: 0.75rem; 
-            color: var(--primary); 
-            cursor: pointer; 
-            font-weight: 600;
-        }
-
-        .notif-list { max-height: 350px; overflow-y: auto; }
-
-        .notif-item { 
-            padding: 16px 20px; 
-            border-bottom: 1px solid var(--border); 
-            transition: background 0.2s ease; 
-            font-size: 0.85rem; 
-            color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            cursor: pointer;
-        }
-
-        .notif-item:hover { background: var(--input-bg); }
-        .notif-item.unread { background: rgba(79, 70, 229, 0.04); font-weight: 600; border-left: 3px solid var(--primary); }
-        .notif-time { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
-        .notif-empty { padding: 40px; text-align: center; color: var(--text-dim); font-size: 0.9rem; font-weight: 500; }
-
-        /* Pull Tab Header */
-        .header-toggle-tab {
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 20px;
-            background: var(--header-bg);
-            border: 1px solid var(--border);
-            border-top: none;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            color: var(--text-dim);
-            z-index: 1000;
-            transition: 0.2s;
-        }
-        
-        .header-toggle-tab:hover { color: var(--text); }
-        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
-        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
-
-        /* HERO & FILTER CONTROLS */
-        .board-hero { 
-            text-align: center; 
-            padding: 80px 20px 40px 20px; 
-        }
-
-        .board-hero h1 { 
-            font-size: 3rem; 
-            font-weight: 800; 
-            color: var(--text); 
-            margin-bottom: 16px; 
-            letter-spacing: -1px; 
-        }
-
-        .board-hero p { 
-            color: var(--text-dim); 
-            max-width: 650px; 
-            margin: 0 auto; 
-            font-size: 1.05rem; 
-            line-height: 1.6; 
-            font-weight: 400;
-        }
-
-        .board-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto 40px auto;
-            width: 90%;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .category-tabs {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .cat-btn {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .cat-btn:hover {
-            color: var(--text);
-            border-color: var(--text-dim);
-        }
-
-        .cat-btn.active {
-            background: var(--text);
-            color: var(--card-bg);
-            border-color: var(--text);
-        }
-
-        .btn-create-post {
-            background: var(--primary);
-            color: #ffffff;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-create-post:hover {
-            transform: translateY(-2px);
-            background: var(--secondary);
-            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
-        }
-
-        /* POSTS GRID */
-        .main-container { 
-            padding: 0 5% 80px 5%; 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            width: 100%;
-        }
-
-        .posts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 24px;
-        }
-
-        .post-card {
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px 24px;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .post-card:hover {
-            transform: translateY(-4px);
-            background: var(--card-bg);
-            border-color: var(--primary);
-            box-shadow: var(--shadow-md);
-        }
-
-        .post-header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .btn-delete-opp {
-            background: transparent;
-            color: #ef4444;
-            border: none;
-            padding: 6px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s ease;
-        }
-
-        .btn-delete-opp:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .post-type-badge {
-            align-self: flex-start;
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 20px;
-        }
-
-        .type-hackathon {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .type-project {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .type-research {
-            background: rgba(79, 70, 229, 0.1);
-            color: var(--primary);
-            border: 1px solid rgba(79, 70, 229, 0.2);
-        }
-
-        .post-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 12px;
-            line-height: 1.3;
-            letter-spacing: -0.3px;
-        }
-
-        .post-desc {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            line-height: 1.6;
-            margin-bottom: 24px;
-            flex-grow: 1;
-        }
-
-        .skills-needed-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-        }
-
-        .post-skills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 32px;
-        }
-
-        .post-skill-tag {
-            background: var(--input-bg);
-            color: var(--text);
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border: 1px solid var(--border);
-        }
-
-        .post-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px solid var(--border);
-            padding-top: 20px;
-            margin-top: auto;
-        }
-
-        .author-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
-
-        .author-avatar {
-            width: 44px;
-            height: 44px;
-            flex-shrink: 0;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--border), var(--input-bg));
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.95rem;
-            background-size: cover;
-            background-position: center;
-            border: 2px solid var(--card-bg);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .author-name {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--text);
-            transition: 0.2s;
-            margin-bottom: 2px;
-        }
-
-        .author-info:hover .author-name {
-            color: var(--primary);
-        }
-
-        .author-college {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            font-weight: 500;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .btn-apply {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            flex-shrink: 0;
-        }
-
-        .post-card:hover .btn-apply {
-            background: var(--text);
-            color: var(--card-bg);
-            border-color: var(--text);
-        }
-
-        /* CREATE POST MODAL */
-        .modal-overlay { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            background: rgba(0, 0, 0, 0.6); 
-            z-index: 2000; 
-            align-items: center; 
-            justify-content: center; 
-            backdrop-filter: blur(4px); 
-            opacity: 0; transition: opacity 0.2s ease;
-        }
-
-        .modal-overlay.active { 
-            display: flex; 
-            opacity: 1;
-        }
-
-        .custom-modal { 
-            background: var(--card-bg); 
-            padding: 32px; 
-            border-radius: 16px; 
-            width: 90%; 
-            max-width: 550px; 
-            box-shadow: var(--shadow-lg); 
-            border: 1px solid var(--border);
-            max-height: 90vh; overflow-y: auto;
-        }
-
-        .custom-modal h3 { 
-            font-weight: 700; 
-            margin-bottom: 24px; 
-            color: var(--text); 
-            font-size: 1.3rem;
-            letter-spacing: -0.5px;
-        }
-
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-
-        .form-group label { 
-            display: block; 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: var(--text-dim); 
-            margin-bottom: 8px; 
-        }
-
-        .form-group input, 
-        .form-group select, 
-        .form-group textarea { 
-            width: 100%; 
-            padding: 10px 14px; 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            font-size: 0.9rem; 
-            background: transparent; 
-            color: var(--text); 
-            outline: none; 
-            transition: all 0.2s ease;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .form-group input:focus, 
-        .form-group select:focus, 
-        .form-group textarea:focus { 
-            border-color: var(--text); 
-        }
-
-        .form-group select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748B%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px top 50%;
-            background-size: 10px auto;
-        }
-
-        .modal-buttons { 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 12px; 
-            margin-top: 24px;
-        }
-
-        .btn-cancel { 
-            padding: 8px 16px; 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            cursor: pointer; 
-            background: transparent; 
-            color: var(--text-dim); 
-            font-weight: 500; 
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .btn-cancel:hover { 
-            color: var(--text);
-        }
-
-        .btn-save { 
-            padding: 8px 16px; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            background: var(--text); 
-            color: var(--card-bg); 
-            font-weight: 600; 
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .btn-save:hover { 
-            opacity: 0.9;
-        }
-
-        .loader-text { 
-            grid-column: 1/-1; 
-            text-align: center; 
-            color: var(--text-dim); 
-            padding: 60px; 
-            font-size: 1rem; 
-            font-weight: 500; 
-        }
-    </style>
-</head>
-<body>
-
-    <header id="mainHeader">
-        <a href="index.html" style="text-decoration: none;">
-            <h2 class="logo">ProPartner</h2>
-        </a>
-        
-        <nav>
-            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
-                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                </svg>
-                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-            </div>
-
-            <div class="nav-bell-container" id="notifBellBtn">
-                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <div class="notification-badge" id="notifBadge">0</div>
-                <div class="notification-dropdown" id="notifDropdown">
-                    <div class="notif-header">Notifications</div>
-                    <div class="notif-list" id="notifList"></div>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+/* Custom Modal Styles */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #c7c4d8; animation: slideDown 0.3s ease; }
+.custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0b1c30;}
+.custom-modal p { color: #464555; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-outline-modal { padding: 10px 20px; border: 1px solid #c7c4d8; border-radius: 8px; background: transparent; color: #0b1c30; font-weight: 600; cursor: pointer; transition: 0.2s;}
+.btn-outline-modal:hover { background: #eff4ff; }
+.btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+.btn-primary-modal:hover { background: #2b1ea6; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+/* Hide Scrollbar for Horizontal Nav */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-xl">
+<a href="index.html" class="flex items-center gap-space-xs shrink-0" style="text-decoration: none; cursor: pointer;">
+<img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span>
+</a>
+<nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary">
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="discover-talent" href="search.html">Discover Talent</a>
+<a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="opportunities-board" href="board.html">Opportunities Board</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="my-teams" href="team.html">My Teams</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="project_management.html">Project Hub</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="college.html">Campus Network</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="research.html">Research Collab</a>
+</nav></div><div class="flex items-center gap-space-sm">
+<div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48" onclick="window.location.href='search.html'">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span><kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd>
+</div>
+<div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div>
+<a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="admin_dashboard.html">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin
+</a>
+<button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.showSystemModal('Notifications', 'You have 3 new alerts.', 'alert')">
+<span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span>
+</button>
+<button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+</button>
+<div class="relative flex items-center gap-space-xs pl-space-2xs">
+<div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span>
+</div>
+</div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Interactive script to handle category switching & filter feedback -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Highlight category buttons
+      const catButtons = document.querySelectorAll('[data-category-btn]');
+      catButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          catButtons.forEach(b => {
+            b.classList.remove('bg-on-surface', 'text-surface-container-lowest', 'shadow-sm');
+            b.classList.add('bg-surface-container-lowest', 'text-on-surface-variant', 'hover:bg-surface-container-low');
+          });
+          btn.classList.add('bg-on-surface', 'text-surface-container-lowest', 'shadow-sm');
+          btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant', 'hover:bg-surface-container-low');
+        });
+      });
+
+      // Quick skill pills toggle
+      const skillPills = document.querySelectorAll('[data-filter-pill]');
+      skillPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pill.classList.toggle('bg-primary-fixed');
+          pill.classList.toggle('text-on-primary-fixed-variant');
+          pill.classList.toggle('font-semibold');
+        });
+      });
+    });
+  </script>
+<!-- Page Header & Hero Section -->
+<section class="relative w-full pt-space-2xl pb-space-xl overflow-hidden">
+<!-- Subtle architectural background glow -->
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-container-max h-80 bg-gradient-to-b from-primary/5 via-secondary-container/20 to-transparent pointer-events-none -z-10 rounded-full blur-3xl opacity-70"></div>
+<div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col items-center text-center">
+<!-- Collegiate Badge -->
+<div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-high/60 border border-outline-variant/50 text-primary font-label-sm text-label-sm uppercase tracking-wider mb-space-md shadow-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+        SIH 2026 &amp; Spring Hackathons • 42 Open Teammate Roles
+      </div>
+<h1 class="font-display-hero text-display-hero text-on-surface tracking-tight max-w-3xl">
+        Project &amp; Hackathon Teammate Board
+      </h1>
+<p class="mt-space-sm font-body-lg text-body-lg text-on-surface-variant max-w-2xl text-balance">
+        Post open positions for your hackathon team or side project, or apply to join active development teams looking for your tech stack.
+      </p>
+<!-- Category Filter Tabs + Primary Action Bar -->
+<div class="w-full mt-space-xl flex flex-col lg:flex-row items-center justify-between gap-space-md">
+<!-- Category Segmented Control -->
+<div class="flex items-center flex-wrap gap-space-xs p-1.5 bg-surface-container-lowest border border-outline-variant/60 rounded-xl shadow-sm">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md transition-all bg-on-surface text-surface-container-lowest shadow-sm" data-category-btn="" type="button">
+            All Opportunities
+          </button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+            Hackathons <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-error-container text-on-error-container font-bold">28</span>
+</button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+            Side Projects <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-surface-container text-on-surface-variant">9</span>
+</button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+            Research / AI <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-surface-container text-on-surface-variant">5</span>
+</button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+            Open Source
+          </button>
+</div>
+<!-- Post Opportunity Action Button -->
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-3 rounded-xl bg-primary-container text-on-primary font-headline-sm text-headline-sm hover:bg-primary shadow-[0_10px_20px_-6px_rgba(79,70,229,0.35)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer" type="button" onclick="window.showSystemModal('Post Opportunity', 'The opportunity posting wizard will open shortly.', 'alert')">
+<span class="material-symbols-outlined text-[20px] font-bold">add</span>
+<span>Post an Opportunity</span>
+</button>
+</div>
+<!-- Advanced Filter / Search Capsule -->
+<div class="w-full mt-space-md bg-surface-container-lowest border border-outline-variant/60 rounded-2xl p-space-sm shadow-[0_4px_16px_rgba(15,23,42,0.03)] flex flex-col md:flex-row items-center gap-space-sm">
+<!-- Search Input -->
+<div class="relative flex-1 w-full flex items-center pl-space-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px] text-outline mr-space-xs">search</span>
+<input class="w-full bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none py-2" placeholder="Search by role, required tech stack, hackathon event name, or college..." type="text"/>
+</div>
+<div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block"></div>
+<!-- Quick Filters -->
+<div class="flex items-center gap-space-xs w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider pl-1 hidden lg:inline">Quick:</span>
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+            Python <span class="text-outline font-normal">18</span>
+</button>
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+            React / Next.js <span class="text-outline font-normal">14</span>
+</button>
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+            PyTorch <span class="text-outline font-normal">7</span>
+</button>
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+            Solidity <span class="text-outline font-normal">5</span>
+</button>
+<!-- Sort Dropdown trigger -->
+<div class="relative ml-auto md:ml-space-xs">
+<button class="flex items-center gap-1 px-space-sm py-1.5 rounded-lg bg-surface-container-low font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors whitespace-nowrap" type="button" onclick="window.showSystemModal('Sort', 'Sorting options will open here.', 'alert')">
+<span class="material-symbols-outlined text-[18px] text-secondary">tune</span>
+<span>Newest First</span>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Teammate Roster Grid Section -->
+<section class="w-full pb-space-3xl">
+<div class="max-w-container-max mx-auto px-gutter-desktop">
+<!-- Live Status & Stats Bar -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-space-md text-on-surface-variant font-body-sm text-body-sm gap-2">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">Available Positions</span>
+<span class="py-0.5 px-2 rounded-full bg-primary-fixed font-label-sm text-label-sm text-on-primary-fixed font-bold">42 active calls</span>
+</div>
+<div class="flex items-center gap-4 text-outline">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-error"></span> SIH &amp; National Contests Closing Soon</span>
+</div>
+</div>
+<!-- 3-Column Card Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg">
+<!-- CARD 1: Neon (Featured SIH 2026) -->
+<article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
+<div>
+<!-- Header Row: Category Badge + Save / Action -->
+<div class="flex items-center justify-between mb-space-md">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold uppercase tracking-wider bg-error-container/60 text-error">
+                HACKATHON
+              </span>
+<div class="flex items-center gap-1">
+<button aria-label="Bookmark post" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors" type="button" onclick="window.showSystemModal('Bookmark Added', 'This opportunity has been saved.', 'alert')">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button aria-label="More options" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors" type="button" onclick="window.showSystemModal('Remove Post', 'Are you sure you want to hide this opportunity?', 'confirm')">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<!-- Project Title & Subtitle -->
+<div class="mb-space-md">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors cursor-pointer">
+                  Neon
+                </h3>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-secondary font-semibold">SIH 2026</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 line-clamp-2">
+                Testing automated PR review assistant and static analysis workflow for team codebases.
+              </p>
+</div>
+<!-- Looking For Skills Block -->
+<div class="mb-space-lg">
+<span class="block font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold mb-2">
+                LOOKING FOR SKILLS
+              </span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Python
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  FastAPI
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Docker
+                </span>
+<span class="px-2 py-1 rounded-md bg-surface-container text-on-surface-variant font-skill-pill text-[11px] font-semibold">
+                  +2 more
+                </span>
+</div>
+</div>
+<!-- Progress / Spot Vacancy -->
+<div class="p-2.5 rounded-xl bg-surface-container-low/80 border border-outline-variant/30 flex items-center justify-between font-label-sm text-label-sm mb-space-lg">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">group</span>
+<strong>2 of 4</strong> spots filled
+              </span>
+<span class="text-error font-medium">4 days left</span>
+</div>
+</div>
+<!-- Creator Identity & Split CTA Footer -->
+<div class="pt-space-md border-t border-outline-variant/50 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0 cursor-pointer" onclick="window.location.href='profile.html'">
+<div class="relative shrink-0 w-10 h-10 rounded-full overflow-hidden border border-outline-variant/60 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Photographic portrait of a male Indian engineering student wearing eyeglasses, smiling outdoors in university campus setting with lush trees in soft bokeh background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBddEN40s0FhnO4PDCAo6m7h6NNgj8JVcNXQtU-IkOP5Ota2hvQeU2DOnE7yzfMaOAohtFOMNcoHbEVTWEDbWJI0riOvlifkvB0tx6ZbuWR1y5FwzRAdRZTPdr5K0zzhzu2W_sIAisKm8RQXusgvYENmF9py-tUYJz1WD7s9F0Ju3n3ejc1uc5GYf78agd7TVUgJbGveZd7CYmLt30A-ug0Q-tOHf61tt77NLd-2vG7VnKiwalwOFkn"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest" title="Verified Campus Student"></span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-sm text-[13px] leading-tight font-bold text-on-surface truncate">
+                    Gopale Omkar Ravindra
+                  </div>
+<div class="font-body-sm text-[11px] leading-tight text-outline truncate" title="Amrutvahini College of Engineering (AVCOE)">
+                    Amrutvahini College of Eng. (AVCOE)
+                  </div>
+</div>
+</div>
+<button class="shrink-0 px-space-md py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Connection Request', 'A connection request has been sent to Gopale Omkar.', 'alert')">
+                Connect
+              </button>
+</div>
+</div>
+</article>
+<!-- CARD 2: DevSphere (Decentralized Identity) -->
+<article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold uppercase tracking-wider bg-error-container/60 text-error">
+                HACKATHON
+              </span>
+<div class="flex items-center gap-1">
+<button aria-label="Bookmark post" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors" type="button" onclick="window.showSystemModal('Bookmark Added', 'This hackathon opportunity has been saved.', 'alert')">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button aria-label="More options" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors" type="button" onclick="window.showSystemModal('Remove Post', 'Are you sure you want to hide this opportunity?', 'confirm')">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mb-space-md">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors cursor-pointer">
+                  DevSphere ID
+                </h3>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-secondary font-semibold">ETHDenver</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 line-clamp-2">
+                Web3 verified student credentials &amp; hackathon reputation passport on Polygon L2.
+              </p>
+</div>
+<div class="mb-space-lg">
+<span class="block font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold mb-2">
+                LOOKING FOR SKILLS
+              </span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Solidity
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Next.js
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  TypeScript
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Ethers.js
+                </span>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low/80 border border-outline-variant/30 flex items-center justify-between font-label-sm text-label-sm mb-space-lg">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">group</span>
+<strong>3 of 4</strong> spots filled
+              </span>
+<span class="text-tertiary font-semibold">1 spot left (Frontend)</span>
+</div>
+</div>
+<div class="pt-space-md border-t border-outline-variant/50 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0 cursor-pointer" onclick="window.location.href='profile.html?id=3'">
+<div class="relative shrink-0 w-10 h-10 rounded-full overflow-hidden border border-outline-variant/60 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Studio headshot of a young female software developer with hair tied back, confident expression, neutral gray college laboratory background, natural daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGyhPqOE4MUYPwmzYS8ERbKC5WxkKj2my4u1vygwlSKElK_D08s4AT96OrslZx6th1Q28Efbfeq8vZAXMq3p15LumrRk6gi6IV68wpJAQyxx3AQsKMRyMz5uT5-4bsj822tTNeXvNXZe-YhKeidEuFLs_vLNlS_3hFrbmzQQhdO_G750mwFHfmRwgz-Cm8IrHJfyiPvz-j0Xh0XOftssdgdYGPpHhJfC8vAi-5FwRhXjcEgB0dRvLL"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest" title="Verified Campus Student"></span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-sm text-[13px] leading-tight font-bold text-on-surface truncate">
+                    Priya Patil
+                  </div>
+<div class="font-body-sm text-[11px] leading-tight text-outline truncate">
+                    AVCOE Sangamner • CS Dept
+                  </div>
+</div>
+</div>
+<button class="shrink-0 px-space-md py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Connection Request', 'A connection request has been sent to Priya.', 'alert')">
+                Connect
+              </button>
+</div>
+</div>
+</article>
+<!-- CARD 3: NeuroScan BioMed (Research / AI) -->
+<article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-container">
+                RESEARCH / AI
+              </span>
+<div class="flex items-center gap-1">
+<button aria-label="Bookmark post" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors" type="button" onclick="window.showSystemModal('Bookmark Added', 'This research role has been saved.', 'alert')">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button aria-label="More options" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors" type="button" onclick="window.showSystemModal('Remove Post', 'Are you sure you want to hide this opportunity?', 'confirm')">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mb-space-md">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors cursor-pointer">
+                  NeuroScan BioMed
+                </h3>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-secondary font-semibold">IEEE Prep</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 line-clamp-2">
+                Early detection of retinal anomalies using transformer vision models. Preparing conference publication.
+              </p>
+</div>
+<div class="mb-space-lg">
+<span class="block font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold mb-2">
+                LOOKING FOR SKILLS
+              </span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  PyTorch
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Computer Vision
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Python
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Data Labeling
+                </span>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low/80 border border-outline-variant/30 flex items-center justify-between font-label-sm text-label-sm mb-space-lg">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+                Faculty Mentored Project
+              </span>
+<span class="text-primary font-semibold">Research Assistant</span>
+</div>
+</div>
+<div class="pt-space-md border-t border-outline-variant/50 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0 cursor-pointer" onclick="window.location.href='profile.html?id=2'">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center font-headline-sm text-on-primary-fixed font-bold shrink-0">
+                  DS
                 </div>
-            </div>
-
-            <a href="search.html">Search</a>
-            <a href="board.html" class="active">Opportunities Board</a>
-            <a href="team.html">My Teams</a>
-            <a href="register.html">Sign Up</a>
-            <a href="college.html">My College</a>
-            <a href="department.html">My Department</a>
-            <a href="global.html">Global Network</a>
-            <a href="network.html">My Network</a>
-            <a href="saved.html">Saved Profiles</a>
-            <a href="inbox.html">Inbox</a>
-            <a href="history.html">History</a>
-            <a href="profile.html">My Profile</a>
-            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
-        </nav>
-
-        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-            </svg>
+<div class="min-w-0">
+<div class="font-headline-sm text-[13px] leading-tight font-bold text-on-surface truncate">
+                    Don Shri
+                  </div>
+<div class="font-body-sm text-[11px] leading-tight text-outline truncate">
+                    AVCOE Sangamner • AI Lab
+                  </div>
+</div>
+</div>
+<button class="shrink-0 px-space-md py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Connection Request', 'A connection request has been sent to Don Shri.', 'alert')">
+                Connect
+              </button>
+</div>
+</div>
+</article>
+<!-- CARD 4: GreenRoute EV Routing -->
+<article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold uppercase tracking-wider bg-error-container/60 text-error">
+                HACKATHON
+              </span>
+<div class="flex items-center gap-1">
+<button aria-label="Bookmark post" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors" type="button" onclick="window.showSystemModal('Bookmark Added', 'This hackathon opportunity has been saved.', 'alert')">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button aria-label="More options" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors" type="button" onclick="window.showSystemModal('Remove Post', 'Are you sure you want to hide this opportunity?', 'confirm')">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mb-space-md">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors cursor-pointer">
+                  GreenRoute EV
+                </h3>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-secondary font-semibold">TCS Hack</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 line-clamp-2">
+                Optimal EV charging network routing engine with elevation and dynamic queue telemetry.
+              </p>
+</div>
+<div class="mb-space-lg">
+<span class="block font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold mb-2">
+                LOOKING FOR SKILLS
+              </span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Python
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  C++
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Mapbox API
+                </span>
+<span class="px-2 py-1 rounded-md bg-surface-container text-on-surface-variant font-skill-pill text-[11px] font-semibold">
+                  +1 more
+                </span>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low/80 border border-outline-variant/30 flex items-center justify-between font-label-sm text-label-sm mb-space-lg">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">group</span>
+<strong>1 of 3</strong> spots filled
+              </span>
+<span class="text-error font-medium">Closes in 2d</span>
+</div>
+</div>
+<div class="pt-space-md border-t border-outline-variant/50 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0 cursor-pointer" onclick="window.location.href='profile.html?id=5'">
+<div class="relative shrink-0 w-10 h-10 rounded-full overflow-hidden border border-outline-variant/60 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Portrait photo of a young male engineering scholar with modern haircut, dark collegiate pullover, posing inside a bright university tech innovation workspace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyjxGoAx9dKsYMy1-hSFpG48RLkmJ6ULkrFjCCtyN1ZkF-6DazjgYdozz3sNDssjGazK5kGudKYnsJzWoVn-Rmgoy0iX7tLfMIiFCXlz75npp173pkoZbFjIJcYcygwRw_oZBS-_lbYzWmSiBL0NMTBb_R_GpPVzGdsuShdMs7Mo3qx8eBPE8kO1bjxqHZeYr57X3W4RpUIy2XuUEkJhHjSAlPUtpk7Jkq_n9fyqg8aSb3cbbrcadD"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-sm text-[13px] leading-tight font-bold text-on-surface truncate">
+                    Rohan Verma
+                  </div>
+<div class="font-body-sm text-[11px] leading-tight text-outline truncate">
+                    IIT Bombay • Systems Lab
+                  </div>
+</div>
+</div>
+<button class="shrink-0 px-space-md py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Connection Request', 'A connection request has been sent to Rohan.', 'alert')">
+                Connect
+              </button>
+</div>
+</div>
+</article>
+<!-- CARD 5: CampusBazaar (Side Project) -->
+<article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold uppercase tracking-wider bg-tertiary-fixed/70 text-tertiary font-bold">
+                SIDE PROJECT
+              </span>
+<div class="flex items-center gap-1">
+<button aria-label="Bookmark post" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors" type="button" onclick="window.showSystemModal('Bookmark Added', 'This side project has been saved.', 'alert')">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button aria-label="More options" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors" type="button" onclick="window.showSystemModal('Remove Post', 'Are you sure you want to hide this opportunity?', 'confirm')">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mb-space-md">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors cursor-pointer">
+                  CampusBazaar
+                </h3>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-secondary font-semibold">Bootstrap</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 line-clamp-2">
+                Hyperlocal marketplace for university campus course books, lab kits, and verified peer tutoring.
+              </p>
+</div>
+<div class="mb-space-lg">
+<span class="block font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold mb-2">
+                LOOKING FOR SKILLS
+              </span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  React
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Node.js
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Tailwind CSS
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  PostgreSQL
+                </span>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low/80 border border-outline-variant/30 flex items-center justify-between font-label-sm text-label-sm mb-space-lg">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">storefront</span>
+                MVP Launch in 3 weeks
+              </span>
+<span class="text-secondary font-semibold">2 Co-founder roles</span>
+</div>
+</div>
+<div class="pt-space-md border-t border-outline-variant/50 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0 cursor-pointer" onclick="window.location.href='profile.html?id=4'">
+<div class="relative shrink-0 w-10 h-10 rounded-full overflow-hidden border border-outline-variant/60 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Warm natural portrait of an Indian female computer engineering student, smiling at camera with glasses, library books and laptop on wooden desk in background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4Z-KqUocKEyTA4-RLqTuKbl6w-hWZmKA8mUGsNNa9vUH4SoO0a-UEXH4Rbjnpga_eHBoae-EH7pM8lgctArNNetXPk-l7SSfjv2jQhl_CYB_P8YGhfhfWvcgHm0-hH-CEgA1nlbownB9bPtkofIBQ3JiB2ESSnbPorNXZI1FN_yhIYDL6Pa-Tf8AV3MJH51ZOjFIvBJlVN0oYpJ0yoBUjUcrWWxkOOPmc0udD7ixI1Cm-0tOoRJ7G"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-sm text-[13px] leading-tight font-bold text-on-surface truncate">
+                    Ananya Kulkarni
+                  </div>
+<div class="font-body-sm text-[11px] leading-tight text-outline truncate" title="Cummins College of Eng. for Women, Pune">
+                    Cummins College of Eng. Pune
+                  </div>
+</div>
+</div>
+<button class="shrink-0 px-space-md py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Connection Request', 'A connection request has been sent to Ananya.', 'alert')">
+                Connect
+              </button>
+</div>
+</div>
+</article>
+<!-- CARD 6: FinPulse Algorithmic Engine -->
+<article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold uppercase tracking-wider bg-error-container/60 text-error">
+                HACKATHON
+              </span>
+<div class="flex items-center gap-1">
+<button aria-label="Bookmark post" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container transition-colors" type="button" onclick="window.showSystemModal('Bookmark Added', 'This hackathon opportunity has been saved.', 'alert')">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button aria-label="More options" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/30 transition-colors" type="button" onclick="window.showSystemModal('Remove Post', 'Are you sure you want to hide this opportunity?', 'confirm')">
+<span class="material-symbols-outlined text-[18px]">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="mb-space-md">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors cursor-pointer">
+                  FinPulse Engine
+                </h3>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-secondary font-semibold">FinTech Challenge</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 line-clamp-2">
+                High-frequency order-book arbitrage simulator &amp; backtesting engine with sub-millisecond latency.
+              </p>
+</div>
+<div class="mb-space-lg">
+<span class="block font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold mb-2">
+                LOOKING FOR SKILLS
+              </span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Go (Golang)
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Python
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Kafka
+                </span>
+<span class="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant font-skill-pill text-skill-pill border border-outline-variant/40 font-medium">
+                  Redis
+                </span>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low/80 border border-outline-variant/30 flex items-center justify-between font-label-sm text-label-sm mb-space-lg">
+<span class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">group</span>
+<strong>3 of 5</strong> spots filled
+              </span>
+<span class="text-error font-medium">Round 1 Ends Sun</span>
+</div>
+</div>
+<div class="pt-space-md border-t border-outline-variant/50 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0 cursor-pointer" onclick="window.location.href='profile.html'">
+<div class="relative shrink-0 w-10 h-10 rounded-full overflow-hidden border border-outline-variant/60 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up photograph of a bright-eyed young college technologist looking at a screen in a modern computer lab, illuminated with subtle purple ambient monitor lights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiASiIVtkCIj1fp6M-8gtmyZp6RSLzrhHF_a9crglzUTJX9HbQRBAvg3FtdB69-kb9P4TTvM1kSr25bAVsI5DvvUV9kO4Pc2amWoxHfgXSrWkZi1ZfO5oRFujbJB5eVQVMYUI_hjZUp4lR8KF--d0VXNz-X4K3vHNgO4HXvP7pTq-_8k0BC-Y8OqzGsfn3bqPQRmeqdjOT5WBgCFaFlJU_Iz-jIG7_dxQ3N78i19laqUXHcERNRHH_"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="min-w-0">
+<div class="font-headline-sm text-[13px] leading-tight font-bold text-on-surface truncate">
+                    Gopale Omkar Ravindra
+                  </div>
+<div class="font-body-sm text-[11px] leading-tight text-outline truncate">
+                    Amrutvahini College of Eng. (AVCOE)
+                  </div>
+</div>
+</div>
+<button class="shrink-0 px-space-md py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary font-label-md text-label-md transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Connection Request', 'A connection request has been sent to Gopale Omkar.', 'alert')">
+                Connect
+              </button>
+</div>
+</div>
+</article>
+</div>
+<!-- Quick Tips Banner for Teammate Finders -->
+<div class="mt-space-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-low rounded-2xl p-space-lg border border-outline-variant/60 flex flex-col lg:flex-row items-center justify-between gap-space-lg">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[28px]">rocket_launch</span>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">Urgent Hackathon Deadline?</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Post your opening with the <span class="font-semibold text-error">"Urgent"</span> badge to pin it to the campus network feed and notify students with matched skills.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="px-space-md py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Guidelines', 'Fetching community guidelines for teammate posts...', 'alert')">
+            Read Teammate Guidelines
+          </button>
+<button class="px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary/90 transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Post Vacancy', 'Opening standard form to post a new vacancy.', 'alert')">
+            Post Vacancy Now
+          </button>
+</div>
+</div>
+<!-- Pagination Controls matching Screen 4 standard -->
+<div class="mt-space-xl pt-space-md border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant">
+<div>
+          Showing <span class="font-semibold text-on-surface">1 - 6</span> of <span class="font-semibold text-on-surface">42</span> open opportunities
         </div>
-    </header>
+<div class="flex items-center gap-1">
+<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-not-allowed opacity-50" disabled="" type="button" onclick="window.showSystemModal('Pagination', 'Loading previous page...', 'alert')">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center bg-primary text-on-primary font-semibold shadow-sm" type="button">
+            1
+          </button>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 2...', 'alert')">
+            2
+          </button>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 3...', 'alert')">
+            3
+          </button>
+<span class="px-1 text-outline">...</span>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 7...', 'alert')">
+            7
+          </button>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading next page...', 'alert')">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</div></main>
 
-    <div class="board-hero">
-        <h1>Project & Hackathon Teammate Board</h1>
-        <p>Post open positions for your hackathon team or side project, or apply to join active development teams looking for your tech stack.</p>
-    </div>
-
-    <div class="board-controls">
-        <div class="category-tabs">
-            <button class="cat-btn active" onclick="filterPosts('all')">All Opportunities</button>
-            <button class="cat-btn" onclick="filterPosts('Hackathon')">Hackathons</button>
-            <button class="cat-btn" onclick="filterPosts('Side Project')">Side Projects</button>
-            <button class="cat-btn" onclick="filterPosts('Research')">Research / AI</button>
-        </div>
-        
-        <button class="btn-create-post" id="btnOpenModal">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-            Post an Opportunity
-        </button>
-    </div>
-
-    <main class="main-container">
-        <div class="posts-grid" id="postsGrid">
-            <div class="loader-text">Loading opportunities...</div>
-        </div>
-    </main>
-
-    <!-- CREATE POST MODAL -->
-    <div class="modal-overlay" id="postModalOverlay">
-        <div class="custom-modal">
-            <h3>Post an Opportunity</h3>
-            <form id="createPostForm">
-                <div class="form-group">
-                    <label>Opportunity Type</label>
-                    <select id="postCategory" required>
-                        <option value="Hackathon">Hackathon Team</option>
-                        <option value="Side Project">Side Project / Startup</option>
-                        <option value="Research">Research / AI Lab</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Project / Event Title</label>
-                    <input type="text" id="postTitle" required placeholder="e.g. Smart City AI Hackathon 2026">
-                </div>
-
-                <div class="form-group">
-                    <label>Description & Objectives</label>
-                    <textarea id="postDesc" required placeholder="Explain what you are building, the event timeline, and what kind of teammate you need..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Required Tech Stack (Comma separated)</label>
-                    <input type="text" id="postSkills" required placeholder="e.g. React, Python, FastAPI, UI/UX">
-                </div>
-
-                <div class="modal-buttons">
-                    <button type="button" class="btn-cancel" id="btnCloseModal">Cancel</button>
-                    <button type="submit" class="btn-save">Publish Post</button>
-                </div>
-            </form>
+<!-- CUSTOM SYSTEM ALERTS MODAL -->
+<div class="modal-overlay" id="systemModal">
+    <div class="custom-modal">
+        <h3 id="systemModalTitle">Notification</h3>
+        <p id="systemModalMessage">Message goes here.</p>
+        <div class="modal-buttons">
+            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
         </div>
     </div>
+</div>
 
-    <script>
-        // ==========================================
-        // HEADER TOGGLE LOGIC
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const header = document.getElementById('mainHeader');
-            const toggleTab = document.getElementById('headerToggleTab');
-            let isHeaderCollapsed = false;
+<script>
+// ==========================================
+// GLOBAL MODAL SYSTEM
+// ==========================================
+window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
+    const modal = document.getElementById('systemModal');
+    const titleEl = document.getElementById('systemModalTitle');
+    const msgEl = document.getElementById('systemModalMessage');
+    const cancelBtn = document.getElementById('systemModalCancel');
+    const confirmBtn = document.getElementById('systemModalConfirm');
 
-            if (toggleTab) {
-                toggleTab.addEventListener('click', () => {
-                    if (!isHeaderCollapsed) {
-                        const headerHeight = header.offsetHeight;
-                        header.style.marginTop = `-${headerHeight}px`;
-                        header.classList.add('collapsed');
-                        isHeaderCollapsed = true;
-                    } else {
-                        header.style.marginTop = '0px';
-                        header.classList.remove('collapsed');
-                        isHeaderCollapsed = false;
-                    }
-                });
-            }
-        });
+    if (!modal) return console.error("System modal HTML is missing!");
 
-        // ==========================================
-        // UI & THEME LOGIC
-        // ==========================================
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const moonIcon = document.getElementById('moonIcon');
-        const sunIcon = document.getElementById('sunIcon');
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    confirmBtn.textContent = confirmText;
 
-        if (localStorage.getItem('theme') === 'dark') {
-            moonIcon.style.display = 'none';
-            sunIcon.style.display = 'block';
-        }
+    if (type === 'confirm') {
+        cancelBtn.style.display = 'block';
+        cancelBtn.onclick = () => window.closeSystemModal();
+        confirmBtn.onclick = () => {
+            window.closeSystemModal();
+            if (onConfirm) onConfirm();
+        };
+    } else {
+        cancelBtn.style.display = 'none';
+        confirmBtn.onclick = () => {
+            window.closeSystemModal();
+            if (onConfirm) onConfirm();
+        };
+    }
 
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                moonIcon.style.display = 'none';
-                sunIcon.style.display = 'block';
-            }
-        });
+    modal.classList.add('active');
+};
 
-        // ==========================================
-        // BOARD POSTS LOGIC
-        // ==========================================
-        let allPosts = [];
-        let activeCategory = 'all';
-        const currentUserId = parseInt(localStorage.getItem('currentUserId'));
+window.closeSystemModal = function() {
+    const modal = document.getElementById('systemModal');
+    if (modal) modal.classList.remove('active');
+};
+</script>
 
-        if (!currentUserId) {
-            window.location.href = 'login.html';
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            initNotifications(currentUserId);
-            await fetchPosts();
-        });
-
-        async function fetchPosts() {
-            const grid = document.getElementById('postsGrid');
-            grid.innerHTML = '<div class="loader-text">Loading opportunities...</div>';
-
-            try {
-                // FIXED ENDPOINT URL to match the original working logic
-                const res = await fetch('http://127.0.0.1:8000/api/board/posts', { credentials: 'include' });
-                if (res.ok) {
-                    allPosts = await res.json();
-                    renderPosts();
-                } else {
-                    grid.innerHTML = '<div class="loader-text" style="color: #ef4444;">Failed to load posts.</div>';
-                }
-            } catch (err) {
-                grid.innerHTML = '<div class="loader-text" style="color: #ef4444;">Backend server offline.</div>';
-            }
-        }
-
-        function filterPosts(category) {
-            activeCategory = category;
-            
-            const buttons = document.querySelectorAll('.cat-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-
-            renderPosts();
-        }
-
-        function getInitials(name) {
-            if (!name) return "?";
-            const parts = name.trim().split(' ');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[1][0]).toUpperCase();
-            }
-            return parts[0].substring(0, 2).toUpperCase();
-        }
-
-        function renderPosts() {
-            const grid = document.getElementById('postsGrid');
-            grid.innerHTML = '';
-
-            const filtered = activeCategory === 'all' 
-                ? allPosts 
-                : allPosts.filter(p => p.category === activeCategory);
-
-            if (filtered.length === 0) {
-                grid.innerHTML = '<div class="loader-text">No active opportunities found in this category. Be the first to post!</div>';
-                return;
-            }
-
-            filtered.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'post-card';
-
-                let badgeClass = 'type-project';
-                if (p.category === 'Hackathon') badgeClass = 'type-hackathon';
-                if (p.category === 'Research') badgeClass = 'type-research';
-
-                const skillsArray = p.skills_required ? p.skills_required.split(',') : [];
-                const skillsHtml = skillsArray.map(s => `<span class="post-skill-tag">${s.trim()}</span>`).join('');
-
-                const avatarStyle = p.author_pic ? `background-image: url('${p.author_pic}');` : '';
-                const avatarText = p.author_pic ? '' : getInitials(p.author_name);
-
-                // --- DELETE LOGIC ---
-                const isOwner = p.author_id === currentUserId;
-                let deleteBtnHtml = '';
-                
-                if (isOwner) {
-                    const safeId = p.id || p.post_id || p.opportunity_id;
-                    deleteBtnHtml = `
-                        <button class="btn-delete-opp" onclick="deletePost(${safeId})" title="Delete Post">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div class="post-header-top">
-                        <div class="post-type-badge ${badgeClass}">${p.category}</div>
-                        ${deleteBtnHtml}
-                    </div>
-                    <div class="post-title">${p.title}</div>
-                    <div class="post-desc">${p.description}</div>
-                    
-                    <div class="skills-needed-label">Looking For Skills</div>
-                    <div class="post-skills">${skillsHtml}</div>
-                    
-                    <div class="post-footer">
-                        <div class="author-info" onclick="window.location.href='profile.html?id=${p.author_id}'">
-                            <div class="author-avatar" style="${avatarStyle}">${avatarText}</div>
-                            <div>
-                                <div class="author-name">${p.author_name}</div>
-                                <div class="author-college">${p.author_college}</div>
-                            </div>
-                        </div>
-                        <a href="inbox.html?user=${p.author_id}" class="btn-apply">Connect</a>
-                    </div>
-                `;
-
-                grid.appendChild(card);
-            });
-        }
-
-        // --- DELETE POST FUNCTION ---
-        window.deletePost = async function(id) {
-            if (!confirm("Are you sure you want to delete this post?")) {
-                return;
-            }
-
-            if (!id) {
-                alert("Error: Post ID is undefined. Database format mismatch.");
-                return;
-            }
-
-            try {
-                // FIXED ENDPOINT URL to match the original working logic
-                const res = await fetch(`http://127.0.0.1:8000/api/board/posts/${id}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-
-                if (res.ok) {
-                    allPosts = allPosts.filter(p => (p.id || p.post_id || p.opportunity_id) !== id);
-                    renderPosts();
-                } else {
-                    const errText = await res.text();
-                    console.error("Failed to delete:", res.status, errText);
-                    alert(`Failed to delete the post. Status: ${res.status}\n\nMake sure your FastAPI backend has the @app.delete("/api/board/posts/{id}") route configured properly.`);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Server error while deleting.");
-            }
-        }
-
-        // ==========================================
-        // MODAL HANDLERS
-        // ==========================================
-        const modal = document.getElementById('postModalOverlay');
-        const openBtn = document.getElementById('btnOpenModal');
-        const closeBtn = document.getElementById('btnCloseModal');
-        const postForm = document.getElementById('createPostForm');
-
-        openBtn.addEventListener('click', () => modal.classList.add('active'));
-        closeBtn.addEventListener('click', () => modal.classList.remove('active'));
-
-        postForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const payload = {
-                category: document.getElementById('postCategory').value,
-                title: document.getElementById('postTitle').value.trim(),
-                description: document.getElementById('postDesc').value.trim(),
-                skills_required: document.getElementById('postSkills').value.trim()
-            };
-
-            try {
-                // FIXED ENDPOINT URL to match the original working logic
-                const res = await fetch('http://127.0.0.1:8000/api/board/posts', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (res.ok) {
-                    modal.classList.remove('active');
-                    postForm.reset();
-                    await fetchPosts();
-                } else {
-                    alert("Failed to publish post.");
-                }
-            } catch (err) {
-                alert("Server error.");
-            }
-        });
-
-        // ==========================================
-        // NOTIFICATIONS SYSTEM
-        // ==========================================
-        let unreadCount = 0;
-        let notifSocket = null;
-
-        async function initNotifications(userId) {
-            const bellBtn = document.getElementById('notifBellBtn');
-            const dropdown = document.getElementById('notifDropdown');
-            
-            bellBtn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                dropdown.classList.toggle('active'); 
-            });
-            
-            document.addEventListener('click', (e) => { 
-                if (!bellBtn.contains(e.target)) {
-                    dropdown.classList.remove('active'); 
-                }
-            });
-
-            await fetchAndRenderNotifications(userId);
-
-            notifSocket = new WebSocket(`ws://127.0.0.1:8000/api/ws/notifications/${userId}`);
-            
-            notifSocket.onmessage = function(event) {
-                const incomingNotif = JSON.parse(event.data);
-                insertNotificationUI(incomingNotif, true);
-                unreadCount++; 
-                updateBadge();
-            };
-        }
-
-        async function fetchAndRenderNotifications(userId) {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/notifications/${userId}`, { credentials: 'include' });
-                if (res.ok) {
-                    const notifs = await res.json();
-                    const notifList = document.getElementById('notifList');
-                    notifList.innerHTML = ''; 
-                    unreadCount = 0;
-                    
-                    if (notifs.length === 0) { 
-                        notifList.innerHTML = `<div class="notif-empty">No notifications yet.</div>`; 
-                        return; 
-                    }
-                    
-                    notifs.forEach(n => { 
-                        if (n.is_read === 0) unreadCount++; 
-                        insertNotificationUI(n, false); 
-                    });
-                    
-                    updateBadge();
-                }
-            } catch (err) {
-                console.error("Notification fetch failed");
-            }
-        }
-
-        function insertNotificationUI(notif, prepend = false) {
-            const notifList = document.getElementById('notifList');
-            const emptyState = notifList.querySelector('.notif-empty');
-            if (emptyState) emptyState.remove();
-
-            const dateObj = new Date(notif.timestamp);
-            const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const div = document.createElement('div');
-            div.className = `notif-item ${notif.is_read === 0 ? 'unread' : ''}`;
-            
-            div.innerHTML = `
-                <div>${notif.content}</div>
-                <div class="notif-time">${timeStr}</div>
-            `;
-            
-            div.addEventListener('click', async () => {
-                if (div.classList.contains('unread')) {
-                    try {
-                        await fetch(`http://127.0.0.1:8000/api/notifications/${notif.id}/read`, { 
-                            method: 'PUT', 
-                            credentials: 'include' 
-                        });
-                        
-                        div.classList.remove('unread'); 
-                        unreadCount = Math.max(0, unreadCount - 1); 
-                        updateBadge();
-                        
-                        if(notif.type === 'message') {
-                            window.location.href = 'inbox.html';
-                        }
-                        if(notif.type === 'follow') {
-                            window.location.href = 'network.html';
-                        }
-                    } catch(e) {}
-                }
-            });
-            
-            if (prepend) {
-                notifList.prepend(div); 
-            } else {
-                notifList.appendChild(div);
-            }
-        }
-
-        function updateBadge() {
-            const badge = document.getElementById('notifBadge');
-            if (unreadCount > 0) { 
-                badge.textContent = unreadCount; 
-                badge.classList.add('active'); 
-            } else {
-                badge.classList.remove('active');
-            }
-        }
-
-        async function logout() {
-            try { 
-                await fetch('http://127.0.0.1:8000/api/logout', { method: 'POST', credentials: 'include' }); 
-            } catch (err) {}
-            localStorage.removeItem('currentUserId');
-            window.location.href = 'login.html';
-        }
-    </script>
-</body>
-</html>
+</body></html>

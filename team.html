@@ -1,912 +1,760 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPartner | Team Workspace</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script>if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-    <style>
-        :root { 
-            --bg: #F8FAFC; --surface: rgba(255, 255, 255, 0.7); --card-bg: #ffffff;
-            --border: #E2E8F0; --primary: #4F46E5; --secondary: #818CF8; 
-            --text: #0F172A; --text-dim: #64748B; --input-bg: rgba(241, 245, 249, 0.8);
-            --sidebar-bg: #F1F5F9; --workspace-bg: #ffffff;
-            --header-bg: rgba(255, 255, 255, 0.85);
+
+<html class="h-full bg-slate-50 text-slate-900 antialiased" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project Neon | Team Workspace - ProPartner EdTech</title>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with forms & container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5', /* Primary theme color */
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
         }
-        /* Dark Theme - Totally Dark Mode (No Blue Tints) */
-        [data-theme="dark"] {
-            --bg: #000000; --surface: rgba(0, 0, 0, 0.85); --card-bg: #000000;
-            --border: #333333; --primary: #4F46E5; --text: #F8FAFC; 
-            --text-dim: #94A3B8; --input-bg: #111111;
-            --sidebar-bg: #000000; --workspace-bg: #000000;
-            --header-bg: rgba(0, 0, 0, 0.85);
-        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Style Configuration -->
+<style data-purpose="custom-scrollbars">
+    /* Subtle custom scrollbar for channels and chat log */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
 
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-        /* ==========================================
-           GLOBAL HEADER
-           ========================================== */
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 16px 5%; background: var(--header-bg); backdrop-filter: blur(12px); 
-            border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); 
-            z-index: 9999; position: relative; transition: background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-            flex-shrink: 0;
-        }
-
-        header h2 { font-weight: 800; color: var(--primary); font-size: 1.5rem; letter-spacing: -0.5px; }
-
-        nav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        nav a:not(.btn-logout) { color: var(--text-dim); text-decoration: none; font-weight: 600; transition: all 0.2s ease; font-size: 0.85rem; cursor: pointer; padding: 8px 16px; border-radius: 8px; background: transparent; }
-        nav a:not(.btn-logout):hover { color: var(--text); background: var(--input-bg); }
-        nav a:not(.btn-logout).active { background: var(--text); color: var(--card-bg); }
-
-        .btn-logout { background: transparent; color: #ef4444; padding: 8px 16px; border-radius: 8px; font-weight: 600; border: 1px solid transparent; transition: all 0.2s ease; font-size: 0.85rem; margin-left: 8px; cursor: pointer; }
-        .btn-logout:hover { background: rgba(239, 68, 68, 0.08); }
-
-        .theme-toggle { cursor: pointer; color: var(--text-dim); transition: 0.2s; display: flex; align-items: center; justify-content: center; margin-right: 8px; padding: 8px; border-radius: 8px; background: transparent; }
-        .theme-toggle:hover { color: var(--text); background: var(--input-bg); }
-        .theme-toggle svg { width: 18px; height: 18px; }
-
-        .nav-bell-container { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 12px; padding: 8px; border-radius: 8px; background: transparent; transition: 0.2s; }
-        .nav-bell-container:hover { background: var(--input-bg); }
-        .nav-bell-icon { width: 18px; height: 18px; color: var(--text-dim); transition: 0.2s; }
-        .nav-bell-container:hover .nav-bell-icon { color: var(--text); }
-
-        .notification-badge { position: absolute; top: 2px; right: 2px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; }
-        .notification-badge.active { opacity: 1; }
-
-        .notification-dropdown { position: absolute; top: 45px; left: -10px; width: 340px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); display: none; flex-direction: column; z-index: 1000; overflow: hidden; transition: 0.3s; }
-        .notification-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards; }
-
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .notif-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); font-size: 0.9rem; }
-        .notif-list { max-height: 350px; overflow-y: auto; }
-        .notif-item { padding: 16px 20px; border-bottom: 1px solid var(--border); transition: background 0.2s ease; font-size: 0.85rem; color: var(--text); display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
-        .notif-item:hover { background: var(--input-bg); }
-        .notif-item.unread { background: rgba(79, 70, 229, 0.04); font-weight: 600; border-left: 3px solid var(--primary); }
-        .notif-empty { padding: 40px; text-align: center; color: var(--text-dim); font-size: 0.9rem; font-weight: 500; }
-
-        .header-toggle-tab { 
-            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 40px; height: 20px; 
-            background: var(--header-bg); border: 1px solid var(--border); border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; 
-            display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--text-dim); z-index: 10000; transition: 0.2s; 
-        }
-        .header-toggle-tab:hover { color: var(--text); }
-        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
-        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
-
-        /* ==========================================
-           TEAM WORKSPACE LAYOUT
-           ========================================== */
-        .team-app-layout {
-            display: flex;
-            flex: 1;
-            height: 100%;
-            overflow: hidden;
-            width: 100%;
-        }
-
-        /* 1. TEAM NAVIGATION BAR (Far Left) */
-        .team-nav { width: 72px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 12px; flex-shrink: 0; z-index: 20; }
-        .team-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--input-bg); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; color: var(--text); font-weight: 700; border: 1px solid var(--border); overflow: hidden; background-size: cover;}
-        .team-icon:hover { border-radius: 8px; background: var(--primary); color: #fff; border-color: var(--primary); }
-        .team-icon.active { border-radius: 8px; background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-        .team-icon.action-btn { background: transparent; color: #10b981; border: 1px dashed #10b981; }
-        .team-icon.action-btn:hover { background: #10b981; color: #fff; }
-        .nav-divider { width: 32px; height: 2px; background: var(--border); border-radius: 2px; margin: 4px 0; }
-
-        /* 2. CHANNELS SIDEBAR */
-        .channel-sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
-        .team-header { padding: 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.2rem; font-weight: 800; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        
-        .btn-delete-team { background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-delete-team:hover { background: rgba(239, 68, 68, 0.1); transform: scale(1.1); }
-
-        .channel-list { padding: 16px 12px; flex: 1; overflow-y: auto; }
-        .category-title { font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px 8px; display: flex; justify-content: space-between; align-items: center; }
-        .channel-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; cursor: pointer; color: var(--text-dim); font-weight: 500; font-size: 0.95rem; transition: 0.2s; margin-bottom: 2px; }
-        .channel-item:hover { background: rgba(79, 70, 229, 0.1); color: var(--text); }
-        .channel-item.active { background: rgba(79, 70, 229, 0.15); color: var(--primary); font-weight: 600; }
-        .channel-icon { width: 18px; height: 18px; opacity: 0.7; }
-
-        /* 3. MAIN WORKSPACE */
-        .workspace-main { flex: 1; display: flex; flex-direction: column; background: var(--workspace-bg); position: relative; }
-        .workspace-header { height: 65px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); flex-shrink:0; }
-        .header-title { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 1.1rem; }
-        
-        /* CHAT UI */
-        .chat-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-        .message-block { display: flex; gap: 16px; }
-        .message-block.animate-new { animation: fadeIn 0.2s ease forwards; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--input-bg); flex-shrink: 0; border: 2px solid var(--card-bg); background-size: cover; display: flex; align-items:center; justify-content:center; font-weight:bold; }
-        .msg-content { display: flex; flex-direction: column; gap: 4px; }
-        .msg-header { display: flex; align-items: baseline; gap: 8px; }
-        .msg-author { font-weight: 700; color: var(--text); font-size: 1rem; }
-        .msg-time { font-size: 0.75rem; color: var(--text-dim); }
-        .msg-text { color: var(--text); line-height: 1.5; font-size: 0.95rem; }
-
-        .chat-input-container { padding: 0 24px 24px 24px; flex-shrink:0; }
-        .chat-input-box { background: var(--input-bg); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); transition: 0.3s; }
-        .chat-input-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        .chat-input-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 1rem; }
-        .chat-action-btn { background: transparent; border: none; color: var(--text-dim); cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .chat-action-btn:hover { color: var(--primary); }
-
-        /* WEBRTC VIDEO UI */
-        .video-area { flex: 1; background: #000; display: none; flex-wrap: wrap; align-content: center; justify-content: center; gap: 10px; padding: 10px; }
-        .video-container { position: relative; background: #111; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5); flex: 1 1 40%; max-height: 45vh; display: flex; align-items: center; justify-content: center; }
-        .video-container video { width: 100%; height: 100%; object-fit: cover; }
-        .video-label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
-        .video-controls { height: 70px; background: var(--card-bg); border-top: 1px solid var(--border); display: none; align-items: center; justify-content: center; gap: 16px; flex-shrink:0; }
-        .v-btn { width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; background: var(--text-dim); transition: 0.2s; }
-        .v-btn.danger { background: #ef4444; }
-        .v-btn:hover { filter: brightness(1.1); transform: scale(1.05); }
-
-        /* 4. ROSTER SIDEBAR (Right) */
-        .roster-sidebar { width: 280px; background: var(--sidebar-bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
-        .roster-header { height: 65px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; font-weight: 700; color: var(--text); flex-shrink:0;}
-        .roster-list { padding: 16px 12px; overflow-y: auto; flex: 1; }
-        .roster-role-group { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin: 16px 0 8px 8px; letter-spacing: 0.5px; }
-        .member-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .member-item:hover { background: var(--input-bg); }
-        .member-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--border); position: relative; background-size: cover; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;}
-        .status-dot { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: #10b981; border-radius: 50%; border: 2px solid var(--sidebar-bg); }
-        .member-name { font-weight: 600; font-size: 0.9rem; color: var(--text); }
-        .member-sub { font-size: 0.75rem; color: var(--text-dim); }
-
-        /* MODALS */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-overlay.active { display: flex; }
-        .custom-modal { background: var(--card-bg); padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 40px rgba(0,0,0,0.2); border: 1px solid var(--border); }
-        .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 20px; font-weight: 800;}
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-dim); }
-        .form-group input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; }
-        .btn-primary { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.2s;}
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
-        .btn-cancel:hover { background: var(--input-bg); }
-    </style>
+    /* SYSTEM MODAL STYLES (Injected for functionality without changing design) */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; }
+    .custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; animation: slideDown 0.3s ease; }
+    .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0f172a;}
+    .custom-modal p { color: #475569; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+    .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+    .btn-outline-modal { padding: 10px 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: transparent; color: #0f172a; font-weight: 600; cursor: pointer; transition: 0.2s;}
+    .btn-outline-modal:hover { background: #f1f5f9; }
+    .btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #4f46e5; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+    .btn-primary-modal:hover { background: #4338ca; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+<style data-purpose="code-styling">
+    .code-block {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+<!-- END: Custom Style Configuration -->
 </head>
-<body>
-
-    <!-- GLOBAL HEADER -->
-    <header id="mainHeader">
-        <a href="index.html" style="text-decoration: none;">
-            <h2 class="logo">ProPartner</h2>
-        </a>
-        
-        <nav>
-            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
-                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+<body class="h-full flex flex-col overflow-hidden font-sans select-none">
+<!-- BEGIN: GlobalHeader -->
+<!-- Top global navigation adhering to ProPartner Design System -->
+<header class="h-16 flex-none bg-white border-b border-slate-200 px-5 flex items-center justify-between z-30 shadow-xs">
+<!-- Left: Brand Logo & Primary Navigation Links -->
+<div class="flex items-center gap-7">
+<a class="flex items-center gap-2.5 group" data-purpose="brand-logo" href="index.html">
+<img alt="ProPartner Logo Mark" class="w-8 h-8 rounded-lg object-contain transition-transform group-hover:scale-105" src="https://lh3.googleusercontent.com/aida/AEtjO1VL4B7IxIBL2M_NYlMr1dnnzYJHS-vCmsduTHgsznLMbLSbD-PB2rnGd3CxlkEj6Z7ep1XuDgy9FYr8mSqz1R8n_8uIBe97iaYeWR9VoiOFqr-2925QBVJ3jjaDX1wM8xFRNq2H_4hduYJESJ1391iT6eH_w_H_ZVo1211mz_Fd0K4oaC9nFLRu09LY0r7vKRc_XW9ImuSEL4D1sA-bogVgquYu2cezcB_IBg45xF0whKqQgR87RIzUgPY"/>
+<span class="text-xl font-extrabold tracking-tight text-slate-900 flex items-center">
+          ProPartner
+        </span>
+</a>
+<nav class="hidden xl:flex items-center gap-1 text-[13.5px] font-semibold text-slate-600">
+<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="search.html">Discover Talent</a>
+<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="board.html">Opportunities Board</a>
+<!-- Active Tab: My Teams -->
+<a class="px-3 py-2 rounded-lg text-brand-600 bg-brand-50/80 font-bold border-b-2 border-brand-600 flex items-center gap-1.5 shadow-xs" href="team.html">
+<span>My Teams</span>
+<span class="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
+</a>
+<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="project_management.html">Project Hub</a>
+<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="college.html">Campus Network</a>
+<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="research.html">Research Collab</a>
+</nav>
+</div>
+<!-- Right: Global Search, Quick Utilities, Profile -->
+<div class="flex items-center gap-3">
+<!-- Quick Search Bar with Command K -->
+<div class="relative hidden sm:flex items-center">
+<svg class="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<input class="w-64 pl-10 pr-10 py-1.5 text-xs bg-slate-100 hover:bg-slate-100/80 focus:bg-white text-slate-800 placeholder-slate-400 border border-transparent focus:border-brand-500 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-brand-100" placeholder="Search network, repos, tasks..." type="text" onkeypress="if(event.key === 'Enter') window.showSystemModal('Search', 'Global search initialized for: ' + this.value, 'alert')"/>
+<kbd class="absolute right-2.5 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">⌘K</kbd>
+</div>
+<!-- Divider -->
+<div class="h-5 w-px bg-slate-200 hidden md:block"></div>
+<!-- Role Badge -->
+<button class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors" onclick="window.location.href='admin_dashboard.html'">
+<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+        Admin
+      </button>
+<!-- Notification Bell with Counter -->
+<button class="relative p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" title="Notifications" onclick="window.showSystemModal('Notifications', 'You have 3 unread messages in #general.', 'alert')">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-white">3</span>
+</button>
+<!-- Direct Messages Icon -->
+<button class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" title="Campus Direct Messages" onclick="window.location.href='inbox.html'">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Active User Profile Avatar with Online Indicator -->
+<div class="relative ml-1" onclick="window.location.href='profile.html'">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-400 p-[2px] cursor-pointer hover:shadow-md transition-shadow">
+<div class="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-xs text-brand-700">
+            OR
+          </div>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+</div>
+</div>
+</header>
+<!-- END: GlobalHeader -->
+<!-- BEGIN: WorkspaceContainer -->
+<!-- 3-Column Discord / Slack Hybrid Developer Workspace -->
+<div class="flex-1 flex overflow-hidden">
+<!-- BEGIN: MiniServerRail -->
+<!-- Far-Left Team/Server Switcher Rail -->
+<aside class="w-16 flex-none bg-slate-100 border-r border-slate-200 py-3 flex flex-col items-center justify-between z-20" data-purpose="team-switcher-rail">
+<!-- Upper Team Badges -->
+<div class="flex flex-col items-center gap-2.5 w-full">
+<!-- Active Team Indicator: Neon SIH -->
+<div class="relative group flex items-center justify-center w-full">
+<div class="absolute left-0 w-1 h-8 bg-brand-600 rounded-r-md"></div>
+<button class="w-11 h-11 rounded-2xl bg-brand-600 text-white font-black text-sm flex items-center justify-center shadow-md shadow-brand-500/30 hover:rounded-xl transition-all duration-200" title="Project Neon (SIH 2026)" onclick="window.showSystemModal('Workspace', 'Loading Project Neon...', 'alert')">
+            N
+          </button>
+</div>
+<!-- Team 2: Python Lab -->
+<div class="relative group flex items-center justify-center w-full">
+<div class="absolute left-0 w-1 h-0 group-hover:h-4 bg-slate-400 rounded-r-md transition-all"></div>
+<button class="w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white hover:bg-brand-50 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-2xs" title="Python Core Labs" onclick="window.showSystemModal('Workspace', 'Loading Python Core Labs...', 'alert')">
+            P
+          </button>
+</div>
+<!-- Team 3: TechFest Hackers -->
+<div class="relative group flex items-center justify-center w-full">
+<button class="w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white hover:bg-brand-50 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-2xs" title="TCS Hack Team" onclick="window.showSystemModal('Workspace', 'Loading TCS Hack Team...', 'alert')">
+            T
+          </button>
+</div>
+<!-- Team 4: DevSphere ID -->
+<div class="relative group flex items-center justify-center w-full">
+<button class="w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white hover:bg-brand-50 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-2xs" title="DevSphere ID Web3" onclick="window.showSystemModal('Workspace', 'Loading DevSphere ID Web3...', 'alert')">
+            D
+          </button>
+</div>
+<!-- Add Team Workspace Button -->
+<button class="w-11 h-11 rounded-3xl hover:rounded-2xl border-2 border-dashed border-slate-300 hover:border-brand-500 text-slate-400 hover:text-brand-600 hover:bg-white flex items-center justify-center transition-all duration-200 group" title="Create or Join New Workspace" onclick="window.showSystemModal('New Workspace', 'Opening workspace creation wizard.', 'alert')">
+<svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Bottom Workspace Controls: Explore & Settings -->
+<div class="flex flex-col items-center gap-2">
+<button class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center transition-colors" title="Explore Hackathon Hub" onclick="window.location.href='board.html'">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<button class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center transition-colors" title="Workspace Preferences" onclick="window.showSystemModal('Workspace Settings', 'Opening settings configuration...', 'alert')">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</aside>
+<!-- END: MiniServerRail -->
+<!-- BEGIN: ChannelsSidebar -->
+<!-- Team Specific Channels and Audio Lounges -->
+<aside class="w-64 flex-none bg-slate-50 border-r border-slate-200 flex flex-col justify-between" data-purpose="channels-sidebar">
+<div class="flex-1 flex flex-col overflow-y-auto">
+<!-- Team Profile Header -->
+<div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white/70 backdrop-blur-xs sticky top-0 z-10">
+<div class="flex items-center gap-2 truncate">
+<div class="w-7 h-7 rounded-md bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-none shadow-xs">
+              ⚡
             </div>
-
-            <div class="nav-bell-container" id="notifBellBtn">
-                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                <div class="notification-badge" id="notifBadge">0</div>
-                <div class="notification-dropdown" id="notifDropdown">
-                    <div class="notif-header">Notifications</div>
-                    <div class="notif-list" id="notifList">
-                        <div class="notif-empty">No notifications yet.</div>
-                    </div>
+<div class="truncate">
+<h2 class="text-sm font-bold text-slate-800 tracking-tight truncate leading-tight">Neon • SIH 2026</h2>
+<p class="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                In Sprint (SIH-26)
+              </p>
+</div>
+</div>
+<button class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Workspace options" onclick="window.showSystemModal('Workspace Options', 'Opening workspace options menu.', 'alert')">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Channel Groups -->
+<div class="p-3 space-y-6">
+<!-- Category: Text Channels -->
+<div data-purpose="text-channels-group">
+<div class="px-2 mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+<span>Text Channels</span>
+<button class="hover:text-slate-600" title="Create channel" onclick="window.showSystemModal('Create Channel', 'Opening channel creation wizard.', 'alert')">+</button>
+</div>
+<div class="space-y-0.5">
+<!-- Active Channel: # general -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-100/70 text-brand-900 border-l-2 border-brand-600 shadow-2xs" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
+<span class="text-brand-600 font-mono text-sm">#</span>
+<span class="truncate">general</span>
+<span class="ml-auto text-[10px] bg-brand-200/80 text-brand-800 px-1.5 py-0.2 rounded font-mono">active</span>
+</a>
+<!-- Channel: # dev-updates -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
+<span class="text-slate-400 font-mono text-sm">#</span>
+<span class="truncate">dev-updates</span>
+<span class="ml-auto w-2 h-2 rounded-full bg-brand-500"></span>
+</a>
+<!-- Channel: # frontend-react -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
+<span class="text-slate-400 font-mono text-sm">#</span>
+<span class="truncate">frontend-react</span>
+</a>
+<!-- Channel: # backend-fastapi -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
+<span class="text-slate-400 font-mono text-sm">#</span>
+<span class="truncate">backend-fastapi</span>
+</a>
+<!-- Channel: # resources-and-links -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
+<span class="text-slate-400 font-mono text-sm">#</span>
+<span class="truncate">resources-and-links</span>
+</a>
+</div>
+</div>
+<!-- Category: Voice & Live Collab -->
+<div data-purpose="voice-channels-group">
+<div class="px-2 mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+<span>Voice &amp; Collab Hub</span>
+<span class="text-[10px] text-emerald-600 font-bold">2 Live</span>
+</div>
+<div class="space-y-1">
+<!-- Active Voice Room -->
+<div class="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200/60 text-xs">
+<div class="flex items-center justify-between font-semibold text-emerald-900 mb-1.5">
+<div class="flex items-center gap-1.5 cursor-pointer" onclick="window.showSystemModal('Voice Channel', 'Disconnecting from Pair Programming...', 'alert')">
+<svg class="w-3.5 h-3.5 text-emerald-600 animate-pulse" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Pair Programming</span>
+</div>
+<span class="px-1.5 py-0.5 text-[9px] bg-emerald-200/80 text-emerald-800 rounded font-mono font-bold">LIVE</span>
+</div>
+<!-- Current Voice Members -->
+<div class="space-y-1 pl-4">
+<div class="flex items-center gap-2 text-slate-700 text-[11px] cursor-pointer" onclick="window.location.href='profile.html'">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+<span>Gopale Omkar (Speaking)</span>
+</div>
+<div class="flex items-center gap-2 text-slate-600 text-[11px] cursor-pointer" onclick="window.location.href='profile.html?id=3'">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+<span>Priya Patil</span>
+</div>
+</div>
+</div>
+<!-- Inactive Voice Room -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Voice Channel', 'Connecting to ' + this.querySelector('span.truncate').innerText + '...', 'alert')">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="truncate">Standup Lounge</span>
+</a>
+<!-- Shared Live Canvas -->
+<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Live Canvas', 'Connecting to ' + this.querySelector('span.truncate').innerText + '...', 'alert')">
+<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="truncate">Live Architecture Canvas</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Sprint Tracker Widget -->
+<div class="p-3 border-t border-slate-200 bg-white" data-purpose="sprint-progress-widget">
+<div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            SIH Round 1 Milestone
+          </span>
+<span class="text-brand-600 font-mono">78%</span>
+</div>
+<p class="text-[11px] text-slate-500 mb-2">Submission closes in <strong class="text-slate-700">4 days</strong></p>
+<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+<div class="bg-brand-600 h-1.5 rounded-full transition-all duration-500" style="width: 78%"></div>
+</div>
+</div>
+</aside>
+<!-- END: ChannelsSidebar -->
+<!-- BEGIN: CentralChatStream -->
+<!-- Main Center Collaboration Chat Area -->
+<main class="flex-1 flex flex-col bg-white overflow-hidden" data-purpose="main-chat-viewport">
+<!-- Channel Top Bar -->
+<header class="h-14 flex-none border-b border-slate-200 px-6 flex items-center justify-between bg-white z-10">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="text-slate-400 font-mono text-xl font-bold">#</span>
+<h1 class="text-base font-bold text-slate-900 tracking-tight">general</h1>
+</div>
+<div class="h-4 w-px bg-slate-200"></div>
+<p class="text-xs text-slate-500 hidden md:inline truncate max-w-sm">
+            Core sprint discussion, automated PR reviews &amp; SIH hackathon deliverables.
+          </p>
+</div>
+<!-- Channel Actions -->
+<div class="flex items-center gap-2 text-slate-500 text-xs">
+<!-- GitHub Sync Indicator -->
+<div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono text-[11px] cursor-pointer" onclick="window.showSystemModal('GitHub Sync', 'Repository is fully synced with main branch.', 'alert')">
+<svg class="w-3.5 h-3.5 text-slate-800" fill="currentColor" viewbox="0 0 24 24">
+<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
+</svg>
+<span>repo: main synced</span>
+</div>
+<button class="p-1.5 hover:bg-slate-100 rounded-md transition-colors" title="Pinned Messages" onclick="window.showSystemModal('Pinned Messages', 'Showing messages pinned in #general.', 'alert')">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<button class="p-1.5 hover:bg-slate-100 rounded-md transition-colors" title="Start Group Audio Call" onclick="window.showSystemModal('Audio Call', 'Starting group audio call...', 'alert')">
+<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</header>
+<!-- Message History List -->
+<div class="flex-1 overflow-y-auto px-6 py-6 space-y-6" data-purpose="chat-messages-container">
+<!-- Welcome Banner to Channel -->
+<div class="p-4 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-100 flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-sm flex-none">
+            #
+          </div>
+<div>
+<h3 class="text-sm font-bold text-slate-900">Welcome to #general!</h3>
+<p class="text-xs text-slate-600 mt-0.5 leading-relaxed">
+              This is the official collaborative channel for <strong>Neon • Smart India Hackathon 2026</strong>. All GitHub PR notifications, automated Docker CI status, and mentor reviews post here automatically.
+            </p>
+</div>
+</div>
+<!-- Date Separator -->
+<div class="relative flex items-center justify-center my-4">
+<div class="border-t border-slate-200 w-full"></div>
+<span class="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider absolute">Today • 14 Aug 2026</span>
+</div>
+<!-- Message Item 1: Gopale Omkar Ravindra (Team Lead) -->
+<div class="flex items-start gap-3 group" data-purpose="message-item">
+<div class="w-9 h-9 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-brand-100 cursor-pointer" onclick="window.location.href='profile.html'">
+            GO
+          </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer" onclick="window.location.href='profile.html'">Gopale Omkar Ravindra</span>
+<span class="px-1.5 py-0.2 bg-brand-100 text-brand-700 text-[10px] font-bold rounded">LEAD</span>
+<span class="text-[11px] text-slate-400">09:03 AM</span>
+</div>
+<p class="text-xs text-slate-700 mt-1 leading-relaxed">
+              Hey team! Good morning. I've finished configuring the core FastAPI async backend with the static analysis worker. Let's do a fast sync before our mentor evaluation.
+            </p>
+<!-- Code snippet card -->
+<div class="mt-2.5 rounded-lg border border-slate-200 overflow-hidden text-xs max-w-xl shadow-xs">
+<div class="bg-slate-900 px-3 py-1.5 flex items-center justify-between text-slate-400 text-[11px] border-b border-slate-800">
+<span class="font-mono">app/services/pr_analyzer.py</span>
+<span class="text-[10px] uppercase font-mono text-emerald-400">Python 3.11</span>
+</div>
+<pre class="code-block p-3 overflow-x-auto text-[11px] leading-snug"><code><span class="text-purple-400">async def</span> <span class="text-blue-400">evaluate_pull_request</span>(repo_url: <span class="text-yellow-300">str</span>, pr_id: <span class="text-yellow-300">int</span>):
+    <span class="text-slate-400"># Trigger asynchronous LLM code inspection queue</span>
+    task = <span class="text-purple-400">await</span> celery_app.send_task(
+        <span class="text-green-300">"tasks.run_code_safety_check"</span>, 
+        args=[repo_url, pr_id]
+    )
+    <span class="text-purple-400">return</span> {<span class="text-green-300">"task_id"</span>: task.id, <span class="text-green-300">"status"</span>: <span class="text-green-300">"QUEUED"</span>}</code></pre>
+</div>
+</div>
+</div>
+<!-- Message Item 2: Priya Patil (Frontend / Design) -->
+<div class="flex items-start gap-3 group" data-purpose="message-item">
+<div class="w-9 h-9 rounded-full bg-violet-600 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-violet-100 cursor-pointer" onclick="window.location.href='profile.html?id=3'">
+            PP
+          </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer" onclick="window.location.href='profile.html?id=3'">Priya Patil</span>
+<span class="px-1.5 py-0.2 bg-violet-100 text-violet-700 text-[10px] font-bold rounded">DESIGN LEAD</span>
+<span class="text-[11px] text-slate-400">09:12 AM</span>
+</div>
+<p class="text-xs text-slate-700 mt-1 leading-relaxed">
+              Looks super neat Omkar! I just updated the reviewer dashboard frames on Figma. Added the AST review tree &amp; severity tags so the user can easily triage high-priority bugs.
+            </p>
+<!-- Figma Attachment Card -->
+<div class="mt-2 flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg max-w-md hover:border-brand-400 transition-colors cursor-pointer group/figma" onclick="window.showSystemModal('Figma', 'Opening Figma file in new tab...', 'alert')">
+<div class="w-9 h-9 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center flex-none font-bold text-base">
+                ❖
+              </div>
+<div class="min-w-0 flex-1">
+<p class="text-xs font-bold text-slate-800 group-hover/figma:text-brand-600 transition-colors truncate">Figma: SIH-26 Neon PR Reviewer UI v2.4</p>
+<p class="text-[11px] text-slate-400">Edited 15 mins ago • 14 interactive frames</p>
+</div>
+<span class="text-xs font-semibold text-brand-600">Open →</span>
+</div>
+</div>
+</div>
+<!-- Message Item 3: Don Shri (Backend & Systems) -->
+<div class="flex items-start gap-3 group" data-purpose="message-item">
+<div class="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-emerald-100 cursor-pointer" onclick="window.location.href='profile.html?id=2'">
+            DS
+          </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer" onclick="window.location.href='profile.html?id=2'">Don Shri</span>
+<span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">DEV</span>
+<span class="text-[11px] text-slate-400">09:15 AM</span>
+</div>
+<p class="text-xs text-slate-700 mt-1 leading-relaxed">
+              Dockerized container tests are passing locally! Also hooked up the webhook receiver for GitHub push events. I am jumping into the <strong>#pair-programming</strong> audio lounge right now if anyone wants to test the live socket stream.
+            </p>
+<!-- Quick Reaction Pills -->
+<div class="flex items-center gap-1.5 mt-2">
+<button class="px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors">
+<span>🔥</span> <span class="font-bold text-[10px]">3</span>
+</button>
+<button class="px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors">
+<span>🚀</span> <span class="font-bold text-[10px]">2</span>
+</button>
+<button class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Add reaction">
+                +
+              </button>
+</div>
+</div>
+</div>
+<!-- System Message / Live Pair Session Card -->
+<div class="my-2 p-3.5 rounded-xl border border-dashed border-brand-300 bg-brand-50/40 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center shadow-xs">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-900">Pair Programming &amp; Live Terminal is Active</p>
+<p class="text-[11px] text-slate-500">Gopale Omkar &amp; Priya Patil are collaborating in real-time.</p>
+</div>
+</div>
+<button class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-2xs" onclick="window.showSystemModal('Joining Session', 'Connecting to Live Canvas and Voice...', 'alert')">
+            Join Voice &amp; Canvas
+          </button>
+</div>
+</div>
+<!-- Rich Message Input Box -->
+<footer class="p-4 border-t border-slate-200 bg-white" data-purpose="chat-input-container">
+<div class="bg-slate-50 border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 rounded-xl p-2.5 transition-all shadow-2xs">
+<textarea class="w-full bg-transparent border-0 resize-none text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 p-1" placeholder="Message #general (Type / for slash commands or @ to mention a teammate)..." rows="2" onkeypress="if(event.key === 'Enter') { event.preventDefault(); window.showSystemModal('Message Sent', 'Your message has been posted to the channel.', 'alert'); this.value=''; }"></textarea>
+<!-- Input Toolbar -->
+<div class="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
+<!-- Left formatting tools -->
+<div class="flex items-center gap-1 text-slate-500">
+<!-- File Attachment -->
+<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Attach file or screenshot" onclick="window.showSystemModal('Action', 'Opening file attachment dialog...', 'alert')">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Code Snippet -->
+<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded font-mono text-xs font-bold transition-colors" title="Insert code block" onclick="window.showSystemModal('Action', 'Opening code snippet editor...', 'alert')">
+                &lt;/&gt;
+              </button>
+<!-- Emoji Picker -->
+<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Insert emoji" onclick="window.showSystemModal('Action', 'Opening emoji picker...', 'alert')">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Voice Memo -->
+<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Send audio clip" onclick="window.showSystemModal('Action', 'Recording voice memo...', 'alert')">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Right: Send Action Button -->
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-slate-400 font-medium hidden sm:inline">Press <strong>Enter ↵</strong> to send</span>
+<button class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow transition-all" title="Send Message" onclick="window.showSystemModal('Message Sent', 'Your message has been posted to the channel.', 'alert'); document.querySelector('textarea').value='';">
+<span>Send</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</footer>
+</main>
+<!-- END: CentralChatStream -->
+<!-- BEGIN: TeamRosterContextSidebar -->
+<!-- Right Sidebar: Team Roster, Hackathon Details & Assets -->
+<aside class="w-72 flex-none bg-slate-50 border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col" data-purpose="team-roster-sidebar">
+<!-- Panel Header -->
+<div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white/70 backdrop-blur-xs sticky top-0 z-10">
+<h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Team Roster • 4 Members</h2>
+<span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">3 Online</span>
+</div>
+<div class="p-4 space-y-6">
+<!-- Category: Leadership & Admin -->
+<div data-purpose="roster-role-admin">
+<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+<span>Admin &amp; SIH Lead — 1</span>
+</div>
+<!-- User Card: Gopale Omkar Ravindra -->
+<div class="flex items-center gap-2.5 p-2 rounded-lg bg-white border border-slate-200/80 hover:border-brand-300 transition-colors shadow-2xs cursor-pointer" onclick="window.location.href='profile.html'">
+<div class="relative flex-none">
+<div class="w-8 h-8 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center">
+                GO
+              </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-xs font-bold text-slate-800 truncate">Gopale Omkar Ravindra</p>
+<p class="text-[10px] text-slate-500 truncate">AVCOE • Full-stack Lead</p>
+</div>
+<span class="px-1.5 py-0.5 text-[9px] font-bold bg-brand-50 text-brand-700 border border-brand-200 rounded">
+              Lead
+            </span>
+</div>
+</div>
+<!-- Category: Backend & AI -->
+<div data-purpose="roster-role-backend">
+<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+<span>Backend &amp; AI Stack — 2</span>
+</div>
+<div class="space-y-1.5">
+<!-- Member: Don Shri -->
+<div class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer" onclick="window.location.href='profile.html?id=2'">
+<div class="relative flex-none">
+<div class="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+                  DS
                 </div>
-            </div>
-
-            <a href="search.html">Search</a>
-            <a href="board.html">Opportunities Board</a>
-            <a href="team.html" class="active">My Teams</a>
-            <a href="college.html">My College</a>
-            <a href="department.html">My Department</a>
-            <a href="global.html">Global Network</a>
-            <a href="network.html">My Network</a>
-            <a href="saved.html">Saved Profiles</a>
-            <a href="inbox.html">Inbox</a>
-            <a href="history.html">History</a>
-            <a href="profile.html">My Profile</a>
-            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
-        </nav>
-
-        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
-        </div>
-    </header>
-
-    <!-- FULL SCREEN WORKSPACE LAYOUT -->
-    <div class="team-app-layout">
-        
-        <!-- 1. TEAM NAVIGATION BAR -->
-        <nav class="team-nav">
-            <a href="index.html" title="Home" style="text-decoration: none;">
-                <div class="team-icon" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; border:none; font-family: 'Plus Jakarta Sans', sans-serif;">P</div>
-            </a>
-            <div class="nav-divider"></div>
-            
-            <div id="teamServerList" style="display:flex; flex-direction:column; gap:12px; width:100%; align-items:center;">
-                <!-- Loaded Teams Go Here -->
-            </div>
-
-            <div class="nav-divider"></div>
-            <div class="team-icon action-btn" title="Create Workspace" onclick="openCreateModal()">
-                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 5v14M5 12h14"></path></svg>
-            </div>
-        </nav>
-
-        <!-- 2. CHANNELS SIDEBAR -->
-        <aside class="channel-sidebar">
-            <div class="team-header" id="activeTeamName">
-                Loading...
-                <!-- Delete button injected here via JS -->
-            </div>
-            <div class="channel-list">
-                <div class="category-title">Text Channels</div>
-                <div class="channel-item active" id="btnTextChat" onclick="switchChannel('text')">
-                    <svg class="channel-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                    general
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-xs font-semibold text-slate-800 truncate">Don Shri</p>
+<p class="text-[10px] text-slate-400 truncate">AVCOE • Systems &amp; Docker</p>
+</div>
+<button class="p-1 text-slate-400 hover:text-brand-600 transition-colors" title="Direct Message" onclick="event.stopPropagation(); window.location.href='inbox.html?target=2'">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Member: Rohan Verma (Offline) -->
+<div class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white transition-colors opacity-75 cursor-pointer" onclick="window.location.href='profile.html?id=5'">
+<div class="relative flex-none">
+<div class="w-7 h-7 rounded-full bg-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center">
+                  RV
                 </div>
-
-                <div class="category-title" style="margin-top: 24px;">Voice & Video</div>
-                <div class="channel-item" id="btnVoiceChat" onclick="switchChannel('voice')">
-                    <svg class="channel-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    Pair Programming
-                </div>
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-slate-300 border-2 border-white rounded-full"></span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-xs font-semibold text-slate-700 truncate">Rohan Verma</p>
+<p class="text-[10px] text-slate-400 truncate">IIT Bombay • ML Engineer</p>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">1h ago</span>
+</div>
+</div>
+</div>
+<!-- Category: Frontend & UI -->
+<div data-purpose="roster-role-frontend">
+<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+<span>Frontend &amp; UI — 1</span>
+</div>
+<div class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer" onclick="window.location.href='profile.html?id=3'">
+<div class="relative flex-none">
+<div class="w-7 h-7 rounded-full bg-violet-600 text-white font-bold text-xs flex items-center justify-center">
+                PP
+              </div>
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-xs font-semibold text-slate-800 truncate">Priya Patil</p>
+<p class="text-[10px] text-slate-400 truncate">AVCOE • UI/UX &amp; Tailwind</p>
+</div>
+<button class="p-1 text-slate-400 hover:text-brand-600 transition-colors" title="Direct Message" onclick="event.stopPropagation(); window.location.href='inbox.html?target=3'">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+<div class="border-t border-slate-200"></div>
+<!-- Shared Project Assets Hub -->
+<div class="space-y-2.5" data-purpose="shared-assets-widget">
+<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+<span>Project Resources</span>
+</div>
+<!-- Asset 1: GitHub -->
+<a class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-2xs" href="javascript:void(0)" onclick="window.showSystemModal('External Link', 'Opening GitHub repository in new tab.', 'alert')">
+<div class="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center flex-none">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="truncate min-w-0">
+<p class="font-semibold text-slate-800 truncate group-hover:text-brand-600">github.com/neon-sih</p>
+<p class="text-[10px] text-slate-400">18 branches • 4 PRs open</p>
+</div>
+</a>
+<!-- Asset 2: Google Colab Notebook -->
+<a class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-2xs" href="javascript:void(0)" onclick="window.showSystemModal('External Link', 'Opening Google Colab in new tab.', 'alert')">
+<div class="w-7 h-7 rounded bg-amber-500 text-white flex items-center justify-center flex-none font-bold text-xs">
+              CO
             </div>
-        </aside>
+<div class="truncate min-w-0">
+<p class="font-semibold text-slate-800 truncate group-hover:text-brand-600">AST_Transformer_Eval.ipynb</p>
+<p class="text-[10px] text-slate-400">Google Drive • Trained model</p>
+</div>
+</a>
+<!-- Asset 3: Hackathon Checklist Summary -->
+<div class="p-3 bg-brand-50/70 border border-brand-200/80 rounded-lg text-xs space-y-2">
+<span class="font-bold text-brand-900 block">Deliverable Checklist</span>
+<label class="flex items-center gap-2 text-slate-700 cursor-pointer text-[11px]">
+<input checked="" class="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5" type="checkbox"/>
+<span>Architecture PDF approved</span>
+</label>
+<label class="flex items-center gap-2 text-slate-700 cursor-pointer text-[11px]">
+<input checked="" class="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5" type="checkbox"/>
+<span>FastAPI Backend Containerized</span>
+</label>
+<label class="flex items-center gap-2 text-slate-700 cursor-pointer text-[11px]">
+<input class="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5" type="checkbox"/>
+<span>3-Minute Pitch Video Recorded</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Bottom Sprint Tracker Widget -->
+<div class="p-3 border-t border-slate-200 bg-white" data-purpose="sprint-progress-widget">
+<div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            SIH Round 1 Milestone
+          </span>
+<span class="text-brand-600 font-mono">78%</span>
+</div>
+<p class="text-[11px] text-slate-500 mb-2">Submission closes in <strong class="text-slate-700">4 days</strong></p>
+<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+<div class="bg-brand-600 h-1.5 rounded-full transition-all duration-500" style="width: 78%"></div>
+</div>
+</div>
+</aside>
+<!-- END: TeamRosterContextSidebar -->
+</div>
+<!-- END: WorkspaceContainer -->
+<!-- BEGIN: InteractiveScripts -->
+<!-- Lightweight workspace utilities for input behavior and keyboard shortcuts -->
+<script data-purpose="keyboard-shortcuts">
+    document.addEventListener('keydown', function(e) {
+      // CMD/Ctrl + K search focus trigger
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="text"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    });
 
-        <!-- 3. MAIN WORKSPACE -->
-        <section class="workspace-main">
-            <div class="workspace-header">
-                <div class="header-title" id="workspaceTitle">
-                    <svg class="workspace-header-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                    general
-                </div>
-            </div>
-            
-            <!-- TEXT CHAT UI -->
-            <div class="chat-area" id="chatArea">
-                <div style="text-align:center; color:var(--text-dim); margin-top: 40px;">Loading messages...</div>
-            </div>
+    // ==========================================
+    // GLOBAL MODAL SYSTEM
+    // ==========================================
+    window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
+        const modal = document.getElementById('systemModal');
+        const titleEl = document.getElementById('systemModalTitle');
+        const msgEl = document.getElementById('systemModalMessage');
+        const cancelBtn = document.getElementById('systemModalCancel');
+        const confirmBtn = document.getElementById('systemModalConfirm');
 
-            <div class="chat-input-container" id="chatInputArea">
-                <form class="chat-input-box" id="teamMsgForm">
-                    <input type="text" id="teamMsgInput" placeholder="Message #general" autocomplete="off" required>
-                    <button type="submit" class="chat-action-btn">
-                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
-                    </button>
-                </form>
-            </div>
+        if (!modal) return console.error("System modal HTML is missing!");
 
-            <!-- WEBRTC VIDEO UI -->
-            <div class="video-area" id="videoArea">
-                <div class="video-container" id="localVideoContainer">
-                    <video id="localVideo" autoplay muted playsinline></video>
-                    <div class="video-label">You</div>
-                </div>
-                <!-- Remote Videos Injected Here -->
-            </div>
-            
-            <div class="video-controls" id="videoControls">
-                <button class="v-btn danger" onclick="endCall()" title="Disconnect">
-                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M10.707 5.05L12 3.757l1.293 1.293a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L8.121 6.464a1 1 0 11-1.414-1.414l1.293-1.293A1.994 1.994 0 0110.707 5.05zM21 17a2 2 0 01-2 2H5a2 2 0 01-2-2v-4a2 2 0 012-2h3.586a1 1 0 01.707.293l2 2a1 1 0 001.414 0l2-2a1 1 0 01.707-.293H19a2 2 0 012 2v4z"></path></svg>
-                </button>
-            </div>
-        </section>
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        confirmBtn.textContent = confirmText;
 
-        <!-- 4. ROSTER SIDEBAR -->
-        <aside class="roster-sidebar">
-            <div class="roster-header">Team Roster</div>
-            <div class="roster-list" id="rosterList">
-                <div style="color:var(--text-dim); text-align:center; margin-top:40px;">Loading...</div>
-            </div>
-        </aside>
+        if (type === 'confirm') {
+            cancelBtn.style.display = 'block';
+            cancelBtn.onclick = () => window.closeSystemModal();
+            confirmBtn.onclick = () => {
+                window.closeSystemModal();
+                if (onConfirm) onConfirm();
+            };
+        } else {
+            cancelBtn.style.display = 'none';
+            confirmBtn.onclick = () => {
+                window.closeSystemModal();
+                if (onConfirm) onConfirm();
+            };
+        }
 
-    </div> <!-- END LAYOUT -->
+        modal.classList.add('active');
+    };
 
-    <!-- CREATE TEAM MODAL -->
-    <div class="modal-overlay" id="createModal">
-        <div class="custom-modal">
-            <h3>Create a Workspace</h3>
-            <form id="createTeamForm">
-                <div class="form-group">
-                    <label>Team Name</label>
-                    <input type="text" id="newTeamName" placeholder="e.g. Hackathon Squad" required>
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <input type="text" id="newTeamDesc" placeholder="What are you building?">
-                </div>
-                <button type="submit" class="btn-primary">Create Team</button>
-                <button type="button" class="btn-primary btn-cancel" onclick="closeCreateModal()">Cancel</button>
-            </form>
+    window.closeSystemModal = function() {
+        const modal = document.getElementById('systemModal');
+        if (modal) modal.classList.remove('active');
+    };
+  </script>
+<!-- END: InteractiveScripts -->
+
+<!-- CUSTOM SYSTEM ALERTS MODAL -->
+<div class="modal-overlay" id="systemModal">
+    <div class="custom-modal">
+        <h3 id="systemModalTitle">Notification</h3>
+        <p id="systemModalMessage">Message goes here.</p>
+        <div class="modal-buttons">
+            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
         </div>
     </div>
+</div>
 
-    <script>
-        // ==========================================
-        // HEADER TOGGLE & INITIALIZATION
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', async () => {
-            const header = document.getElementById('mainHeader');
-            const toggleTab = document.getElementById('headerToggleTab');
-            let isHeaderCollapsed = false;
-
-            if (toggleTab) {
-                toggleTab.addEventListener('click', () => {
-                    if (!isHeaderCollapsed) {
-                        const headerHeight = header.offsetHeight;
-                        header.style.marginTop = `-${headerHeight}px`;
-                        header.classList.add('collapsed');
-                        isHeaderCollapsed = true;
-                    } else {
-                        header.style.marginTop = '0px';
-                        header.classList.remove('collapsed');
-                        isHeaderCollapsed = false;
-                    }
-                });
-            }
-
-            if (!currentUserId) window.location.href = 'login.html';
-            await loadTeams();
-        });
-
-        // ==========================================
-        // DARK MODE LOGIC
-        // ==========================================
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const moonIcon = document.getElementById('moonIcon');
-        const sunIcon = document.getElementById('sunIcon');
-
-        if (localStorage.getItem('theme') === 'dark') {
-            moonIcon.style.display = 'none';
-            sunIcon.style.display = 'block';
-        }
-
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                moonIcon.style.display = 'none';
-                sunIcon.style.display = 'block';
-            }
-        });
-
-        // ==========================================
-        // STATE VARIABLES
-        // ==========================================
-        const currentUserId = parseInt(localStorage.getItem('currentUserId'));
-        let myTeams = [];
-        let activeTeamId = null;
-        let ws = null;
-        let globalProfiles = {};
-
-        // WEBRTC Variables
-        let localStream = null;
-        let peerConnections = {}; 
-        const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-
-        // ==========================================
-        // TEAM DATA & UI LOGIC
-        // ==========================================
-        async function loadTeams() {
-            try {
-                // Fetch profiles to get accurate names for Optimistic UI
-                const profRes = await fetch(`http://127.0.0.1:8000/api/profiles`, { credentials: 'include' });
-                if (profRes.ok) {
-                    const profiles = await profRes.json();
-                    profiles.forEach(p => { globalProfiles[p.id] = p; });
-                }
-
-                const res = await fetch('http://127.0.0.1:8000/api/teams', { credentials: 'include' });
-                if (res.ok) {
-                    myTeams = await res.json();
-                    renderTeamIcons();
-                    if (myTeams.length > 0) {
-                        if (!activeTeamId) selectTeam(myTeams[0].id);
-                        else selectTeam(activeTeamId);
-                    } else {
-                        document.getElementById('activeTeamName').textContent = "No Teams Yet";
-                        document.getElementById('chatArea').innerHTML = `
-                            <div style="text-align:center; padding: 40px; color:var(--text-dim); margin:auto 0;">
-                                <h3 style="color:var(--text); margin-bottom:10px;">Welcome to Workspaces</h3>
-                                You aren't in any teams. Click the <strong>+</strong> icon on the left to create one, or search for developers to invite!
-                            </div>
-                        `;
-                    }
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        function renderTeamIcons() {
-            const container = document.getElementById('teamServerList');
-            container.innerHTML = myTeams.map(t => {
-                const initial = t.name.substring(0, 1).toUpperCase();
-                return `<div class="team-icon ${activeTeamId === t.id ? 'active' : ''}" onclick="selectTeam(${t.id})" title="${t.name}">${initial}</div>`;
-            }).join('');
-        }
-
-        async function selectTeam(id) {
-            activeTeamId = id;
-            renderTeamIcons();
-            
-            const team = myTeams.find(t => t.id === id);
-            
-            // Add Delete Button if current user is the creator
-            let deleteBtnHtml = '';
-            if (team.created_by === currentUserId) {
-                deleteBtnHtml = `
-                    <button class="btn-delete-team" onclick="deleteTeam(${team.id})" title="Delete Team Workspace">
-                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                `;
-            }
-
-            document.getElementById('activeTeamName').innerHTML = `
-                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${team.name}</span> 
-                ${deleteBtnHtml}
-            `;
-
-            // Load Content
-            loadMembers();
-            loadMessages();
-            setupTeamWebSocket();
-            switchChannel('text'); 
-        }
-
-        // --- DELETE TEAM LOGIC ---
-        window.deleteTeam = async function(teamId) {
-            if(!confirm("Are you sure you want to completely delete this team? This will erase all members, channels, and messages forever. This cannot be undone.")) {
-                return;
-            }
-
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/teams/${teamId}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-
-                if (res.ok) {
-                    activeTeamId = null;
-                    if(ws) ws.close();
-                    document.getElementById('rosterList').innerHTML = "";
-                    await loadTeams();
-                } else {
-                    const data = await res.json();
-                    alert(data.detail || "Failed to delete team.");
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Server error while deleting team.");
-            }
-        };
-
-        async function loadMembers() {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/teams/${activeTeamId}/members`, { credentials: 'include' });
-                if (res.ok) {
-                    const members = await res.json();
-                    const list = document.getElementById('rosterList');
-                    
-                    // Group by role
-                    const grouped = members.reduce((acc, m) => {
-                        acc[m.role] = acc[m.role] || [];
-                        acc[m.role].push(m);
-                        return acc;
-                    }, {});
-
-                    let html = '';
-                    for (const [role, users] of Object.entries(grouped)) {
-                        html += `<div class="roster-role-group">${role} — ${users.length}</div>`;
-                        users.forEach(u => {
-                            const initial = u.user_name ? u.user_name.substring(0,2).toUpperCase() : '?';
-                            const bg = u.user_profile_pic ? `background-image:url('${u.user_profile_pic}')` : '';
-                            html += `
-                                <div class="member-item">
-                                    <div class="member-avatar" style="${bg}">
-                                        ${u.user_profile_pic ? '' : initial}
-                                        <div class="status-dot"></div>
-                                    </div>
-                                    <div>
-                                        <div class="member-name">${u.user_name}</div>
-                                        <div class="member-sub">${u.role}</div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
-                    list.innerHTML = html;
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        // ==========================================
-        // OPTIMIZED CHAT & WEBSOCKET LOGIC (NO LAG)
-        // ==========================================
-        async function loadMessages() {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/teams/${activeTeamId}/messages`, { credentials: 'include' });
-                if (res.ok) {
-                    const messages = await res.json();
-                    renderMessages(messages);
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        function renderMessages(messages) {
-            const chatArea = document.getElementById('chatArea');
-            if (messages.length === 0) {
-                chatArea.innerHTML = `
-                    <div style="text-align:center; padding: 40px; color:var(--text-dim); margin-top: auto; margin-bottom:auto;">
-                        <h3>Welcome to #general</h3>
-                        <p>This is the beginning of your team's history.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Normal render (without animation classes to prevent mass-render scroll lag)
-            chatArea.innerHTML = messages.map(m => {
-                const initial = m.sender_name ? m.sender_name.substring(0,2).toUpperCase() : '?';
-                const bg = m.sender_pic ? `background-image:url('${m.sender_pic}')` : '';
-                const d = new Date(m.timestamp);
-                const timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                return `
-                    <div class="message-block">
-                        <div class="msg-avatar" style="${bg}">${m.sender_pic ? '' : initial}</div>
-                        <div class="msg-content">
-                            <div class="msg-header">
-                                <span class="msg-author">${m.sender_name}</span>
-                                <span class="msg-time">${timeStr}</span>
-                            </div>
-                            <div class="msg-text">${m.content}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        function appendMessageToUI(m) {
-            const chatArea = document.getElementById('chatArea');
-            if (!chatArea) return;
-            
-            // Clear empty state if exists
-            const emptyState = chatArea.querySelector('h3'); 
-            if (emptyState) chatArea.innerHTML = ''; 
-
-            const initial = m.sender_name ? m.sender_name.substring(0,2).toUpperCase() : '?';
-            const bg = m.sender_pic ? `background-image:url('${m.sender_pic}')` : '';
-            const d = new Date(m.timestamp);
-            const timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const div = document.createElement('div');
-            // Adding 'animate-new' so ONLY this message smoothly fades in
-            div.className = 'message-block animate-new';
-            div.innerHTML = `
-                <div class="msg-avatar" style="${bg}">${m.sender_pic ? '' : initial}</div>
-                <div class="msg-content">
-                    <div class="msg-header">
-                        <span class="msg-author">${m.sender_name}</span>
-                        <span class="msg-time">${timeStr}</span>
-                    </div>
-                    <div class="msg-text">${m.content}</div>
-                </div>
-            `;
-            chatArea.appendChild(div);
-            
-            // Auto scroll down if user is at the bottom
-            const isNearBottom = chatArea.scrollHeight - chatArea.clientHeight - chatArea.scrollTop < 250;
-            if(isNearBottom || m.sender_id === currentUserId) {
-                chatArea.scrollTop = chatArea.scrollHeight;
-            }
-        }
-
-        function setupTeamWebSocket() {
-            if (ws) ws.close();
-            ws = new WebSocket(`ws://127.0.0.1:8000/api/ws/teams/${activeTeamId}/${currentUserId}`);
-            
-            ws.onmessage = async (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.content && !data.type) { 
-                    // Fast UI Append if it's from someone else (since we use Optimistic UI for ourselves)
-                    if (data.sender_id !== currentUserId) {
-                        appendMessageToUI(data);
-                    }
-                } 
-                else if (data.type) {
-                    handleWebRTCSignal(data);
-                }
-            };
-        }
-
-        // OPTIMISTIC UI: Instantly display the message when sent
-        document.getElementById('teamMsgForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('teamMsgInput');
-            const content = input.value.trim();
-            if (!content) return;
-            input.value = '';
-
-            const myProfile = globalProfiles[currentUserId] || {};
-
-            const tempMsg = {
-                sender_id: currentUserId,
-                sender_name: myProfile.name || "You",
-                sender_pic: myProfile.profile_pic || "",
-                content: content,
-                timestamp: new Date().toISOString()
-            };
-
-            appendMessageToUI(tempMsg);
-
-            try {
-                await fetch(`http://127.0.0.1:8000/api/teams/${activeTeamId}/messages`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: content, is_system_message: 0 })
-                });
-            } catch(e) { console.error(e); }
-        });
-
-        // ==========================================
-        // UI SWITCHER (TEXT <-> VIDEO)
-        // ==========================================
-        function switchChannel(type) {
-            const btnText = document.getElementById('btnTextChat');
-            const btnVoice = document.getElementById('btnVoiceChat');
-            const chatArea = document.getElementById('chatArea');
-            const chatInput = document.getElementById('chatInputArea');
-            const videoArea = document.getElementById('videoArea');
-            const videoControls = document.getElementById('videoControls');
-            const title = document.getElementById('workspaceTitle');
-
-            if (type === 'text') {
-                btnText.classList.add('active');
-                btnVoice.classList.remove('active');
-                chatArea.style.display = 'flex';
-                chatInput.style.display = 'block';
-                videoArea.style.display = 'none';
-                videoControls.style.display = 'none';
-                title.innerHTML = `<svg class="workspace-header-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg> general`;
-                
-                if(localStream) endCall(); 
-            } else {
-                btnVoice.classList.add('active');
-                btnText.classList.remove('active');
-                chatArea.style.display = 'none';
-                chatInput.style.display = 'none';
-                videoArea.style.display = 'flex';
-                videoControls.style.display = 'flex';
-                title.innerHTML = `<svg class="workspace-header-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Pair Programming`;
-                
-                startCall();
-            }
-        }
-
-        // ==========================================
-        // WEBRTC LOGIC (MESH NETWORK)
-        // ==========================================
-        async function startCall() {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-                ws.send(JSON.stringify({ type: 'join_voice', sender_id: currentUserId }));
-            } catch (e) {
-                alert("Camera/Mic access denied. Please check permissions.");
-                switchChannel('text');
-            }
-        }
-
-        function endCall() {
-            if (localStream) {
-                localStream.getTracks().forEach(t => t.stop());
-                localStream = null;
-            }
-            Object.values(peerConnections).forEach(pc => pc.close());
-            peerConnections = {};
-            document.querySelectorAll('.remote-video-container').forEach(e => e.remove());
-            switchChannel('text');
-        }
-
-        async function handleWebRTCSignal(msg) {
-            if (msg.sender_id === currentUserId) return; 
-
-            if (msg.type === 'join_voice') {
-                createPeerConnection(msg.sender_id);
-                const pc = peerConnections[msg.sender_id];
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                ws.send(JSON.stringify({ type: 'offer', target_id: msg.sender_id, sender_id: currentUserId, sdp: offer }));
-            }
-            else if (msg.type === 'offer' && msg.target_id === currentUserId) {
-                createPeerConnection(msg.sender_id);
-                const pc = peerConnections[msg.sender_id];
-                await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                ws.send(JSON.stringify({ type: 'answer', target_id: msg.sender_id, sender_id: currentUserId, sdp: answer }));
-            }
-            else if (msg.type === 'answer' && msg.target_id === currentUserId) {
-                const pc = peerConnections[msg.sender_id];
-                await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-            }
-            else if (msg.type === 'ice' && msg.target_id === currentUserId) {
-                const pc = peerConnections[msg.sender_id];
-                if (pc) await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-            }
-        }
-
-        function createPeerConnection(peerId) {
-            const pc = new RTCPeerConnection(iceServers);
-            peerConnections[peerId] = pc;
-
-            if (localStream) {
-                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            }
-
-            pc.onicecandidate = event => {
-                if (event.candidate) {
-                    ws.send(JSON.stringify({ type: 'ice', target_id: peerId, sender_id: currentUserId, candidate: event.candidate }));
-                }
-            };
-
-            pc.ontrack = event => {
-                let remoteContainer = document.getElementById(`remote-container-${peerId}`);
-                if (!remoteContainer) {
-                    remoteContainer = document.createElement('div');
-                    remoteContainer.className = 'video-container remote-video-container';
-                    remoteContainer.id = `remote-container-${peerId}`;
-                    remoteContainer.innerHTML = `
-                        <video id="remote-video-${peerId}" autoplay playsinline></video>
-                        <div class="video-label">Teammate</div>
-                    `;
-                    document.getElementById('videoArea').appendChild(remoteContainer);
-                }
-                document.getElementById(`remote-video-${peerId}`).srcObject = event.streams[0];
-            };
-        }
-
-        // ==========================================
-        // TEAM CREATION MODAL
-        // ==========================================
-        window.openCreateModal = function() { document.getElementById('createModal').classList.add('active'); }
-        window.closeCreateModal = function() { document.getElementById('createModal').classList.remove('active'); document.getElementById('createTeamForm').reset(); }
-
-        document.getElementById('createTeamForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('newTeamName').value;
-            const desc = document.getElementById('newTeamDesc').value;
-
-            try {
-                const res = await fetch('http://127.0.0.1:8000/api/teams', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name, description: desc, avatar_url: "" })
-                });
-                if (res.ok) {
-                    closeCreateModal();
-                    await loadTeams();
-                }
-            } catch(e) { console.error(e); }
-        });
-
-        // ==========================================
-        // GLOBAL NOTIFICATIONS
-        // ==========================================
-        let unreadCount = 0;
-
-        async function initNotifications(userId) {
-            const bellBtn = document.getElementById('notifBellBtn');
-            const dropdown = document.getElementById('notifDropdown');
-            
-            bellBtn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                dropdown.classList.toggle('active'); 
-            });
-            
-            document.addEventListener('click', (e) => { 
-                if (!bellBtn.contains(e.target)) dropdown.classList.remove('active'); 
-            });
-            
-            dropdown.addEventListener('click', (e) => e.stopPropagation());
-
-            await fetchAndRenderNotifications(userId);
-
-            const notifSocket = new WebSocket(`ws://127.0.0.1:8000/api/ws/notifications/${userId}`);
-            notifSocket.onmessage = function(event) {
-                const incomingNotif = JSON.parse(event.data);
-                insertNotificationUI(incomingNotif, true);
-                unreadCount++; 
-                updateBadge();
-            };
-        }
-
-        async function fetchAndRenderNotifications(userId) {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/notifications/${userId}`, { credentials: 'include' });
-                if (res.ok) {
-                    const notifs = await res.json();
-                    const notifList = document.getElementById('notifList');
-                    notifList.innerHTML = ''; 
-                    unreadCount = 0;
-                    
-                    if (notifs.length === 0) { 
-                        notifList.innerHTML = `<div class="notif-empty">No notifications yet.</div>`; 
-                        return; 
-                    }
-                    
-                    notifs.forEach(n => { 
-                        if (n.is_read === 0) unreadCount++; 
-                        insertNotificationUI(n, false); 
-                    });
-                    
-                    updateBadge();
-                }
-            } catch (err) { console.error(err); }
-        }
-
-        function insertNotificationUI(notif, prepend = false) {
-            const notifList = document.getElementById('notifList');
-            const emptyState = notifList.querySelector('.notif-empty');
-            if (emptyState) emptyState.remove();
-
-            const dateObj = new Date(notif.timestamp);
-            const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const div = document.createElement('div');
-            div.className = `notif-item ${notif.is_read === 0 ? 'unread' : ''}`;
-            div.innerHTML = `<div>${notif.content}</div><div class="notif-time">${timeStr}</div>`;
-            
-            div.addEventListener('click', async () => {
-                if (div.classList.contains('unread')) {
-                    try {
-                        await fetch(`http://127.0.0.1:8000/api/notifications/${notif.id}/read`, { method: 'PUT', credentials: 'include' });
-                        div.classList.remove('unread'); 
-                        unreadCount = Math.max(0, unreadCount - 1); 
-                        updateBadge();
-                    } catch(e) {}
-                }
-            });
-            
-            if (prepend) notifList.prepend(div); 
-            else notifList.appendChild(div);
-        }
-
-        function updateBadge() {
-            const badge = document.getElementById('notifBadge');
-            if (unreadCount > 0) { 
-                badge.textContent = unreadCount; 
-                badge.classList.add('active'); 
-            } else { badge.classList.remove('active'); }
-        }
-
-        async function logout() {
-            try { await fetch('http://127.0.0.1:8000/api/logout', { method: 'POST', credentials: 'include' }); } catch (err) {}
-            localStorage.removeItem('currentUserId');
-            window.location.href = 'login.html';
-        }
-    </script>
-</body>
-</html>
+</body></html>
