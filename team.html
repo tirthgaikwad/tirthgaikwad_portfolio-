@@ -7,35 +7,11 @@
 <!-- Google Fonts: Plus Jakarta Sans -->
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <!-- Tailwind CSS v3 with forms & container queries -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              200: '#c7d2fe',
-              300: '#a5b4fc',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5', /* Primary theme color */
-              700: '#4338ca',
-              800: '#3730a3',
-              900: '#312e81',
-            }
-          }
-        }
-      }
-    }
-  </script>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"brand":{"50":"#eef2ff","100":"#e0e7ff","200":"#c7d2fe","300":"#a5b4fc","400":"#818cf8","500":"#6366f1","600":"#4f46e5","700":"#4338ca","800":"#3730a3","900":"#312e81"},"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"sans":["Plus Jakarta Sans","sans-serif"],"mono":["JetBrains Mono","monospace"],"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script>
 <!-- BEGIN: Custom Style Configuration -->
 <style data-purpose="custom-scrollbars">
     /* Subtle custom scrollbar for channels and chat log */
@@ -79,68 +55,46 @@
 <body class="h-full flex flex-col overflow-hidden font-sans select-none">
 <!-- BEGIN: GlobalHeader -->
 <!-- Top global navigation adhering to ProPartner Design System -->
-<header class="h-16 flex-none bg-white border-b border-slate-200 px-5 flex items-center justify-between z-30 shadow-xs">
-<!-- Left: Brand Logo & Primary Navigation Links -->
-<div class="flex items-center gap-7">
-<a class="flex items-center gap-2.5 group" data-purpose="brand-logo" href="index.html">
-<img alt="ProPartner Logo Mark" class="w-8 h-8 rounded-lg object-contain transition-transform group-hover:scale-105" src="https://lh3.googleusercontent.com/aida/AEtjO1VL4B7IxIBL2M_NYlMr1dnnzYJHS-vCmsduTHgsznLMbLSbD-PB2rnGd3CxlkEj6Z7ep1XuDgy9FYr8mSqz1R8n_8uIBe97iaYeWR9VoiOFqr-2925QBVJ3jjaDX1wM8xFRNq2H_4hduYJESJ1391iT6eH_w_H_ZVo1211mz_Fd0K4oaC9nFLRu09LY0r7vKRc_XW9ImuSEL4D1sA-bogVgquYu2cezcB_IBg45xF0whKqQgR87RIzUgPY"/>
-<span class="text-xl font-extrabold tracking-tight text-slate-900 flex items-center">
-          ProPartner
-        </span>
-</a>
-<nav class="hidden xl:flex items-center gap-1 text-[13.5px] font-semibold text-slate-600">
-<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="search.html">Discover Talent</a>
-<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="board.html">Opportunities Board</a>
-<!-- Active Tab: My Teams -->
-<a class="px-3 py-2 rounded-lg text-brand-600 bg-brand-50/80 font-bold border-b-2 border-brand-600 flex items-center gap-1.5 shadow-xs" href="team.html">
-<span>My Teams</span>
-<span class="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
-</a>
-<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="project_management.html">Project Hub</a>
-<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="college.html">Campus Network</a>
-<a class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-50 transition-colors" href="research.html">Research Collab</a>
+<header class="h-16 flex-none w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+<div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-xl">
+<div class="flex items-center gap-space-xs shrink-0" style="cursor: pointer;" onclick="window.location.href='index.html'">
+<img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/>
+<span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span>
+</div>
+<nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary">
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="discover-talent" href="search.html">Discover Talent</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="board.html">Opportunities Board</a>
+<a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="my-teams" href="team.html">My Teams</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="project_management.html">Project Hub</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="college.html">Campus Network</a>
+<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="research.html">Research Collab</a>
 </nav>
 </div>
-<!-- Right: Global Search, Quick Utilities, Profile -->
-<div class="flex items-center gap-3">
-<!-- Quick Search Bar with Command K -->
-<div class="relative hidden sm:flex items-center">
-<svg class="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-<input class="w-64 pl-10 pr-10 py-1.5 text-xs bg-slate-100 hover:bg-slate-100/80 focus:bg-white text-slate-800 placeholder-slate-400 border border-transparent focus:border-brand-500 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-brand-100" placeholder="Search network, repos, tasks..." type="text" onkeypress="if(event.key === 'Enter') window.showSystemModal('Search', 'Global search initialized for: ' + this.value, 'alert')"/>
-<kbd class="absolute right-2.5 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs">⌘K</kbd>
+<div class="flex items-center gap-space-sm">
+<div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48" onclick="window.location.href='search.html'">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span>
+<kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd>
 </div>
-<!-- Divider -->
-<div class="h-5 w-px bg-slate-200 hidden md:block"></div>
-<!-- Role Badge -->
-<button class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors" onclick="window.location.href='admin_dashboard.html'">
-<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-        Admin
-      </button>
-<!-- Notification Bell with Counter -->
-<button class="relative p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" title="Notifications" onclick="window.showSystemModal('Notifications', 'You have 3 unread messages in #general.', 'alert')">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-<span class="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-white">3</span>
+<div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div>
+<a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="admin_dashboard.html">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a>
+<button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.showSystemModal('Notifications', 'You have 3 new alerts.', 'alert')">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span>
 </button>
-<!-- Direct Messages Icon -->
-<button class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" title="Campus Direct Messages" onclick="window.location.href='inbox.html'">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
+<button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
 </button>
-<!-- Active User Profile Avatar with Online Indicator -->
-<div class="relative ml-1" onclick="window.location.href='profile.html'">
-<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-400 p-[2px] cursor-pointer hover:shadow-md transition-shadow">
-<div class="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-xs text-brand-700">
-            OR
-          </div>
+<div class="relative flex items-center gap-space-xs pl-space-2xs">
+<div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
 </div>
-<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span>
+</div>
+</div>
 </div>
 </div>
 </header>
