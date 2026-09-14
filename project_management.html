@@ -343,10 +343,19 @@
 <!-- Canvas Top Bar -->
 <div class="px-space-md py-space-sm border-b border-outline-variant/40 flex items-center justify-between flex-wrap gap-2 bg-surface-container-lowest">
 <div class="flex items-center gap-space-md">
-<button class="flex items-center gap-1 font-label-md text-label-md text-on-surface hover:text-primary transition-colors" type="button" onclick="alert('File Options:\n- Save\n- Export as PNG\n- Duplicate\n- Settings')">
+<div class="relative" id="file-menu-container">
+<button class="flex items-center gap-1 font-label-md text-label-md text-on-surface hover:text-primary transition-colors" type="button" onclick="document.getElementById('file-dropdown').classList.toggle('hidden')">
 <span>File</span>
 <span class="material-symbols-outlined text-[16px]">expand_more</span>
 </button>
+<div id="file-dropdown" class="hidden absolute left-0 top-full mt-2 w-48 bg-surface-container-lowest border border-outline-variant/40 rounded-lg shadow-lg z-50 py-1 flex flex-col font-label-md text-label-md text-on-surface">
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">save</span> Save</button>
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">image</span> Export as PNG</button>
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate</button>
+    <hr class="border-outline-variant/30 my-1">
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2 text-on-surface-variant" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">settings</span> Settings</button>
+  </div>
+</div>
 <div class="h-4 w-[1px] bg-outline-variant/60"></div>
 <span class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2">
               Sprint 1 Architecture
@@ -358,11 +367,11 @@
 <div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-[11px] ring-2 ring-surface-container-lowest" title="Omkar G.">OG</div>
 <div class="w-7 h-7 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[11px] ring-2 ring-surface-container-lowest" title="Anjali B.">AB</div>
 </div>
-<button class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md px-3 py-1.5 rounded-lg border border-primary-fixed-dim transition-colors" type="button" onclick="alert('Invite Team Members:\nSearch by name or email to grant access to this canvas.')">
+<button class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md px-3 py-1.5 rounded-lg border border-primary-fixed-dim transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
 <span class="material-symbols-outlined text-[16px]">share</span>
               Invite
             </button>
-<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg" title="Toggle Fullscreen" type="button" onclick="alert('Fullscreen mode toggled.')">
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg" title="Toggle Fullscreen" type="button" onclick="if(!document.fullscreenElement){document.getElementById('view-canvas').requestFullscreen();}else{document.exitFullscreen();}">
 <span class="material-symbols-outlined text-[18px]">fullscreen</span>
 </button>
 </div>
@@ -596,4 +605,24 @@
       integrations.classList.remove('hidden');
     }
   }
-</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer></body></html>
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
+<!-- Invite Modal -->
+<div id="invite-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-lg flex flex-col overflow-hidden border border-outline-variant/30">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Invite Team Members</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.add('hidden')">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-sm">
+      <label class="font-label-md text-label-md text-on-surface font-medium">Email Address</label>
+      <input type="email" placeholder="colleague@university.edu" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary transition-colors text-on-surface">
+      <div class="flex items-center justify-end mt-space-xs gap-3">
+        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.add('hidden')">Cancel</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.add('hidden')">Send Invite</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>
