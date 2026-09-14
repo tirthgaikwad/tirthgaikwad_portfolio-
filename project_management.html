@@ -605,6 +605,26 @@
       integrations.classList.remove('hidden');
     }
   }
+
+  document.addEventListener("fullscreenchange", function() {
+    const canvasContainer = document.getElementById('view-canvas');
+    const innerCanvas = canvasContainer.querySelector('.h-\\[520px\\]') || canvasContainer.querySelector('.flex-1.h-full');
+    
+    if (document.fullscreenElement) {
+      if (innerCanvas) {
+        innerCanvas.classList.remove('h-[520px]');
+        innerCanvas.classList.add('flex-1', 'h-full');
+      }
+      canvasContainer.classList.add('h-screen', 'bg-surface');
+      canvasContainer.classList.remove('rounded-2xl');
+    } else {
+      if (innerCanvas) {
+        innerCanvas.classList.add('h-[520px]');
+        innerCanvas.classList.remove('flex-1', 'h-full');
+      }
+      canvasContainer.classList.remove('h-screen', 'bg-surface');
+    }
+  });
 </script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
 <!-- Invite Modal -->
 <div id="invite-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4">
