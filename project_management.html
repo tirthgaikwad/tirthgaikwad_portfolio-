@@ -23,15 +23,15 @@
         </span>
 </div>
 <div class="flex items-center gap-space-xs">
-<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors border border-outline-variant/40" type="button">
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors border border-outline-variant/40" type="button" onclick="openSettings()">
 <span class="material-symbols-outlined text-[16px]">tune</span>
           Settings
         </button>
-<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors border border-outline-variant/40" type="button">
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors border border-outline-variant/40" type="button" onclick="openExport()">
 <span class="material-symbols-outlined text-[16px]">ios_share</span>
           Export
         </button>
-<button class="flex items-center gap-1 font-label-md text-label-md text-on-primary bg-primary-container hover:bg-primary px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all" type="button">
+<button class="flex items-center gap-1 font-label-md text-label-md text-on-primary bg-primary-container hover:bg-primary px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all" type="button" onclick="openNewTask()">
 <span class="material-symbols-outlined text-[18px]">add</span>
 <span>New Item</span>
 </button>
@@ -90,7 +90,7 @@
 <div class="inline-block h-7 w-7 rounded-full ring-2 ring-surface-container-lowest bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[11px]" title="Anjali B. (Fullstack)">AB</div>
 <div class="inline-block h-7 w-7 rounded-full ring-2 ring-surface-container-lowest bg-secondary text-on-secondary flex items-center justify-center font-bold text-[11px]" title="Don S. (AI/ML)">DS</div>
 </div>
-<button class="inline-flex items-center gap-1 text-primary hover:text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold pl-1 transition-colors" type="button">
+<button class="inline-flex items-center gap-1 text-primary hover:text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold pl-1 transition-colors" type="button" onclick="openModal('invite-modal')">
 <span class="material-symbols-outlined text-[16px]">person_add</span>
             Invite
           </button>
@@ -108,12 +108,12 @@
 </div>
 <div class="flex items-center gap-space-xs flex-wrap w-full md:w-auto justify-start md:justify-end">
 <span class="font-label-sm text-label-sm text-on-surface-variant">Tags:</span>
-<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-medium border border-primary-fixed-dim/40 hover:bg-primary-fixed transition-colors" type="button">Frontend</button>
-<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button">Backend</button>
-<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button">AI / ML</button>
-<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button">DevOps</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-medium border border-primary-fixed-dim/40 hover:bg-primary-fixed transition-colors" type="button" onclick="toggleTagFilter(this, 'FRONTEND')">Frontend</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button" onclick="toggleTagFilter(this, 'BACKEND')">Backend</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button" onclick="toggleTagFilter(this, 'AI / ML')">AI / ML</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button" onclick="toggleTagFilter(this, 'DEVOPS')">DevOps</button>
 <div class="h-5 w-[1px] bg-outline-variant/40 mx-1 hidden sm:block"></div>
-<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface px-2 py-1 rounded hover:bg-surface-container-low transition-colors" type="button">
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface px-2 py-1 rounded hover:bg-surface-container-low transition-colors" type="button" onclick="toggleSortMenu(this)">
 <span class="material-symbols-outlined text-[16px]">filter_list</span>
             Sort
           </button>
@@ -134,7 +134,7 @@
 <div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
 <div class="flex items-center justify-between">
 <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant tracking-wider uppercase">FRONTEND</span>
-<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+<button class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity card-menu-btn" onclick="event.stopPropagation(); openCardMenu(this)">more_horiz</button>
 </div>
 <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Design user profile dashboard UI</h3>
 <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Create customizable student portfolios, skill showcase widgets, and verified project badges.</p>
@@ -156,7 +156,7 @@
 <div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
 <div class="flex items-center justify-between">
 <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-tertiary-fixed/40 text-on-tertiary-fixed-variant tracking-wider uppercase">BACKEND</span>
-<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+<button class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity card-menu-btn" onclick="event.stopPropagation(); openCardMenu(this)">more_horiz</button>
 </div>
 <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Setup PostgreSQL database schema for Teams</h3>
 <div class="w-full bg-surface-container-high rounded-full h-1.5 my-1">
@@ -174,7 +174,7 @@
 <div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
 <div class="flex items-center justify-between">
 <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant tracking-wider uppercase">AI / ML</span>
-<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+<button class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity card-menu-btn" onclick="event.stopPropagation(); openCardMenu(this)">more_horiz</button>
 </div>
 <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Train YOLOv8 model for Edge Vision HUD</h3>
 <div class="flex items-center gap-1 flex-wrap">
@@ -190,7 +190,7 @@
 </div>
 </div>
 <!-- Add Card Button -->
-<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button" onclick="openNewTask('todo')">
 <span class="material-symbols-outlined text-[18px]">add</span>
             Add Task
           </button>
@@ -249,7 +249,7 @@
 </div>
 </div>
 <!-- Add Card Button -->
-<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button" onclick="openNewTask('inprogress')">
 <span class="material-symbols-outlined text-[18px]">add</span>
             Add Task
           </button>
@@ -267,7 +267,7 @@
 <div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
 <div class="flex items-center justify-between">
 <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant tracking-wider uppercase">DEVOPS</span>
-<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+<button class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity card-menu-btn" onclick="event.stopPropagation(); openCardMenu(this)">more_horiz</button>
 </div>
 <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Dockerize container pipeline on staging runner</h3>
 <div class="flex items-center gap-1.5 text-tertiary font-label-sm text-label-sm">
@@ -285,7 +285,7 @@
 <span class="font-label-sm text-label-sm font-medium">Drop tasks here for peer verification</span>
 </div>
 <!-- Add Card Button -->
-<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button" onclick="openNewTask('review')">
 <span class="material-symbols-outlined text-[18px]">add</span>
             Add Task
           </button>
@@ -329,7 +329,7 @@
 </div>
 </div>
 <!-- Add Card Button -->
-<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button" onclick="openNewTask('done')">
 <span class="material-symbols-outlined text-[18px]">add</span>
             Add Task
           </button>
@@ -349,11 +349,11 @@
 <span class="material-symbols-outlined text-[16px]">expand_more</span>
 </button>
 <div id="file-dropdown" class="hidden absolute left-0 top-full mt-2 w-48 bg-surface-container-lowest border border-outline-variant/40 rounded-lg shadow-lg z-50 py-1 flex flex-col font-label-md text-label-md text-on-surface">
-    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">save</span> Save</button>
-    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">image</span> Export as PNG</button>
-    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate</button>
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="fileSave()"><span class="material-symbols-outlined text-[18px]">save</span> Save</button>
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="fileExportPNG()"><span class="material-symbols-outlined text-[18px]">image</span> Export as PNG</button>
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="fileDuplicate()"><span class="material-symbols-outlined text-[18px]">content_copy</span> Duplicate</button>
     <hr class="border-outline-variant/30 my-1">
-    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2 text-on-surface-variant" onclick="document.getElementById('file-dropdown').classList.add('hidden')"><span class="material-symbols-outlined text-[18px]">settings</span> Settings</button>
+    <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2 text-on-surface-variant" onclick="fileSettings()"><span class="material-symbols-outlined text-[18px]">settings</span> Settings</button>
   </div>
 </div>
 <div class="h-4 w-[1px] bg-outline-variant/60"></div>
@@ -377,35 +377,35 @@
 </div>
 </div>
 <!-- Interactive Canvas Area with Dot Grid & Floating Sidebar Tools -->
-<div class="relative w-full h-[520px] bg-surface overflow-hidden cursor-crosshair select-none" style="background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px); background-size: 24px 24px;">
+<div id="canvas-area" class="relative w-full h-[520px] bg-surface overflow-hidden cursor-crosshair select-none" style="background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px); background-size: 24px 24px;">
 <!-- Floating Vector Canvas Toolbar (Left Dock) -->
 <div class="absolute top-4 left-4 z-20 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/50 p-1 flex flex-col gap-1">
-<button class="p-2 rounded-lg bg-primary-fixed text-primary hover:bg-primary-fixed-dim transition-colors" title="Select / Move" type="button">
+<button class="p-2 rounded-lg bg-primary-fixed text-primary hover:bg-primary-fixed-dim transition-colors" title="Select / Move" type="button" onclick="selectTool(this, 'select')">
 <span class="material-symbols-outlined text-[20px]">near_me</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Connect Arrow" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Connect Arrow" type="button" onclick="selectTool(this, 'arrow')">
 <span class="material-symbols-outlined text-[20px]">north_east</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Text" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Text" type="button" onclick="selectTool(this, 'text')">
 <span class="material-symbols-outlined text-[20px]">title</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Sticky Note" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Sticky Note" type="button" onclick="selectTool(this, 'sticky')">
 <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Rectangle Component" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Rectangle Component" type="button" onclick="selectTool(this, 'rectangle')">
 <span class="material-symbols-outlined text-[20px]">rectangle</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Database Node" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Database Node" type="button" onclick="selectTool(this, 'database')">
 <span class="material-symbols-outlined text-[20px]">database</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Decision Polygon" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Decision Polygon" type="button" onclick="selectTool(this, 'polyline')">
 <span class="material-symbols-outlined text-[20px]">polyline</span>
 </button>
-<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Circle" type="button">
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Circle" type="button" onclick="selectTool(this, 'circle')">
 <span class="material-symbols-outlined text-[20px]">circle</span>
 </button>
 <div class="w-full h-[1px] bg-outline-variant/40 my-1"></div>
-<button class="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors" title="Clear Canvas" type="button">
+<button class="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors" title="Clear Canvas" type="button" onclick="clearCanvas()">
 <span class="material-symbols-outlined text-[20px]">delete</span>
 </button>
 </div>
@@ -467,15 +467,15 @@
 </div>
 <!-- Zoom & Minimap Controls -->
 <div class="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-surface-container-lowest rounded-xl shadow-md border border-outline-variant/40 p-1">
-<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom Out" type="button">
+<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom Out" type="button" onclick="zoomOut()">
 <span class="material-symbols-outlined text-[18px]">remove</span>
 </button>
-<span class="font-label-sm text-label-sm px-2 text-on-surface-variant font-medium">100%</span>
-<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom In" type="button">
+<span id="zoom-label" class="font-label-sm text-label-sm px-2 text-on-surface-variant font-medium">100%</span>
+<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom In" type="button" onclick="zoomIn()">
 <span class="material-symbols-outlined text-[18px]">add</span>
 </button>
 <div class="h-4 w-[1px] bg-outline-variant/40 mx-1"></div>
-<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Fit to Screen" type="button">
+<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Fit to Screen" type="button" onclick="fitToScreen()">
 <span class="material-symbols-outlined text-[18px]">aspect_ratio</span>
 </button>
 </div>
@@ -521,11 +521,11 @@
 </div>
 </div>
 <div class="pt-space-md mt-space-md border-t border-outline-variant/30 flex items-center justify-between">
-<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" type="button">
+<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" type="button" onclick="openModal('permissions-modal')">
 <span>Manage file permissions</span>
 <span class="material-symbols-outlined text-[16px]">chevron_right</span>
 </button>
-<button class="font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+<button class="font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" type="button" onclick="disconnectIntegration('Figma', this)">
               Disconnect
             </button>
 </div>
@@ -562,11 +562,11 @@
 </div>
 </div>
 <div class="pt-space-md mt-space-md border-t border-outline-variant/30 flex items-center justify-between">
-<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" type="button">
+<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" type="button" onclick="openModal('webhooks-modal')">
 <span>Repository webhooks settings</span>
 <span class="material-symbols-outlined text-[16px]">chevron_right</span>
 </button>
-<button class="font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+<button class="font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" type="button" onclick="disconnectIntegration('GitHub', this)">
               Disconnect
             </button>
 </div>
@@ -576,73 +576,746 @@
 </div>
 </div>
 <script>
+  // =========================================================
+  // TAB SWITCHING
+  // =========================================================
   function switchTab(target) {
-    // Hide all view containers
-    const kanban = document.getElementById('view-kanban');
-    const canvas = document.getElementById('view-canvas');
-    const integrations = document.getElementById('view-integrations');
-    
-    kanban.classList.add('hidden');
-    canvas.classList.add('hidden');
-    integrations.classList.add('hidden');
-
-    // Reset button styles
-    const tabs = ['kanban', 'canvas', 'integrations'];
-    tabs.forEach(t => {
-      const btn = document.getElementById('tab-' + t);
+    const views = ['kanban', 'canvas', 'integrations'];
+    views.forEach(v => {
+      document.getElementById('view-' + v).classList.add('hidden');
+      const btn = document.getElementById('tab-' + v);
       btn.className = 'flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all';
     });
+    document.getElementById('view-' + target).classList.remove('hidden');
+    document.getElementById('tab-' + target).className = 'flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md bg-surface-container-lowest text-primary font-bold shadow-sm transition-all';
+  }
 
-    // Show target view & style active button
-    const activeBtn = document.getElementById('tab-' + target);
-    activeBtn.className = 'flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md bg-surface-container-lowest text-primary font-bold shadow-sm transition-all';
+  // =========================================================
+  // TOAST NOTIFICATION SYSTEM
+  // =========================================================
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const icons = { success: 'check_circle', error: 'error', info: 'info' };
+    const colors = { success: 'bg-tertiary text-on-tertiary', error: 'bg-error text-on-error', info: 'bg-primary text-on-primary' };
+    toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border border-outline-variant/20 ${colors[type]} font-label-md text-label-md transform translate-y-4 opacity-0 transition-all duration-300`;
+    toast.innerHTML = `<span class="material-symbols-outlined text-[18px]">${icons[type]}</span>${message}`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => { toast.classList.remove('translate-y-4', 'opacity-0'); });
+    setTimeout(() => {
+      toast.classList.add('translate-y-4', 'opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
+  }
 
-    if (target === 'kanban') {
-      kanban.classList.remove('hidden');
-    } else if (target === 'canvas') {
-      canvas.classList.remove('hidden');
-    } else if (target === 'integrations') {
-      integrations.classList.remove('hidden');
+  // =========================================================
+  // MODAL HELPERS
+  // =========================================================
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+  // Close modals on backdrop click
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-backdrop')) {
+      e.target.classList.add('hidden');
+    }
+  });
+
+  // Close file dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    const fileMenu = document.getElementById('file-menu-container');
+    const dropdown = document.getElementById('file-dropdown');
+    if (fileMenu && !fileMenu.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  });
+
+  // =========================================================
+  // SETTINGS MODAL
+  // =========================================================
+  function openSettings() {
+    openModal('settings-modal');
+  }
+  function saveSettings() {
+    const name = document.getElementById('setting-project-name').value;
+    const sprint = document.getElementById('setting-sprint-duration').value;
+    if (name) {
+      document.querySelectorAll('.project-name-display').forEach(el => el.textContent = name);
+    }
+    closeModal('settings-modal');
+    showToast('Settings saved successfully!');
+  }
+
+  // =========================================================
+  // EXPORT MODAL
+  // =========================================================
+  function openExport() { openModal('export-modal'); }
+  function doExport(format) {
+    closeModal('export-modal');
+    showToast(`Exported project as ${format.toUpperCase()}`);
+  }
+
+  // =========================================================
+  // NEW TASK / ADD TASK
+  // =========================================================
+  let preselectedColumn = 'todo';
+  function openNewTask(column) {
+    preselectedColumn = column || 'todo';
+    document.getElementById('new-task-column').value = preselectedColumn;
+    document.getElementById('new-task-title').value = '';
+    document.getElementById('new-task-desc').value = '';
+    document.getElementById('new-task-tag').value = 'FRONTEND';
+    document.getElementById('new-task-assignee').value = 'OG';
+    document.getElementById('new-task-priority').value = 'medium';
+    openModal('new-task-modal');
+  }
+
+  function createTask() {
+    const title = document.getElementById('new-task-title').value.trim();
+    const desc = document.getElementById('new-task-desc').value.trim();
+    const tag = document.getElementById('new-task-tag').value;
+    const assignee = document.getElementById('new-task-assignee').value;
+    const column = document.getElementById('new-task-column').value;
+    const priority = document.getElementById('new-task-priority').value;
+
+    if (!title) { showToast('Please enter a task title', 'error'); return; }
+
+    const tagColors = {
+      'FRONTEND': 'bg-primary-fixed/40 text-on-primary-fixed-variant',
+      'BACKEND': 'bg-tertiary-fixed/40 text-on-tertiary-fixed-variant',
+      'AI / ML': 'bg-surface-container-high text-on-surface-variant',
+      'DEVOPS': 'bg-primary-fixed/40 text-on-primary-fixed-variant',
+      'UI / UX': 'bg-secondary-container text-on-secondary-fixed-variant',
+      'INFRA': 'bg-surface-container text-on-surface-variant',
+    };
+    const assigneeColors = {
+      'OG': 'bg-primary-container text-on-primary',
+      'AB': 'bg-tertiary text-on-tertiary',
+      'DS': 'bg-secondary text-on-secondary',
+    };
+    const priorityIcons = {
+      'high': '<span class="flex items-center gap-0.5 text-error font-medium" title="High Priority"><span class="material-symbols-outlined text-[14px]">flag</span>High</span>',
+      'medium': '<span class="flex items-center gap-0.5 text-secondary font-medium" title="Medium Priority"><span class="material-symbols-outlined text-[14px]">flag</span>Medium</span>',
+      'low': '<span class="flex items-center gap-0.5 text-on-surface-variant" title="Low Priority"><span class="material-symbols-outlined text-[14px]">flag</span>Low</span>',
+    };
+
+    const card = document.createElement('div');
+    card.className = 'group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs kanban-card';
+    card.draggable = true;
+    card.setAttribute('data-tag', tag);
+    card.setAttribute('data-title', title.toLowerCase());
+    card.setAttribute('data-priority', priority);
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded ${tagColors[tag] || tagColors['FRONTEND']} tracking-wider uppercase">${tag}</span>
+        <button class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity card-menu-btn" onclick="event.stopPropagation(); openCardMenu(this)">more_horiz</button>
+      </div>
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">${title}</h3>
+      ${desc ? `<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">${desc}</p>` : ''}
+      <div class="pt-2 mt-1 border-t border-outline-variant/20 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">${priorityIcons[priority]}</div>
+        <div class="w-6 h-6 rounded-full ${assigneeColors[assignee] || assigneeColors['OG']} flex items-center justify-center font-bold text-[10px]">${assignee}</div>
+      </div>
+    `;
+
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
+    card.addEventListener('click', function() { openTaskDetail(this); });
+
+    const columnMap = { 'todo': 0, 'inprogress': 1, 'review': 2, 'done': 3 };
+    const columns = document.querySelectorAll('#view-kanban .grid > div');
+    const col = columns[columnMap[column] || 0];
+    const addBtn = col.querySelector('button:last-child');
+    col.insertBefore(card, addBtn);
+
+    // Update column count
+    updateColumnCounts();
+    closeModal('new-task-modal');
+    showToast(`Task "${title}" created!`);
+  }
+
+  function updateColumnCounts() {
+    const columns = document.querySelectorAll('#view-kanban .grid > div');
+    columns.forEach(col => {
+      const cards = col.querySelectorAll('.kanban-card');
+      const countEl = col.querySelector('.rounded-full.font-label-sm');
+      if (countEl) countEl.textContent = cards.length;
+    });
+  }
+
+  // =========================================================
+  // TASK DETAIL MODAL
+  // =========================================================
+  let currentDetailCard = null;
+  function openTaskDetail(card) {
+    currentDetailCard = card;
+    const title = card.querySelector('h3').textContent;
+    const desc = card.querySelector('p') ? card.querySelector('p').textContent : 'No description provided.';
+    const tag = card.getAttribute('data-tag') || card.querySelector('.uppercase')?.textContent?.trim() || 'N/A';
+    document.getElementById('detail-title').textContent = title;
+    document.getElementById('detail-desc').textContent = desc;
+    document.getElementById('detail-tag').textContent = tag;
+    openModal('task-detail-modal');
+  }
+
+  // =========================================================
+  // CARD CONTEXT MENU
+  // =========================================================
+  let currentMenuCard = null;
+  function openCardMenu(btn) {
+    currentMenuCard = btn.closest('.kanban-card') || btn.closest('[class*="group bg-surface"]');
+    const menu = document.getElementById('card-context-menu');
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = rect.bottom + 4 + 'px';
+    menu.style.left = rect.left - 120 + 'px';
+    menu.classList.remove('hidden');
+  }
+  function moveCardTo(column) {
+    if (!currentMenuCard) return;
+    const columnMap = { 'todo': 0, 'inprogress': 1, 'review': 2, 'done': 3 };
+    const columns = document.querySelectorAll('#view-kanban .grid > div');
+    const col = columns[columnMap[column]];
+    const addBtn = col.querySelector('button:last-child');
+    currentMenuCard.remove();
+    col.insertBefore(currentMenuCard, addBtn);
+    updateColumnCounts();
+    document.getElementById('card-context-menu').classList.add('hidden');
+    showToast(`Task moved to ${column.replace('inprogress','In Progress').replace('todo','To Do').replace('review','Review / QA').replace('done','Done')}`);
+  }
+  function deleteCard() {
+    if (!currentMenuCard) return;
+    currentMenuCard.remove();
+    updateColumnCounts();
+    document.getElementById('card-context-menu').classList.add('hidden');
+    showToast('Task deleted', 'info');
+  }
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('card-context-menu');
+    if (menu && !menu.contains(e.target) && !e.target.classList.contains('card-menu-btn')) {
+      menu.classList.add('hidden');
+    }
+  });
+
+  // =========================================================
+  // KANBAN DRAG & DROP
+  // =========================================================
+  let draggedCard = null;
+  function handleDragStart(e) {
+    draggedCard = this;
+    this.classList.add('opacity-40', 'scale-95');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function handleDragEnd() {
+    this.classList.remove('opacity-40', 'scale-95');
+    document.querySelectorAll('.drag-over-highlight').forEach(el => el.classList.remove('drag-over-highlight', 'ring-2', 'ring-primary'));
+    draggedCard = null;
+    updateColumnCounts();
+  }
+
+  function initDragDrop() {
+    // Make existing cards draggable
+    document.querySelectorAll('#view-kanban .grid > div').forEach(col => {
+      const cards = col.querySelectorAll('.group.bg-surface-container-lowest, [class*="group bg-surface-container-lowest"]');
+      cards.forEach(card => {
+        card.classList.add('kanban-card');
+        card.draggable = true;
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+        card.addEventListener('click', function() { openTaskDetail(this); });
+        // Add tag data attribute from card content
+        const tagEl = card.querySelector('.uppercase');
+        if (tagEl) card.setAttribute('data-tag', tagEl.textContent.trim());
+        const titleEl = card.querySelector('h3');
+        if (titleEl) card.setAttribute('data-title', titleEl.textContent.toLowerCase());
+      });
+
+      // Column drop zones
+      col.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drag-over-highlight', 'ring-2', 'ring-primary');
+      });
+      col.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over-highlight', 'ring-2', 'ring-primary');
+      });
+      col.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over-highlight', 'ring-2', 'ring-primary');
+        if (draggedCard) {
+          const addBtn = this.querySelector('button:last-child');
+          this.insertBefore(draggedCard, addBtn);
+          updateColumnCounts();
+          showToast('Task moved!');
+        }
+      });
+    });
+  }
+
+  // =========================================================
+  // KANBAN SEARCH & FILTER
+  // =========================================================
+  let activeTagFilters = new Set();
+
+  function initKanbanFilter() {
+    const searchInput = document.querySelector('#view-kanban input[type="text"]');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() { filterKanbanCards(); });
     }
   }
 
+  function toggleTagFilter(btn, tag) {
+    if (activeTagFilters.has(tag)) {
+      activeTagFilters.delete(tag);
+      btn.className = 'font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors';
+    } else {
+      activeTagFilters.add(tag);
+      btn.className = 'font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-medium border border-primary-fixed-dim/40 hover:bg-primary-fixed transition-colors';
+    }
+    filterKanbanCards();
+  }
+
+  function filterKanbanCards() {
+    const searchInput = document.querySelector('#view-kanban input[type="text"]');
+    const query = searchInput ? searchInput.value.toLowerCase() : '';
+    const cards = document.querySelectorAll('#view-kanban .kanban-card');
+    cards.forEach(card => {
+      const title = (card.getAttribute('data-title') || card.querySelector('h3')?.textContent?.toLowerCase() || '');
+      const tag = (card.getAttribute('data-tag') || card.querySelector('.uppercase')?.textContent?.trim() || '');
+      const matchesSearch = !query || title.includes(query) || tag.toLowerCase().includes(query);
+      const matchesTag = activeTagFilters.size === 0 || activeTagFilters.has(tag);
+      card.style.display = (matchesSearch && matchesTag) ? '' : 'none';
+    });
+  }
+
+  // Sort dropdown
+  let sortMenuOpen = false;
+  function toggleSortMenu(btn) {
+    const menu = document.getElementById('sort-dropdown');
+    if (!menu) return;
+    sortMenuOpen = !sortMenuOpen;
+    menu.classList.toggle('hidden', !sortMenuOpen);
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = rect.bottom + 4 + 'px';
+    menu.style.left = rect.left + 'px';
+  }
+  function sortCards(criteria) {
+    document.getElementById('sort-dropdown').classList.add('hidden');
+    sortMenuOpen = false;
+    const columns = document.querySelectorAll('#view-kanban .grid > div');
+    columns.forEach(col => {
+      const cards = Array.from(col.querySelectorAll('.kanban-card'));
+      const addBtn = col.querySelector('button:last-child');
+      cards.sort((a, b) => {
+        if (criteria === 'name') {
+          return (a.querySelector('h3')?.textContent || '').localeCompare(b.querySelector('h3')?.textContent || '');
+        } else if (criteria === 'priority') {
+          const order = { high: 0, medium: 1, low: 2 };
+          return (order[a.getAttribute('data-priority')] || 1) - (order[b.getAttribute('data-priority')] || 1);
+        }
+        return 0;
+      });
+      cards.forEach(c => col.insertBefore(c, addBtn));
+    });
+    showToast(`Sorted by ${criteria}`, 'info');
+  }
+
+  // =========================================================
+  // CANVAS TOOLS
+  // =========================================================
+  let activeTool = 'select';
+  function selectTool(btn, tool) {
+    activeTool = tool;
+    const toolbar = btn.closest('.flex.flex-col');
+    toolbar.querySelectorAll('button').forEach(b => {
+      if (b.title === 'Clear Canvas') return;
+      b.className = 'p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors';
+    });
+    btn.className = 'p-2 rounded-lg bg-primary-fixed text-primary hover:bg-primary-fixed-dim transition-colors';
+  }
+
+  function clearCanvas() {
+    if (confirm('Are you sure you want to clear all user-added nodes from the canvas?')) {
+      document.querySelectorAll('.user-added-node').forEach(n => n.remove());
+      showToast('Canvas cleared', 'info');
+    }
+  }
+
+  // =========================================================
+  // CANVAS ZOOM & PAN
+  // =========================================================
+  let canvasZoom = 100;
+  function zoomIn() {
+    canvasZoom = Math.min(canvasZoom + 10, 200);
+    applyZoom();
+  }
+  function zoomOut() {
+    canvasZoom = Math.max(canvasZoom - 10, 40);
+    applyZoom();
+  }
+  function fitToScreen() {
+    canvasZoom = 100;
+    canvasPanX = 0; canvasPanY = 0;
+    applyZoom();
+    showToast('Fit to screen', 'info');
+  }
+  function applyZoom() {
+    const area = document.getElementById('canvas-area');
+    if (area) {
+      area.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom / 100})`;
+      area.style.transformOrigin = 'center center';
+    }
+    const label = document.getElementById('zoom-label');
+    if (label) label.textContent = canvasZoom + '%';
+  }
+
+  // Canvas pan
+  let isPanning = false, panStartX = 0, panStartY = 0, canvasPanX = 0, canvasPanY = 0;
+  function initCanvasPan() {
+    const canvasWrap = document.querySelector('#view-canvas .cursor-crosshair');
+    if (!canvasWrap) return;
+    canvasWrap.addEventListener('mousedown', function(e) {
+      if (activeTool !== 'select' || e.target.closest('.absolute.top-4.left-4') || e.target.closest('.absolute.bottom-4') || e.target.closest('[draggable]') || e.target.closest('.canvas-node')) return;
+      isPanning = true;
+      panStartX = e.clientX - canvasPanX;
+      panStartY = e.clientY - canvasPanY;
+      canvasWrap.style.cursor = 'grabbing';
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!isPanning) return;
+      canvasPanX = e.clientX - panStartX;
+      canvasPanY = e.clientY - panStartY;
+      applyZoom();
+    });
+    document.addEventListener('mouseup', function() {
+      if (isPanning) {
+        isPanning = false;
+        const canvasWrap = document.querySelector('#view-canvas .cursor-crosshair');
+        if (canvasWrap) canvasWrap.style.cursor = 'crosshair';
+      }
+    });
+  }
+
+  // =========================================================
+  // CANVAS NODE DRAGGING
+  // =========================================================
+  function initNodeDrag() {
+    document.querySelectorAll('#canvas-area > div[class*="absolute"]').forEach(node => {
+      if (node.querySelector('.material-symbols-outlined') && !node.querySelector('h3, p.font-body-sm')) return;
+      if (node.classList.contains('pointer-events-none')) return;
+      node.classList.add('canvas-node');
+      let isDragging = false, startX, startY, origLeft, origTop;
+      node.style.cursor = 'grab';
+
+      node.addEventListener('mousedown', function(e) {
+        if (activeTool !== 'select') return;
+        e.stopPropagation();
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        origLeft = parseInt(node.style.left || node.offsetLeft);
+        origTop = parseInt(node.style.top || node.offsetTop);
+        node.style.cursor = 'grabbing';
+        node.style.zIndex = '30';
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        node.style.left = (origLeft + dx) + 'px';
+        node.style.top = (origTop + dy) + 'px';
+      });
+
+      document.addEventListener('mouseup', function() {
+        if (isDragging) {
+          isDragging = false;
+          node.style.cursor = 'grab';
+          node.style.zIndex = '10';
+        }
+      });
+    });
+  }
+
+  // =========================================================
+  // INTEGRATIONS - DISCONNECT & MODALS
+  // =========================================================
+  function disconnectIntegration(name, btn) {
+    if (!confirm(`Are you sure you want to disconnect ${name}?`)) return;
+    const card = btn.closest('.bg-surface-container-lowest');
+    const badge = card.querySelector('.text-tertiary.bg-tertiary-fixed');
+    if (badge) {
+      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>Disconnected';
+      badge.className = 'inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full font-semibold';
+    }
+    btn.textContent = 'Reconnect';
+    btn.className = 'font-label-sm text-label-sm text-primary hover:bg-primary-fixed/20 px-3 py-1.5 rounded-lg transition-colors';
+    btn.onclick = function() { reconnectIntegration(name, btn); };
+    showToast(`${name} disconnected`, 'info');
+  }
+
+  function reconnectIntegration(name, btn) {
+    const card = btn.closest('.bg-surface-container-lowest');
+    const badge = card.querySelector('.bg-surface-container.font-semibold') || card.querySelector('.rounded-full.font-semibold');
+    if (badge) {
+      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>Connected';
+      badge.className = 'inline-flex items-center gap-1 font-label-sm text-label-sm text-tertiary bg-tertiary-fixed/30 px-2 py-0.5 rounded-full font-semibold';
+    }
+    btn.textContent = 'Disconnect';
+    btn.className = 'font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors';
+    btn.onclick = function() { disconnectIntegration(name, btn); };
+    showToast(`${name} reconnected!`, 'success');
+  }
+
+  // =========================================================
+  // FILE DROPDOWN ACTIONS
+  // =========================================================
+  function fileSave() {
+    document.getElementById('file-dropdown').classList.add('hidden');
+    showToast('Project saved!');
+  }
+  function fileExportPNG() {
+    document.getElementById('file-dropdown').classList.add('hidden');
+    showToast('Canvas exported as PNG');
+  }
+  function fileDuplicate() {
+    document.getElementById('file-dropdown').classList.add('hidden');
+    showToast('Project duplicated');
+  }
+  function fileSettings() {
+    document.getElementById('file-dropdown').classList.add('hidden');
+    openSettings();
+  }
+
+  // =========================================================
+  // FULLSCREEN
+  // =========================================================
   document.addEventListener("fullscreenchange", function() {
     const canvasContainer = document.getElementById('view-canvas');
-    const innerCanvas = canvasContainer.querySelector('.h-\\[520px\\]') || canvasContainer.querySelector('.flex-1.h-full');
-    
+    const innerCanvas = document.getElementById('canvas-area');
     if (document.fullscreenElement) {
-      if (innerCanvas) {
-        innerCanvas.classList.remove('h-[520px]');
-        innerCanvas.classList.add('flex-1', 'h-full');
-      }
+      if (innerCanvas) { innerCanvas.classList.remove('h-[520px]'); innerCanvas.classList.add('flex-1', 'h-full'); }
       canvasContainer.classList.add('h-screen', 'bg-surface');
-      canvasContainer.classList.remove('rounded-2xl');
     } else {
-      if (innerCanvas) {
-        innerCanvas.classList.add('h-[520px]');
-        innerCanvas.classList.remove('flex-1', 'h-full');
-      }
+      if (innerCanvas) { innerCanvas.classList.add('h-[520px]'); innerCanvas.classList.remove('flex-1', 'h-full'); }
       canvasContainer.classList.remove('h-screen', 'bg-surface');
     }
   });
-</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
+
+  // =========================================================
+  // INIT ON DOM READY
+  // =========================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    initDragDrop();
+    initKanbanFilter();
+    initCanvasPan();
+    initNodeDrag();
+  });
+</script></main>
+
+<footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-2"></div>
+
+<!-- Card Context Menu -->
+<div id="card-context-menu" class="hidden fixed z-[150] bg-surface-container-lowest border border-outline-variant/40 rounded-lg shadow-lg py-1 w-44 font-label-md text-label-md text-on-surface">
+  <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="if(currentMenuCard){openTaskDetail(currentMenuCard);document.getElementById('card-context-menu').classList.add('hidden')}"><span class="material-symbols-outlined text-[16px]">edit</span>View / Edit</button>
+  <div class="px-2 py-1 font-label-sm text-label-sm text-on-surface-variant">Move to:</div>
+  <button class="w-full text-left px-4 py-1.5 hover:bg-surface-container-low transition-colors text-body-sm" onclick="moveCardTo('todo')">→ To Do</button>
+  <button class="w-full text-left px-4 py-1.5 hover:bg-surface-container-low transition-colors text-body-sm" onclick="moveCardTo('inprogress')">→ In Progress</button>
+  <button class="w-full text-left px-4 py-1.5 hover:bg-surface-container-low transition-colors text-body-sm" onclick="moveCardTo('review')">→ Review / QA</button>
+  <button class="w-full text-left px-4 py-1.5 hover:bg-surface-container-low transition-colors text-body-sm" onclick="moveCardTo('done')">→ Done</button>
+  <hr class="border-outline-variant/30 my-1">
+  <button class="w-full text-left px-4 py-2 hover:bg-error-container/20 transition-colors flex items-center gap-2 text-error" onclick="deleteCard()"><span class="material-symbols-outlined text-[16px]">delete</span>Delete</button>
+</div>
+
+<!-- Sort Dropdown -->
+<div id="sort-dropdown" class="hidden fixed z-[150] bg-surface-container-lowest border border-outline-variant/40 rounded-lg shadow-lg py-1 w-40 font-label-md text-label-md text-on-surface">
+  <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="sortCards('name')"><span class="material-symbols-outlined text-[16px]">sort_by_alpha</span>By Name</button>
+  <button class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="sortCards('priority')"><span class="material-symbols-outlined text-[16px]">flag</span>By Priority</button>
+</div>
+
 <!-- Invite Modal -->
-<div id="invite-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4">
-  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-lg flex flex-col overflow-hidden border border-outline-variant/30">
+<div id="invite-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
     <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
       <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Invite Team Members</h3>
-      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.add('hidden')">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('invite-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
     </div>
     <div class="p-space-md flex flex-col gap-space-sm">
       <label class="font-label-md text-label-md text-on-surface font-medium">Email Address</label>
       <input type="email" placeholder="colleague@university.edu" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary transition-colors text-on-surface">
+      <label class="font-label-md text-label-md text-on-surface font-medium">Role</label>
+      <select class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary transition-colors text-on-surface">
+        <option>Editor</option><option>Viewer</option><option>Admin</option>
+      </select>
       <div class="flex items-center justify-end mt-space-xs gap-3">
-        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.add('hidden')">Cancel</button>
-        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors" type="button" onclick="document.getElementById('invite-modal').classList.add('hidden')">Send Invite</button>
+        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" onclick="closeModal('invite-modal')">Cancel</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors" onclick="closeModal('invite-modal'); showToast('Invitation sent!')">Send Invite</button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-lg shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-md text-headline-md font-bold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">settings</span>Project Settings</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('settings-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-md">
+      <div class="flex flex-col gap-1">
+        <label class="font-label-md text-label-md text-on-surface font-medium">Project Name</label>
+        <input id="setting-project-name" type="text" value="Connect2Minds v1.0" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="font-label-md text-label-md text-on-surface font-medium">Sprint Duration (days)</label>
+        <input id="setting-sprint-duration" type="number" value="14" min="1" max="60" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="font-label-md text-label-md text-on-surface font-medium">Email Notifications</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" checked class="sr-only peer">
+          <div class="w-9 h-5 bg-outline-variant/60 peer-focus:outline-none rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+        </label>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="font-label-md text-label-md text-on-surface font-medium">Auto-save Canvas</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" checked class="sr-only peer">
+          <div class="w-9 h-5 bg-outline-variant/60 peer-focus:outline-none rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+        </label>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-space-xs border-t border-outline-variant/30">
+        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="closeModal('settings-modal')">Cancel</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90" onclick="saveSettings()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div id="export-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-sm shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">ios_share</span>Export Project</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('export-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-xs">
+      <button class="w-full text-left px-4 py-3 hover:bg-surface-container-low rounded-lg transition-colors flex items-center gap-3 font-label-md text-label-md" onclick="doExport('csv')"><span class="material-symbols-outlined text-[20px] text-tertiary">table_chart</span><div><div class="font-semibold text-on-surface">CSV Spreadsheet</div><div class="font-body-sm text-body-sm text-on-surface-variant">Export tasks to a .csv file</div></div></button>
+      <button class="w-full text-left px-4 py-3 hover:bg-surface-container-low rounded-lg transition-colors flex items-center gap-3 font-label-md text-label-md" onclick="doExport('pdf')"><span class="material-symbols-outlined text-[20px] text-error">picture_as_pdf</span><div><div class="font-semibold text-on-surface">PDF Report</div><div class="font-body-sm text-body-sm text-on-surface-variant">Generate a formatted report</div></div></button>
+      <button class="w-full text-left px-4 py-3 hover:bg-surface-container-low rounded-lg transition-colors flex items-center gap-3 font-label-md text-label-md" onclick="doExport('json')"><span class="material-symbols-outlined text-[20px] text-primary">data_object</span><div><div class="font-semibold text-on-surface">JSON Data</div><div class="font-body-sm text-body-sm text-on-surface-variant">Export raw project data</div></div></button>
+    </div>
+  </div>
+</div>
+
+<!-- New Task Modal -->
+<div id="new-task-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-lg shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-md text-headline-md font-bold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add_task</span>Create New Task</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('new-task-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-sm">
+      <div class="flex flex-col gap-1">
+        <label class="font-label-md text-label-md text-on-surface font-medium">Task Title *</label>
+        <input id="new-task-title" type="text" placeholder="e.g. Build user authentication flow" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="font-label-md text-label-md text-on-surface font-medium">Description</label>
+        <textarea id="new-task-desc" rows="2" placeholder="Describe the task..." class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface resize-none"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-space-sm">
+        <div class="flex flex-col gap-1">
+          <label class="font-label-md text-label-md text-on-surface font-medium">Tag</label>
+          <select id="new-task-tag" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+            <option>FRONTEND</option><option>BACKEND</option><option>AI / ML</option><option>DEVOPS</option><option>UI / UX</option><option>INFRA</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-md text-label-md text-on-surface font-medium">Assignee</label>
+          <select id="new-task-assignee" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+            <option value="OG">Omkar G.</option><option value="AB">Anjali B.</option><option value="DS">Don S.</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-md text-label-md text-on-surface font-medium">Column</label>
+          <select id="new-task-column" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+            <option value="todo">To Do</option><option value="inprogress">In Progress</option><option value="review">Review / QA</option><option value="done">Done</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-md text-label-md text-on-surface font-medium">Priority</label>
+          <select id="new-task-priority" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 font-body-sm text-body-sm focus:outline-none focus:border-primary text-on-surface">
+            <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-space-xs border-t border-outline-variant/30">
+        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="closeModal('new-task-modal')">Cancel</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90 flex items-center gap-1" onclick="createTask()"><span class="material-symbols-outlined text-[16px]">add</span>Create Task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Detail Modal -->
+<div id="task-detail-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">task_alt</span>Task Details</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('task-detail-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-sm">
+      <div><span class="font-label-sm text-label-sm text-on-surface-variant">Tag</span><div id="detail-tag" class="font-label-md text-label-md font-semibold text-primary mt-0.5"></div></div>
+      <div><span class="font-label-sm text-label-sm text-on-surface-variant">Title</span><h4 id="detail-title" class="font-headline-sm text-headline-sm font-bold text-on-surface mt-0.5"></h4></div>
+      <div><span class="font-label-sm text-label-sm text-on-surface-variant">Description</span><p id="detail-desc" class="font-body-md text-body-md text-on-surface-variant mt-0.5"></p></div>
+      <div class="flex items-center justify-end gap-3 pt-space-xs border-t border-outline-variant/30">
+        <button class="font-label-md text-label-md text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" onclick="if(currentDetailCard){currentDetailCard.remove();updateColumnCounts();closeModal('task-detail-modal');showToast('Task deleted','info')}">Delete</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90" onclick="closeModal('task-detail-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Permissions Modal (Figma) -->
+<div id="permissions-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">lock</span>Figma File Permissions</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('permissions-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-sm">
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-[10px]">OG</div><span class="font-label-md text-label-md text-on-surface">Omkar G.</span></div><span class="font-label-sm text-label-sm text-primary font-semibold">Owner</span></div>
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[10px]">AB</div><span class="font-label-md text-label-md text-on-surface">Anjali B.</span></div><select class="bg-surface-container-lowest border border-outline-variant/50 rounded px-2 py-1 font-label-sm text-label-sm text-on-surface"><option>Editor</option><option>Viewer</option></select></div>
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold text-[10px]">DS</div><span class="font-label-md text-label-md text-on-surface">Don S.</span></div><select class="bg-surface-container-lowest border border-outline-variant/50 rounded px-2 py-1 font-label-sm text-label-sm text-on-surface"><option>Viewer</option><option>Editor</option></select></div>
+      <div class="flex items-center justify-end gap-3 pt-space-xs border-t border-outline-variant/30">
+        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="closeModal('permissions-modal')">Cancel</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90" onclick="closeModal('permissions-modal'); showToast('Permissions updated!')">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Webhooks Modal (GitHub) -->
+<div id="webhooks-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4 modal-backdrop">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-lg flex flex-col overflow-hidden border border-outline-variant/30" onclick="event.stopPropagation()">
+    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">webhook</span>Repository Webhooks</h3>
+      <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="closeModal('webhooks-modal')"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="p-space-md flex flex-col gap-space-sm">
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><span class="font-label-md text-label-md text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">commit</span>Push Events</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-9 h-5 bg-outline-variant/60 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></div>
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><span class="font-label-md text-label-md text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">merge_type</span>Pull Requests</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-9 h-5 bg-outline-variant/60 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></div>
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><span class="font-label-md text-label-md text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">bug_report</span>Issues</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"><div class="w-9 h-5 bg-outline-variant/60 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></div>
+      <div class="flex items-center justify-between p-2 bg-surface-container-low rounded-lg"><span class="font-label-md text-label-md text-on-surface flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">deployed_code</span>Deployments</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-9 h-5 bg-outline-variant/60 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></div>
+      <div class="flex items-center justify-end gap-3 pt-space-xs border-t border-outline-variant/30">
+        <button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="closeModal('webhooks-modal')">Cancel</button>
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90" onclick="closeModal('webhooks-modal'); showToast('Webhook settings saved!')">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body></html>
