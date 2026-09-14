@@ -581,7 +581,7 @@
                 <!-- TAB 2: INTERACTIVE PLANNING CANVAS / WHITEBOARD (Based on User's Canvas Screenshot) -->
                 <div class="flex flex-col gap-space-md" id="view-canvas">
                     <!-- Whiteboard Canvas Window -->
-                    <div
+                    <div id="canvas-wrapper"
                         class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-md overflow-hidden flex flex-col">
                         <!-- Canvas Top Bar -->
                         <div
@@ -1555,11 +1555,14 @@
             document.addEventListener("fullscreenchange", function () {
                 const canvasContainer = document.getElementById('view-canvas');
                 const innerCanvas = document.getElementById('canvas-area');
+                const canvasWrapper = document.getElementById('canvas-wrapper');
                 if (document.fullscreenElement) {
                     if (innerCanvas) { innerCanvas.classList.remove('h-[520px]'); innerCanvas.classList.add('flex-1', 'h-full'); }
+                    if (canvasWrapper) { canvasWrapper.classList.add('flex-1', 'h-full'); canvasWrapper.classList.remove('rounded-2xl', 'overflow-hidden'); }
                     canvasContainer.classList.add('h-screen', 'bg-surface');
                 } else {
                     if (innerCanvas) { innerCanvas.classList.add('h-[520px]'); innerCanvas.classList.remove('flex-1', 'h-full'); }
+                    if (canvasWrapper) { canvasWrapper.classList.remove('flex-1', 'h-full'); canvasWrapper.classList.add('rounded-2xl', 'overflow-hidden'); }
                     canvasContainer.classList.remove('h-screen', 'bg-surface');
                 }
             });
