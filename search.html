@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 
 <html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<style>
-@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
-/* System Modal Styles (Injected for functionality without changing design) */
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+/* Custom Modal Styles */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
 .modal-overlay.active { display: flex; }
 .custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #c7c4d8; animation: slideDown 0.3s ease; }
@@ -16,37 +14,10 @@
 .btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
 .btn-primary-modal:hover { background: #2b1ea6; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-</style>
-<script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-xl">
-<div class="flex items-center gap-space-xs shrink-0 cursor-pointer" onclick="window.location.href='index.html'">
-<img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span>
-</div>
-<nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary">
-<a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="discover-talent" href="search.html">Discover Talent</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="board.html">Opportunities Board</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="my-teams" href="team.html">My Teams</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="project_management.html">Project Hub</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="college.html">Campus Network</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="research.html">Research Collab</a>
-</nav></div><div class="flex items-center gap-space-sm">
-<div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48" onclick="window.location.href='search.html'">
-<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span><kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd>
-</div>
-<div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div>
-<a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="admin_dashboard.html">
-<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin
-</a>
-<button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.showSystemModal('Notifications', 'You have 3 new matching talent alerts.', 'alert')">
-<span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span>
-</button>
-<button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
-</button>
-<div class="relative flex items-center gap-space-xs pl-space-2xs">
-<div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
-<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span>
-</div>
-</div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+/* Hide Scrollbar for Horizontal Nav */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-xs shrink-0" style="cursor: pointer;" onclick="window.location.href='index.html'"><img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span></div><nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary"><a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="discover-talent" href="search.html">Discover Talent</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="board.html">Opportunities Board</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="my-teams" href="team.html">My Teams</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="project_management.html">Project Hub</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="college.html">Campus Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="research.html">Research Collab</a></nav></div><div class="flex items-center gap-space-sm"><div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48" onclick="window.location.href='search.html'"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span><kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd></div><div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div><a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="admin_dashboard.html"><span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a><button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.showSystemModal('Notifications', 'You have 3 new alerts.', 'alert')"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span></button><button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></button><div class="relative flex items-center gap-space-xs pl-space-2xs"><div class="relative cursor-pointer" onclick="window.location.href='profile.html'"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span></div></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
 <!-- Subtle Ambient Glow Overlay -->
 <div class="relative w-full overflow-hidden bg-surface pb-space-3xl">
 <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-primary-fixed/40 via-surface-container/30 to-transparent blur-3xl pointer-events-none rounded-full"></div>
@@ -74,7 +45,7 @@
 <span>All Campuses</span>
 <span class="material-symbols-outlined text-[16px]">expand_more</span>
 </div>
-<button class="w-full md:w-auto px-space-lg py-3 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all duration-200 shrink-0" id="search-btn" type="button" onclick="window.executeSearch()">
+<button class="w-full md:w-auto px-space-lg py-3 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all duration-200 shrink-0" id="search-btn" type="button" onclick="window.executeSearch(true)">
 <span>Search Network</span>
 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>
@@ -275,11 +246,11 @@
 <div class="mb-space-lg">
 <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
 <div class="flex flex-wrap gap-1.5">
-<span class="px-2 py-1 rounded bg-surface-container font-skill-pill text-skill-pill text-on-surface">C++</span>
-<span class="px-2 py-1 rounded bg-surface-container font-skill-pill text-skill-pill text-on-surface">Data Structures</span>
-<span class="px-2 py-1 rounded bg-surface-container font-skill-pill text-skill-pill text-on-surface">PostgreSQL</span>
-<span class="px-2 py-1 rounded bg-surface-container font-skill-pill text-skill-pill text-on-surface">React</span>
-<span class="px-2 py-1 rounded bg-primary-fixed text-on-primary-fixed font-skill-pill text-skill-pill font-semibold">+8 more</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">C++</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">Data Structures</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">PostgreSQL</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">React</span>
+<span class="px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-skill-pill text-skill-pill font-semibold">+8 more</span>
 </div>
 </div>
 </div>
@@ -583,7 +554,7 @@
           Showing <span class="font-medium text-on-surface">1 - 6</span> of <span id="resultCountBottom">128</span> student builders
         </div>
 <div class="flex items-center gap-1">
-<button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1" disabled="" type="button">
+<button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1" disabled="" type="button" onclick="window.showSystemModal('Pagination', 'Loading previous page...', 'alert')">
 <span class="material-symbols-outlined text-[16px]">chevron_left</span> Previous
           </button>
 <button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold shadow-sm" type="button">
@@ -620,7 +591,6 @@
     </div>
 </div>
 
-<!-- Interactive Filter & Instant Search Script -->
 <script>
     // ==========================================
     // GLOBAL MODAL SYSTEM
@@ -675,11 +645,11 @@
         const input = document.getElementById('talent-search-input');
         if(input) {
             input.value = term;
-            window.executeSearch();
+            window.executeSearch(true);
         }
     };
 
-    window.executeSearch = function() {
+    window.executeSearch = function(showPopup = false) {
         const input = document.getElementById('talent-search-input');
         const val = input ? input.value.toLowerCase().trim() : '';
         const cards = document.querySelectorAll('.developer-card');
@@ -698,7 +668,7 @@
         const countEls = document.querySelectorAll('#resultCount, #headerResultCount, #resultCountBottom');
         countEls.forEach(el => { if(el) el.textContent = visibleCount; });
         
-        if(val) {
+        if(val && showPopup === true) {
             window.showSystemModal('Search Applied', `Showing ${visibleCount} results for "${val}".`, 'alert');
         }
     };
@@ -710,13 +680,13 @@
 
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-          // Dynamic live filtering as user types
-          window.executeSearch();
+          // Dynamic live filtering as user types - NO POPUP
+          window.executeSearch(false);
         });
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                window.executeSearch();
+                window.executeSearch(true); // POPUP ON ENTER
             }
         });
       }
@@ -733,7 +703,7 @@
                  filterPills[0].classList.remove('bg-surface-container', 'text-on-surface-variant');
                  filterPills[0].classList.add('active', 'bg-primary', 'text-on-primary');
              }
-             window.executeSearch();
+             window.executeSearch(false); // NO DOUBLE POPUP
              window.showSystemModal('Filters Reset', 'Showing all verified peers.', 'alert');
           });
       }
@@ -750,10 +720,10 @@
           const collegeName = pill.textContent.replace(/\(.*\)/, '').trim();
           if (collegeName.includes('All Universities')) {
             if(searchInput) searchInput.value = '';
-            window.executeSearch();
+            window.executeSearch(false);
           } else {
             if(searchInput) searchInput.value = collegeName;
-            window.executeSearch();
+            window.executeSearch(true);
           }
         });
       });
