@@ -1312,46 +1312,20 @@
             }
             function fitToScreen() {
                 canvasZoom = 100;
-                canvasPanX = 0; canvasPanY = 0;
                 applyZoom();
                 showToast('Fit to screen', 'info');
             }
             function applyZoom() {
                 const area = document.getElementById('canvas-area');
                 if (area) {
-                    area.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom / 100})`;
+                    area.style.transform = `scale(${canvasZoom / 100})`;
                     area.style.transformOrigin = 'center center';
                 }
                 const label = document.getElementById('zoom-label');
                 if (label) label.textContent = canvasZoom + '%';
             }
 
-            // Canvas pan
-            let isPanning = false, panStartX = 0, panStartY = 0, canvasPanX = 0, canvasPanY = 0;
-            function initCanvasPan() {
-                const canvasWrap = document.querySelector('#view-canvas .cursor-crosshair');
-                if (!canvasWrap) return;
-                canvasWrap.addEventListener('mousedown', function (e) {
-                    if (activeTool !== 'select' || e.target.closest('.absolute.top-4.left-4') || e.target.closest('.absolute.bottom-4') || e.target.closest('[draggable]') || e.target.closest('.canvas-node')) return;
-                    isPanning = true;
-                    panStartX = e.clientX - canvasPanX;
-                    panStartY = e.clientY - canvasPanY;
-                    canvasWrap.style.cursor = 'grabbing';
-                });
-                document.addEventListener('mousemove', function (e) {
-                    if (!isPanning) return;
-                    canvasPanX = e.clientX - panStartX;
-                    canvasPanY = e.clientY - panStartY;
-                    applyZoom();
-                });
-                document.addEventListener('mouseup', function () {
-                    if (isPanning) {
-                        isPanning = false;
-                        const canvasWrap = document.querySelector('#view-canvas .cursor-crosshair');
-                        if (canvasWrap) canvasWrap.style.cursor = 'crosshair';
-                    }
-                });
-            }
+            // Canvas pan disabled per user request to lock the background
 
             // =========================================================
             // CANVAS NODE DRAGGING
@@ -1596,7 +1570,6 @@
             document.addEventListener('DOMContentLoaded', function () {
                 initDragDrop();
                 initKanbanFilter();
-                initCanvasPan();
                 initNodeDrag();
                 initCanvasDrawing();
             });
