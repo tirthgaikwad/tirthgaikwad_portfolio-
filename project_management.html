@@ -1399,7 +1399,7 @@
                     
                     if (activeTool === 'rectangle') {
                         currentDrawNode = document.createElement('div');
-                        currentDrawNode.className = 'absolute border-2 border-primary bg-primary/10 rounded-md z-10 user-added-node canvas-node';
+                        currentDrawNode.className = 'absolute border-2 border-primary bg-primary/10 rounded-md z-10 user-added-node canvas-node resize overflow-hidden min-w-[50px] min-h-[50px]';
                         currentDrawNode.style.left = drawStartX + 'px';
                         currentDrawNode.style.top = drawStartY + 'px';
                         currentDrawNode.style.width = '0px';
@@ -1407,7 +1407,7 @@
                         canvasWrap.appendChild(currentDrawNode);
                     } else if (activeTool === 'circle') {
                         currentDrawNode = document.createElement('div');
-                        currentDrawNode.className = 'absolute border-2 border-tertiary bg-tertiary/10 rounded-full z-10 user-added-node canvas-node';
+                        currentDrawNode.className = 'absolute border-2 border-tertiary bg-tertiary/10 rounded-full z-10 user-added-node canvas-node resize overflow-hidden min-w-[50px] min-h-[50px]';
                         currentDrawNode.style.left = drawStartX + 'px';
                         currentDrawNode.style.top = drawStartY + 'px';
                         currentDrawNode.style.width = '0px';
@@ -1415,7 +1415,7 @@
                         canvasWrap.appendChild(currentDrawNode);
                     } else if (activeTool === 'database') {
                         currentDrawNode = document.createElement('div');
-                        currentDrawNode.className = 'absolute bg-surface-container-lowest border-2 border-tertiary/40 rounded-xl p-4 shadow-md w-48 z-10 user-added-node canvas-node';
+                        currentDrawNode.className = 'absolute bg-surface-container-lowest border-2 border-tertiary/40 rounded-xl p-4 shadow-md w-48 z-10 user-added-node canvas-node resize overflow-hidden min-w-[100px] min-h-[50px]';
                         currentDrawNode.style.left = drawStartX + 'px';
                         currentDrawNode.style.top = drawStartY + 'px';
                         currentDrawNode.innerHTML = '<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20"><span class="font-label-sm font-bold text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">database</span>New DB</span></div><p class="font-body-sm font-semibold mt-2 focus:outline-none" contenteditable="true">Storage</p>';
@@ -1425,7 +1425,7 @@
                         selectTool(document.querySelector('[title="Select / Move"]'), 'select');
                     } else if (activeTool === 'text') {
                         currentDrawNode = document.createElement('div');
-                        currentDrawNode.className = 'absolute text-on-surface font-headline-sm font-bold z-10 user-added-node canvas-node p-2 min-w-[100px] outline-none border border-transparent focus:border-outline-variant/40 rounded';
+                        currentDrawNode.className = 'absolute text-on-surface font-headline-sm font-bold z-10 user-added-node canvas-node p-2 min-w-[100px] outline-none border border-transparent focus:border-outline-variant/40 rounded resize overflow-hidden min-h-[40px]';
                         currentDrawNode.style.left = drawStartX + 'px';
                         currentDrawNode.style.top = drawStartY + 'px';
                         currentDrawNode.contentEditable = 'true';
@@ -1437,7 +1437,7 @@
                         selectTool(document.querySelector('[title="Select / Move"]'), 'select');
                     } else if (activeTool === 'sticky') {
                         currentDrawNode = document.createElement('div');
-                        currentDrawNode.className = 'absolute bg-yellow-200/90 text-yellow-900 border border-yellow-300/50 rounded shadow-md p-3 w-40 min-h-[100px] z-10 user-added-node canvas-node outline-none font-body-sm text-body-sm';
+                        currentDrawNode.className = 'absolute bg-yellow-200/90 text-yellow-900 border border-yellow-300/50 rounded shadow-md p-3 w-40 min-h-[100px] z-10 user-added-node canvas-node outline-none font-body-sm text-body-sm resize overflow-hidden';
                         currentDrawNode.style.left = drawStartX + 'px';
                         currentDrawNode.style.top = drawStartY + 'px';
                         currentDrawNode.contentEditable = 'true';
@@ -1575,6 +1575,21 @@
                 initKanbanFilter();
                 initNodeDrag();
                 initCanvasDrawing();
+
+                // Move fixed modals into view-canvas so they are visible during fullscreen
+                const viewCanvas = document.getElementById('view-canvas');
+                if (viewCanvas) {
+                    const modals = ['settings-modal', 'invite-modal', 'export-modal', 'card-context-menu', 'sort-dropdown', 'toast-container'];
+                    modals.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) viewCanvas.appendChild(el);
+                    });
+                }
+                
+                // Add resize capability to hardcoded existing nodes
+                document.querySelectorAll('#canvas-area > [draggable="true"]').forEach(node => {
+                    node.classList.add('resize', 'overflow-hidden');
+                });
             });
         </script>
     </main>
