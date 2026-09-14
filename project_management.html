@@ -1,820 +1,599 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPartner | Project Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script>if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
-    <style>
-        /* ProPartner Native Theme */
-        :root { 
-            --bg: #F8FAFC; --surface: rgba(255, 255, 255, 0.9); --card-bg: #ffffff;
-            --border: #E2E8F0; --primary: #4F46E5; --secondary: #818CF8; 
-            --text: #0F172A; --text-dim: #64748B; --header-bg: rgba(255, 255, 255, 0.85);
-            --input-bg: #F1F5F9; --nav-active-bg: #0F172A; --nav-active-text: #ffffff;
-            --kanban-col-bg: #F1F5F9; --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
-            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.03); --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.04);
-        }
 
-        [data-theme="dark"] {
-            --bg: #000000; --surface: rgba(0, 0, 0, 0.85); --card-bg: #000000;
-            --border: #333333; --primary: #5A52FF; --text: #F8FAFC; --text-dim: #94A3B8;
-            --header-bg: rgba(0, 0, 0, 0.85); --input-bg: #111111;
-            --nav-active-bg: #333333; --kanban-col-bg: #0A0A0A;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3); --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
-        }
-
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
-
-        /* ==========================================
-           GLOBAL HEADER
-           ========================================== */
-        header { 
-            display: flex; justify-content: space-between; align-items: center; padding: 16px 5%; 
-            background: var(--header-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); 
-            box-shadow: var(--shadow-sm); z-index: 100; position: relative; transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0;
-        }
-        header h2 { font-weight: 800; color: #5A52FF; font-size: 1.5rem; letter-spacing: -0.5px; }
-        nav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        nav a:not(.btn-logout) { color: var(--text-dim); text-decoration: none; font-weight: 600; transition: all 0.2s ease; font-size: 0.85rem; cursor: pointer; padding: 8px 16px; border-radius: 8px; background: transparent; }
-        nav a:not(.btn-logout):hover { color: var(--text); background: var(--input-bg); }
-        nav a:not(.btn-logout).active { background: var(--text); color: var(--bg); }
-        .btn-logout { background: transparent; color: #ef4444; padding: 8px 16px; border-radius: 8px; font-weight: 600; border: 1px solid transparent; transition: all 0.2s ease; font-size: 0.85rem; margin-left: 8px; cursor:pointer;}
-        .btn-logout:hover { background: rgba(239, 68, 68, 0.08); }
-
-        .theme-toggle, .nav-bell-container { cursor: pointer; color: var(--text-dim); transition: 0.2s; display: flex; align-items: center; justify-content: center; margin-right: 8px; padding: 8px; border-radius: 8px; background: transparent; }
-        .theme-toggle:hover, .nav-bell-container:hover { color: var(--text); background: var(--input-bg); }
-        .theme-toggle svg, .nav-bell-icon { width: 18px; height: 18px; }
-        .notification-badge { position: absolute; top: 2px; right: 2px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; }
-        .notification-badge.active { opacity: 1; }
-
-        .header-toggle-tab {
-            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 40px; height: 20px;
-            background: var(--header-bg); border: 1px solid var(--border); border-top: none;
-            border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: flex;
-            justify-content: center; align-items: center; cursor: pointer; color: var(--text-dim); z-index: 1000; transition: 0.2s;
-        }
-        .header-toggle-tab:hover { color: var(--text); }
-        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
-        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
-
-        /* ==========================================
-           MAIN WORKSPACE
-           ========================================== */
-        .pm-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 24px 5%; }
-        .pm-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-shrink: 0;}
-        .pm-title h1 { font-size: 2rem; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px;}
-        .pm-title p { color: var(--text-dim); font-size: 1rem; }
-        .pm-controls { display: flex; gap: 16px; align-items: center; }
-        
-        .view-tabs { display: flex; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .view-tab { padding: 10px 24px; font-size: 0.9rem; font-weight: 600; color: var(--text-dim); cursor: pointer; border-radius: 8px; transition: all 0.2s ease; border: none; background: transparent; outline: none;}
-        .view-tab.active { background: var(--card-bg); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 700; }
-        .view-tab:hover:not(.active) { color: var(--text); }
-
-        .btn-primary { background: #5A52FF; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; outline: none;}
-        .btn-primary:hover { background: #4740D4; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(90, 82, 255, 0.2); }
-
-        .pm-content { flex: 1; overflow: hidden; position: relative; }
-        .view-section { display: none; height: 100%; width: 100%; animation: fadeIn 0.3s ease; }
-        .view-section.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* ==========================================
-           1. KANBAN BOARD VIEW
-           ========================================== */
-        .kanban-board { display: flex; gap: 24px; height: 100%; overflow-x: auto; padding-bottom: 16px; width: 100%; }
-        .kanban-column { flex: 1; min-width: 280px; max-width: 350px; background: var(--kanban-col-bg); border-radius: 16px; display: flex; flex-direction: column; border: 1px solid var(--border); overflow: hidden;}
-        .col-header { padding: 16px 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--card-bg);}
-        .task-count { background: var(--bg); color: var(--text-dim); font-size: 0.8rem; padding: 2px 8px; border-radius: 12px; border: 1px solid var(--border);}
-        .col-body { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .task-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; cursor: grab; box-shadow: var(--shadow-sm); transition: 0.2s; }
-        .task-card:hover { border-color: #5A52FF; box-shadow: var(--shadow-md); transform: translateY(-2px);}
-        .task-card:active { cursor: grabbing; }
-        .task-tag { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
-        .tag-frontend { background: rgba(90, 82, 255, 0.1); color: #5A52FF; }
-        .tag-backend { background: rgba(16, 185, 129, 0.1); color: #10B981; }
-        .tag-design { background: rgba(236, 72, 153, 0.1); color: #EC4899; }
-        .task-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; color: var(--text);}
-        .task-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
-        .task-assignee { width: 28px; height: 28px; border-radius: 50%; background: #5A52FF; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;}
-
-        /* ==========================================
-           2. PLAN PROJECT (ULTIMATE WHITEBOARD ENGINE)
-           ========================================== */
-        .whiteboard-wrapper {
-            display: flex; flex-direction: column; height: 100%; width: 100%; 
-            background: var(--bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; 
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* Top File & Collaboration Menu */
-        .wb-topbar {
-            height: 48px; background: var(--card-bg); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 20;
-        }
-        
-        .wb-menu-group { display: flex; gap: 8px; align-items: center; position: relative;}
-        .wb-menu-btn {
-            background: transparent; border: none; color: var(--text); font-weight: 600; font-size: 0.85rem;
-            padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;
-        }
-        .wb-menu-btn:hover { background: var(--input-bg); }
-        
-        .wb-dropdown {
-            position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--card-bg);
-            border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg);
-            display: none; flex-direction: column; min-width: 160px; overflow: hidden;
-        }
-        .wb-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards;}
-        .wb-dropdown a {
-            padding: 10px 16px; font-size: 0.85rem; font-weight: 500; color: var(--text);
-            text-decoration: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
-        }
-        .wb-dropdown a:hover { background: var(--input-bg); color: #5A52FF; }
-
-        /* Collaboration Avatars */
-        .wb-collab { display: flex; align-items: center; gap: 12px; }
-        .avatar-stack { display: flex; flex-direction: row-reverse; }
-        .wb-avatar {
-            width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card-bg);
-            color: white; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center;
-            justify-content: center; margin-left: -8px; position: relative;
-        }
-        .wb-avatar:hover { z-index: 10; transform: translateY(-2px); }
-        .btn-share {
-            background: rgba(90, 82, 255, 0.1); color: #5A52FF; border: none; padding: 6px 16px;
-            border-radius: 20px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
-        }
-        .btn-share:hover { background: #5A52FF; color: white; }
-
-        /* Canvas & Toolbar Layout */
-        .wb-body { flex: 1; display: flex; position: relative; overflow: hidden; }
-
-        .whiteboard-toolbar { 
-            position: absolute; left: 16px; top: 16px; 
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; 
-            padding: 8px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow-md); z-index: 10; 
-        }
-        .wb-tool { 
-            width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; color: var(--text-dim); transition: all 0.2s; border: none; background: transparent; 
-        }
-        .wb-tool:hover { background: var(--input-bg); color: var(--text); }
-        .wb-tool.active { background: rgba(90, 82, 255, 0.1); color: #5A52FF; }
-        .wb-tool svg { width: 20px; height: 20px; }
-
-        .whiteboard-canvas { 
-            flex: 1; position: relative; overflow: auto; cursor: default;
-            background-image: radial-gradient(var(--text-dim) 1px, transparent 1px);
-            background-size: 24px 24px; background-position: -12px -12px; opacity: 0.8;
-        }
-
-        /* Remote Real-Time Cursor */
-        .remote-cursor {
-            position: absolute; pointer-events: none; z-index: 9999; display: flex; flex-direction: column;
-            transition: top 0.1s linear, left 0.1s linear; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-        }
-        .remote-cursor svg { width: 18px; height: 18px; fill: #EC4899; stroke: white; stroke-width: 1.5; transform: rotate(-20deg);}
-        .remote-cursor-label {
-            background: #EC4899; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
-            border-radius: 4px; margin-left: 12px; margin-top: -4px; white-space: nowrap;
-        }
-
-        /* Draggable & Resizable Shapes */
-        .wb-item { 
-            position: absolute; padding: 12px; box-sizing: border-box;
-            display: flex; align-items: center; justify-content: center;
-            cursor: grab; transition: box-shadow 0.2s;
-        }
-        .wb-item:active { cursor: grabbing; box-shadow: var(--shadow-lg); }
-        
-        .wb-item textarea { 
-            width: 100%; height: 100%; border: none; background: transparent; color: var(--text); 
-            resize: none; outline: none; font-family: 'Inter', sans-serif; font-size: 0.95rem; 
-            font-weight: 500; text-align: center; pointer-events: auto; 
-        }
-
-        /* Specific Shape Styling */
-        .wb-sticky { background: #FEF3C7; color: #92400E; border-bottom-right-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 4px; }
-        [data-theme="dark"] .wb-sticky { background: #451A03; color: #FDE68A; }
-        .wb-sticky textarea { color: inherit; }
-
-        .wb-rect { background: var(--card-bg); border: 2px solid #5A52FF; border-radius: 8px; }
-        .wb-circle { background: var(--card-bg); border: 2px solid #10B981; border-radius: 50%; }
-        
-        .wb-db { background: var(--card-bg); border: 2px solid #8B5CF6; border-radius: 50% / 15%; position: relative; }
-        .wb-db::before { content:''; position:absolute; top:0; left:-2px; width:100%; height:20px; border:2px solid #8B5CF6; border-radius:50%; }
-
-        .wb-data { background: var(--card-bg); border: 2px solid #F59E0B; transform: skew(-15deg); border-radius: 4px;}
-        .wb-data textarea { transform: skew(15deg); }
-
-        .wb-diamond { background: var(--card-bg); border: 2px solid #EC4899; transform: rotate(45deg); width: 120px; height: 120px; }
-        .wb-diamond textarea { transform: rotate(-45deg); }
-        
-        .wb-text { border: none; background: transparent; padding: 4px; }
-        .wb-text textarea { text-align: left; font-size: 1.1rem; font-weight: 600; }
-
-        .wb-connector { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-
-        /* ==========================================
-           3. INTEGRATIONS VIEW
-           ========================================== */
-        .integration-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; width: 100%; overflow-y: auto; align-content: start;}
-        .integration-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; transition: 0.2s; box-shadow: var(--shadow-sm);}
-        .integration-card:hover { border-color: #5A52FF; box-shadow: var(--shadow-md); transform: translateY(-2px);}
-        .int-header { display: flex; align-items: center; gap: 16px; }
-        .int-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--bg); border: 1px solid var(--border);}
-        .int-title { font-weight: 800; font-size: 1.1rem; }
-        .int-desc { color: var(--text-dim); font-size: 0.9rem; line-height: 1.4;}
-        .int-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); color: #10B981; align-self: flex-start;}
-
-        /* ==========================================
-           MODALS (CUSTOM ALERTS & SHARE)
-           ========================================== */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-overlay.active { display: flex; }
-        .custom-modal { background: var(--card-bg); padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); animation: slideDown 0.3s ease; }
-        .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem;}
-        .custom-modal p { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
-        .form-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; margin-bottom: 16px;}
-        .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
-        .btn-outline { padding: 10px 20px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); font-weight: 600; cursor: pointer; transition: 0.2s;}
-        .btn-outline:hover { background: var(--input-bg); }
-        
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- GLOBAL HEADER -->
-    <header id="mainHeader">
-        <a href="index.html" style="text-decoration: none;">
-            <h2 class="logo">ProPartner</h2>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-xs shrink-0"><img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span></div><nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary"><a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="discover-talent" href="#">Discover Talent</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="#">Opportunities Board</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="my-teams" href="#">My Teams</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="#">Project Hub</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="#">Campus Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="#">Research Collab</a></nav></div><div class="flex items-center gap-space-sm"><div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span><kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd></div><div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div><a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="#"><span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a><button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span></button><button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></button><div class="relative flex items-center gap-space-xs pl-space-2xs"><div class="relative cursor-pointer"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span></div></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-Header / Breadcrumb & Status Navigation Strip -->
+<section class="w-full bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30 py-space-xs px-gutter-desktop sticky top-16 z-40">
+<div class="max-w-container-max mx-auto flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs flex-wrap font-label-md text-label-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[16px]">folder</span>
+          Project Management
         </a>
-        
-        <nav>
-            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
-                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            </div>
-            <div class="nav-bell-container" id="notifBellBtn">
-                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                <div class="notification-badge" id="notifBadge">0</div>
-            </div>
-            <a href="search.html">Search</a>
-            <a href="board.html">Opportunities Board</a>
-            <a href="team.html">My Teams</a>
-            <a href="project_management.html" class="active">Project Management</a>
-            <a href="college.html">My College</a>
-            <a href="department.html">My Department</a>
-            <a href="global.html">Global Network</a>
-            <a href="network.html">My Network</a>
-            <a href="saved.html">Saved Profiles</a>
-            <a href="inbox.html">Inbox</a>
-            <a href="history.html">History</a>
-            <a href="profile.html">My Profile</a>
-            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
-        </nav>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface-variant">Workspaces &amp; Planning</span>
+<span class="text-outline-variant">/</span>
+<span class="text-primary font-bold bg-primary-fixed/40 px-2 py-0.5 rounded-full text-[12px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">rocket_launch</span>
+          Connect2Minds v1.0
+        </span>
+<span class="inline-flex items-center gap-1 text-tertiary font-medium bg-tertiary-fixed/30 px-2.5 py-0.5 rounded-full text-skill-pill">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>
+          Sprint 1 Architecture Active
+        </span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors border border-outline-variant/40" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+          Settings
+        </button>
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors border border-outline-variant/40" type="button">
+<span class="material-symbols-outlined text-[16px]">ios_share</span>
+          Export
+        </button>
+<button class="flex items-center gap-1 font-label-md text-label-md text-on-primary bg-primary-container hover:bg-primary px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>New Item</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Main Content Container -->
+<div class="max-w-container-max mx-auto px-gutter-desktop py-space-lg w-full flex flex-col gap-space-lg">
+<!-- Workspace Header & View Mode Selector -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-1 max-w-2xl">
+<div class="flex items-center gap-space-xs">
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">Workspace &amp; Planning</h1>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-semibold">ED-TECH STACK</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          Track tasks, map out project flow, and manage integrations for <strong class="text-on-surface font-semibold">Connect2Minds v1.0</strong>
+</p>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-label-sm text-label-sm">
+<span class="inline-flex items-center gap-1 text-tertiary font-medium bg-tertiary-fixed/30 px-2 py-0.5 rounded border border-tertiary-fixed-dim/40">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+            GitHub Synced (#24 active)
+          </span>
+<span class="inline-flex items-center gap-1 text-primary font-medium bg-primary-fixed/30 px-2 py-0.5 rounded border border-primary-fixed-dim/40">
+<span class="material-symbols-outlined text-[14px]">draw</span>
+            Figma Live Mockups
+          </span>
+<span class="text-secondary font-body-sm text-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+            Updated 6 mins ago
+          </span>
+</div>
+</div>
+<!-- Segmented View Switcher & Collaborators -->
+<div class="flex flex-col sm:flex-row sm:items-center gap-space-md">
+<!-- Segmented Tab Navigation -->
+<div class="inline-flex p-1 bg-surface-container-low rounded-xl border border-outline-variant/50 shadow-inner">
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md bg-surface-container-lowest text-primary font-bold shadow-sm transition-all" id="tab-kanban" onclick="switchTab('kanban')" type="button">
+<span class="material-symbols-outlined text-[18px]">view_kanban</span>
+            Kanban Board
+          </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" id="tab-canvas" onclick="switchTab('canvas')" type="button">
+<span class="material-symbols-outlined text-[18px]">gesture</span>
+            Plan Project
+          </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all" id="tab-integrations" onclick="switchTab('integrations')" type="button">
+<span class="material-symbols-outlined text-[18px]">extension</span>
+            Integrations
+            <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</button>
+</div>
+<!-- Collaborative Member Cluster -->
+<div class="flex items-center bg-surface-container-lowest border border-outline-variant/40 rounded-xl px-3 py-1.5 shadow-sm gap-2">
+<div class="flex -space-x-2 overflow-hidden">
+<div class="inline-block h-7 w-7 rounded-full ring-2 ring-surface-container-lowest bg-primary-container text-on-primary flex items-center justify-center font-bold text-[11px]" title="Omkar G. (Frontend Lead)">OG</div>
+<div class="inline-block h-7 w-7 rounded-full ring-2 ring-surface-container-lowest bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[11px]" title="Anjali B. (Fullstack)">AB</div>
+<div class="inline-block h-7 w-7 rounded-full ring-2 ring-surface-container-lowest bg-secondary text-on-secondary flex items-center justify-center font-bold text-[11px]" title="Don S. (AI/ML)">DS</div>
+</div>
+<button class="inline-flex items-center gap-1 text-primary hover:text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold pl-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">person_add</span>
+            Invite
+          </button>
+</div>
+</div>
+</div>
+<!-- TAB 1: KANBAN BOARD VIEW -->
+<div class="flex flex-col gap-space-md" id="view-kanban">
+<!-- Filter Bar & Search Utility -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-space-sm shadow-sm flex flex-col md:flex-row items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs w-full md:w-auto flex-1 max-w-md bg-surface-container-low rounded-lg px-space-sm py-1.5 border border-outline-variant/40 focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+<input class="bg-transparent text-on-surface font-body-sm text-body-sm focus:outline-none w-full placeholder-on-surface-variant" placeholder="Filter tasks by name, component, or tag..." type="text"/>
+<span class="font-label-sm text-label-sm text-outline px-1.5 py-0.5 rounded bg-surface-container-lowest border border-outline-variant/40">/</span>
+</div>
+<div class="flex items-center gap-space-xs flex-wrap w-full md:w-auto justify-start md:justify-end">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tags:</span>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-medium border border-primary-fixed-dim/40 hover:bg-primary-fixed transition-colors" type="button">Frontend</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button">Backend</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button">AI / ML</button>
+<button class="font-skill-pill text-skill-pill px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium hover:bg-surface-container transition-colors" type="button">DevOps</button>
+<div class="h-5 w-[1px] bg-outline-variant/40 mx-1 hidden sm:block"></div>
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface px-2 py-1 rounded hover:bg-surface-container-low transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+            Sort
+          </button>
+</div>
+</div>
+<!-- Kanban 4-Column Board Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md items-start">
+<!-- Column 1: To Do -->
+<div class="bg-surface-container-low/70 rounded-2xl p-space-sm border border-outline-variant/40 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between px-space-xs py-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-outline"></span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">To Do</h2>
+</div>
+<span class="font-label-sm text-label-sm font-semibold bg-surface-container-lowest text-on-surface-variant px-2.5 py-0.5 rounded-full border border-outline-variant/40 shadow-xs">3</span>
+</div>
+<!-- Card 1.1 -->
+<div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant tracking-wider uppercase">FRONTEND</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Design user profile dashboard UI</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Create customizable student portfolios, skill showcase widgets, and verified project badges.</p>
+<div class="pt-2 mt-1 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-0.5 text-on-surface-variant" title="Attachments">
+<span class="material-symbols-outlined text-[15px]">attach_file</span>
+                  2
+                </span>
+<span class="flex items-center gap-0.5 text-error font-medium" title="Priority: High">
+<span class="material-symbols-outlined text-[14px]">flag</span>
+                  Sep 12
+                </span>
+</div>
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-[10px]" title="Omkar G.">OG</div>
+</div>
+</div>
+<!-- Card 1.2 -->
+<div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-tertiary-fixed/40 text-on-tertiary-fixed-variant tracking-wider uppercase">BACKEND</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Setup PostgreSQL database schema for Teams</h3>
+<div class="w-full bg-surface-container-high rounded-full h-1.5 my-1">
+<div class="bg-tertiary h-1.5 rounded-full w-3/4"></div>
+</div>
+<div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Due Sep 10</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[10px]" title="Anjali B.">AB</div>
+</div>
+</div>
+<!-- Card 1.3 -->
+<div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant tracking-wider uppercase">AI / ML</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Train YOLOv8 model for Edge Vision HUD</h3>
+<div class="flex items-center gap-1 flex-wrap">
+<span class="text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded text-on-surface-variant">FastAPI</span>
+<span class="text-[11px] font-label-sm bg-surface-container px-2 py-0.5 rounded text-on-surface-variant">PyTorch</span>
+</div>
+<div class="pt-2 mt-1 border-t border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">event</span>
+<span>Sep 15</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold text-[10px]" title="Don S.">DS</div>
+</div>
+</div>
+<!-- Add Card Button -->
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Add Task
+          </button>
+</div>
+<!-- Column 2: In Progress -->
+<div class="bg-surface-container-low/70 rounded-2xl p-space-sm border border-outline-variant/40 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between px-space-xs py-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">In Progress</h2>
+</div>
+<span class="font-label-sm text-label-sm font-semibold bg-surface-container-lowest text-primary px-2.5 py-0.5 rounded-full border border-primary-fixed-dim/40 shadow-xs">2</span>
+</div>
+<!-- Card 2.1 -->
+<div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs ring-1 ring-primary/15">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-tertiary-fixed/40 text-on-tertiary-fixed-variant tracking-wider uppercase">BACKEND</span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold bg-primary-fixed/40 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                In review
+              </span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Integrate FastAPI WebSockets for chat</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Real-time team communication channel and presence detection listener.</p>
+<div class="flex items-center gap-2 font-label-sm text-label-sm text-secondary pt-1">
+<span class="flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">commit</span>
+                PR #24
+              </span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">chat_bubble_outline</span>
+                4
+              </span>
+</div>
+<div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-tertiary font-medium">92% completed</span>
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-[10px]" title="Omkar G.">OG</div>
+</div>
+</div>
+<!-- Card 2.2 -->
+<div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-secondary-container text-on-secondary-fixed-variant tracking-wider uppercase">UI / UX</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-label-sm text-tertiary bg-tertiary-fixed/30 px-1.5 py-0.5 rounded">
+                Active now
+              </span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Canvas architecture nodes wireframing in Figma</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Drafting interactive planning canvas widgets, connector lines, and collaborative user pins.</p>
+<div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                Figma Frame
+              </span>
+<div class="w-6 h-6 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[10px]" title="Anjali B.">AB</div>
+</div>
+</div>
+<!-- Add Card Button -->
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Add Task
+          </button>
+</div>
+<!-- Column 3: Review / QA -->
+<div class="bg-surface-container-low/70 rounded-2xl p-space-sm border border-outline-variant/40 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between px-space-xs py-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Review / QA</h2>
+</div>
+<span class="font-label-sm text-label-sm font-semibold bg-surface-container-lowest text-on-surface-variant px-2.5 py-0.5 rounded-full border border-outline-variant/40 shadow-xs">1</span>
+</div>
+<!-- Card 3.1 -->
+<div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant tracking-wider uppercase">DEVOPS</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">Dockerize container pipeline on staging runner</h3>
+<div class="flex items-center gap-1.5 text-tertiary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+<span>98.4% checks passed</span>
+</div>
+<div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Staging #102</span>
+<div class="w-6 h-6 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[10px]" title="Anjali B.">AB</div>
+</div>
+</div>
+<!-- Drag and Drop Placeholder -->
+<div class="border-2 border-dashed border-outline-variant/60 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-1 text-on-surface-variant/70">
+<span class="material-symbols-outlined text-[24px]">move_to_inbox</span>
+<span class="font-label-sm text-label-sm font-medium">Drop tasks here for peer verification</span>
+</div>
+<!-- Add Card Button -->
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Add Task
+          </button>
+</div>
+<!-- Column 4: Done -->
+<div class="bg-surface-container-low/70 rounded-2xl p-space-sm border border-outline-variant/40 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between px-space-xs py-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Done</h2>
+</div>
+<span class="font-label-sm text-label-sm font-semibold bg-surface-container-lowest text-tertiary px-2.5 py-0.5 rounded-full border border-tertiary-fixed-dim/40 shadow-xs">2</span>
+</div>
+<!-- Card 4.1 -->
+<div class="group bg-surface-container-lowest/80 rounded-xl p-space-md border border-outline-variant/30 shadow-xs hover:shadow-sm transition-all cursor-pointer flex flex-col gap-space-xs opacity-95">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-surface-container text-on-surface-variant tracking-wider uppercase">FRONTEND</span>
+<span class="text-tertiary flex items-center">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-medium text-on-surface/80 line-through decoration-outline-variant leading-snug">Implement Light/Dark theme toggle</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Standardized CSS variables according to ProPartner design token hierarchy.</p>
+<div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Closed Sep 08</span>
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-[10px]" title="Omkar G.">OG</div>
+</div>
+</div>
+<!-- Card 4.2 -->
+<div class="group bg-surface-container-lowest/80 rounded-xl p-space-md border border-outline-variant/30 shadow-xs hover:shadow-sm transition-all cursor-pointer flex flex-col gap-space-xs opacity-95">
+<div class="flex items-center justify-between">
+<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-surface-container text-on-surface-variant tracking-wider uppercase">INFRA</span>
+<span class="text-tertiary flex items-center">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-medium text-on-surface/80 line-through decoration-outline-variant leading-snug">Campus network E2E SSL certificate setup</h3>
+<div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Closed Sep 06</span>
+<div class="w-6 h-6 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[10px]" title="Anjali B.">AB</div>
+</div>
+</div>
+<!-- Add Card Button -->
+<button class="flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-outline-variant/80 hover:border-primary text-on-surface-variant hover:text-primary font-label-sm text-label-sm transition-colors bg-surface-container-lowest/40 hover:bg-surface-container-lowest" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Add Task
+          </button>
+</div>
+</div>
+</div>
+<!-- TAB 2: INTERACTIVE PLANNING CANVAS / WHITEBOARD (Based on User's Canvas Screenshot) -->
+<div class="hidden flex-col gap-space-md" id="view-canvas">
+<!-- Whiteboard Canvas Window -->
+<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-md overflow-hidden flex flex-col">
+<!-- Canvas Top Bar -->
+<div class="px-space-md py-space-sm border-b border-outline-variant/40 flex items-center justify-between flex-wrap gap-2 bg-surface-container-lowest">
+<div class="flex items-center gap-space-md">
+<button class="flex items-center gap-1 font-label-md text-label-md text-on-surface hover:text-primary transition-colors" type="button">
+<span>File</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+<div class="h-4 w-[1px] bg-outline-variant/60"></div>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2">
+              Sprint 1 Architecture
+              <span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded font-normal">v1.2 (Autosaved)</span>
+</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center -space-x-1.5">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-[11px] ring-2 ring-surface-container-lowest" title="Omkar G.">OG</div>
+<div class="w-7 h-7 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-[11px] ring-2 ring-surface-container-lowest" title="Anjali B.">AB</div>
+</div>
+<button class="inline-flex items-center gap-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md px-3 py-1.5 rounded-lg border border-primary-fixed-dim transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">share</span>
+              Invite
+            </button>
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg" title="Toggle Fullscreen" type="button">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+</div>
+</div>
+<!-- Interactive Canvas Area with Dot Grid & Floating Sidebar Tools -->
+<div class="relative w-full h-[520px] bg-surface overflow-hidden cursor-crosshair select-none" style="background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px); background-size: 24px 24px;">
+<!-- Floating Vector Canvas Toolbar (Left Dock) -->
+<div class="absolute top-4 left-4 z-20 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/50 p-1 flex flex-col gap-1">
+<button class="p-2 rounded-lg bg-primary-fixed text-primary hover:bg-primary-fixed-dim transition-colors" title="Select / Move" type="button">
+<span class="material-symbols-outlined text-[20px]">near_me</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Connect Arrow" type="button">
+<span class="material-symbols-outlined text-[20px]">north_east</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Text" type="button">
+<span class="material-symbols-outlined text-[20px]">title</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Sticky Note" type="button">
+<span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Rectangle Component" type="button">
+<span class="material-symbols-outlined text-[20px]">rectangle</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Database Node" type="button">
+<span class="material-symbols-outlined text-[20px]">database</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Decision Polygon" type="button">
+<span class="material-symbols-outlined text-[20px]">polyline</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Circle" type="button">
+<span class="material-symbols-outlined text-[20px]">circle</span>
+</button>
+<div class="w-full h-[1px] bg-outline-variant/40 my-1"></div>
+<button class="p-2 rounded-lg text-error hover:bg-error-container/30 transition-colors" title="Clear Canvas" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+<!-- Live User Cursor Tag (Mimicking https://lh3.googleusercontent.com/aida-public/AB6AXuBxnmcumY5fD0Ew7fuMm8yefJwws_kq7R-nO3pjhTZYGcOuz30wm0ds2nzvKmLnixA3Uo6itRMwn5j5BJCH6hsZjWi382dIDL9wfMOowqesh3mBtX7Ghx4iyfFcr7W85n-iXx1zwWJF9biSA9vJ53sS6w-IWITc3OrliTGWN58YajyJXnfR-LLVVMngLWBkP_BFxcR3-XQRP02TUZsLP8Udghyebw-Gaj_Fe1Oc1C2wRBMziTf6vEHoopXLfDriEEW3AQ) -->
+<div class="absolute top-[48%] left-[42%] pointer-events-none z-30 flex items-start gap-1 transition-all duration-300">
+<svg class="w-4 h-4 fill-pink-500 transform -rotate-45 drop-shadow-sm" viewbox="0 0 24 24">
+<polygon points="0 0, 0 24, 7 17, 12 24, 15 22, 10 15, 18 15"></polygon>
+</svg>
+<span class="bg-pink-600 text-white font-label-sm text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wide shadow-md">Anjali</span>
+</div>
+<!-- Architecture Flow Nodes on Canvas -->
+<!-- Node 1: Client Layer -->
+<div class="absolute top-24 left-36 bg-surface-container-lowest border-2 border-primary/40 rounded-xl p-4 shadow-md w-60 z-10 hover:border-primary transition-all">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+<span class="font-label-sm text-label-sm font-bold text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">web</span>
+                Client Tier
+              </span>
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</div>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface mt-2">Next.js 14 App Router</p>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Tailwind CSS + WebSockets</span>
+</div>
+<!-- Connector SVG Line -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
+<defs>
+<marker id="arrowhead" markerheight="8" markerwidth="8" orient="auto" refx="7" refy="4">
+<polygon fill="#4f46e5" points="0 0, 8 4, 0 8"></polygon>
+</marker>
+</defs>
+<!-- From Client Tier to API Gateway -->
+<path d="M 384 140 C 460 140, 480 230, 560 230" fill="none" marker-end="url(#arrowhead)" stroke="#4f46e5" stroke-dasharray="6,4" stroke-width="2"></path>
+<!-- From API Gateway to DB -->
+<path d="M 760 250 C 820 250, 840 250, 890 250" fill="none" marker-end="url(#arrowhead)" stroke="#005338" stroke-width="2"></path>
+</svg>
+<!-- Node 2: Fast API WebSocket Gateway -->
+<div class="absolute top-44 left-[560px] bg-surface-container-lowest border-2 border-primary rounded-xl p-4 shadow-lg w-64 z-10">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+<span class="font-label-sm text-label-sm font-bold text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+                API Gateway &amp; WS
+              </span>
+<span class="text-[10px] font-bold bg-primary-fixed text-primary px-1.5 py-0.5 rounded">CORE</span>
+</div>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface mt-2">FastAPI Async Broker</p>
+<p class="font-label-sm text-[11px] text-on-surface-variant">PubSub Redis &amp; Token Auth</p>
+</div>
+<!-- Node 3: PostgreSQL DB Schema -->
+<div class="absolute top-44 left-[890px] bg-surface-container-lowest border-2 border-tertiary/40 rounded-xl p-4 shadow-md w-56 z-10">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+<span class="font-label-sm text-label-sm font-bold text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">database</span>
+                Database
+              </span>
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</div>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface mt-2">PostgreSQL 16</p>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Prisma ORM &amp; Migrations</span>
+</div>
+<!-- Zoom & Minimap Controls -->
+<div class="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-surface-container-lowest rounded-xl shadow-md border border-outline-variant/40 p-1">
+<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom Out" type="button">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<span class="font-label-sm text-label-sm px-2 text-on-surface-variant font-medium">100%</span>
+<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom In" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+<div class="h-4 w-[1px] bg-outline-variant/40 mx-1"></div>
+<button class="p-1.5 hover:bg-surface-container rounded text-on-surface-variant" title="Fit to Screen" type="button">
+<span class="material-symbols-outlined text-[18px]">aspect_ratio</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 3: INTEGRATIONS VIEW (Based on User's Integrations Screenshot) -->
+<div class="hidden flex-col gap-space-lg" id="view-integrations">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Figma Integration Card -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-2xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center shrink-0 shadow-inner">
+<svg class="w-7 h-7" fill="none" viewbox="0 0 38 57" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 28.5C19 23.2533 23.2533 19 28.5 19C33.7467 19 38 23.2533 38 28.5C38 33.7467 33.7467 38 28.5 38C23.2533 38 19 33.7467 19 28.5Z" fill="#1ABCFE"></path>
+<path d="M0 47.5C0 42.2533 4.25329 38 9.5 38H19V47.5C19 52.7467 14.7467 57 9.5 57C4.25329 57 0 52.7467 0 47.5Z" fill="#0ACF83"></path>
+<path d="M19 0V19H28.5C33.7467 19 38 14.7467 38 9.5C38 4.25329 33.7467 0 28.5 0H19Z" fill="#FF7262"></path>
+<path d="M0 9.5C0 14.7467 4.25329 19 9.5 19H19V0H9.5C4.25329 0 0 4.25329 0 9.5Z" fill="#F24E1E"></path>
+<path d="M0 28.5C0 33.7467 4.25329 38 9.5 38H19V19H9.5C4.25329 19 0 23.2533 0 28.5Z" fill="#A259FF"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">Figma</h3>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-tertiary bg-tertiary-fixed/30 px-2 py-0.5 rounded-full font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Connected
+                  </span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">UI/UX Mockups &amp; Design Token Sync</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Link your Figma files so front-end developers always have access to the latest UI assets, component tokens, and vector wireframes.
+            </p>
+<div class="bg-surface-container-low rounded-xl p-space-sm flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+                Synced file: <strong>Connect2Minds_DesignSystem_v1</strong>
+</span>
+<span class="text-secondary">15 min ago</span>
+</div>
+</div>
+<div class="pt-space-md mt-space-md border-t border-outline-variant/30 flex items-center justify-between">
+<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" type="button">
+<span>Manage file permissions</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+<button class="font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+              Disconnect
+            </button>
+</div>
+</div>
+<!-- GitHub Integration Card -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-2xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center shrink-0 shadow-inner">
+<svg class="w-7 h-7 text-on-surface" fill="currentColor" viewbox="0 0 24 24">
+<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">GitHub</h3>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-tertiary bg-tertiary-fixed/30 px-2 py-0.5 rounded-full font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Connected
+                  </span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">Version Control &amp; Continuous Integration</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Connect the main private repository. View pull requests and merge statuses directly from this dashboard with automatic card movement.
+            </p>
+<div class="bg-surface-container-low rounded-xl p-space-sm flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">alt_route</span>
+                Repo: <strong>edtech-hub/connect2minds-v1</strong>
+</span>
+<span class="text-primary font-semibold">Branch: main</span>
+</div>
+</div>
+<div class="pt-space-md mt-space-md border-t border-outline-variant/30 flex items-center justify-between">
+<button class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" type="button">
+<span>Repository webhooks settings</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+<button class="font-label-sm text-label-sm text-error hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+              Disconnect
+            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function switchTab(target) {
+    // Hide all view containers
+    const kanban = document.getElementById('view-kanban');
+    const canvas = document.getElementById('view-canvas');
+    const integrations = document.getElementById('view-integrations');
+    
+    kanban.classList.add('hidden');
+    canvas.classList.add('hidden');
+    integrations.classList.add('hidden');
 
-        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
-        </div>
-    </header>
+    // Reset button styles
+    const tabs = ['kanban', 'canvas', 'integrations'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('tab-' + t);
+      btn.className = 'flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all';
+    });
 
-    <!-- PROJECT MANAGEMENT WORKSPACE -->
-    <main class="pm-container">
-        
-        <div class="pm-header">
-            <div class="pm-title">
-                <h1>Workspace & Planning</h1>
-                <p>Track tasks, map out project flow, and manage integrations for <strong id="currentTeamDisplay" style="color:var(--text);">Connect2Minds v1.0</strong></p>
-            </div>
-            <div class="pm-controls">
-                <div class="view-tabs">
-                    <button class="view-tab" onclick="window.switchView('kanban', this)">Kanban Board</button>
-                    <button class="view-tab active" onclick="window.switchView('brainstorm', this)">Plan Project</button>
-                    <button class="view-tab" onclick="window.switchView('integrations', this)">Integrations</button>
-                </div>
-                <button class="btn-primary" onclick="addNewItem()">+ New Item</button>
-            </div>
-        </div>
+    // Show target view & style active button
+    const activeBtn = document.getElementById('tab-' + target);
+    activeBtn.className = 'flex items-center gap-1.5 px-4 py-2 rounded-lg font-label-md text-label-md bg-surface-container-lowest text-primary font-bold shadow-sm transition-all';
 
-        <div class="pm-content">
-            
-            <!-- 1. KANBAN BOARD VIEW -->
-            <section id="view-kanban" class="view-section kanban-board">
-                <div class="kanban-column" id="col-todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="col-header">To Do <span class="task-count">3</span></div>
-                    <div class="col-body">
-                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task1">
-                            <span class="task-tag tag-frontend">Frontend</span>
-                            <div class="task-title">Design user profile dashboard UI</div>
-                            <div class="task-footer">
-                                <svg width="16" height="16" fill="none" stroke="var(--text-dim)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                <div class="task-assignee">OG</div>
-                            </div>
-                        </div>
-                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task2">
-                            <span class="task-tag tag-backend">Backend</span>
-                            <div class="task-title">Setup PostgreSQL database schema for Teams</div>
-                            <div class="task-footer">
-                                <span style="font-size: 0.75rem; color:var(--text-dim); font-weight:600;">Due Sep 10</span>
-                                <div class="task-assignee" style="background:#10B981;">AB</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="kanban-column" id="col-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="col-header">In Progress <span class="task-count">1</span></div>
-                    <div class="col-body">
-                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task4">
-                            <span class="task-tag tag-backend">Backend</span>
-                            <div class="task-title">Integrate FastAPI WebSockets for chat</div>
-                            <div class="task-footer">
-                                <span style="font-size: 0.75rem; color:var(--text-dim); font-weight:600;">In review</span>
-                                <div class="task-assignee">OG</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="kanban-column" id="col-review" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="col-header">Review / QA <span class="task-count">0</span></div>
-                    <div class="col-body"></div>
-                </div>
-
-                <div class="kanban-column" id="col-done" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="col-header">Done <span class="task-count">1</span></div>
-                    <div class="col-body">
-                        <div class="task-card" draggable="true" ondragstart="drag(event)" id="task5" style="opacity: 0.7;">
-                            <span class="task-tag tag-frontend">Frontend</span>
-                            <div class="task-title" style="text-decoration: line-through;">Implement Light/Dark theme toggle</div>
-                            <div class="task-footer">
-                                <div></div>
-                                <div class="task-assignee">OG</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 2. PLAN PROJECT (ULTIMATE WHITEBOARD ENGINE) -->
-            <section id="view-brainstorm" class="view-section active">
-                <div class="whiteboard-wrapper">
-                    
-                    <!-- Top File & Collaboration Menu -->
-                    <div class="wb-topbar">
-                        <div class="wb-menu-group">
-                            <button class="wb-menu-btn" onclick="toggleWbMenu(event)">File ▾</button>
-                            <div class="wb-dropdown" id="wbFileMenu">
-                                <a onclick="wbNewPlan()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg> New Plan</a>
-                                <a onclick="wbSavePlan()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Plan</a>
-                                <a onclick="wbOpenPlan()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Open Plan</a>
-                            </div>
-                            <span style="color: var(--text-dim); font-size: 0.9rem; margin-left: 12px; font-weight:500;">Sprint 1 Architecture</span>
-                        </div>
-                        
-                        <div class="wb-collab">
-                            <div class="avatar-stack">
-                                <div class="wb-avatar" style="background: #10B981; z-index: 3;" title="Anjali">AB</div>
-                                <div class="wb-avatar" style="background: #4F46E5; z-index: 2;" title="Omkar (You)">OG</div>
-                            </div>
-                            <button class="btn-share" onclick="openShareModal()">Invite</button>
-                        </div>
-                    </div>
-
-                    <!-- Canvas Body -->
-                    <div class="wb-body">
-                        <div class="whiteboard-toolbar">
-                            <button class="wb-tool active" title="Select / Move" onclick="setWbTool('select', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path></svg>
-                            </button>
-                            <button class="wb-tool" title="Draw Arrow" onclick="setWbTool('arrow', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 19L19 5M19 5v10M19 5H9"></path></svg>
-                            </button>
-                            <button class="wb-tool" title="Text Box" onclick="setWbTool('text', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline stroke-linecap="round" stroke-linejoin="round" points="4 7 4 4 20 4 20 7"></polyline><line stroke-linecap="round" stroke-linejoin="round" x1="9" y1="20" x2="15" y2="20"></line><line stroke-linecap="round" stroke-linejoin="round" x1="12" y1="4" x2="12" y2="20"></line></svg>
-                            </button>
-                            <button class="wb-tool" title="Sticky Note" onclick="setWbTool('sticky', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
-                            </button>
-                            <button class="wb-tool" title="Process Rectangle" onclick="setWbTool('rect', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect></svg>
-                            </button>
-                            <button class="wb-tool" title="Database Cylinder" onclick="setWbTool('capsule', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
-                            </button>
-                            <button class="wb-tool" title="Data / Input Parallelogram" onclick="setWbTool('data', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 22 4 18 20 2 20"></polygon></svg>
-                            </button>
-                            <button class="wb-tool" title="Circle Node" onclick="setWbTool('circle', this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>
-                            </button>
-                            
-                            <hr style="border:0; border-top:1px solid var(--border); margin: 4px 0;">
-                            <button class="wb-tool" title="Clear Canvas" onclick="window.wbNewPlan()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline stroke-linecap="round" stroke-linejoin="round" points="3 6 5 6 21 6"></polyline><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
-                            </button>
-                        </div>
-
-                        <div class="whiteboard-canvas" id="wbCanvas">
-                            
-                            <!-- Real-Time Cursor Simulation -->
-                            <div class="remote-cursor" id="simCursor" style="top: 150px; left: 400px;">
-                                <svg viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path></svg>
-                                <div class="remote-cursor-label">Anjali</div>
-                            </div>
-
-                            <svg class="wb-connector" width="100%" height="100%">
-                                <defs>
-                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--text)" />
-                                    </marker>
-                                </defs>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 3. INTEGRATIONS VIEW -->
-            <section id="view-integrations" class="view-section integration-grid">
-                <div class="integration-card">
-                    <div class="int-header">
-                        <div class="int-icon" style="color: #F24E1E;">🎨</div>
-                        <div>
-                            <div class="int-title">Figma</div>
-                            <div class="int-desc">UI/UX Mockups</div>
-                        </div>
-                    </div>
-                    <div class="int-desc">Link your Figma files so front-end developers always have access to the latest UI assets and color codes.</div>
-                    <div class="int-status">Connected</div>
-                </div>
-                <div class="integration-card">
-                    <div class="int-header">
-                        <div class="int-icon" style="color: var(--text);">🐙</div>
-                        <div>
-                            <div class="int-title">GitHub</div>
-                            <div class="int-desc">Version Control</div>
-                        </div>
-                    </div>
-                    <div class="int-desc">Connect the main private repository. View pull requests and merge statuses directly from this dashboard.</div>
-                    <div class="int-status">Connected</div>
-                </div>
-            </section>
-
-        </div>
-    </main>
-
-    <!-- CUSTOM SYSTEM ALERTS MODAL -->
-    <div class="modal-overlay" id="systemModal">
-        <div class="custom-modal">
-            <h3 id="systemModalTitle">Notification</h3>
-            <p id="systemModalMessage">Message goes here.</p>
-            <div class="modal-buttons">
-                <button class="btn-outline" id="systemModalCancel" onclick="closeSystemModal()" style="display: none;">Cancel</button>
-                <button class="btn-primary" id="systemModalConfirm">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SHARE MODAL -->
-    <div class="modal-overlay" id="shareModal">
-        <div class="custom-modal">
-            <h3>Invite Teammates</h3>
-            <p>Allow other developers in your workspace to view, edit, and collaborate on this plan in real-time.</p>
-            <div class="form-group">
-                <input type="text" placeholder="Search by name or email...">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-outline" onclick="closeShareModal()">Cancel</button>
-                <button class="btn-primary" onclick="closeShareModal()">Send Invite</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Store globals
-        window.currentView = 'brainstorm';
-        window.currentWbTool = 'select';
-        
-        // Drawing state variables
-        let isDrawing = false;
-        let startX, startY;
-        let currentDrawElement = null;
-
-        // ==========================================
-        // CUSTOM SYSTEM MODAL LOGIC (Replaces alerts)
-        // ==========================================
-        window.showSystemModal = function(title, message, type = 'alert', onConfirm = null) {
-            const modal = document.getElementById('systemModal');
-            const titleEl = document.getElementById('systemModalTitle');
-            const msgEl = document.getElementById('systemModalMessage');
-            const cancelBtn = document.getElementById('systemModalCancel');
-            const confirmBtn = document.getElementById('systemModalConfirm');
-
-            titleEl.textContent = title;
-            msgEl.textContent = message;
-
-            if (type === 'confirm') {
-                cancelBtn.style.display = 'block';
-                confirmBtn.textContent = 'Confirm';
-                confirmBtn.onclick = () => {
-                    closeSystemModal();
-                    if (onConfirm) onConfirm();
-                };
-            } else {
-                cancelBtn.style.display = 'none';
-                confirmBtn.textContent = 'OK';
-                confirmBtn.onclick = closeSystemModal;
-            }
-
-            modal.classList.add('active');
-        };
-
-        window.closeSystemModal = function() {
-            document.getElementById('systemModal').classList.remove('active');
-        };
-
-        // ==========================================
-        // UI SWITCHING LOGIC
-        // ==========================================
-        window.switchView = function(viewId, btnElement) {
-            document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
-            if(btnElement) btnElement.classList.add('active');
-
-            document.querySelectorAll('.view-section').forEach(sec => {
-                sec.classList.remove('active');
-                sec.style.display = 'none'; 
-            });
-            
-            const targetSection = document.getElementById('view-' + viewId);
-            if(targetSection) {
-                targetSection.classList.add('active');
-                targetSection.style.display = 'flex'; 
-            }
-            window.currentView = viewId;
-        };
-
-        // ==========================================
-        // WHITEBOARD: DRAG-TO-DRAW ENGINE
-        // ==========================================
-        window.setWbTool = function(tool, btn) {
-            window.currentWbTool = tool;
-            document.querySelectorAll('.wb-tool').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const canvas = document.getElementById('wbCanvas');
-            canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
-        };
-
-        const canvas = document.getElementById('wbCanvas');
-
-        canvas.addEventListener('mousedown', function(e) {
-            if(window.currentWbTool === 'select') return;
-            // Ignore click if clicking on an already placed item or cursor
-            if(e.target.closest('.wb-item') || e.target.closest('.remote-cursor')) return;
-
-            const rect = this.getBoundingClientRect();
-            startX = e.clientX - rect.left + this.scrollLeft;
-            startY = e.clientY - rect.top + this.scrollTop;
-            isDrawing = true;
-
-            if(window.currentWbTool === 'arrow') {
-                const svg = this.querySelector('.wb-connector');
-                currentDrawElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                currentDrawElement.setAttribute('x1', startX);
-                currentDrawElement.setAttribute('y1', startY);
-                currentDrawElement.setAttribute('x2', startX);
-                currentDrawElement.setAttribute('y2', startY);
-                currentDrawElement.setAttribute('stroke', 'var(--text)');
-                currentDrawElement.setAttribute('stroke-width', '2');
-                currentDrawElement.setAttribute('marker-end', 'url(#arrowhead)');
-                svg.appendChild(currentDrawElement);
-            } else {
-                currentDrawElement = document.createElement('div');
-                currentDrawElement.className = 'wb-item';
-                
-                if (window.currentWbTool === 'sticky') currentDrawElement.classList.add('wb-sticky');
-                else if (window.currentWbTool === 'rect') currentDrawElement.classList.add('wb-rect');
-                else if (window.currentWbTool === 'circle') currentDrawElement.classList.add('wb-circle');
-                else if (window.currentWbTool === 'capsule') currentDrawElement.classList.add('wb-db');
-                else if (window.currentWbTool === 'data') currentDrawElement.classList.add('wb-data');
-                else if (window.currentWbTool === 'text') currentDrawElement.classList.add('wb-text');
-
-                currentDrawElement.style.left = startX + 'px';
-                currentDrawElement.style.top = startY + 'px';
-                currentDrawElement.style.width = '0px';
-                currentDrawElement.style.height = '0px';
-                currentDrawElement.style.zIndex = '2';
-                
-                this.appendChild(currentDrawElement);
-            }
-        });
-
-        canvas.addEventListener('mousemove', function(e) {
-            if(!isDrawing || !currentDrawElement) return;
-
-            const rect = this.getBoundingClientRect();
-            const currentX = e.clientX - rect.left + this.scrollLeft;
-            const currentY = e.clientY - rect.top + this.scrollTop;
-
-            if(window.currentWbTool === 'arrow') {
-                currentDrawElement.setAttribute('x2', currentX);
-                currentDrawElement.setAttribute('y2', currentY);
-            } else {
-                const width = currentX - startX;
-                const height = currentY - startY;
-
-                currentDrawElement.style.width = Math.abs(width) + 'px';
-                currentDrawElement.style.height = Math.abs(height) + 'px';
-                currentDrawElement.style.left = (width < 0 ? currentX : startX) + 'px';
-                currentDrawElement.style.top = (height < 0 ? currentY : startY) + 'px';
-            }
-        });
-
-        canvas.addEventListener('mouseup', function(e) {
-            if(!isDrawing) return;
-            isDrawing = false;
-
-            if(window.currentWbTool !== 'arrow' && currentDrawElement) {
-                // Enforce minimum size if they just clicked without dragging
-                if(parseInt(currentDrawElement.style.width) < 50) {
-                    currentDrawElement.style.width = '180px';
-                    if(window.currentWbTool === 'circle') {
-                        currentDrawElement.style.height = '180px';
-                    } else {
-                        currentDrawElement.style.height = '80px';
-                    }
-                }
-
-                let placeholder = "Type here...";
-                if(window.currentWbTool === 'sticky') placeholder = "Brainstorm...";
-                if(window.currentWbTool === 'rect') placeholder = "Process Step";
-                if(window.currentWbTool === 'capsule') placeholder = "Database";
-                if(window.currentWbTool === 'data') placeholder = "Input/Output";
-                if(window.currentWbTool === 'circle') placeholder = "Node";
-                
-                const ta = document.createElement('textarea');
-                ta.placeholder = placeholder;
-                currentDrawElement.appendChild(ta);
-
-                window.makeDraggable(currentDrawElement);
-                ta.focus();
-            }
-            currentDrawElement = null;
-            window.setWbTool('select', document.querySelector('.wb-tool[title="Select / Move"]'));
-        });
-
-        window.makeDraggable = function(el) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            el.onmousedown = dragMouseDown;
-
-            function dragMouseDown(e) {
-                // VITAL FIX: Do not drag if clicking inside textarea. Allows typing/highlighting!
-                if(e.target.tagName.toLowerCase() === 'textarea') return; 
-                
-                e = e || window.event;
-                e.preventDefault();
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-                
-                document.querySelectorAll('.wb-item').forEach(i => i.style.zIndex = '2');
-                el.style.zIndex = '3';
-            }
-
-            function elementDrag(e) {
-                e = e || window.event;
-                e.preventDefault();
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                el.style.top = (el.offsetTop - pos2) + "px";
-                el.style.left = (el.offsetLeft - pos1) + "px";
-            }
-
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-            }
-        };
-
-        // ==========================================
-        // WHITEBOARD: FILE MENU LOGIC (UPDATED)
-        // ==========================================
-        window.toggleWbMenu = function(e) {
-            e.stopPropagation();
-            document.getElementById('wbFileMenu').classList.toggle('active');
-        };
-        
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('wbFileMenu');
-            if(menu && !e.target.closest('.wb-menu-group')) menu.classList.remove('active');
-        });
-
-        window.wbNewPlan = function() {
-            window.showSystemModal('Start Fresh?', 'Are you sure you want to clear the current plan and start a new one? This action cannot be undone.', 'confirm', () => {
-                const canvas = document.getElementById('wbCanvas');
-                const svg = canvas.querySelector('.wb-connector');
-                const cursor = canvas.querySelector('.remote-cursor');
-                canvas.innerHTML = '';
-                if(svg) canvas.appendChild(svg);
-                if(cursor) canvas.appendChild(cursor);
-            });
-            document.getElementById('wbFileMenu').classList.remove('active');
-        };
-
-        window.wbSavePlan = function() {
-            window.showSystemModal('Success', 'Plan saved successfully to ProPartner Cloud!', 'alert');
-            document.getElementById('wbFileMenu').classList.remove('active');
-        };
-
-        window.wbOpenPlan = function() {
-            window.showSystemModal('Coming Soon', 'File directory integration is launching soon!', 'alert');
-            document.getElementById('wbFileMenu').classList.remove('active');
-        };
-
-        // Share Modal
-        window.openShareModal = function() { document.getElementById('shareModal').classList.add('active'); };
-        window.closeShareModal = function() { document.getElementById('shareModal').classList.remove('active'); };
-
-        // ==========================================
-        // MULTI-CURSOR SIMULATION
-        // ==========================================
-        // This simulates a teammate ("Anjali") moving her cursor around to show collaboration
-        let simX = 400; let simY = 150;
-        setInterval(() => {
-            const cursor = document.getElementById('simCursor');
-            if(cursor && window.currentView === 'brainstorm') {
-                simX += (Math.random() - 0.5) * 80;
-                simY += (Math.random() - 0.5) * 80;
-                // Keep inside bounds
-                simX = Math.max(50, Math.min(800, simX));
-                simY = Math.max(50, Math.min(500, simY));
-                
-                cursor.style.left = simX + 'px';
-                cursor.style.top = simY + 'px';
-            }
-        }, 1500);
-
-        // Header Collapse Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const header = document.getElementById('mainHeader');
-            const toggleTab = document.getElementById('headerToggleTab');
-            let isHeaderCollapsed = false;
-
-            if (toggleTab) {
-                toggleTab.addEventListener('click', () => {
-                    if (!isHeaderCollapsed) {
-                        header.style.marginTop = `-${header.offsetHeight}px`;
-                        header.classList.add('collapsed');
-                        isHeaderCollapsed = true;
-                    } else {
-                        header.style.marginTop = '0px';
-                        header.classList.remove('collapsed');
-                        isHeaderCollapsed = false;
-                    }
-                });
-            }
-
-            // Dark Mode
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
-            const moonIcon = document.getElementById('moonIcon');
-            const sunIcon = document.getElementById('sunIcon');
-            if (document.documentElement.getAttribute('data-theme') === 'dark') {
-                moonIcon.style.display = 'none';
-                sunIcon.style.display = 'block';
-            }
-            themeToggleBtn.addEventListener('click', () => {
-                if (document.documentElement.getAttribute('data-theme') === 'dark') {
-                    document.documentElement.removeAttribute('data-theme');
-                    localStorage.setItem('theme', 'light');
-                    sunIcon.style.display = 'none';
-                    moonIcon.style.display = 'block';
-                } else {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('theme', 'dark');
-                    moonIcon.style.display = 'none';
-                    sunIcon.style.display = 'block';
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+    if (target === 'kanban') {
+      kanban.classList.remove('hidden');
+    } else if (target === 'canvas') {
+      canvas.classList.remove('hidden');
+    } else if (target === 'integrations') {
+      integrations.classList.remove('hidden');
+    }
+  }
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer></body></html>
