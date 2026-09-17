@@ -80,9 +80,9 @@
 <div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div>
 <a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="admin_dashboard.html">
 <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a>
-<button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.showSystemModal('Notifications', 'You have 3 new alerts.', 'alert')">
+<button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="toggleNotificationsPanel()">
 <span class="material-symbols-outlined text-[20px]">notifications</span>
-<span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span>
+<span id="notif-badge" class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span>
 </button>
 <button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
 <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
@@ -338,7 +338,7 @@
 <span class="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider absolute">Today • 14 Aug 2026</span>
 </div>
 <!-- Message Item 1: Gopale Omkar Ravindra (Team Lead) -->
-<div class="flex items-start gap-3 group" data-purpose="message-item">
+<div class="flex items-start gap-3 group relative" data-purpose="message-item">
 <div class="w-9 h-9 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-brand-100 cursor-pointer" onclick="window.location.href='profile.html'">
             GO
           </div>
@@ -368,7 +368,7 @@
 </div>
 </div>
 <!-- Message Item 2: Priya Patil (Frontend / Design) -->
-<div class="flex items-start gap-3 group" data-purpose="message-item">
+<div class="flex items-start gap-3 group relative" data-purpose="message-item">
 <div class="w-9 h-9 rounded-full bg-violet-600 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-violet-100 cursor-pointer" onclick="window.location.href='profile.html?id=3'">
             PP
           </div>
@@ -395,7 +395,7 @@
 </div>
 </div>
 <!-- Message Item 3: Don Shri (Backend & Systems) -->
-<div class="flex items-start gap-3 group" data-purpose="message-item">
+<div class="flex items-start gap-3 group relative" data-purpose="message-item">
 <div class="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-emerald-100 cursor-pointer" onclick="window.location.href='profile.html?id=2'">
             DS
           </div>
@@ -410,13 +410,13 @@
             </p>
 <!-- Quick Reaction Pills -->
 <div class="flex items-center gap-1.5 mt-2">
-<button class="px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors">
-<span>🔥</span> <span class="font-bold text-[10px]">3</span>
+<button class="reaction-btn px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors" onclick="toggleReaction(this)">
+<span>🔥</span> <span class="font-bold text-[10px] reaction-count">3</span>
 </button>
-<button class="px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors">
-<span>🚀</span> <span class="font-bold text-[10px]">2</span>
+<button class="reaction-btn px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors" onclick="toggleReaction(this)">
+<span>🚀</span> <span class="font-bold text-[10px] reaction-count">2</span>
 </button>
-<button class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Add reaction">
+<button class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Add reaction" onclick="addQuickReaction(this)">
                 +
               </button>
 </div>
@@ -656,6 +656,12 @@
           searchInput.focus();
         }
       }
+      // Escape to close modal/panels
+      if (e.key === 'Escape') {
+        window.closeSystemModal();
+        const notifPanel = document.getElementById('notifications-panel');
+        if (notifPanel) notifPanel.remove();
+      }
     });
 
     // ==========================================
@@ -696,11 +702,145 @@
         const modal = document.getElementById('systemModal');
         if (modal) modal.classList.remove('active');
     };
+
+    // ==========================================
+    // NOTIFICATIONS PANEL
+    // ==========================================
+    function toggleNotificationsPanel() {
+        let existing = document.getElementById('notifications-panel');
+        if (existing) { existing.remove(); return; }
+        const panel = document.createElement('div');
+        panel.id = 'notifications-panel';
+        panel.className = 'fixed top-14 right-4 z-[200] w-80 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden';
+        panel.innerHTML = `
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-900">Notifications</h3>
+                <button class="text-[11px] text-brand-600 hover:underline font-semibold" onclick="document.querySelectorAll('#notifications-panel .notif-unread').forEach(el=>{el.classList.remove('notif-unread','bg-brand-50')});document.getElementById('notif-badge').style.display='none'">Mark all read</button>
+            </div>
+            <div class="max-h-72 overflow-y-auto">
+                <div class="notif-unread bg-brand-50 px-4 py-3 border-b border-slate-100 flex gap-3 items-start cursor-pointer hover:bg-slate-50 transition-colors">
+                    <span class="material-symbols-outlined text-brand-600 text-[18px] mt-0.5">merge_type</span>
+                    <div>
+                        <p class="text-xs text-slate-800 font-medium">PR #24 approved by Anjali B.</p>
+                        <span class="text-[10px] text-slate-400">2 min ago</span>
+                    </div>
+                </div>
+                <div class="notif-unread bg-brand-50 px-4 py-3 border-b border-slate-100 flex gap-3 items-start cursor-pointer hover:bg-slate-50 transition-colors">
+                    <span class="material-symbols-outlined text-emerald-600 text-[18px] mt-0.5">task_alt</span>
+                    <div>
+                        <p class="text-xs text-slate-800 font-medium">Docker CI passed for neon-sih/main</p>
+                        <span class="text-[10px] text-slate-400">15 min ago</span>
+                    </div>
+                </div>
+                <div class="notif-unread bg-brand-50 px-4 py-3 border-b border-slate-100 flex gap-3 items-start cursor-pointer hover:bg-slate-50 transition-colors">
+                    <span class="material-symbols-outlined text-violet-600 text-[18px] mt-0.5">person_add</span>
+                    <div>
+                        <p class="text-xs text-slate-800 font-medium">Rohan Verma joined the workspace</p>
+                        <span class="text-[10px] text-slate-400">1 hour ago</span>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-2.5 border-t border-slate-100 text-center">
+                <button class="text-xs text-brand-600 hover:underline font-semibold" onclick="window.showSystemModal('Notifications', 'Opening full notification center...', 'alert');document.getElementById('notifications-panel').remove()">View all notifications</button>
+            </div>
+        `;
+        document.body.appendChild(panel);
+        setTimeout(() => {
+            document.addEventListener('click', function closeNotif(e) {
+                const p = document.getElementById('notifications-panel');
+                if (p && !p.contains(e.target) && !e.target.closest('[aria-label="Notifications"]')) {
+                    p.remove();
+                    document.removeEventListener('click', closeNotif);
+                }
+            });
+        }, 10);
+    }
+
+    // ==========================================
+    // REACTION TOGGLE
+    // ==========================================
+    function toggleReaction(btn) {
+        const countEl = btn.querySelector('.reaction-count');
+        if (!countEl) return;
+        const isActive = btn.classList.contains('bg-brand-100');
+        let count = parseInt(countEl.textContent) || 0;
+        if (isActive) {
+            count--;
+            btn.classList.remove('bg-brand-100', 'border-brand-300', 'text-brand-700');
+            btn.classList.add('bg-slate-100', 'border-slate-200', 'text-slate-600');
+        } else {
+            count++;
+            btn.classList.remove('bg-slate-100', 'border-slate-200', 'text-slate-600');
+            btn.classList.add('bg-brand-100', 'border-brand-300', 'text-brand-700');
+        }
+        countEl.textContent = count;
+    }
+
+    function addQuickReaction(btn) {
+        const emojis = ['👍', '❤️', '😂', '🎉', '🤔', '👀', '💯'];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const newBtn = document.createElement('button');
+        newBtn.className = 'reaction-btn px-2 py-0.5 bg-brand-100 border-brand-300 border rounded-full text-xs text-brand-700 flex items-center gap-1 transition-colors';
+        newBtn.innerHTML = `<span>${emoji}</span> <span class="font-bold text-[10px] reaction-count">1</span>`;
+        newBtn.onclick = function() { toggleReaction(this); };
+        btn.parentNode.insertBefore(newBtn, btn);
+    }
+
+    // ==========================================
+    // CHANNEL SWITCHING (VISUAL UPDATE)
+    // ==========================================
+    document.querySelectorAll('[data-purpose="text-channels-group"] a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const channelName = this.querySelector('span.truncate').innerText;
+            // Update active state in sidebar
+            document.querySelectorAll('[data-purpose="text-channels-group"] a').forEach(ch => {
+                ch.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors';
+                const badge = ch.querySelector('.ml-auto');
+                if (badge && badge.textContent === 'active') badge.remove();
+            });
+            this.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-100/70 text-brand-900 border-l-2 border-brand-600 shadow-2xs';
+            // Update channel hash
+            const hashSpan = this.querySelector('span:first-child');
+            if (hashSpan) { hashSpan.className = 'text-brand-600 font-mono text-sm'; }
+            // Add active badge
+            const activeBadge = document.createElement('span');
+            activeBadge.className = 'ml-auto text-[10px] bg-brand-200/80 text-brand-800 px-1.5 py-0.2 rounded font-mono';
+            activeBadge.textContent = 'active';
+            this.appendChild(activeBadge);
+            // Update header
+            document.querySelector('[data-purpose="main-chat-viewport"] h1').textContent = channelName;
+            window.showSystemModal('Channel Changed', 'Switched to #' + channelName, 'alert');
+        });
+    });
+
+    // ==========================================
+    // MESSAGE HOVER ACTIONS (Injected on load)
+    // ==========================================
+    document.querySelectorAll('[data-purpose="message-item"]').forEach(msg => {
+        const actions = document.createElement('div');
+        actions.className = 'absolute -top-3 right-0 hidden group-hover:flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg shadow-sm px-1 py-0.5 z-10';
+        actions.innerHTML = `
+            <button class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded transition-colors" title="Reply" onclick="window.showSystemModal('Reply', 'Opening reply thread...', 'alert')">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a5 5 0 015 5v6M3 10l6 6M3 10l6-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+            </button>
+            <button class="p-1 text-slate-400 hover:text-amber-500 hover:bg-slate-100 rounded transition-colors" title="Add reaction" onclick="event.stopPropagation(); addQuickReaction(this)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+            </button>
+            <button class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded transition-colors" title="Pin message" onclick="window.showSystemModal('Pin Message', 'Message has been pinned to #general.', 'alert')">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+            </button>
+            <button class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="More options" onclick="window.showSystemModal('Options', 'Edit • Forward • Delete • Copy Link', 'alert')">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+            </button>
+        `;
+        msg.appendChild(actions);
+    });
   </script>
 <!-- END: InteractiveScripts -->
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
-<div class="modal-overlay" id="systemModal">
+<div class="modal-overlay" id="systemModal" onclick="if(event.target===this) window.closeSystemModal()">
     <div class="custom-modal">
         <h3 id="systemModalTitle">Notification</h3>
         <p id="systemModalMessage">Message goes here.</p>
