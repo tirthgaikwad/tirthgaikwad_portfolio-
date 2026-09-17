@@ -87,7 +87,7 @@
                     aria-label="Notifications"
                     class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
                     type="button"
-                    onclick="window.showSystemModal('Notifications', 'You have 3 new alerts.', 'alert')"><span
+                    onclick="showNotificationsPanel()"><span
                         class="material-symbols-outlined text-[20px]">notifications</span><span
                         class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span></button><button
                     aria-label="Direct Messages"
@@ -114,7 +114,7 @@
                     class="max-w-container-max mx-auto flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
                     <div class="flex items-center gap-space-xs flex-wrap font-label-md text-label-md">
                         <a class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
-                            href="#">
+                            href="project_management.html">
                             <span class="material-symbols-outlined text-[16px]">folder</span>
                             Project Management
                         </a>
@@ -172,12 +172,14 @@
                         </p>
                         <div class="flex items-center gap-2 mt-1 flex-wrap font-label-sm text-label-sm">
                             <span
-                                class="inline-flex items-center gap-1 text-tertiary font-medium bg-tertiary-fixed/30 px-2 py-0.5 rounded border border-tertiary-fixed-dim/40">
+                                class="inline-flex items-center gap-1 text-tertiary font-medium bg-tertiary-fixed/30 px-2 py-0.5 rounded border border-tertiary-fixed-dim/40 cursor-pointer hover:bg-tertiary-fixed/50 transition-colors"
+                                onclick="switchTab('integrations')" title="View GitHub integration">
                                 <span class="material-symbols-outlined text-[14px]">check_circle</span>
                                 GitHub Synced (#24 active)
                             </span>
                             <span
-                                class="inline-flex items-center gap-1 text-primary font-medium bg-primary-fixed/30 px-2 py-0.5 rounded border border-primary-fixed-dim/40">
+                                class="inline-flex items-center gap-1 text-primary font-medium bg-primary-fixed/30 px-2 py-0.5 rounded border border-primary-fixed-dim/40 cursor-pointer hover:bg-primary-fixed/50 transition-colors"
+                                onclick="switchTab('integrations')" title="View Figma integration">
                                 <span class="material-symbols-outlined text-[14px]">draw</span>
                                 Figma Live Mockups
                             </span>
@@ -935,6 +937,98 @@
         </div>
         <script>
             // =========================================================
+            // SYSTEM MODAL (shared across pages)
+            // =========================================================
+            window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
+                let existing = document.getElementById('system-modal-overlay');
+                if (existing) existing.remove();
+                const overlay = document.createElement('div');
+                overlay.id = 'system-modal-overlay';
+                overlay.className = 'fixed inset-0 z-[300] flex items-center justify-center bg-on-surface/50 backdrop-blur-sm p-4';
+                const isConfirm = type === 'confirm';
+                overlay.innerHTML = `
+                    <div class="bg-surface-container-lowest rounded-2xl w-full max-w-sm shadow-lg border border-outline-variant/30 overflow-hidden" onclick="event.stopPropagation()">
+                        <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+                            <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[18px]">${isConfirm ? 'help' : 'info'}</span>${title}
+                            </h3>
+                            <button class="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" onclick="document.getElementById('system-modal-overlay').remove()">
+                                <span class="material-symbols-outlined text-[20px]">close</span>
+                            </button>
+                        </div>
+                        <div class="p-space-md">
+                            <p class="font-body-md text-body-md text-on-surface-variant">${message}</p>
+                            <div class="flex items-center justify-end gap-3 mt-space-md">
+                                ${isConfirm ? '<button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="document.getElementById(\'system-modal-overlay\').remove()">Cancel</button>' : ''}
+                                <button id="system-modal-confirm-btn" class="bg-primary text-on-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary/90">${confirmText}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+                const confirmBtn = document.getElementById('system-modal-confirm-btn');
+                confirmBtn.addEventListener('click', function() {
+                    overlay.remove();
+                    if (onConfirm && typeof onConfirm === 'function') onConfirm();
+                });
+            };
+
+            // =========================================================
+            // NOTIFICATIONS PANEL
+            // =========================================================
+            function showNotificationsPanel() {
+                let existing = document.getElementById('notifications-panel');
+                if (existing) { existing.remove(); return; }
+                const panel = document.createElement('div');
+                panel.id = 'notifications-panel';
+                panel.className = 'fixed top-16 right-4 z-[200] w-80 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-xl overflow-hidden';
+                panel.innerHTML = `
+                    <div class="px-space-md py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+                        <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Notifications</h3>
+                        <button class="font-label-sm text-label-sm text-primary hover:underline" onclick="document.querySelectorAll('#notifications-panel .notif-unread').forEach(el=>{el.classList.remove('notif-unread','bg-primary-fixed/20')});showToast('All marked as read','info')">Mark all read</button>
+                    </div>
+                    <div class="max-h-72 overflow-y-auto">
+                        <div class="notif-unread bg-primary-fixed/20 px-space-md py-space-sm border-b border-outline-variant/20 flex gap-space-sm items-start cursor-pointer hover:bg-surface-container-low transition-colors">
+                            <span class="material-symbols-outlined text-primary text-[20px] mt-0.5">merge_type</span>
+                            <div>
+                                <p class="font-body-sm text-body-sm text-on-surface font-medium">PR #24 approved by Anjali B.</p>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">2 min ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-unread bg-primary-fixed/20 px-space-md py-space-sm border-b border-outline-variant/20 flex gap-space-sm items-start cursor-pointer hover:bg-surface-container-low transition-colors">
+                            <span class="material-symbols-outlined text-tertiary text-[20px] mt-0.5">task_alt</span>
+                            <div>
+                                <p class="font-body-sm text-body-sm text-on-surface font-medium">Task "Setup PostgreSQL" moved to Review</p>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">15 min ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-unread bg-primary-fixed/20 px-space-md py-space-sm border-b border-outline-variant/20 flex gap-space-sm items-start cursor-pointer hover:bg-surface-container-low transition-colors">
+                            <span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">person_add</span>
+                            <div>
+                                <p class="font-body-sm text-body-sm text-on-surface font-medium">Don S. joined the project</p>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">1 hour ago</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-space-md py-space-sm border-t border-outline-variant/30 text-center">
+                        <button class="font-label-md text-label-md text-primary hover:underline" onclick="showToast('Opening full notifications...','info');document.getElementById('notifications-panel').remove()">View all notifications</button>
+                    </div>
+                `;
+                document.body.appendChild(panel);
+                // Close when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', function closeNotif(e) {
+                        const p = document.getElementById('notifications-panel');
+                        if (p && !p.contains(e.target) && !e.target.closest('[aria-label="Notifications"]')) {
+                            p.remove();
+                            document.removeEventListener('click', closeNotif);
+                        }
+                    });
+                }, 10);
+            }
+
+            // =========================================================
             // TAB SWITCHING
             // =========================================================
             function switchTab(target) {
@@ -1602,10 +1696,10 @@
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD" /><span
                     class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>©
                     2025 EdTech Network. All rights reserved.</span></div>
-            <div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors"
-                    href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic
-                    Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a
-                    class="hover:text-primary transition-colors" href="#">Support Desk</a></div>
+            <div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors cursor-pointer"
+                    href="javascript:void(0)" onclick="showToast('Loading privacy documentation...', 'info')">Institutional Privacy</a><a class="hover:text-primary transition-colors cursor-pointer" href="javascript:void(0)" onclick="showToast('Loading Terms of Service...', 'info')">Academic
+                    Terms</a><a class="hover:text-primary transition-colors cursor-pointer" href="javascript:void(0)" onclick="showToast('Loading institutional honor code...', 'info')">Student Honor Code</a><a
+                    class="hover:text-primary transition-colors cursor-pointer" href="javascript:void(0)" onclick="showToast('Opening support ticketing system...', 'info')">Support Desk</a></div>
         </div>
     </footer>
 
