@@ -152,6 +152,9 @@
 </div>
 <!-- The 6 Cards Grid (Faithfully featuring OG 2 and DON SHRI from screenshot) -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="profile-grid">
+  <!-- Dynamic search results will be injected here -->
+</div>
+
 <!-- CARD 1: OG 2 (Faithfully reproduced from screenshot) -->
 <div class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
 <!-- Banner Header (Subtle dark tech / architectural banner) -->
@@ -726,4 +729,69 @@
       }
     });
   </script>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer></body></html>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const grid = document.getElementById('profile-grid');
+      
+      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading department profiles...</p></div>';
+      
+      fetch(`/api/profiles`)
+        .then(res => res.json())
+        .then(profiles => {
+          grid.innerHTML = '';
+          if (profiles.length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found.</div>';
+            return;
+          }
+
+          profiles.forEach(profile => {
+            const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+            const avatarHtml = profile.profile_pic_url 
+              ? `<img src="${profile.profile_pic_url}" class="w-full h-full object-cover">`
+              : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
+              
+            const skillsHtml = (profile.skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`).join('');
+              
+            const cardHtml = `
+              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+                <div class="flex items-start justify-between gap-space-sm mb-space-md">
+                  <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                    <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
+                      ${avatarHtml}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
+                    ${profile.name}
+                  </h3>
+                  <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
+                    <span class="material-symbols-outlined text-[15px]">school</span>
+                    ${profile.college || 'No college listed'}
+                  </p>
+                </div>
+                <div class="mb-space-lg mt-space-sm">
+                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${skillsHtml}
+                  </div>
+                </div>
+                <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
+                  <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            `;
+            grid.innerHTML += cardHtml;
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading profiles. Are you logged in?</div>';
+        });
+    });
+    </script>
+    </body>
+    </html>

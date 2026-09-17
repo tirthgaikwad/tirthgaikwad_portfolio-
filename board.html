@@ -165,7 +165,7 @@
 </div>
 </div>
 <!-- 3-Column Card Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="board-grid">
 <!-- CARD 1: Neon (Featured SIH 2026) -->
 <article class="group relative flex flex-col justify-between bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-space-lg hover:border-primary/40 hover:shadow-[0_12px_32px_-6px_rgba(79,70,229,0.12)] transition-all duration-300 transform hover:-translate-y-1">
 <div>
@@ -733,4 +733,70 @@ window.closeSystemModal = function() {
 };
 </script>
 
-</body></html>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const grid = document.getElementById('board-grid');
+      
+      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading opportunities...</p></div>';
+      
+      fetch(`/api/board/posts`)
+        .then(res => res.json())
+        .then(posts => {
+          grid.innerHTML = '';
+          if (posts.length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No opportunities found.</div>';
+            return;
+          }
+
+          posts.forEach(post => {
+            const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Recent';
+            const typeIcon = post.type === 'HACKATHON' ? 'emoji_events' : 'work';
+            
+            const cardHtml = `
+              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between border border-outline-variant/30 relative overflow-hidden">
+                <div class="absolute top-0 right-0 px-3 py-1 bg-tertiary text-on-tertiary font-label-sm text-[10px] font-bold rounded-bl-lg flex items-center gap-1 z-10 shadow-sm">
+                  <span class="material-symbols-outlined text-[14px]">${typeIcon}</span> ${post.type || 'Opportunity'}
+                </div>
+                <div>
+                  <div class="mb-space-sm mt-2">
+                    <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors pr-20">
+                      ${post.title}
+                    </h3>
+                  </div>
+                  <div class="flex items-center gap-2 mb-space-md text-on-surface-variant font-label-sm text-label-sm">
+                    <span class="flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[14px]">apartment</span>
+                      ${post.company || 'Unknown Org'}
+                    </span>
+                    <span>•</span>
+                    <span class="flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[14px]">location_on</span>
+                      ${post.location || 'Remote/TBA'}
+                    </span>
+                  </div>
+                  <p class="font-body-md text-body-md text-on-surface-variant mb-space-lg line-clamp-3">
+                    ${post.description || 'No description provided.'}
+                  </p>
+                </div>
+                <div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between">
+                  <div class="font-label-sm text-label-sm text-on-surface-variant">
+                    Posted ${dateStr}
+                  </div>
+                  <button class="px-space-md py-1.5 rounded-lg bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md transition-colors" type="button">
+                    Apply Now
+                  </button>
+                </div>
+              </div>
+            `;
+            grid.innerHTML += cardHtml;
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading opportunities. Are you logged in?</div>';
+        });
+    });
+    </script>
+    </body>
+    </html>

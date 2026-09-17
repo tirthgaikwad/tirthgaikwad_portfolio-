@@ -851,4 +851,61 @@
     </div>
 </div>
 
-</body></html>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.getElementById('dynamic-messages-container');
+      if (!container) return;
+      
+      const teamId = 1; // Defaulting to 1 for demo purposes
+      
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'text-center py-4 text-on-surface-variant';
+      loadingEl.innerHTML = '<span class="material-symbols-outlined animate-spin text-[24px]">sync</span>';
+      container.appendChild(loadingEl);
+
+      fetch(`/api/teams/${teamId}/messages`)
+        .then(res => res.json())
+        .then(messages => {
+          loadingEl.remove();
+          
+          if (!messages || messages.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'text-center py-4 text-on-surface-variant text-sm';
+            empty.textContent = 'No messages yet.';
+            container.appendChild(empty);
+            return;
+          }
+
+          messages.forEach(msg => {
+            const html = `
+              <div class="flex items-start gap-3 group relative" data-purpose="message-item">
+                <div class="w-9 h-9 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-brand-100 cursor-pointer">
+                  ${msg.sender_id}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">User ${msg.sender_id}</span>
+                    <span class="text-[11px] text-slate-400">${msg.timestamp || 'Just now'}</span>
+                  </div>
+                  <p class="text-xs text-slate-700 mt-1 leading-relaxed">
+                    ${msg.content}
+                  </p>
+                </div>
+              </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          loadingEl.remove();
+          const errEl = document.createElement('div');
+          errEl.className = 'text-center py-4 text-error text-sm';
+          errEl.textContent = 'Failed to load messages.';
+          container.appendChild(errEl);
+        });
+    });
+    </script>
+    </body>
+    </html>

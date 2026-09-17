@@ -2104,6 +2104,69 @@
         </div>
     </div>
 
-</body>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const todoColumn = document.getElementById('kanban-todo-column');
+      
+      // In a real app we'd get the user ID from auth. Here we can fetch projects for a specific user, or try all if the API supports it.
+      // Wait, /api/projects/{user_id} requires a user ID. We can grab the logged in user from localStorage if it exists, otherwise default to 1.
+      const userStr = localStorage.getItem('user');
+      let userId = 1; // fallback
+      if (userStr) {
+          try {
+              const u = JSON.parse(userStr);
+              if (u.id) userId = u.id;
+          } catch(e) {}
+      }
+      
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'text-center py-4 text-on-surface-variant';
+      loadingEl.innerHTML = '<span class="material-symbols-outlined animate-spin text-[24px]">sync</span>';
+      todoColumn.appendChild(loadingEl);
+
+      fetch(`/api/projects/${userId}`)
+        .then(res => res.json())
+        .then(projects => {
+          loadingEl.remove();
+          
+          if (!projects || projects.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'text-center py-4 text-on-surface-variant text-sm';
+            empty.textContent = 'No projects found.';
+            todoColumn.appendChild(empty);
+            return;
+          }
+
+          projects.forEach(project => {
+            const cardHtml = `
+              <div class="group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-space-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant tracking-wider uppercase">PROJECT</span>
+                </div>
+                <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">${project.title}</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">${project.description || 'No description'}</p>
+                <div class="flex items-center justify-between mt-space-sm pt-space-xs border-t border-outline-variant/40">
+                  <div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-[11px]">
+                    <span class="material-symbols-outlined text-[14px]">code</span> ${project.tech_stack || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            `;
+            todoColumn.insertAdjacentHTML('beforeend', cardHtml);
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          loadingEl.remove();
+          const errEl = document.createElement('div');
+          errEl.className = 'text-center py-4 text-error text-sm';
+          errEl.textContent = 'Failed to load projects.';
+          todoColumn.appendChild(errEl);
+        });
+    });
+    </script>
+    </body>
+    
 
 </html>
