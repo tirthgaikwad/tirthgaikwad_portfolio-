@@ -149,6 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     const res = await fetch('http://127.0.0.1:8000/api/follow', {
                         method: 'POST',
+                        credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             follower_id: parseInt(currentUserId),
@@ -160,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         e.target.textContent = "Following ✓";
                         e.target.style.background = "#e2e8f0";
                         e.target.disabled = true;
-                        await fetch(`http://127.0.0.1:8000/api/history?action_type=Network Expanded&detail=You followed developer %23${profileId}`, { method: 'POST' });
+                        await fetch(`http://127.0.0.1:8000/api/history?action_type=Network Expanded&detail=You followed developer %23${profileId}`, { method: 'POST', credentials: 'include' });
                     }
                 } catch (err) { e.target.textContent = "Error"; }
             });
@@ -170,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- FETCH PROFILE DATA ---
     let currentProfileData = {}; 
     try {
-        const response = await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`);
+        const response = await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`, { credentials: 'include' });
         if (response.ok) {
             currentProfileData = await response.json();
             
@@ -185,6 +186,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const profileBioEl = document.getElementById('profileBio');
             if(profileBioEl) profileBioEl.textContent = currentProfileData.bio || "No bio yet.";
+            
+            // Populate extra placeholders
+            const addProjectBtn = document.getElementById('addProjectBtn');
+            if (addProjectBtn) addProjectBtn.style.display = isOwnProfile ? 'flex' : 'none';
+            
+            const profileRoll = document.getElementById('profileRoll');
+            if (profileRoll) profileRoll.textContent = currentProfileData.roll_no || "N/A";
+            
+            const profileDept = document.getElementById('profileDept');
+            if (profileDept) profileDept.textContent = currentProfileData.department || "N/A";
+            
+            const profileDiv = document.getElementById('profileDiv');
+            if (profileDiv) profileDiv.textContent = currentProfileData.division || "N/A";
+            
+            const breadcrumbName = document.getElementById('breadcrumbName');
+            if (breadcrumbName) breadcrumbName.textContent = currentProfileData.name || "Developer";
+            
+            const accountTypeBadge = document.getElementById('accountTypeBadge');
+            if (accountTypeBadge && currentProfileData.account_type) accountTypeBadge.textContent = currentProfileData.account_type.toUpperCase();
+            
+            const followersCount = document.getElementById('followersCount');
+            if (followersCount) followersCount.textContent = currentProfileData.followers_count || "0";
+            
+            const followingCount = document.getElementById('followingCount');
+            if (followingCount) followingCount.textContent = currentProfileData.following_count || "0";
+            
+            // Currently DBUser doesn't return projects or github stats via this endpoint natively unless appended.
+            // But we will ensure the containers exist and handle them if data was there.
+            const projectList = document.getElementById('projectList');
+            if (projectList) {
+                if (!currentProfileData.projects || currentProfileData.projects.length === 0) {
+                    projectList.innerHTML = '<div class="col-span-full py-8 text-center text-on-surface-variant">No projects available.</div>';
+                }
+            }
+
 
             if (currentProfileData.profile_pic) {
                 const displayAvatar = document.getElementById('displayAvatar');
@@ -356,19 +392,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (croppedAvatarBlob) {
                     const fd = new FormData(); 
                     fd.append("file", croppedAvatarBlob, "avatar.png");
-                    const res = await fetch('http://127.0.0.1:8000/api/upload', { method: 'POST', body: fd });
+                    const res = await fetch('http://127.0.0.1:8000/api/upload', { method: 'POST', body: fd, credentials: 'include' });
                     if (res.ok) avatarUrl = (await res.json()).url;
                 }
                 
                 if (croppedBannerBlob) {
                     const fd = new FormData(); 
                     fd.append("file", croppedBannerBlob, "banner.png");
-                    const res = await fetch('http://127.0.0.1:8000/api/upload', { method: 'POST', body: fd });
+                    const res = await fetch('http://127.0.0.1:8000/api/upload', { method: 'POST', body: fd, credentials: 'include' });
                     if (res.ok) bannerUrl = (await res.json()).url;
                 }
 
                 await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`, {
                     method: 'PUT',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         name: document.getElementById('editName') ? document.getElementById('editName').value : currentProfileData.name,
@@ -399,6 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const res = await fetch('http://127.0.0.1:8000/api/messages', {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sender_id: parseInt(currentUserId),
@@ -408,7 +446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (res.ok) {
-                try { await fetch(`http://127.0.0.1:8000/api/history?action_type=Message Sent&detail=You started a conversation with developer %23${profileId}`, { method: 'POST' }); } catch(err){}
+                try { await fetch(`http://127.0.0.1:8000/api/history?action_type=Message Sent&detail=You started a conversation with developer %23${profileId}`, { method: 'POST', credentials: 'include' }); } catch(err){}
                 if(statusText) statusText.style.display = 'block';
                 setTimeout(() => { 
                     const msgModal = document.getElementById('messageModal');
