@@ -740,23 +740,26 @@ window.closeSystemModal = function() {
       
       grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading opportunities...</p></div>';
       
-      fetch(`/api/board/posts`)
-        .then(res => res.json())
+      fetch(`http://127.0.0.1:8000/api/board/posts`, { credentials: 'include' })
+        .then(res => {
+          if (!res.ok) throw new Error(`Server returned ${res.status}`);
+          return res.json();
+        })
         .then(posts => {
           grid.innerHTML = '';
           if (posts.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No opportunities found.</div>';
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No opportunities posted yet. Be the first to post one!</div>';
             return;
           }
 
           posts.forEach(post => {
             const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Recent';
-            const typeIcon = post.type === 'HACKATHON' ? 'emoji_events' : 'work';
+            const categoryIcon = post.category === 'Hackathon' ? 'emoji_events' : post.category === 'Research / AI' ? 'science' : post.category === 'Open Source' ? 'code' : 'work';
             
             const cardHtml = `
               <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between border border-outline-variant/30 relative overflow-hidden">
                 <div class="absolute top-0 right-0 px-3 py-1 bg-tertiary text-on-tertiary font-label-sm text-[10px] font-bold rounded-bl-lg flex items-center gap-1 z-10 shadow-sm">
-                  <span class="material-symbols-outlined text-[14px]">${typeIcon}</span> ${post.type || 'Opportunity'}
+                  <span class="material-symbols-outlined text-[14px]">${categoryIcon}</span> ${post.category || 'Opportunity'}
                 </div>
                 <div>
                   <div class="mb-space-sm mt-2">
@@ -766,18 +769,23 @@ window.closeSystemModal = function() {
                   </div>
                   <div class="flex items-center gap-2 mb-space-md text-on-surface-variant font-label-sm text-label-sm">
                     <span class="flex items-center gap-1">
-                      <span class="material-symbols-outlined text-[14px]">apartment</span>
-                      ${post.company || 'Unknown Org'}
+                      <span class="material-symbols-outlined text-[14px]">person</span>
+                      ${post.author_name || 'Unknown'}
                     </span>
                     <span>•</span>
                     <span class="flex items-center gap-1">
-                      <span class="material-symbols-outlined text-[14px]">location_on</span>
-                      ${post.location || 'Remote/TBA'}
+                      <span class="material-symbols-outlined text-[14px]">apartment</span>
+                      ${post.author_college || 'Unknown College'}
                     </span>
                   </div>
-                  <p class="font-body-md text-body-md text-on-surface-variant mb-space-lg line-clamp-3">
+                  <p class="font-body-md text-body-md text-on-surface-variant mb-space-sm line-clamp-3">
                     ${post.description || 'No description provided.'}
                   </p>
+                  <div class="flex items-center gap-1.5 flex-wrap mb-space-md">
+                    ${(post.skills_required || '').split(',').map(s => s.trim()).filter(s => s).map(skill => 
+                      `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${skill}</span>`
+                    ).join('')}
+                  </div>
                 </div>
                 <div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between">
                   <div class="font-label-sm text-label-sm text-on-surface-variant">
@@ -794,7 +802,7 @@ window.closeSystemModal = function() {
         })
         .catch(err => {
           console.error(err);
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading opportunities. Are you logged in?</div>';
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Could not load opportunities. Please check your connection and try refreshing.</div>';
         });
     });
     </script>
