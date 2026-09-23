@@ -484,27 +484,21 @@ async function fetchMessages() {
 }
 
 function buildContacts() {
-  const contactIds = new Set();
-  allMessages.forEach(m => {
-    if (m.sender_id !== currentUserId) contactIds.add(m.sender_id);
-    if (m.receiver_id !== currentUserId) contactIds.add(m.receiver_id);
-  });
-
-  for (let id of contactIds) {
-    if (!contacts[id]) {
-      const profile = globalProfiles[id];
-      contacts[id] = {
-        id: id,
-        name: profile ? profile.name : `User #${id}`,
-        profile_pic: profile ? profile.profile_pic : '',
-        college_name: profile ? profile.college_name : '',
-        department: profile ? profile.department : '',
-        skills: profile ? profile.skills : '',
+  // Add all global profiles to contacts so the user can easily chat with anyone
+  Object.values(globalProfiles).forEach(profile => {
+    if (profile.id !== currentUserId) {
+      contacts[profile.id] = {
+        id: profile.id,
+        name: profile.name || `User #${profile.id}`,
+        profile_pic: profile.profile_pic || '',
+        college_name: profile.college_name || '',
+        department: profile.department || '',
+        skills: profile.skills || '',
         lastMessage: '',
         timestamp: ''
       };
     }
-  }
+  });
 
   // Update last messages
   allMessages.forEach(m => {
