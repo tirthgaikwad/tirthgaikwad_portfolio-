@@ -18,7 +18,7 @@ window.showSystemModal = function(title, message, type = 'alert', onConfirm = nu
     if (!modal) return console.error("System modal HTML is missing!");
 
     titleEl.textContent = title;
-    msgEl.textContent = message;
+    msgEl.innerHTML = message;
     confirmBtn.textContent = confirmText;
 
     if (type === 'confirm') {
@@ -42,6 +42,64 @@ window.showSystemModal = function(title, message, type = 'alert', onConfirm = nu
 window.closeSystemModal = function() {
     const modal = document.getElementById('systemModal');
     if (modal) modal.classList.remove('active');
+};
+
+// ==========================================
+// 1.5 ADD TO TEAM MODAL LOGIC
+// ==========================================
+window.openAddToTeamModal = async function(targetUserId) {
+    try {
+        const res = await fetch(`${API_BASE}/api/teams`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to fetch teams');
+        const teams = await res.json();
+        
+        if (teams.length === 0) {
+            window.showSystemModal("Add to Team", "You don't have any teams. Please create a team first in the My Teams page.", "alert");
+            return;
+        }
+
+        let selectHtml = `
+            <div class="mt-2 text-left">
+                <label class="block text-sm font-medium text-on-surface-variant mb-1">Select a Team</label>
+                <select id="addTeamSelect" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary">
+                    ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                </select>
+                <label class="block text-sm font-medium text-on-surface-variant mt-3 mb-1">Role</label>
+                <select id="addTeamRole" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="Member">Member</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+        `;
+
+        window.showSystemModal("Add to Team", selectHtml, "confirm", async () => {
+            const teamId = document.getElementById('addTeamSelect').value;
+            const role = document.getElementById('addTeamRole').value;
+            
+            try {
+                const addRes = await fetch(`${API_BASE}/api/teams/${teamId}/members`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ user_id: parseInt(targetUserId), role: role })
+                });
+                
+                if (addRes.ok) {
+                    window.showSystemModal("Success", "User successfully added to the team!", "alert");
+                } else {
+                    const data = await addRes.json();
+                    window.showSystemModal("Failed", data.detail || "Failed to add user to team.", "alert");
+                }
+            } catch (err) {
+                console.error(err);
+                window.showSystemModal("Error", "An error occurred while adding to team.", "alert");
+            }
+        }, "Add");
+
+    } catch (e) {
+        console.error(e);
+        window.showSystemModal("Error", "Failed to load your teams.", "alert");
+    }
 };
 
 // ==========================================
@@ -182,4 +240,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch(err) {
         console.error("Shared.js: Error fetching notifications:", err);
     }
+});
+
+// ==========================================
+// 6. DYNAMIC NAV HIGHLIGHTING
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+    
+    // Find all nav links
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+        const linkPath = link.getAttribute('href');
+        
+        // Remove active styling from all links
+        link.classList.remove('text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+        link.removeAttribute('aria-current');
+        
+        // Add active styling to current link
+        if (linkPath === currentPath) {
+            link.classList.add('text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+            link.setAttribute('aria-current', 'page');
+        }
+    });
 });

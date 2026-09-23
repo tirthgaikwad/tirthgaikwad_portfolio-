@@ -34,7 +34,17 @@
 </button>
 <button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
 <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
-</button>
+</button><div class="relative group inline-block">
+    <button aria-label="Settings" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button">
+        <span class="material-symbols-outlined text-[20px]">menu</span>
+    </button>
+    <div class="absolute right-0 top-full mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+        <a href="history.html" class="flex items-center gap-2 px-4 py-3 text-on-surface hover:bg-surface-container-low transition-colors font-label-md">
+            <span class="material-symbols-outlined text-[20px]">history</span>
+            Activity History
+        </a>
+    </div>
+</div>
 <div class="relative flex items-center gap-space-xs pl-space-2xs">
 <div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
 <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center" data-header-avatar><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span>

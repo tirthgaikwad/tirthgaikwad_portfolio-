@@ -156,10 +156,10 @@ new_script = """
       // Add to Team
       document.querySelectorAll('.team-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          if (window.showSystemModal) {
-            window.showSystemModal("Add to Team", "Select a team to add this user to. (Coming Soon)", "info");
+          if (window.openAddToTeamModal) {
+            window.openAddToTeamModal(btn.dataset.id);
           } else {
-            alert("Add to team functionality coming soon.");
+            alert("Add to team functionality not loaded.");
           }
         });
       });
