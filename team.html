@@ -220,7 +220,7 @@
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/profiles/me`, {
+      const res = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, {
         credentials: 'include'
       });
       if (!res.ok) throw new Error("Not auth");
