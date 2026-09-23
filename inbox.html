@@ -118,7 +118,7 @@
       <span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold" id="unread-badge" style="display:none;">0 Unread</span>
     </div>
     <div class="flex items-center gap-1">
-      <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Create Project Group" onclick="window.showSystemModal('Project Groups', 'Group messaging will be available in a future update!', 'alert')">
+      <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Create Project Group" onclick="openNewGroupModal()">
         <span class="material-symbols-outlined text-[20px]">group_add</span>
       </button>
       <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Message Settings" onclick="window.showSystemModal('Message Settings', 'Notification preferences and message settings coming soon!', 'alert')">
@@ -126,19 +126,46 @@
       </button>
     </div>
   </div>
+  <!-- Segmented Tab Switcher (Chats vs Groups) -->
+  <div class="px-space-md py-space-xs">
+    <div class="grid grid-cols-2 p-1 bg-surface-container rounded-xl gap-1">
+      <button id="tab-direct" onclick="switchInboxTab('direct')" class="py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold" type="button">
+        <span class="material-symbols-outlined text-[16px]">person</span>
+        <span>Direct Chats</span>
+      </button>
+      <button id="tab-groups" onclick="switchInboxTab('groups')" class="py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5" type="button">
+        <span class="material-symbols-outlined text-[16px]">groups</span>
+        <span>Groups</span>
+      </button>
+    </div>
+  </div>
   <!-- Search Bar -->
   <div class="px-space-md py-space-xs">
     <div class="relative flex items-center">
       <span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span>
-      <input class="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-transparent focus:border-primary/40 focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/10 rounded-xl text-body-sm font-body-sm text-on-surface placeholder:text-outline transition-all outline-none" placeholder="Search conversations..." type="text" id="conversation-search-input" oninput="filterConversations()"/>
+      <input class="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-transparent focus:border-primary/40 focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/10 rounded-xl text-body-sm font-body-sm text-on-surface placeholder:text-outline transition-all outline-none" placeholder="Search..." type="text" id="conversation-search-input" oninput="filterConversations()"/>
     </div>
   </div>
-  <!-- Conversations List (dynamic) -->
+  <!-- Category Filter Pills (Groups Only) -->
+  <div id="group-filters" class="hidden px-space-md pt-space-xs pb-space-xs flex items-center gap-1.5 overflow-x-auto no-scrollbar text-nowrap">
+    <button class="px-2.5 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold" type="button">All Groups</button>
+  </div>
+  
+  <!-- Conversations List (Direct) -->
   <div class="flex-1 overflow-y-auto divide-y divide-outline-variant/10 px-space-xs pb-space-md" id="contactList">
     <!-- Loading state -->
     <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
       <div class="w-8 h-8 border-4 border-primary-fixed border-t-primary rounded-full animate-spin mb-3"></div>
       <p class="font-body-sm text-body-sm">Loading conversations...</p>
+    </div>
+  </div>
+
+  <!-- Groups List -->
+  <div class="hidden flex-1 overflow-y-auto px-space-xs divide-y divide-outline-variant/20 pb-space-md" id="groupsList">
+    <!-- Loading state -->
+    <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+      <div class="w-8 h-8 border-4 border-primary-fixed border-t-primary rounded-full animate-spin mb-3"></div>
+      <p class="font-body-sm text-body-sm">Loading groups...</p>
     </div>
   </div>
 </aside>
@@ -305,6 +332,40 @@
   </div>
 </div>
 
+<!-- ==================== NEW GROUP MODAL ==================== -->
+<div id="new-group-modal" class="modal-overlay">
+  <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-xl w-full max-w-md border border-outline-variant/30" style="animation: slideDown 0.3s ease;">
+    <h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-4">Create New Group</h3>
+    <div class="mb-4">
+      <label class="block font-label-md text-label-md text-on-surface-variant mb-1">Group Name</label>
+      <input type="text" id="new-group-name" class="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 rounded-xl text-body-md font-body-md text-on-surface placeholder:text-outline transition-all outline-none" placeholder="e.g. Hackathon Team" />
+    </div>
+    <div class="mb-4">
+      <label class="block font-label-md text-label-md text-on-surface-variant mb-1">Description (Optional)</label>
+      <textarea id="new-group-desc" class="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 rounded-xl text-body-md font-body-md text-on-surface placeholder:text-outline transition-all outline-none resize-none h-24" placeholder="What is this group about?"></textarea>
+    </div>
+    <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-outline-variant/20">
+      <button type="button" onclick="closeNewGroupModal()" class="px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
+      <button type="button" onclick="createNewGroup()" class="px-4 py-2 rounded-lg font-label-md text-label-md text-on-primary bg-primary hover:bg-primary-container shadow-sm transition-colors">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== NEW CHANNEL MODAL ==================== -->
+<div id="new-channel-modal" class="modal-overlay">
+  <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-xl w-full max-w-md border border-outline-variant/30" style="animation: slideDown 0.3s ease;">
+    <h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-4">Create New Channel</h3>
+    <div class="mb-4">
+      <label class="block font-label-md text-label-md text-on-surface-variant mb-1">Channel Name</label>
+      <input type="text" id="new-channel-name" class="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 rounded-xl text-body-md font-body-md text-on-surface placeholder:text-outline transition-all outline-none" placeholder="e.g. general" />
+    </div>
+    <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-outline-variant/20">
+      <button type="button" onclick="closeNewChannelModal()" class="px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
+      <button type="button" onclick="createNewChannel()" class="px-4 py-2 rounded-lg font-label-md text-label-md text-on-primary bg-primary hover:bg-primary-container shadow-sm transition-colors">Create</button>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== SYSTEM MODAL (shared.js needs this) ==================== -->
 <div id="systemModal" class="modal-overlay">
   <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-xl w-full max-w-sm border border-outline-variant/30" style="animation: slideDown 0.3s ease;">
@@ -346,11 +407,21 @@ let ws = null;
 let globalProfiles = {};
 let chatActionsState = { muted: [], blocked: [] };
 
+// Teams state
+let currentTab = 'direct';
+let myTeams = [];
+let activeTeamId = null;
+let activeChannelId = null;
+let teamChannels = {}; 
+let allTeamMessages = {};
+let teamWs = null;
+
 // ===== INITIALIZATION =====
 async function initInbox() {
   try {
     await fetchAllProfiles();
     await fetchMessages();
+    await fetchTeams();
     await fetchChatActionsState();
     buildContacts();
     renderContacts();
@@ -446,6 +517,144 @@ function buildContacts() {
     }
   });
 }
+
+// ===== TEAMS & GROUPS DATA =====
+async function fetchTeams() {
+  try {
+    const res = await fetch(`${API_BASE}/api/teams`, { credentials: 'include' });
+    if (res.ok) {
+      myTeams = await res.json();
+    }
+  } catch (err) { console.error('Error fetching teams:', err); }
+}
+
+function switchInboxTab(tab) {
+  currentTab = tab;
+  const tabDirect = document.getElementById('tab-direct');
+  const tabGroups = document.getElementById('tab-groups');
+  const listDirect = document.getElementById('contactList');
+  const listGroups = document.getElementById('groupsList');
+  const groupFilters = document.getElementById('group-filters');
+  
+  if (tab === 'direct') {
+    tabDirect.className = 'py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold';
+    tabGroups.className = 'py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5';
+    listDirect.classList.remove('hidden');
+    listGroups.classList.add('hidden');
+    if (groupFilters) groupFilters.classList.add('hidden');
+    
+    // Switch chat context
+    if (activeContactId) {
+       selectContact(activeContactId);
+    } else {
+       document.getElementById('empty-chat-state').style.display = 'flex';
+       document.getElementById('active-chat-container').style.display = 'none';
+    }
+  } else {
+    tabGroups.className = 'py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold';
+    tabDirect.className = 'py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5';
+    listGroups.classList.remove('hidden');
+    listDirect.classList.add('hidden');
+    if (groupFilters) groupFilters.classList.remove('hidden');
+    
+    renderGroups();
+    
+    // Switch chat context
+    if (activeTeamId) {
+       selectTeam(activeTeamId);
+    } else {
+       document.getElementById('empty-chat-state').style.display = 'flex';
+       document.getElementById('active-chat-container').style.display = 'none';
+    }
+  }
+}
+
+function renderGroups() {
+  const list = document.getElementById('groupsList');
+  if (myTeams.length === 0) {
+    list.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+        <span class="material-symbols-outlined text-[40px] text-outline mb-3">groups</span>
+        <p class="font-body-md text-body-md">No groups yet.</p>
+        <p class="font-body-sm text-body-sm text-outline mt-1">Create or join a team to get started!</p>
+      </div>`;
+    return;
+  }
+  
+  list.innerHTML = myTeams.map(t => {
+    const isActive = activeTeamId === t.id;
+    const avatarHtml = t.avatar_url
+      ? `<img src="${t.avatar_url}" alt="${escapeHtml(t.name)}" class="w-full h-full object-cover"/>`
+      : `<span class="font-bold text-sm">${getInitials(t.name)}</span>`;
+      
+    return `
+      <div class="group relative p-space-sm rounded-xl ${isActive ? 'bg-primary-fixed/30 hover:bg-primary-fixed/40' : 'hover:bg-surface-container-low'} transition-all cursor-pointer mt-1" data-team-id="${t.id}" onclick="selectTeam(${t.id})">
+        <div class="flex items-start gap-space-sm">
+          <div class="relative shrink-0">
+            <div class="w-12 h-12 rounded-xl bg-surface-container-high overflow-hidden flex items-center justify-center text-on-surface-variant font-headline-sm">
+              ${avatarHtml}
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-headline-sm text-headline-sm ${isActive ? 'font-bold' : 'font-semibold'} text-on-surface truncate">${escapeHtml(t.name)}</span>
+            </div>
+            ${t.description ? `<div class="flex items-center gap-1 text-[12px] text-on-surface-variant mt-0.5"><span class="truncate">${escapeHtml(t.description)}</span></div>` : ''}
+          </div>
+        </div>
+        ${isActive ? '<div class="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full"></div>' : ''}
+      </div>`;
+  }).join('');
+}
+
+async function selectTeam(id) {
+  activeTeamId = id;
+  renderGroups();
+  
+  if (!teamChannels[id]) {
+    try {
+      const res = await fetch(`${API_BASE}/api/teams/${id}/channels`, { credentials: 'include' });
+      if (res.ok) {
+        teamChannels[id] = await res.json();
+      } else {
+        teamChannels[id] = [];
+      }
+    } catch (e) { console.error(e); teamChannels[id] = []; }
+  }
+  
+  const channels = teamChannels[id] || [];
+  if (channels.length > 0) {
+    let defaultChan = channels.find(c => c.name.toLowerCase() === 'general') || channels[0];
+    await selectChannel(defaultChan.id);
+  } else {
+    document.getElementById('empty-chat-state').style.display = 'flex';
+    document.getElementById('active-chat-container').style.display = 'none';
+    updateTeamInfoPanel();
+  }
+}
+
+async function selectChannel(channelId) {
+  activeChannelId = channelId;
+  
+  if (!allTeamMessages[channelId]) {
+    try {
+      const res = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, { credentials: 'include' });
+      if (res.ok) {
+        allTeamMessages[channelId] = await res.json();
+      } else {
+        allTeamMessages[channelId] = [];
+      }
+    } catch (e) { console.error(e); allTeamMessages[channelId] = []; }
+  }
+  
+  setupTeamWebSocket(channelId);
+  renderTeamChat();
+  updateTeamInfoPanel();
+  
+  document.getElementById('empty-chat-state').style.display = 'none';
+  document.getElementById('active-chat-container').style.display = 'flex';
+}
+
 
 // ===== RENDERING =====
 function getInitials(name) {
@@ -620,8 +829,152 @@ function renderChat() {
   scrollArea.scrollTop = scrollArea.scrollHeight;
 }
 
+function renderTeamChat() {
+  if (!activeTeamId || !activeChannelId) return;
+  const team = myTeams.find(t => t.id === activeTeamId);
+  const channels = teamChannels[activeTeamId] || [];
+  const activeChannel = channels.find(c => c.id === activeChannelId);
+  const scrollArea = document.getElementById('messages-scroll-area');
+
+  // Update header
+  const avatarEl = document.getElementById('chat-header-avatar');
+  if (team.avatar_url) {
+    avatarEl.innerHTML = `<img src="${team.avatar_url}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`;
+  } else {
+    avatarEl.innerHTML = `<span class="text-on-primary font-bold">${getInitials(team.name)}</span>`;
+  }
+  document.getElementById('chat-header-name').textContent = team.name;
+  document.getElementById('chat-header-info').textContent = activeChannel ? `# ${activeChannel.name}` : '';
+  document.getElementById('chat-header-profile-link').onclick = null;
+  document.getElementById('message-input').placeholder = `Message #${activeChannel ? activeChannel.name : 'channel'}...`;
+
+  const chatMsgs = (allTeamMessages[activeChannelId] || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if (chatMsgs.length === 0) {
+    scrollArea.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
+        <span class="material-symbols-outlined text-[48px] text-outline mb-3">tag</span>
+        <p class="font-body-md text-body-md">Welcome to #${escapeHtml(activeChannel ? activeChannel.name : 'channel')}!</p>
+        <p class="font-body-sm text-body-sm text-outline mt-1">This is the start of the channel.</p>
+      </div>`;
+    return;
+  }
+
+  // Same grouping logic as renderChat
+  let lastDate = '';
+  let html = '';
+  chatMsgs.forEach(msg => {
+    const d = new Date(msg.timestamp);
+    const dateStr = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (dateStr !== lastDate) {
+      lastDate = dateStr;
+      html += `
+        <div class="flex items-center justify-center my-space-xs">
+          <div class="px-space-sm py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-sm text-label-sm border border-outline-variant/30 shadow-xs">${dateStr}</div>
+        </div>`;
+    }
+
+    const isSent = msg.sender_id === currentUserId;
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (isSent) {
+      html += `
+        <div class="flex flex-col items-end ml-auto max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
+          <div class="px-4 py-2.5 rounded-2xl rounded-br-xs bg-primary text-on-primary shadow-sm text-body-md font-medium whitespace-pre-wrap break-all">${escapeHtml(msg.content)}</div>
+          <div class="flex items-center gap-1 mt-1 mr-1">
+            <span class="font-label-sm text-[10px] text-outline">${time}</span>
+            <span class="material-symbols-outlined text-primary text-[14px]">done_all</span>
+          </div>
+        </div>`;
+    } else {
+      const senderPic = msg.sender_pic
+        ? `<img src="${msg.sender_pic}" alt="${escapeHtml(msg.sender_name)}" class="w-full h-full object-cover"/>`
+        : `<span class="text-[10px] font-bold">${getInitials(msg.sender_name || 'User')}</span>`;
+
+      html += `
+        <div class="flex flex-col items-start max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
+          <span class="text-[12px] font-semibold text-on-surface-variant mb-1 ml-10">${escapeHtml(msg.sender_name || 'Unknown')}</span>
+          <div class="flex items-end gap-2.5 w-full">
+            <div class="w-8 h-8 rounded-lg overflow-hidden bg-primary-fixed shrink-0 self-end mb-1 flex items-center justify-center text-on-primary-fixed" title="${escapeHtml(msg.sender_name || 'User')}">${senderPic}</div>
+            <div class="flex flex-col min-w-0">
+              <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs bg-surface-container-lowest border border-outline-variant/20 shadow-xs text-on-surface text-body-md whitespace-pre-wrap break-all">${escapeHtml(msg.content)}</div>
+              <div class="flex items-center gap-1 ml-1 mt-1">
+                <span class="font-label-sm text-[10px] text-outline">${time}</span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+  });
+
+  scrollArea.innerHTML = html;
+  scrollArea.scrollTop = scrollArea.scrollHeight;
+}
+
 // ===== INFO PANEL =====
+function updateTeamInfoPanel() {
+  if (!activeTeamId) return;
+  const team = myTeams.find(t => t.id === activeTeamId);
+  const panel = document.getElementById('info-panel-content');
+  
+  const avatarHtml = team.avatar_url
+    ? `<img src="${team.avatar_url}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`
+    : `<div class="w-full h-full rounded-2xl bg-primary-fixed flex items-center justify-center"><span class="text-2xl font-bold text-on-primary-fixed">${getInitials(team.name)}</span></div>`;
+
+  const channels = teamChannels[activeTeamId] || [];
+  
+  panel.innerHTML = `
+    <div class="p-space-md flex flex-col items-center text-center border-b border-outline-variant/20">
+      <div class="relative mb-space-xs">
+        <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-sm bg-primary-fixed">${avatarHtml}</div>
+      </div>
+      <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">${escapeHtml(team.name)}</h4>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">${escapeHtml(team.description || '')}</p>
+    </div>
+    <div class="p-space-md border-b border-outline-variant/20">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Channels</span>
+        <button class="p-1 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors" onclick="openNewChannelModal()"><span class="material-symbols-outlined text-[16px]">add</span></button>
+      </div>
+      <div class="flex flex-col gap-1">
+        ${channels.map(c => `
+          <button class="w-full text-left px-3 py-2 rounded-lg font-label-md text-label-md transition-colors ${activeChannelId === c.id ? 'bg-primary-fixed/30 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'}" onclick="selectChannel(${c.id})">
+            # ${escapeHtml(c.name)}
+          </button>
+        `).join('') || '<span class="text-outline text-body-sm">No channels</span>'}
+      </div>
+    </div>
+    <div class="p-space-md border-b border-outline-variant/20">
+      <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Members</span>
+      <div class="flex flex-col gap-2 mt-2" id="team-members-list">
+        <span class="text-outline text-body-sm italic">Loading members...</span>
+      </div>
+    </div>`;
+    
+    fetch(`${API_BASE}/api/teams/${activeTeamId}/members`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(members => {
+        const list = document.getElementById('team-members-list');
+        if (list) {
+          list.innerHTML = members.map(m => `
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full overflow-hidden bg-primary-fixed shrink-0 text-on-primary-fixed flex items-center justify-center font-bold text-[10px]">
+                ${m.user_profile_pic ? `<img src="${m.user_profile_pic}" class="w-full h-full object-cover"/>` : getInitials(m.user_name || 'U')}
+              </div>
+              <span class="font-body-sm text-body-sm text-on-surface truncate">${escapeHtml(m.user_name || 'Unknown')}</span>
+              <span class="ml-auto font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">${m.role}</span>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(e => console.error(e));
+}
+
 function updateInfoPanel() {
+  if (currentTab === 'groups') {
+    updateTeamInfoPanel();
+    return;
+  }
   if (!activeContactId) return;
   const c = contacts[activeContactId];
   const panel = document.getElementById('info-panel-content');
@@ -674,27 +1027,38 @@ document.getElementById('chat-composer-form').addEventListener('submit', async (
   e.preventDefault();
   const input = document.getElementById('message-input');
   const content = input.value.trim();
-  if (!content || !activeContactId) return;
-  input.value = '';
-
-  try {
-    const res = await fetch(`${API_BASE}/api/messages`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender_id: currentUserId, receiver_id: activeContactId, content: content })
-    });
-
-    if (res.ok) {
-      const newMsg = await res.json();
-      allMessages.push(newMsg);
-      contacts[activeContactId].lastMessage = `You: ${content}`;
-      contacts[activeContactId].timestamp = newMsg.timestamp;
-      renderContacts();
-      renderChat();
-    }
-  } catch (err) {
-    console.error('Send failed:', err);
+  
+  if (currentTab === 'direct') {
+    if (!content || !activeContactId) return;
+    input.value = '';
+    try {
+      const res = await fetch(`${API_BASE}/api/messages`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender_id: currentUserId, receiver_id: activeContactId, content: content })
+      });
+      if (res.ok) {
+        const newMsg = await res.json();
+        allMessages.push(newMsg);
+        contacts[activeContactId].lastMessage = `You: ${content}`;
+        contacts[activeContactId].timestamp = newMsg.timestamp;
+        renderContacts();
+        renderChat();
+      }
+    } catch (err) { console.error('Send failed:', err); }
+  } else {
+    // Groups tab
+    if (!content || !activeChannelId) return;
+    input.value = '';
+    try {
+      const res = await fetch(`${API_BASE}/api/channels/${activeChannelId}/messages`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, is_system_message: 0 })
+      });
+    } catch (err) { console.error('Send group message failed:', err); }
   }
 });
 
@@ -712,6 +1076,22 @@ async function deleteMessage(msgId) {
 }
 
 // ===== WEBSOCKET =====
+function setupTeamWebSocket(channelId) {
+  if (teamWs) {
+    teamWs.close();
+    teamWs = null;
+  }
+  teamWs = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/api/ws/channels/${channelId}/${currentUserId}`);
+  teamWs.onmessage = (event) => {
+    const newMsg = JSON.parse(event.data);
+    if (!allTeamMessages[channelId]) allTeamMessages[channelId] = [];
+    allTeamMessages[channelId].push(newMsg);
+    if (activeChannelId === channelId) renderTeamChat();
+  };
+  teamWs.onclose = () => { console.log('Team WS closed.'); };
+  teamWs.onerror = () => { teamWs.close(); };
+}
+
 function setupWebSocket() {
   ws = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/api/ws/${currentUserId}`);
   ws.onmessage = (event) => {
@@ -736,7 +1116,7 @@ function setupWebSocket() {
     contacts[otherId].lastMessage = newMsg.sender_id === currentUserId ? `You: ${newMsg.content}` : newMsg.content;
     contacts[otherId].timestamp = newMsg.timestamp;
     renderContacts();
-    if (activeContactId === otherId) renderChat();
+    if (activeContactId === otherId && currentTab === 'direct') renderChat();
   };
   ws.onclose = () => { console.log('WS closed. Reconnecting in 3s...'); setTimeout(setupWebSocket, 3000); };
   ws.onerror = () => { ws.close(); };
@@ -792,6 +1172,83 @@ function openNewChatModal() {
 function closeNewChatModal() {
   document.getElementById('new-chat-modal').classList.remove('active');
 }
+
+// ===== NEW GROUP MODAL =====
+function openNewGroupModal() {
+  document.getElementById('new-group-modal').classList.add('active');
+  document.getElementById('new-group-name').value = '';
+  document.getElementById('new-group-desc').value = '';
+  setTimeout(() => document.getElementById('new-group-name').focus(), 100);
+}
+
+function closeNewGroupModal() {
+  document.getElementById('new-group-modal').classList.remove('active');
+}
+
+async function createNewGroup() {
+  const name = document.getElementById('new-group-name').value.trim();
+  const desc = document.getElementById('new-group-desc').value.trim();
+  if (!name) return window.showSystemModal('Error', 'Group name is required.', 'alert');
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/teams`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, description: desc })
+    });
+    if (res.ok) {
+      closeNewGroupModal();
+      window.showSystemModal('Success', 'Group created successfully!', 'alert');
+      fetchTeams(); // refresh teams
+    } else {
+      window.showSystemModal('Error', 'Failed to create group.', 'alert');
+    }
+  } catch (err) {
+    console.error(err);
+    window.showSystemModal('Error', 'Failed to create group.', 'alert');
+  }
+}
+
+// ===== NEW CHANNEL MODAL =====
+function openNewChannelModal() {
+  if (!activeTeamId) return;
+  document.getElementById('new-channel-modal').classList.add('active');
+  document.getElementById('new-channel-name').value = '';
+  setTimeout(() => document.getElementById('new-channel-name').focus(), 100);
+}
+
+function closeNewChannelModal() {
+  document.getElementById('new-channel-modal').classList.remove('active');
+}
+
+async function createNewChannel() {
+  const name = document.getElementById('new-channel-name').value.trim();
+  if (!name || !activeTeamId) return;
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/teams/${activeTeamId}/channels`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, channel_type: "text" })
+    });
+    if (res.ok) {
+      closeNewChannelModal();
+      await selectTeam(activeTeamId); // refresh channels
+    } else {
+      if (res.status === 403) {
+        window.showSystemModal('Permission Denied', 'Only Admins can create channels.', 'alert');
+      } else {
+        window.showSystemModal('Error', 'Failed to create channel.', 'alert');
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    window.showSystemModal('Error', 'Failed to create channel.', 'alert');
+  }
+}
+
 
 function searchNewChatUsers() {
   const query = document.getElementById('new-chat-search').value.toLowerCase().trim();
