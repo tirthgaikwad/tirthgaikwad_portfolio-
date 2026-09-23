@@ -213,15 +213,15 @@
   let currentUser = null;
 
   async function init() {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    const currentUserId = localStorage.getItem('currentUserId');
+    if (!currentUserId) {
       window.location.href = 'join.html';
       return;
     }
 
     try {
-      const res = await fetch('/api/profiles/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API_BASE}/api/profiles/me`, {
+        credentials: 'include'
       });
       if (!res.ok) throw new Error("Not auth");
       currentUser = await res.json();
@@ -238,9 +238,8 @@
   }
 
   async function loadTeams() {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch('/api/teams', {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${API_BASE}/api/teams`, {
+      credentials: 'include'
     });
     const teams = await res.json();
     
@@ -282,9 +281,8 @@
   }
 
   async function loadChannels(teamId) {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(`/api/teams/${teamId}/channels`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${API_BASE}/api/teams/${teamId}/channels`, {
+      credentials: 'include'
     });
     const channels = await res.json();
     
@@ -329,9 +327,8 @@
   }
 
   async function loadMembers(teamId) {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(`/api/teams/${teamId}/members`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${API_BASE}/api/teams/${teamId}/members`, {
+      credentials: 'include'
     });
     const members = await res.json();
     
@@ -357,9 +354,8 @@
   }
 
   async function loadMessages(channelId) {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(`/api/channels/${channelId}/messages`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, {
+      credentials: 'include'
     });
     const messages = await res.json();
     
@@ -402,7 +398,7 @@
 
   function connectWebsocket(channelId) {
     if(ws) ws.close();
-    ws = new WebSocket(`ws://${window.location.host}/api/ws/channels/${channelId}/${currentUser.id}`);
+    ws = new WebSocket(`ws://127.0.0.1:8000/api/ws/channels/${channelId}/${currentUser.id}`);
     
     ws.onmessage = function(event) {
       const msg = JSON.parse(event.data);
@@ -421,10 +417,10 @@
     input.value = '';
     // reset height if it was auto-expanding
     
-    const token = localStorage.getItem('access_token');
-    fetch(`/api/channels/${currentChannelId}/messages`, {
+    fetch(`${API_BASE}/api/channels/${currentChannelId}/messages`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ content: content })
     }).catch(e => console.error("Message send failed", e));
   }
@@ -448,21 +444,21 @@
     e.preventDefault();
     const name = document.getElementById('new-team-name').value;
     const desc = document.getElementById('new-team-desc').value;
-    const token = localStorage.getItem('access_token');
-    
     try {
-      const res = await fetch('/api/teams', {
+      const res = await fetch(`${API_BASE}/api/teams`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, description: desc })
       });
       if(res.ok) {
         const team = await res.json();
         // Immediately create a general channel for the new team via backend trigger, but our backend doesn't automatically create one in /api/teams yet!
         // We will create one manually here:
-        await fetch(`/api/teams/${team.id}/channels`, {
+        await fetch(`${API_BASE}/api/teams/${team.id}/channels`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ name: 'general', channel_type: 'text' })
         });
 
@@ -477,12 +473,11 @@
   document.getElementById('create-channel-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('new-channel-name').value;
-    const token = localStorage.getItem('access_token');
-    
     try {
-      const res = await fetch(`/api/teams/${currentTeamId}/channels`, {
+      const res = await fetch(`${API_BASE}/api/teams/${currentTeamId}/channels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name: name, channel_type: 'text' })
       });
       if(res.ok) {
