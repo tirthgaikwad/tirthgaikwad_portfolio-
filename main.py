@@ -127,6 +127,25 @@ class DBBoardPost(Base):
     author_id = Column(Integer, index=True)
     created_at = Column(String)
 
+class DBMutedUser(Base):
+    __tablename__ = "muted_users"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    muted_user_id = Column(Integer, index=True)
+
+class DBBlockedUser(Base):
+    __tablename__ = "blocked_users"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    blocked_user_id = Column(Integer, index=True)
+
+class DBClearedChat(Base):
+    __tablename__ = "cleared_chats"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    cleared_with_user_id = Column(Integer, index=True)
+    cleared_at = Column(String)
+
 class DBTeam(Base):
     __tablename__ = "teams"
     id = Column(Integer, primary_key=True, index=True)
@@ -833,6 +852,22 @@ async def send_message(
     if current_user.id != msg.sender_id:
         raise HTTPException(status_code=403, detail="Not authorized to send as this user.")
         
+    # Check if sender is blocked by receiver
+    b_result = await db.execute(select(DBBlockedUser).filter(
+        DBBlockedUser.user_id == msg.receiver_id,
+        DBBlockedUser.blocked_user_id == current_user.id
+    ))
+    if b_result.scalars().first():
+        raise HTTPException(status_code=403, detail="You are blocked by this user.")
+        
+    # Check if sender blocked receiver
+    b2_result = await db.execute(select(DBBlockedUser).filter(
+        DBBlockedUser.user_id == current_user.id,
+        DBBlockedUser.blocked_user_id == msg.receiver_id
+    ))
+    if b2_result.scalars().first():
+        raise HTTPException(status_code=403, detail="You have blocked this user.")
+        
     new_msg = DBMessage(
         sender_id=msg.sender_id,
         receiver_id=msg.receiver_id,
@@ -841,17 +876,27 @@ async def send_message(
     )
     db.add(new_msg)
     
-    notif = DBNotification(
-        user_id=msg.receiver_id, 
-        type="message", 
-        content=f"New message from {current_user.name}", 
-        timestamp=datetime.now().isoformat()
-    )
-    db.add(notif)
+    # Check if muted
+    m_result = await db.execute(select(DBMutedUser).filter(
+        DBMutedUser.user_id == msg.receiver_id,
+        DBMutedUser.muted_user_id == current_user.id
+    ))
+    is_muted = m_result.scalars().first() is not None
+    
+    notif = None
+    if not is_muted:
+        notif = DBNotification(
+            user_id=msg.receiver_id, 
+            type="message", 
+            content=f"New message from {current_user.name}", 
+            timestamp=datetime.now().isoformat()
+        )
+        db.add(notif)
     
     await db.commit()
     await db.refresh(new_msg)
-    await db.refresh(notif)
+    if notif:
+        await db.refresh(notif)
 
     result = await db.execute(select(DBUser).filter(DBUser.id == msg.receiver_id))
     receiver = result.scalars().first()
@@ -895,10 +940,73 @@ async def get_messages(
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view these messages.")
         
+    clear_res = await db.execute(select(DBClearedChat).filter(DBClearedChat.user_id == current_user.id))
+    cleared_records = clear_res.scalars().all()
+    cleared_map = {rec.cleared_with_user_id: rec.cleared_at for rec in cleared_records}
+        
     result = await db.execute(select(DBMessage).filter(
         (DBMessage.sender_id == user_id) | (DBMessage.receiver_id == user_id)
     ))
-    return result.scalars().all()
+    all_msgs = result.scalars().all()
+    
+    filtered_msgs = []
+    for msg in all_msgs:
+        other_user = msg.sender_id if msg.receiver_id == user_id else msg.receiver_id
+        if other_user in cleared_map:
+            if msg.timestamp < cleared_map[other_user]:
+                continue
+        filtered_msgs.append(msg)
+        
+    return filtered_msgs
+
+# ==========================================
+# 6.5 CHAT ACTIONS (MUTE, BLOCK, CLEAR)
+# ==========================================
+@app.post("/api/users/{target_id}/mute")
+async def toggle_mute(target_id: int, db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+    res = await db.execute(select(DBMutedUser).filter(DBMutedUser.user_id == current_user.id, DBMutedUser.muted_user_id == target_id))
+    muted = res.scalars().first()
+    if muted:
+        await db.delete(muted)
+        status = "unmuted"
+    else:
+        db.add(DBMutedUser(user_id=current_user.id, muted_user_id=target_id))
+        status = "muted"
+    await db.commit()
+    return {"status": status}
+
+@app.post("/api/users/{target_id}/block")
+async def toggle_block(target_id: int, db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+    res = await db.execute(select(DBBlockedUser).filter(DBBlockedUser.user_id == current_user.id, DBBlockedUser.blocked_user_id == target_id))
+    blocked = res.scalars().first()
+    if blocked:
+        await db.delete(blocked)
+        status = "unblocked"
+    else:
+        db.add(DBBlockedUser(user_id=current_user.id, blocked_user_id=target_id))
+        status = "blocked"
+    await db.commit()
+    return {"status": status}
+
+@app.post("/api/users/{target_id}/clear_chat")
+async def clear_chat(target_id: int, db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+    res = await db.execute(select(DBClearedChat).filter(DBClearedChat.user_id == current_user.id, DBClearedChat.cleared_with_user_id == target_id))
+    cleared = res.scalars().first()
+    now_iso = datetime.now().isoformat()
+    if cleared:
+        cleared.cleared_at = now_iso
+    else:
+        db.add(DBClearedChat(user_id=current_user.id, cleared_with_user_id=target_id, cleared_at=now_iso))
+    await db.commit()
+    return {"status": "cleared"}
+
+@app.get("/api/chat/actions/state")
+async def get_chat_actions_state(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+    m_res = await db.execute(select(DBMutedUser).filter(DBMutedUser.user_id == current_user.id))
+    b_res = await db.execute(select(DBBlockedUser).filter(DBBlockedUser.user_id == current_user.id))
+    muted = [m.muted_user_id for m in m_res.scalars().all()]
+    blocked = [b.blocked_user_id for b in b_res.scalars().all()]
+    return {"muted": muted, "blocked": blocked}
 
 
 # ==========================================

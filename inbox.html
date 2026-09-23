@@ -183,9 +183,27 @@
         <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" id="toggle-info-panel-btn" title="Toggle Collab Details" onclick="toggleInfoPanel()">
           <span class="material-symbols-outlined text-[20px]">info</span>
         </button>
-        <button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors" title="More Chat Actions" onclick="showChatActionsMenu()">
-          <span class="material-symbols-outlined text-[20px]">more_vert</span>
-        </button>
+        <div class="relative">
+          <button id="chat-actions-btn" class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors" title="More Chat Actions" onclick="toggleChatActionsMenu()">
+            <span class="material-symbols-outlined text-[20px]">more_vert</span>
+          </button>
+          
+          <div id="chat-actions-menu" class="hidden absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 overflow-hidden z-50 origin-top-right animate-fade-in py-1">
+            <button onclick="toggleMute()" class="w-full text-left px-4 py-2.5 text-body-sm font-medium text-on-surface hover:bg-surface-container transition-colors flex items-center gap-3">
+              <span id="mute-icon" class="material-symbols-outlined text-[20px]">notifications_off</span>
+              <span id="mute-text">Mute notifications</span>
+            </button>
+            <button onclick="clearChatHistory()" class="w-full text-left px-4 py-2.5 text-body-sm font-medium text-on-surface hover:bg-surface-container transition-colors flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px]">delete_sweep</span>
+              <span>Clear chat history</span>
+            </button>
+            <div class="h-[1px] w-full bg-outline-variant/30 my-1"></div>
+            <button onclick="toggleBlock()" class="w-full text-left px-4 py-2.5 text-body-sm font-medium text-error hover:bg-error/10 transition-colors flex items-center gap-3">
+              <span id="block-icon" class="material-symbols-outlined text-[20px]">block</span>
+              <span id="block-text">Block user</span>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -207,6 +225,9 @@
 
     <!-- Chat Composition Bar -->
     <footer class="p-space-sm md:p-space-md bg-surface-container-lowest border-t border-outline-variant/30 shrink-0">
+      <div id="blocked-msg-area" class="hidden p-4 text-center text-on-surface-variant text-body-md bg-surface-container-low rounded-xl max-w-4xl mx-auto border border-outline-variant/20">
+        You have blocked this user. Unblock them to send a message.
+      </div>
       <form class="w-full flex flex-col gap-2" id="chat-composer-form">
         <div class="relative flex items-center bg-surface-container-low rounded-2xl border border-outline-variant/40 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all p-1.5">
           <div class="flex items-center gap-0.5 pl-1 shrink-0">
@@ -323,12 +344,14 @@ let allMessages = [];
 let activeContactId = null;
 let ws = null;
 let globalProfiles = {};
+let chatActionsState = { muted: [], blocked: [] };
 
 // ===== INITIALIZATION =====
 async function initInbox() {
   try {
     await fetchAllProfiles();
     await fetchMessages();
+    await fetchChatActionsState();
     buildContacts();
     renderContacts();
     setupWebSocket();
@@ -372,6 +395,13 @@ async function fetchAllProfiles() {
   if (res.ok) {
     const profiles = await res.json();
     profiles.forEach(p => { globalProfiles[p.id] = p; });
+  }
+}
+
+async function fetchChatActionsState() {
+  const res = await fetch(`${API_BASE}/api/chat/actions/state`, { credentials: 'include' });
+  if (res.ok) {
+    chatActionsState = await res.json();
   }
 }
 
@@ -815,11 +845,118 @@ function startChatWith(userId) {
   selectContact(userId);
 }
 
-// ===== CHAT ACTIONS MENU =====
-function showChatActionsMenu() {
+// ===== CHAT ACTIONS LOGIC =====
+function toggleChatActionsMenu() {
   if (!activeContactId) return;
+  const menu = document.getElementById('chat-actions-menu');
+  
+  if (menu.classList.contains('hidden')) {
+    const isMuted = chatActionsState.muted.includes(activeContactId);
+    const isBlocked = chatActionsState.blocked.includes(activeContactId);
+    
+    document.getElementById('mute-text').textContent = isMuted ? 'Unmute notifications' : 'Mute notifications';
+    document.getElementById('mute-icon').textContent = isMuted ? 'notifications_active' : 'notifications_off';
+    document.getElementById('block-text').textContent = isBlocked ? 'Unblock user' : 'Block user';
+    
+    menu.classList.remove('hidden');
+    
+    setTimeout(() => {
+      document.addEventListener('click', closeChatActionsMenu);
+    }, 10);
+  } else {
+    menu.classList.add('hidden');
+  }
+}
+
+function closeChatActionsMenu(e) {
+  const menu = document.getElementById('chat-actions-menu');
+  const btn = document.getElementById('chat-actions-btn');
+  if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.add('hidden');
+    document.removeEventListener('click', closeChatActionsMenu);
+  }
+}
+
+async function toggleMute() {
+  if (!activeContactId) return;
+  const menu = document.getElementById('chat-actions-menu');
+  menu.classList.add('hidden');
+  document.removeEventListener('click', closeChatActionsMenu);
+  
+  const res = await fetch(`${API_BASE}/api/users/${activeContactId}/mute`, { 
+    method: 'POST',
+    credentials: 'include' 
+  });
+  
+  if (res.ok) {
+    const data = await res.json();
+    if (data.status === 'muted') {
+      chatActionsState.muted.push(activeContactId);
+      window.showSystemModal('Notifications Muted', 'You will no longer receive notifications for messages from this user.', 'alert');
+    } else {
+      chatActionsState.muted = chatActionsState.muted.filter(id => id !== activeContactId);
+      window.showSystemModal('Notifications Unmuted', 'You will now receive notifications for messages from this user.', 'alert');
+    }
+  }
+}
+
+async function toggleBlock() {
+  if (!activeContactId) return;
+  const menu = document.getElementById('chat-actions-menu');
+  menu.classList.add('hidden');
+  document.removeEventListener('click', closeChatActionsMenu);
+  
+  const isCurrentlyBlocked = chatActionsState.blocked.includes(activeContactId);
   const c = contacts[activeContactId];
-  window.showSystemModal('Chat Actions', `Options for conversation with ${c.name}:\n\n• Mute notifications\n• Clear chat history\n• Block user\n\nThese features are coming in a future update.`, 'alert');
+  const confirmMsg = isCurrentlyBlocked ? 
+    `Are you sure you want to unblock ${c.name}?` : 
+    `Are you sure you want to block ${c.name}? They won't be able to message you.`;
+    
+  if (confirm(confirmMsg)) {
+    const res = await fetch(`${API_BASE}/api/users/${activeContactId}/block`, { 
+      method: 'POST',
+      credentials: 'include' 
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'blocked') {
+        chatActionsState.blocked.push(activeContactId);
+      } else {
+        chatActionsState.blocked = chatActionsState.blocked.filter(id => id !== activeContactId);
+      }
+      renderChat();
+    }
+  }
+}
+
+async function clearChatHistory() {
+  if (!activeContactId) return;
+  const menu = document.getElementById('chat-actions-menu');
+  menu.classList.add('hidden');
+  document.removeEventListener('click', closeChatActionsMenu);
+  
+  const c = contacts[activeContactId];
+  if (confirm(`Are you sure you want to clear your chat history with ${c.name}? This cannot be undone.`)) {
+    const res = await fetch(`${API_BASE}/api/users/${activeContactId}/clear_chat`, { 
+      method: 'POST',
+      credentials: 'include' 
+    });
+    
+    if (res.ok) {
+      allMessages = allMessages.filter(msg => {
+        const otherId = msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
+        return otherId !== activeContactId;
+      });
+      renderChat();
+      
+      if (contacts[activeContactId]) {
+        contacts[activeContactId].lastMessage = '';
+        contacts[activeContactId].timestamp = '';
+        renderContacts();
+      }
+    }
+  }
 }
 
 // ===== INIT =====
