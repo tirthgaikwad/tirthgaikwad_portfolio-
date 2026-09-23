@@ -26,7 +26,7 @@
 <span class="material-symbols-outlined text-[18px] text-primary">school</span>
 <span class="font-medium text-on-surface">Institutions</span>
 <span class="text-outline-variant">/</span>
-<span class="text-on-surface font-semibold">AVCOE Sangamner</span>
+<span class="text-on-surface font-semibold" id="header-college-name">Your College</span>
 <span class="text-outline-variant">/</span>
 <span class="text-primary font-semibold">Engineers Directory</span>
 </div>
@@ -71,8 +71,8 @@
 <span class="material-symbols-outlined text-[16px] text-primary">verified</span>
             Official Campus Roster 2025–2026
           </div>
-<h1 class="font-headline-lg text-headline-lg lg:text-[34px] lg:leading-[42px] font-extrabold text-on-surface tracking-tight">
-            Developers at Amrutvahini College of Engineering (AVCOE), Sangamner
+<h1 class="font-headline-lg text-headline-lg lg:text-[34px] lg:leading-[42px] font-extrabold text-on-surface tracking-tight" id="hero-college-name">
+            Developers at Your College
           </h1>
 <p class="font-body-lg text-body-lg text-on-surface-variant">
             Connect, recruit, and collaborate with verified student engineers, open-source contributors, and research scholars across departments at AVCOE.
@@ -138,7 +138,7 @@
 <div class="flex flex-col md:flex-row items-stretch gap-space-sm">
 <div class="flex-1 flex items-center gap-space-sm px-space-md py- space-xs bg-surface-container-low rounded-xl focus-within:ring-2 focus-within:ring-primary/40 transition-all">
 <span class="material-symbols-outlined text-on-surface-variant text-[22px]">search</span>
-<input class="w-full bg-transparent outline-none font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 py-2.5" placeholder="Search college developers by name, tech stack (C++, Python, ROS2), or department..." type="text" value="Amrutvahini College of Engineering"/>
+<input id="search-input" class="w-full bg-transparent outline-none font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 py-2.5" placeholder="Search college developers by name or tech stack..." type="text"/>
 <button class="hidden sm:inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded">
 <span>Clear</span>
 </button>
@@ -156,7 +156,7 @@
 </div>
 </div>
 <!-- Department Tabs -->
-<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="dept-filters">
 <span class="font-label-sm text-label-sm uppercase text-on-surface-variant font-bold shrink-0 mr-1">Dept:</span>
 <button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm shrink-0 transition-all">
           All Departments (486)
@@ -851,70 +851,163 @@ window.logout = function() {
 </script>
 
     <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       const grid = document.getElementById('college-results-grid');
-      // For now, let's fetch all profiles since backend /api/profiles doesn't seem to natively support ?college filter in its defined query params in main.py (or we can just filter client side)
-      // Wait, main.py doesn't have college filtering on /api/profiles, it has /api/search?skill=
-      // We will fetch all profiles and filter by college if needed, but since it's the college page, we can just fetch all or filter client side.
-      // Let's just fetch all and render.
+      const headerName = document.getElementById('header-college-name');
+      const heroName = document.getElementById('hero-college-name');
+      const searchInput = document.getElementById('search-input');
+      const deptFilters = document.getElementById('dept-filters');
       
-      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading college profiles...</p></div>';
+      const currentUserId = localStorage.getItem('currentUserId');
+      if (!currentUserId) {
+        window.location.href = 'login.html';
+        return;
+      }
       
-      fetch(`/api/profiles`)
-        .then(res => res.json())
-        .then(profiles => {
-          grid.innerHTML = '';
-          if (profiles.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found.</div>';
-            return;
-          }
+      let currentUser = null;
+      let allProfiles = [];
+      let activeDept = 'All Departments';
 
-          profiles.forEach(profile => {
-            const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
-            const avatarHtml = profile.profile_pic_url 
-              ? `<img src="${profile.profile_pic_url}" class="w-full h-full object-cover">`
-              : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
-              
-            const skillsHtml = (profile.skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`).join('');
-              
-            const cardHtml = `
-              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-                <div class="flex items-start justify-between gap-space-sm mb-space-md">
-                  <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
-                      ${avatarHtml}
-                    </div>
+      // 1. Fetch current user
+      try {
+        const userRes = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, { credentials: 'include' });
+        if (!userRes.ok) throw new Error("Auth failed");
+        currentUser = await userRes.json();
+      } catch (err) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Update UI with college name
+      const collegeName = currentUser.college_name || 'Your College';
+      headerName.textContent = collegeName;
+      heroName.textContent = `Developers at ${collegeName}`;
+
+      async function renderProfiles(profiles) {
+        grid.innerHTML = '';
+        if (profiles.length === 0) {
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant font-medium">No developers found matching your criteria.</div>';
+          return;
+        }
+
+        profiles.forEach(profile => {
+          const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+          const avatarHtml = profile.profile_pic 
+            ? `<img src="${profile.profile_pic}" class="w-full h-full object-cover">`
+            : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container-high">${initials}</div>`;
+            
+          const skillsHtml = (profile.skills ? profile.skills.split(',') : []).slice(0, 5).map(s => 
+            `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s.trim()}</span>`
+          ).join('');
+            
+          const cardHtml = `
+            <div class="developer-card group bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30">
+              <div class="flex items-start justify-between gap-space-sm mb-space-md">
+                <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                  <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
+                    ${avatarHtml}
                   </div>
+                  <span class="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
+                    <span class="material-symbols-outlined text-[12px]">check</span>
+                  </span>
                 </div>
-                <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                    ${profile.name}
-                  </h3>
-                  <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
-                    <span class="material-symbols-outlined text-[15px]">school</span>
-                    ${profile.college || 'No college listed'}
-                  </p>
-                </div>
-                <div class="mb-space-lg mt-space-sm">
-                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
-                  <div class="flex flex-wrap gap-1.5">
-                    ${skillsHtml}
-                  </div>
-                </div>
-                <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
-                  <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    View Profile
-                  </button>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
+                  Verified
+                </span>
+              </div>
+              <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
+                  ${profile.name}
+                </h3>
+                <p class="font-label-sm text-label-sm text-primary font-semibold mt-1">
+                  ${profile.department || 'Department not listed'}
+                </p>
+              </div>
+              <div class="mb-space-lg mt-space-sm">
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Tech Stack:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${skillsHtml}
                 </div>
               </div>
-            `;
-            grid.innerHTML += cardHtml;
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading profiles. Are you logged in?</div>';
+              <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
+                <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
+                  View Profile
+                </button>
+                <button class="py-2 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" onclick="window.location.href='inbox.html'">
+                  <span class="material-symbols-outlined text-[20px]">chat</span>
+                </button>
+              </div>
+            </div>
+          `;
+          grid.innerHTML += cardHtml;
         });
+      }
+
+      function updateFiltersUI() {
+        const uniqueDepts = Array.from(new Set(allProfiles.map(p => p.department).filter(d => d)));
+        
+        let html = `<span class="font-label-sm text-label-sm uppercase text-on-surface-variant font-bold shrink-0 mr-1">Dept:</span>`;
+        
+        html += `<button class="px-3 py-1.5 rounded-full font-label-md text-label-md shrink-0 transition-all ${activeDept === 'All Departments' ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container'}" data-dept="All Departments">All Departments (${allProfiles.length})</button>`;
+        
+        uniqueDepts.forEach(d => {
+          const count = allProfiles.filter(p => p.department === d).length;
+          const isActive = activeDept === d;
+          const classes = isActive 
+            ? 'bg-primary text-on-primary shadow-sm' 
+            : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container';
+          html += `<button class="px-3 py-1.5 rounded-full font-label-md text-label-md shrink-0 transition-all ${classes}" data-dept="${d}">${d} (${count})</button>`;
+        });
+        
+        deptFilters.innerHTML = html;
+        
+        // Add click listeners to buttons
+        deptFilters.querySelectorAll('button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeDept = btn.getAttribute('data-dept');
+            updateFiltersUI();
+            applyFilters();
+          });
+        });
+      }
+
+      function applyFilters() {
+        let filtered = allProfiles;
+        
+        if (activeDept !== 'All Departments') {
+          filtered = filtered.filter(p => p.department === activeDept);
+        }
+        
+        const q = searchInput.value.toLowerCase().trim();
+        if (q) {
+          filtered = filtered.filter(p => 
+            p.name.toLowerCase().includes(q) || 
+            (p.skills && p.skills.toLowerCase().includes(q)) || 
+            (p.department && p.department.toLowerCase().includes(q))
+          );
+        }
+        
+        renderProfiles(filtered);
+      }
+
+      searchInput.addEventListener('input', applyFilters);
+
+      // 2. Fetch profiles
+      try {
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading college profiles...</p></div>';
+        
+        const res = await fetch(`${API_BASE}/api/profiles?college=${encodeURIComponent(collegeName)}`, { credentials: 'include' });
+        if(res.ok) {
+          allProfiles = await res.json();
+          updateFiltersUI();
+          renderProfiles(allProfiles);
+        } else {
+          throw new Error("Could not fetch network");
+        }
+      } catch (err) {
+        console.error(err);
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-error font-medium">Failed to load campus network.</div>';
+      }
     });
     </script>
     <script src="shared.js"></script>
