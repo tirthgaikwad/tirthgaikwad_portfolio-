@@ -555,7 +555,7 @@ function renderChat() {
 
     if (isSent) {
       html += `
-        <div class="flex flex-col items-end self-end max-w-[85%] md:max-w-[70%] group/msg animate-fade-in">
+        <div class="flex flex-col items-end ml-auto max-w-[85%] md:max-w-[70%] group/msg animate-fade-in">
           <div class="px-4 py-2.5 rounded-2xl rounded-br-xs bg-primary text-on-primary shadow-sm text-body-md font-medium whitespace-pre-wrap break-words">${escapeHtml(msg.content)}</div>
           <div class="flex items-center gap-1 mt-1 mr-1">
             <span class="font-label-sm text-[10px] text-outline">${time}</span>
