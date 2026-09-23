@@ -683,67 +683,72 @@
       const query = searchParams.get('q') || searchParams.get('skill') || '';
       
       const grid = document.getElementById('search-results-grid');
+      
+      let fetchUrl = 'http://127.0.0.1:8000/api/profiles';
+      let loadingMsg = 'Loading all profiles...';
+      
       if(query) {
-        grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Searching profiles for "' + query + '"...</p></div>';
-        
-        fetch(`/api/search?skill=${encodeURIComponent(query)}`)
-          .then(res => res.json())
-          .then(profiles => {
-            grid.innerHTML = '';
-            if (profiles.length === 0) {
-              grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found for "' + query + '".</div>';
-              return;
-            }
+        fetchUrl = `http://127.0.0.1:8000/api/search?skill=${encodeURIComponent(query)}`;
+        loadingMsg = 'Searching profiles for "' + query + '"...';
+      }
+      
+      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>' + loadingMsg + '</p></div>';
+      
+      fetch(fetchUrl, { credentials: 'include' })
+        .then(res => res.json())
+        .then(profiles => {
+          grid.innerHTML = '';
+          if (profiles.length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found.</div>';
+            return;
+          }
 
-            profiles.forEach(profile => {
-              const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
-              const avatarHtml = profile.profile_pic_url 
-                ? `<img src="${profile.profile_pic_url}" class="w-full h-full object-cover">`
-                : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
-                
-              const skillsHtml = (profile.skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`).join('');
-                
-              const cardHtml = `
-                <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-                  <div class="flex items-start justify-between gap-space-sm mb-space-md">
-                    <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                      <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
-                        ${avatarHtml}
-                      </div>
+          profiles.forEach(profile => {
+            const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+            const avatarHtml = profile.profile_pic 
+              ? `<img src="${profile.profile_pic}" class="w-full h-full object-cover">`
+              : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
+              
+            const skillsHtml = (profile.skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`).join('');
+              
+            const cardHtml = `
+              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+                <div class="flex items-start justify-between gap-space-sm mb-space-md">
+                  <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                    <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
+                      ${avatarHtml}
                     </div>
-                  </div>
-                  <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                      ${profile.name}
-                    </h3>
-                    <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
-                      <span class="material-symbols-outlined text-[15px]">school</span>
-                      ${profile.college || 'No college listed'}
-                    </p>
-                  </div>
-                  <div class="mb-space-lg mt-space-sm">
-                    <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
-                    <div class="flex flex-wrap gap-1.5">
-                      ${skillsHtml}
-                    </div>
-                  </div>
-                  <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
-                    <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
-                      View Profile
-                    </button>
                   </div>
                 </div>
-              `;
-              grid.innerHTML += cardHtml;
-            });
-          })
-          .catch(err => {
-            console.error(err);
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading search results. Are you logged in?</div>';
+                <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
+                    ${profile.name}
+                  </h3>
+                  <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
+                    <span class="material-symbols-outlined text-[15px]">school</span>
+                    ${profile.college_name || 'No college listed'}
+                  </p>
+                </div>
+                <div class="mb-space-lg mt-space-sm">
+                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${skillsHtml}
+                  </div>
+                </div>
+                <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
+                  <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            `;
+            grid.innerHTML += cardHtml;
           });
-      } else {
-         grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">Enter a search query to find profiles.</div>';
-      }
+        })
+        .catch(err => {
+          console.error(err);
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading profiles. Are you logged in?</div>';
+        });
     });
     </script>
     </body>
