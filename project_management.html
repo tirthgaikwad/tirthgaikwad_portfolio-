@@ -87,16 +87,16 @@
                     aria-label="Notifications"
                     class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
                     type="button"
-                    onclick="showNotificationsPanel()"><span
+                    onclick="showNotificationsPanel()" data-notif-btn><span
                         class="material-symbols-outlined text-[20px]">notifications</span><span
-                        class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span></button><button
+                        class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold" data-notif-badge style="display:none;"></span></button><button
                     aria-label="Direct Messages"
                     class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors"
                     type="button" onclick="window.location.href='inbox.html'"><span
                         class="material-symbols-outlined text-[20px]">chat_bubble</span></button>
                 <div class="relative flex items-center gap-space-xs pl-space-2xs">
                     <div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
-                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center" data-header-avatar><span
                                 class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span
                             class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest"
                             title="Active Now"></span>
@@ -2166,7 +2166,8 @@
         });
     });
     </script>
-    </body>
+    <script src="shared.js"></script>
+</body>
     
 
 </html>
