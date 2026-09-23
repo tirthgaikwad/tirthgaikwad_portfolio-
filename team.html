@@ -246,11 +246,16 @@
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, {
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error("Not auth");
-      currentUser = await res.json();
+      // Reuse profile already fetched by shared.js to avoid a duplicate API call
+      if (window.currentUserProfile) {
+        currentUser = window.currentUserProfile;
+      } else {
+        const res = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, {
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error("Not auth");
+        currentUser = await res.json();
+      }
       
       await loadTeams();
       
@@ -275,8 +280,9 @@
     teams.forEach(team => {
       const initial = team.name.charAt(0).toUpperCase();
       const isActive = team.id === currentTeamId;
+      const escapedName = team.name.replace(/'/g, "\\'");
       const html = `
-        <div class="relative group flex items-center justify-center w-full mt-2" onclick="selectTeam(${team.id}, '${team.name}')">
+        <div class="relative group flex items-center justify-center w-full mt-2" data-team-id="${team.id}" onclick="selectTeam(${team.id}, '${escapedName}')">
           <div class="absolute left-0 w-1 ${isActive ? 'h-8 bg-brand-600' : 'h-0 group-hover:h-4 bg-slate-400'} rounded-r-md transition-all"></div>
           <button class="w-11 h-11 ${isActive ? 'rounded-2xl bg-brand-600 text-white' : 'rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200'} font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm" title="${team.name}">
             ${initial}
@@ -301,9 +307,33 @@
     document.getElementById('chat-area').classList.add('hidden');
     document.getElementById('active-team-name').textContent = teamName;
     
-    await loadTeams(); // Re-render to update active styling
-    await loadChannels(teamId);
-    await loadMembers(teamId);
+    // Update active team styling locally — no API refetch needed
+    updateTeamActiveState(teamId);
+    
+    // Load channels and members in parallel instead of sequentially
+    await Promise.all([loadChannels(teamId), loadMembers(teamId)]);
+  }
+
+  function updateTeamActiveState(activeTeamId) {
+    const teamItems = document.querySelectorAll('#teams-list > .relative');
+    teamItems.forEach(item => {
+      const btn = item.querySelector('button');
+      const indicator = item.querySelector('div.absolute');
+      if (!btn || !indicator) return;
+      
+      const isActive = item.getAttribute('data-team-id') === String(activeTeamId);
+      
+      if (isActive) {
+        indicator.className = 'absolute left-0 w-1 h-8 bg-brand-600 rounded-r-md transition-all';
+        btn.className = btn.className.replace(/rounded-3xl|bg-white|text-slate-700|hover:bg-brand-50|border border-slate-200/g, '');
+        btn.classList.add('rounded-2xl', 'bg-brand-600', 'text-white');
+        btn.classList.remove('rounded-3xl', 'bg-white', 'text-slate-700', 'border');
+      } else {
+        indicator.className = 'absolute left-0 w-1 h-0 group-hover:h-4 bg-slate-400 rounded-r-md transition-all';
+        btn.classList.remove('rounded-2xl', 'bg-brand-600', 'text-white');
+        btn.classList.add('rounded-3xl', 'bg-white', 'text-slate-700', 'border');
+      }
+    });
   }
 
   async function loadChannels(teamId) {
@@ -318,7 +348,7 @@
     channels.forEach(ch => {
       const isActive = ch.id === currentChannelId;
       const html = `
-        <div onclick="selectChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 ${isActive ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'} transition-colors">
+        <div data-channel-id="${ch.id}" onclick="selectChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 ${isActive ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'} transition-colors">
           <span class="material-symbols-outlined text-[18px] opacity-70">tag</span>
           <span class="text-sm truncate">${ch.name}</span>
         </div>
@@ -347,9 +377,23 @@
     document.getElementById('active-channel-name').textContent = channelName;
     document.getElementById('message-input').placeholder = `Message #${channelName}`;
     
-    await loadChannels(currentTeamId); // re-render for active styling
+    // Update active channel styling locally — no API refetch needed
+    updateChannelActiveState(channelId);
+    
     await loadMessages(channelId);
     connectWebsocket(channelId);
+  }
+
+  function updateChannelActiveState(activeChannelId) {
+    const channelItems = document.querySelectorAll('#channels-list > [data-channel-id]');
+    channelItems.forEach(item => {
+      const isActive = item.getAttribute('data-channel-id') === String(activeChannelId);
+      if (isActive) {
+        item.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 bg-brand-50 text-brand-700 font-semibold transition-colors';
+      } else {
+        item.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 text-slate-600 hover:bg-slate-100 transition-colors';
+      }
+    });
   }
 
   async function loadMembers(teamId) {

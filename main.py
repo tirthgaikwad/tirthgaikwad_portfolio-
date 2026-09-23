@@ -1441,13 +1441,17 @@ async def get_team_members(
     if not in_team_res.scalars().first():
         raise HTTPException(status_code=403, detail="You are not a member of this team.")
 
-    mem_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == team_id))
-    members = mem_res.scalars().all()
+    # Optimized: single JOIN instead of N+1 queries
+    query = (
+        select(DBTeamMember, DBUser)
+        .outerjoin(DBUser, DBTeamMember.user_id == DBUser.id)
+        .filter(DBTeamMember.team_id == team_id)
+    )
+    mem_res = await db.execute(query)
+    rows = mem_res.all()
     
     result = []
-    for m in members:
-        u_res = await db.execute(select(DBUser).filter(DBUser.id == m.user_id))
-        user = u_res.scalars().first()
+    for m, user in rows:
         result.append({
             "id": m.id,
             "team_id": m.team_id,
@@ -1458,6 +1462,7 @@ async def get_team_members(
             "user_profile_pic": user.profile_pic if user else ""
         })
     return result
+
 
 
 @app.get("/api/teams/{team_id}/channels", response_model=List[ChannelResponse])
