@@ -106,8 +106,8 @@
 </div>
 
 <!-- Main Dual-Pane Workspace Layout -->
-<div class="max-w-container-max mx-auto w-full px-gutter-mobile md:px-gutter-desktop py-space-sm md:py-space-md">
-<div class="w-full bg-surface-container-lowest rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.06),0_8px_24px_rgba(15,23,42,0.04)] border border-outline-variant/30 flex flex-col lg:flex-row h-[calc(100vh-8.5rem)] min-h-[640px] overflow-hidden">
+<div class="w-full flex-1">
+<div class="w-full bg-surface-container-lowest border-t border-outline-variant/30 flex flex-col lg:flex-row h-[calc(100vh-6.5rem)] overflow-hidden">
 
 <!-- ==================== LEFT COLUMN: Conversation Directory ==================== -->
 <aside class="w-full lg:w-[350px] xl:w-[380px] shrink-0 border-r border-outline-variant/30 flex flex-col bg-surface-container-lowest h-full">
@@ -555,8 +555,8 @@ function renderChat() {
 
     if (isSent) {
       html += `
-        <div class="flex flex-col items-end ml-auto max-w-[85%] md:max-w-[70%] group/msg animate-fade-in">
-          <div class="px-4 py-2.5 rounded-2xl rounded-br-xs bg-primary text-on-primary shadow-sm text-body-md font-medium whitespace-pre-wrap break-words">${escapeHtml(msg.content)}</div>
+        <div class="flex flex-col items-end ml-auto max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
+          <div class="px-4 py-2.5 rounded-2xl rounded-br-xs bg-primary text-on-primary shadow-sm text-body-md font-medium whitespace-pre-wrap break-all">${escapeHtml(msg.content)}</div>
           <div class="flex items-center gap-1 mt-1 mr-1">
             <span class="font-label-sm text-[10px] text-outline">${time}</span>
             <span class="material-symbols-outlined text-primary text-[14px]">done_all</span>
@@ -571,10 +571,10 @@ function renderChat() {
         : `<span class="text-[10px] font-bold">${getInitials(c.name)}</span>`;
 
       html += `
-        <div class="flex items-end gap-2.5 max-w-[85%] md:max-w-[70%] group/msg animate-fade-in">
+        <div class="flex items-end gap-2.5 max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
           <div class="w-8 h-8 rounded-lg overflow-hidden bg-primary-fixed shrink-0 self-end mb-1 flex items-center justify-center text-on-primary-fixed">${senderPic}</div>
-          <div class="flex flex-col">
-            <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs bg-surface-container-lowest border border-outline-variant/20 shadow-xs text-on-surface text-body-md whitespace-pre-wrap break-words">${escapeHtml(msg.content)}</div>
+          <div class="flex flex-col min-w-0">
+            <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs bg-surface-container-lowest border border-outline-variant/20 shadow-xs text-on-surface text-body-md whitespace-pre-wrap break-all">${escapeHtml(msg.content)}</div>
             <div class="flex items-center gap-1 ml-1 mt-1">
               <span class="font-label-sm text-[10px] text-outline">${time}</span>
               <button class="hidden group-hover/msg:inline-flex p-0.5 text-on-surface-variant hover:text-error transition-colors" title="Delete message" onclick="deleteMessage(${msg.id})">
