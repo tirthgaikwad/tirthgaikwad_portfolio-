@@ -266,7 +266,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 # ==========================================
 class ProfileRegister(BaseModel):
     name: str
-    email: str
+    email: Optional[str] = ""
     college_name: str
     department: str
     city: str
@@ -283,6 +283,18 @@ class ProfileRegister(BaseModel):
     id_card_image: Optional[str] = ""
     portfolio_link: Optional[str] = None
     invite_code: Optional[str] = None
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    college_name: Optional[str] = None
+    department: Optional[str] = None
+    city: Optional[str] = None
+    division: Optional[str] = None
+    skills: Optional[str] = None
+    bio: Optional[str] = None
+    profile_pic: Optional[str] = None
+    banner_pic: Optional[str] = None
+    github_username: Optional[str] = None
 
 class UserLogin(BaseModel):
     roll_no: str
@@ -495,8 +507,13 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 # ==========================================
 @app.post("/api/register", status_code=status.HTTP_201_CREATED)
 async def register_user(profile: ProfileRegister, response: Response, db: AsyncSession = Depends(get_db)):
+    # Auto-generate email if not provided
+    user_email = profile.email.strip() if profile.email else ""
+    if not user_email:
+        user_email = f"{profile.roll_no}@placeholder.connect2minds.local"
+    
     # Check for existing user by roll number or email
-    result = await db.execute(select(DBUser).filter((DBUser.roll_no == profile.roll_no) | (DBUser.email == profile.email)))
+    result = await db.execute(select(DBUser).filter((DBUser.roll_no == profile.roll_no) | (DBUser.email == user_email)))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Roll number or Email already registered.")
             
@@ -513,7 +530,7 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
     initial_status = "pending" # Default provisional access
     
     # 1. Official College Email Auto-Verify
-    if profile.email.endswith(".edu.in") or profile.email.endswith(".ac.in"):
+    if user_email.endswith(".edu.in") or user_email.endswith(".ac.in"):
         initial_status = "verified"
         
     # 2. Professional Invite Code Auto-Verify
@@ -523,7 +540,7 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
     
     new_user = DBUser(
         roll_no=profile.roll_no,
-        email=profile.email,
+        email=user_email,
         hashed_password=hashed_pwd,
         name=profile.name,
         college_name=profile.college_name,
@@ -667,6 +684,34 @@ async def get_single_profile(
     user_dict["is_saved"] = is_saved
 
     return user_dict
+
+
+# ==========================================
+# 5b. PROFILE UPDATE ENDPOINT
+# ==========================================
+@app.put("/api/profiles/{user_id}")
+async def update_profile(
+    user_id: int,
+    profile_data: ProfileUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user)
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="You can only edit your own profile.")
+    
+    update_fields = profile_data.dict(exclude_none=True)
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update.")
+    
+    for field, value in update_fields.items():
+        setattr(current_user, field, value)
+    
+    await log_user_activity(db, current_user.id, "Profile Updated", "You updated your profile information.")
+    await db.commit()
+    await db.refresh(current_user)
+    
+    return {"message": "Profile updated successfully.", "user_id": current_user.id}
 
 
 @app.get("/api/search", response_model=List[ProfileResponse])

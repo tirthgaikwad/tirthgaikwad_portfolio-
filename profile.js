@@ -147,23 +147,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 e.target.textContent = "Following...";
                 try {
-                    const res = await fetch('http://127.0.0.1:8000/api/follow', {
+                    const res = await fetch(`http://127.0.0.1:8000/api/follow/${profileId}`, {
                         method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            follower_id: parseInt(currentUserId),
-                            followed_id: parseInt(profileId)
-                        })
+                        credentials: 'include'
                     });
 
                     if (res.ok) {
-                        e.target.textContent = "Following ✓";
-                        e.target.style.background = "#e2e8f0";
-                        e.target.disabled = true;
-                        await fetch(`http://127.0.0.1:8000/api/history?action_type=Network Expanded&detail=You followed developer %23${profileId}`, { method: 'POST', credentials: 'include' });
+                        const data = await res.json();
+                        if (data.status === 'followed') {
+                            e.target.closest('button').innerHTML = '<span class="material-symbols-outlined text-[18px]">person_remove</span><span>Following ✓</span>';
+                            e.target.closest('button').style.background = '#e2e8f0';
+                        } else {
+                            e.target.closest('button').innerHTML = '<span class="material-symbols-outlined text-[18px]">person_add</span><span>Follow Developer</span>';
+                            e.target.closest('button').style.background = '';
+                        }
                     }
-                } catch (err) { e.target.textContent = "Error"; }
+                } catch (err) { console.error('Follow error:', err); }
             });
         }
     }
@@ -392,18 +391,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (croppedAvatarBlob) {
                     const fd = new FormData(); 
                     fd.append("file", croppedAvatarBlob, "avatar.png");
-                    const res = await fetch('http://127.0.0.1:8000/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+                    const res = await fetch('http://127.0.0.1:8000/api/upload/profile-pic', { method: 'POST', body: fd, credentials: 'include' });
                     if (res.ok) avatarUrl = (await res.json()).url;
                 }
                 
                 if (croppedBannerBlob) {
                     const fd = new FormData(); 
                     fd.append("file", croppedBannerBlob, "banner.png");
-                    const res = await fetch('http://127.0.0.1:8000/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+                    const res = await fetch('http://127.0.0.1:8000/api/upload/banner-pic', { method: 'POST', body: fd, credentials: 'include' });
                     if (res.ok) bannerUrl = (await res.json()).url;
                 }
 
-                await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`, {
+                const updateRes = await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`, {
                     method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -415,13 +414,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         division: document.getElementById('editDiv') ? document.getElementById('editDiv').value : currentProfileData.division,
                         skills: document.getElementById('editSkills') ? document.getElementById('editSkills').value : currentProfileData.skills,
                         bio: document.getElementById('editBio') ? document.getElementById('editBio').value : currentProfileData.bio,
-                        roll_no: currentProfileData.roll_no,
-                        town: currentProfileData.town,
                         profile_pic: avatarUrl,
                         banner_pic: bannerUrl
                     })
                 });
-                window.location.reload();
+                if (updateRes.ok) {
+                    window.location.reload();
+                } else {
+                    window.showSystemModal('Error', 'Failed to update profile. Please try again.', 'alert');
+                    if(submitBtn) submitBtn.textContent = "Save Changes";
+                }
             });
         }
     }

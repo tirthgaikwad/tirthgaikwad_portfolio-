@@ -81,6 +81,7 @@
             
             <form id="joinForm">
                 <div class="form-group full"><label>Full Name</label><input type="text" id="regName" placeholder="e.g. John Doe" required></div>
+                <div class="form-group full"><label>College Email (Optional — .edu.in/.ac.in emails get auto-verified!)</label><input type="email" id="regEmail" placeholder="e.g. yourname@college.edu.in"></div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>College / University</label>
@@ -147,30 +148,35 @@
 
             const profileData = {
                 name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value || '',
                 college_name: document.getElementById('regCollege').value,
                 city: document.getElementById('regCity').value,
                 department: document.getElementById('regDept').value,
                 division: document.getElementById('regDiv').value,
                 roll_no: document.getElementById('regRollNo').value,
-                password: document.getElementById('regPassword').value, // Transmitting password securely
+                password: document.getElementById('regPassword').value,
                 skills: document.getElementById('regSkills').value,
                 bio: document.getElementById('regBio').value,
-                town: "", profile_pic: "", banner_pic: ""
+                profile_pic: "", banner_pic: ""
             };
 
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/register', { // Updated to a secure register endpoint
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profileData)
+                const res = await fetch('http://127.0.0.1:8000/api/register', {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    credentials: 'include',
+                    body: JSON.stringify(profileData)
                 });
                 
                 if (res.ok) {
                     const data = await res.json();
-                    localStorage.setItem('authToken', data.token); // Secure token storage
                     localStorage.setItem('currentUserId', data.user_id);
                     statusText.style.display = 'block';
                     setTimeout(() => { window.location.href = "profile.html"; }, 1500);
                 } else {
-                    alert("Failed to create profile. Ensure Roll Number is unique."); btn.textContent = "Create Account"; btn.disabled = false;
+                    const errData = await res.json();
+                    alert(errData.detail || "Failed to create profile. Ensure Roll Number is unique."); 
+                    btn.textContent = "Create Account"; btn.disabled = false;
                 }
             } catch (err) { alert("Network error. Backend server is unreachable."); btn.textContent = "Create Account"; btn.disabled = false; }
         });
