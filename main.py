@@ -144,10 +144,19 @@ class DBTeamMember(Base):
     role = Column(String, default="Member")
     joined_at = Column(String)
 
+class DBChannel(Base):
+    __tablename__ = "channels"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    name = Column(String, index=True)
+    channel_type = Column(String, default="text")
+    created_at = Column(String)
+
 class DBTeamMessage(Base):
     __tablename__ = "team_messages"
     id = Column(Integer, primary_key=True, index=True)
     team_id = Column(Integer, index=True)
+    channel_id = Column(Integer, index=True)
     sender_id = Column(Integer, index=True)
     content = Column(String)
     timestamp = Column(String)
@@ -424,6 +433,20 @@ class TeamMemberResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ChannelCreate(BaseModel):
+    name: str
+    channel_type: str = "text"
+
+class ChannelResponse(BaseModel):
+    id: int
+    team_id: int
+    name: str
+    channel_type: str
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
 class TeamMessageCreate(BaseModel):
     content: str
     is_system_message: int = 0
@@ -431,6 +454,7 @@ class TeamMessageCreate(BaseModel):
 class TeamMessageResponse(BaseModel):
     id: int
     team_id: int
+    channel_id: Optional[int] = None
     sender_id: int
     content: str
     timestamp: str
@@ -1436,8 +1460,8 @@ async def get_team_members(
     return result
 
 
-@app.get("/api/teams/{team_id}/messages", response_model=List[TeamMessageResponse])
-async def get_team_messages(
+@app.get("/api/teams/{team_id}/channels", response_model=List[ChannelResponse])
+async def get_team_channels(
     team_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: DBUser = Depends(get_current_user)
@@ -1446,11 +1470,57 @@ async def get_team_messages(
     if not in_team_res.scalars().first():
         raise HTTPException(status_code=403, detail="Not a member of this team.")
 
-    # FAST JOIN FOR TEAM MESSAGES
+    res = await db.execute(select(DBChannel).filter(DBChannel.team_id == team_id).order_by(DBChannel.id.asc()))
+    return res.scalars().all()
+
+
+@app.post("/api/teams/{team_id}/channels", response_model=ChannelResponse)
+async def create_team_channel(
+    team_id: int,
+    channel_data: ChannelCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user)
+):
+    admin_check_res = await db.execute(select(DBTeamMember).filter(
+        DBTeamMember.team_id == team_id,
+        DBTeamMember.user_id == current_user.id,
+        DBTeamMember.role == "Admin"
+    ))
+    if not admin_check_res.scalars().first():
+        raise HTTPException(status_code=403, detail="Only Admins can create channels.")
+
+    new_channel = DBChannel(
+        team_id=team_id,
+        name=channel_data.name.lower().replace(" ", "-"),
+        channel_type=channel_data.channel_type,
+        created_at=datetime.now().isoformat()
+    )
+    db.add(new_channel)
+    await db.commit()
+    await db.refresh(new_channel)
+    return new_channel
+
+
+@app.get("/api/channels/{channel_id}/messages", response_model=List[TeamMessageResponse])
+async def get_channel_messages(
+    channel_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user)
+):
+    channel_res = await db.execute(select(DBChannel).filter(DBChannel.id == channel_id))
+    channel = channel_res.scalars().first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found.")
+
+    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == channel.team_id, DBTeamMember.user_id == current_user.id))
+    if not in_team_res.scalars().first():
+        raise HTTPException(status_code=403, detail="Not a member of this team.")
+
+    # FAST JOIN FOR CHANNEL MESSAGES
     query = (
         select(DBTeamMessage, DBUser)
         .outerjoin(DBUser, DBTeamMessage.sender_id == DBUser.id)
-        .filter(DBTeamMessage.team_id == team_id)
+        .filter(DBTeamMessage.channel_id == channel_id)
         .order_by(DBTeamMessage.id.asc())
     )
     msg_res = await db.execute(query)
@@ -1461,6 +1531,7 @@ async def get_team_messages(
         result.append({
             "id": msg.id,
             "team_id": msg.team_id,
+            "channel_id": msg.channel_id,
             "sender_id": msg.sender_id,
             "content": msg.content,
             "timestamp": msg.timestamp,
@@ -1471,19 +1542,25 @@ async def get_team_messages(
     return result
 
 
-@app.post("/api/teams/{team_id}/messages", response_model=TeamMessageResponse)
-async def send_team_message(
-    team_id: int,
+@app.post("/api/channels/{channel_id}/messages", response_model=TeamMessageResponse)
+async def send_channel_message(
+    channel_id: int,
     msg_data: TeamMessageCreate,
     db: AsyncSession = Depends(get_db),
     current_user: DBUser = Depends(get_current_user)
 ):
-    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == team_id, DBTeamMember.user_id == current_user.id))
+    channel_res = await db.execute(select(DBChannel).filter(DBChannel.id == channel_id))
+    channel = channel_res.scalars().first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found.")
+
+    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == channel.team_id, DBTeamMember.user_id == current_user.id))
     if not in_team_res.scalars().first():
         raise HTTPException(status_code=403, detail="Not a member of this team.")
 
     new_msg = DBTeamMessage(
-        team_id=team_id,
+        team_id=channel.team_id,
+        channel_id=channel.id,
         sender_id=current_user.id,
         content=msg_data.content,
         timestamp=datetime.now().isoformat(),
@@ -1496,6 +1573,7 @@ async def send_team_message(
     msg_payload = {
         "id": new_msg.id,
         "team_id": new_msg.team_id,
+        "channel_id": new_msg.channel_id,
         "sender_id": new_msg.sender_id,
         "content": new_msg.content,
         "timestamp": new_msg.timestamp,
@@ -1503,18 +1581,18 @@ async def send_team_message(
         "sender_name": current_user.name,
         "sender_pic": current_user.profile_pic
     }
-    await team_chat_manager.broadcast_to_room(team_id, json.dumps(msg_payload))
+    await team_chat_manager.broadcast_to_room(channel_id, json.dumps(msg_payload))
     return msg_payload
 
 
-@app.websocket("/api/ws/teams/{team_id}/{user_id}")
-async def team_websocket_endpoint(websocket: WebSocket, team_id: int, user_id: int):
-    await team_chat_manager.connect(websocket, team_id, user_id)
+@app.websocket("/api/ws/channels/{channel_id}/{user_id}")
+async def channel_websocket_endpoint(websocket: WebSocket, channel_id: int, user_id: int):
+    await team_chat_manager.connect(websocket, channel_id, user_id)
     try:
         while True:
             data = await websocket.receive_text()
     except WebSocketDisconnect:
-        team_chat_manager.disconnect(team_id, user_id)
+        team_chat_manager.disconnect(channel_id, user_id)
 
 @app.delete("/api/teams/{team_id}")
 async def delete_team(

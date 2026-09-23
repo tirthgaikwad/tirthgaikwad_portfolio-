@@ -1,912 +1,512 @@
 <!DOCTYPE html>
-
-<html class="h-full bg-slate-50 text-slate-900 antialiased" lang="en"><head>
+<html class="h-full bg-slate-50 text-slate-900 antialiased" lang="en">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Project Neon | Team Workspace - ProPartner EdTech</title>
-<!-- Google Fonts: Plus Jakarta Sans -->
+<title>My Teams | Connect2Minds Workspace</title>
+<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS v3 with forms & container queries -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"brand":{"50":"#eef2ff","100":"#e0e7ff","200":"#c7d2fe","300":"#a5b4fc","400":"#818cf8","500":"#6366f1","600":"#4f46e5","700":"#4338ca","800":"#3730a3","900":"#312e81"},"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"sans":["Plus Jakarta Sans","sans-serif"],"mono":["JetBrains Mono","monospace"],"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script>
-<!-- BEGIN: Custom Style Configuration -->
-<style data-purpose="custom-scrollbars">
-    /* Subtle custom scrollbar for channels and chat log */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          brand: { 50: "#eef2ff", 100: "#e0e7ff", 200: "#c7d2fe", 300: "#a5b4fc", 400: "#818cf8", 500: "#6366f1", 600: "#4f46e5", 700: "#4338ca", 800: "#3730a3", 900: "#312e81" },
+          surface: { container: { lowest: "#ffffff", low: "#eff4ff", DEFAULT: "#e5eeff" } },
+          primary: "#3525cd"
+        }
+      }
     }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
+  };
+</script>
+<style>
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  
+  .hide-scroll::-webkit-scrollbar { display: none; }
+  .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* SYSTEM MODAL STYLES (Injected for functionality without changing design) */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
-    .modal-overlay.active { display: flex; }
-    .custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; animation: slideDown 0.3s ease; }
-    .custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0f172a;}
-    .custom-modal p { color: #475569; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
-    .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
-    .btn-outline-modal { padding: 10px 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: transparent; color: #0f172a; font-weight: 600; cursor: pointer; transition: 0.2s;}
-    .btn-outline-modal:hover { background: #f1f5f9; }
-    .btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #4f46e5; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
-    .btn-primary-modal:hover { background: #4338ca; }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
-<style data-purpose="code-styling">
-    .code-block {
-      background: #0f172a;
-      color: #e2e8f0;
-      font-family: 'JetBrains Mono', monospace;
-    }
-  </style>
-<!-- END: Custom Style Configuration -->
+  /* Modals */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+</style>
 </head>
 <body class="h-full flex flex-col overflow-hidden font-sans select-none">
+
 <!-- BEGIN: GlobalHeader -->
-<!-- Top global navigation adhering to ProPartner Design System -->
-<header class="h-16 flex-none w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-<div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md">
-<div class="flex items-center gap-space-xl">
-<div class="flex items-center gap-space-xs shrink-0" style="cursor: pointer;" onclick="window.location.href='index.html'">
-<img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/>
-<span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span>
-</div>
-<nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary">
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="discover-talent" href="search.html">Discover Talent</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="board.html">Opportunities Board</a>
-<a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="my-teams" href="team.html">My Teams</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="project_management.html">Project Hub</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="college.html">Campus Network</a>
-<a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="research.html">Research Collab</a>
-</nav>
-</div>
-<div class="flex items-center gap-space-sm">
-<div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48" onclick="window.location.href='search.html'">
-<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span>
-<kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd>
-</div>
-<div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div>
-<a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="admin_dashboard.html">
-<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a>
-<button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="toggleNotificationsPanel()" data-notif-btn>
-<span class="material-symbols-outlined text-[20px]">notifications</span>
-<span id="notif-badge" class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold" data-notif-badge style="display:none;"></span>
-</button>
-<button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
-</button>
-<div class="relative flex items-center gap-space-xs pl-space-2xs">
-<div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
-<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center" data-header-avatar>
-<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
-</div>
-<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span>
-</div>
-</div>
-</div>
-</div>
+<header class="h-16 flex-none w-full z-50 bg-white border-b border-slate-200 shadow-sm">
+  <div class="h-16 max-w-[1280px] mx-auto px-6 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-8">
+      <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="window.location.href='index.html'">
+        <img alt="Connect2Minds" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/>
+        <span class="text-xl font-bold tracking-tight text-slate-900 font-['Plus_Jakarta_Sans']">ProPartner</span>
+      </div>
+      <nav class="hidden xl:flex items-center gap-6 h-16">
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="search.html">Discover Talent</a>
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="board.html">Opportunities Board</a>
+        <a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" href="team.html">My Teams</a>
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="project_management.html">Project Hub</a>
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="college.html">Campus Network</a>
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="research.html">Research Collab</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <button aria-label="Notifications" class="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button" data-notif-btn>
+        <span class="material-symbols-outlined text-[20px]">notifications</span>
+      </button>
+      <div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden" data-header-avatar>
+          <span class="material-symbols-outlined text-white text-[18px]">person</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </header>
 <!-- END: GlobalHeader -->
+
 <!-- BEGIN: WorkspaceContainer -->
-<!-- 3-Column Discord / Slack Hybrid Developer Workspace -->
 <div class="flex-1 flex overflow-hidden">
-<!-- BEGIN: MiniServerRail -->
-<!-- Far-Left Team/Server Switcher Rail -->
-<aside class="w-16 flex-none bg-slate-100 border-r border-slate-200 py-3 flex flex-col items-center justify-between z-20" data-purpose="team-switcher-rail">
-<!-- Upper Team Badges -->
-<div class="flex flex-col items-center gap-2.5 w-full">
-<!-- Active Team Indicator: Neon SIH -->
-<div class="relative group flex items-center justify-center w-full">
-<div class="absolute left-0 w-1 h-8 bg-brand-600 rounded-r-md"></div>
-<button class="w-11 h-11 rounded-2xl bg-brand-600 text-white font-black text-sm flex items-center justify-center shadow-md shadow-brand-500/30 hover:rounded-xl transition-all duration-200" title="Project Neon (SIH 2026)" onclick="window.showSystemModal('Workspace', 'Loading Project Neon...', 'alert')">
-            N
-          </button>
-</div>
-<!-- Team 2: Python Lab -->
-<div class="relative group flex items-center justify-center w-full">
-<div class="absolute left-0 w-1 h-0 group-hover:h-4 bg-slate-400 rounded-r-md transition-all"></div>
-<button class="w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white hover:bg-brand-50 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-2xs" title="Python Core Labs" onclick="window.showSystemModal('Workspace', 'Loading Python Core Labs...', 'alert')">
-            P
-          </button>
-</div>
-<!-- Team 3: TechFest Hackers -->
-<div class="relative group flex items-center justify-center w-full">
-<button class="w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white hover:bg-brand-50 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-2xs" title="TCS Hack Team" onclick="window.showSystemModal('Workspace', 'Loading TCS Hack Team...', 'alert')">
-            T
-          </button>
-</div>
-<!-- Team 4: DevSphere ID -->
-<div class="relative group flex items-center justify-center w-full">
-<button class="w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white hover:bg-brand-50 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-2xs" title="DevSphere ID Web3" onclick="window.showSystemModal('Workspace', 'Loading DevSphere ID Web3...', 'alert')">
-            D
-          </button>
-</div>
-<!-- Add Team Workspace Button -->
-<button class="w-11 h-11 rounded-3xl hover:rounded-2xl border-2 border-dashed border-slate-300 hover:border-brand-500 text-slate-400 hover:text-brand-600 hover:bg-white flex items-center justify-center transition-all duration-200 group" title="Create or Join New Workspace" onclick="window.showSystemModal('New Workspace', 'Opening workspace creation wizard.', 'alert')">
-<svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-<!-- Bottom Workspace Controls: Explore & Settings -->
-<div class="flex flex-col items-center gap-2">
-<button class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center transition-colors" title="Explore Hackathon Hub" onclick="window.location.href='board.html'">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-<button class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center transition-colors" title="Workspace Preferences" onclick="window.showSystemModal('Workspace Settings', 'Opening settings configuration...', 'alert')">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-</aside>
-<!-- END: MiniServerRail -->
-<!-- BEGIN: ChannelsSidebar -->
-<!-- Team Specific Channels and Audio Lounges -->
-<aside class="w-64 flex-none bg-slate-50 border-r border-slate-200 flex flex-col justify-between" data-purpose="channels-sidebar">
-<div class="flex-1 flex flex-col overflow-y-auto">
-<!-- Team Profile Header -->
-<div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white/70 backdrop-blur-xs sticky top-0 z-10">
-<div class="flex items-center gap-2 truncate">
-<div class="w-7 h-7 rounded-md bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-none shadow-xs">
-              ⚡
-            </div>
-<div class="truncate">
-<h2 class="text-sm font-bold text-slate-800 tracking-tight truncate leading-tight">Neon • SIH 2026</h2>
-<p class="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
-<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                In Sprint (SIH-26)
-              </p>
-</div>
-</div>
-<button class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Workspace options" onclick="window.showSystemModal('Workspace Options', 'Opening workspace options menu.', 'alert')">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-<!-- Channel Groups -->
-<div class="p-3 space-y-6">
-<!-- Category: Text Channels -->
-<div data-purpose="text-channels-group">
-<div class="px-2 mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-<span>Text Channels</span>
-<button class="hover:text-slate-600" title="Create channel" onclick="window.showSystemModal('Create Channel', 'Opening channel creation wizard.', 'alert')">+</button>
-</div>
-<div class="space-y-0.5">
-<!-- Active Channel: # general -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-100/70 text-brand-900 border-l-2 border-brand-600 shadow-2xs" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
-<span class="text-brand-600 font-mono text-sm">#</span>
-<span class="truncate">general</span>
-<span class="ml-auto text-[10px] bg-brand-200/80 text-brand-800 px-1.5 py-0.2 rounded font-mono">active</span>
-</a>
-<!-- Channel: # dev-updates -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
-<span class="text-slate-400 font-mono text-sm">#</span>
-<span class="truncate">dev-updates</span>
-<span class="ml-auto w-2 h-2 rounded-full bg-brand-500"></span>
-</a>
-<!-- Channel: # frontend-react -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
-<span class="text-slate-400 font-mono text-sm">#</span>
-<span class="truncate">frontend-react</span>
-</a>
-<!-- Channel: # backend-fastapi -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
-<span class="text-slate-400 font-mono text-sm">#</span>
-<span class="truncate">backend-fastapi</span>
-</a>
-<!-- Channel: # resources-and-links -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Channel Changed', 'You navigated to ' + this.querySelector('span.truncate').innerText, 'alert')">
-<span class="text-slate-400 font-mono text-sm">#</span>
-<span class="truncate">resources-and-links</span>
-</a>
-</div>
-</div>
-<!-- Category: Voice & Live Collab -->
-<div data-purpose="voice-channels-group">
-<div class="px-2 mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-<span>Voice &amp; Collab Hub</span>
-<span class="text-[10px] text-emerald-600 font-bold">2 Live</span>
-</div>
-<div class="space-y-1">
-<!-- Active Voice Room -->
-<div class="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200/60 text-xs">
-<div class="flex items-center justify-between font-semibold text-emerald-900 mb-1.5">
-<div class="flex items-center gap-1.5 cursor-pointer" onclick="window.showSystemModal('Voice Channel', 'Disconnecting from Pair Programming...', 'alert')">
-<svg class="w-3.5 h-3.5 text-emerald-600 animate-pulse" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-<span>Pair Programming</span>
-</div>
-<span class="px-1.5 py-0.5 text-[9px] bg-emerald-200/80 text-emerald-800 rounded font-mono font-bold">LIVE</span>
-</div>
-<!-- Current Voice Members -->
-<div class="space-y-1 pl-4">
-<div class="flex items-center gap-2 text-slate-700 text-[11px] cursor-pointer" onclick="window.location.href='profile.html'">
-<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-<span>Gopale Omkar (Speaking)</span>
-</div>
-<div class="flex items-center gap-2 text-slate-600 text-[11px] cursor-pointer" onclick="window.location.href='profile.html?id=3'">
-<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-<span>Priya Patil</span>
-</div>
-</div>
-</div>
-<!-- Inactive Voice Room -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Voice Channel', 'Connecting to ' + this.querySelector('span.truncate').innerText + '...', 'alert')">
-<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-<span class="truncate">Standup Lounge</span>
-</a>
-<!-- Shared Live Canvas -->
-<a class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors" href="javascript:void(0)" onclick="window.showSystemModal('Live Canvas', 'Connecting to ' + this.querySelector('span.truncate').innerText + '...', 'alert')">
-<svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-<span class="truncate">Live Architecture Canvas</span>
-</a>
-</div>
-</div>
-</div>
-</div>
-<!-- Bottom Sprint Tracker Widget -->
-<div class="p-3 border-t border-slate-200 bg-white" data-purpose="sprint-progress-widget">
-<div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-<span class="flex items-center gap-1.5">
-<span class="w-2 h-2 rounded-full bg-amber-500"></span>
-            SIH Round 1 Milestone
-          </span>
-<span class="text-brand-600 font-mono">78%</span>
-</div>
-<p class="text-[11px] text-slate-500 mb-2">Submission closes in <strong class="text-slate-700">4 days</strong></p>
-<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-<div class="bg-brand-600 h-1.5 rounded-full transition-all duration-500" style="width: 78%"></div>
-</div>
-</div>
-</aside>
-<!-- END: ChannelsSidebar -->
-<!-- BEGIN: CentralChatStream -->
-<!-- Main Center Collaboration Chat Area -->
-<main class="flex-1 flex flex-col bg-white overflow-hidden" data-purpose="main-chat-viewport">
-<!-- Channel Top Bar -->
-<header class="h-14 flex-none border-b border-slate-200 px-6 flex items-center justify-between bg-white z-10">
-<div class="flex items-center gap-3">
-<div class="flex items-center gap-2">
-<span class="text-slate-400 font-mono text-xl font-bold">#</span>
-<h1 class="text-base font-bold text-slate-900 tracking-tight">general</h1>
-</div>
-<div class="h-4 w-px bg-slate-200"></div>
-<p class="text-xs text-slate-500 hidden md:inline truncate max-w-sm">
-            Core sprint discussion, automated PR reviews &amp; SIH hackathon deliverables.
-          </p>
-</div>
-<!-- Channel Actions -->
-<div class="flex items-center gap-2 text-slate-500 text-xs">
-<!-- GitHub Sync Indicator -->
-<div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono text-[11px] cursor-pointer" onclick="window.showSystemModal('GitHub Sync', 'Repository is fully synced with main branch.', 'alert')">
-<svg class="w-3.5 h-3.5 text-slate-800" fill="currentColor" viewbox="0 0 24 24">
-<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
-</svg>
-<span>repo: main synced</span>
-</div>
-<button class="p-1.5 hover:bg-slate-100 rounded-md transition-colors" title="Pinned Messages" onclick="window.showSystemModal('Pinned Messages', 'Showing messages pinned in #general.', 'alert')">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-<button class="p-1.5 hover:bg-slate-100 rounded-md transition-colors" title="Start Group Audio Call" onclick="window.showSystemModal('Audio Call', 'Starting group audio call...', 'alert')">
-<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-</header>
-<!-- Message History List -->
-<div class="flex-1 overflow-y-auto px-6 py-6 space-y-6" data-purpose="chat-messages-container">
-<!-- Welcome Banner to Channel -->
-<div class="p-4 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-100 flex items-start gap-3">
-<div class="w-10 h-10 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-sm flex-none">
-            #
-          </div>
-<div>
-<h3 class="text-sm font-bold text-slate-900">Welcome to #general!</h3>
-<p class="text-xs text-slate-600 mt-0.5 leading-relaxed">
-              This is the official collaborative channel for <strong>Neon • Smart India Hackathon 2026</strong>. All GitHub PR notifications, automated Docker CI status, and mentor reviews post here automatically.
-            </p>
-</div>
-</div>
-<!-- Date Separator -->
-<div class="relative flex items-center justify-center my-4">
-<div class="border-t border-slate-200 w-full"></div>
-<span class="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider absolute">Today • 14 Aug 2026</span>
-</div>
-<!-- Message Item 1: Gopale Omkar Ravindra (Team Lead) -->
-<div class="flex items-start gap-3 group relative" data-purpose="message-item">
-<div class="w-9 h-9 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-brand-100 cursor-pointer" onclick="window.location.href='profile.html'">
-            GO
-          </div>
-<div class="flex-1 min-w-0">
-<div class="flex items-baseline gap-2">
-<span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer" onclick="window.location.href='profile.html'">Gopale Omkar Ravindra</span>
-<span class="px-1.5 py-0.2 bg-brand-100 text-brand-700 text-[10px] font-bold rounded">LEAD</span>
-<span class="text-[11px] text-slate-400">09:03 AM</span>
-</div>
-<p class="text-xs text-slate-700 mt-1 leading-relaxed">
-              Hey team! Good morning. I've finished configuring the core FastAPI async backend with the static analysis worker. Let's do a fast sync before our mentor evaluation.
-            </p>
-<!-- Code snippet card -->
-<div class="mt-2.5 rounded-lg border border-slate-200 overflow-hidden text-xs max-w-xl shadow-xs">
-<div class="bg-slate-900 px-3 py-1.5 flex items-center justify-between text-slate-400 text-[11px] border-b border-slate-800">
-<span class="font-mono">app/services/pr_analyzer.py</span>
-<span class="text-[10px] uppercase font-mono text-emerald-400">Python 3.11</span>
-</div>
-<pre class="code-block p-3 overflow-x-auto text-[11px] leading-snug"><code><span class="text-purple-400">async def</span> <span class="text-blue-400">evaluate_pull_request</span>(repo_url: <span class="text-yellow-300">str</span>, pr_id: <span class="text-yellow-300">int</span>):
-    <span class="text-slate-400"># Trigger asynchronous LLM code inspection queue</span>
-    task = <span class="text-purple-400">await</span> celery_app.send_task(
-        <span class="text-green-300">"tasks.run_code_safety_check"</span>, 
-        args=[repo_url, pr_id]
-    )
-    <span class="text-purple-400">return</span> {<span class="text-green-300">"task_id"</span>: task.id, <span class="text-green-300">"status"</span>: <span class="text-green-300">"QUEUED"</span>}</code></pre>
-</div>
-</div>
-</div>
-<!-- Message Item 2: Priya Patil (Frontend / Design) -->
-<div class="flex items-start gap-3 group relative" data-purpose="message-item">
-<div class="w-9 h-9 rounded-full bg-violet-600 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-violet-100 cursor-pointer" onclick="window.location.href='profile.html?id=3'">
-            PP
-          </div>
-<div class="flex-1 min-w-0">
-<div class="flex items-baseline gap-2">
-<span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer" onclick="window.location.href='profile.html?id=3'">Priya Patil</span>
-<span class="px-1.5 py-0.2 bg-violet-100 text-violet-700 text-[10px] font-bold rounded">DESIGN LEAD</span>
-<span class="text-[11px] text-slate-400">09:12 AM</span>
-</div>
-<p class="text-xs text-slate-700 mt-1 leading-relaxed">
-              Looks super neat Omkar! I just updated the reviewer dashboard frames on Figma. Added the AST review tree &amp; severity tags so the user can easily triage high-priority bugs.
-            </p>
-<!-- Figma Attachment Card -->
-<div class="mt-2 flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg max-w-md hover:border-brand-400 transition-colors cursor-pointer group/figma" onclick="window.showSystemModal('Figma', 'Opening Figma file in new tab...', 'alert')">
-<div class="w-9 h-9 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center flex-none font-bold text-base">
-                ❖
-              </div>
-<div class="min-w-0 flex-1">
-<p class="text-xs font-bold text-slate-800 group-hover/figma:text-brand-600 transition-colors truncate">Figma: SIH-26 Neon PR Reviewer UI v2.4</p>
-<p class="text-[11px] text-slate-400">Edited 15 mins ago • 14 interactive frames</p>
-</div>
-<span class="text-xs font-semibold text-brand-600">Open →</span>
-</div>
-</div>
-</div>
-<!-- Message Item 3: Don Shri (Backend & Systems) -->
-<div class="flex items-start gap-3 group relative" data-purpose="message-item">
-<div class="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-emerald-100 cursor-pointer" onclick="window.location.href='profile.html?id=2'">
-            DS
-          </div>
-<div class="flex-1 min-w-0">
-<div class="flex items-baseline gap-2">
-<span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer" onclick="window.location.href='profile.html?id=2'">Don Shri</span>
-<span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">DEV</span>
-<span class="text-[11px] text-slate-400">09:15 AM</span>
-</div>
-<p class="text-xs text-slate-700 mt-1 leading-relaxed">
-              Dockerized container tests are passing locally! Also hooked up the webhook receiver for GitHub push events. I am jumping into the <strong>#pair-programming</strong> audio lounge right now if anyone wants to test the live socket stream.
-            </p>
-<!-- Quick Reaction Pills -->
-<div class="flex items-center gap-1.5 mt-2">
-<button class="reaction-btn px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors" onclick="toggleReaction(this)">
-<span>🔥</span> <span class="font-bold text-[10px] reaction-count">3</span>
-</button>
-<button class="reaction-btn px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors" onclick="toggleReaction(this)">
-<span>🚀</span> <span class="font-bold text-[10px] reaction-count">2</span>
-</button>
-<button class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Add reaction" onclick="addQuickReaction(this)">
-                +
-              </button>
-</div>
-</div>
-</div>
-<!-- System Message / Live Pair Session Card -->
-<div class="my-2 p-3.5 rounded-xl border border-dashed border-brand-300 bg-brand-50/40 flex items-center justify-between">
-<div class="flex items-center gap-3">
-<div class="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center shadow-xs">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</div>
-<div>
-<p class="text-xs font-bold text-slate-900">Pair Programming &amp; Live Terminal is Active</p>
-<p class="text-[11px] text-slate-500">Gopale Omkar &amp; Priya Patil are collaborating in real-time.</p>
-</div>
-</div>
-<button class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-2xs" onclick="window.showSystemModal('Joining Session', 'Connecting to Live Canvas and Voice...', 'alert')">
-            Join Voice &amp; Canvas
-          </button>
-</div>
-</div>
-<!-- Rich Message Input Box -->
-<footer class="p-4 border-t border-slate-200 bg-white" data-purpose="chat-input-container">
-<div class="bg-slate-50 border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 rounded-xl p-2.5 transition-all shadow-2xs">
-<textarea class="w-full bg-transparent border-0 resize-none text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 p-1" placeholder="Message #general (Type / for slash commands or @ to mention a teammate)..." rows="2" onkeypress="if(event.key === 'Enter') { event.preventDefault(); window.showSystemModal('Message Sent', 'Your message has been posted to the channel.', 'alert'); this.value=''; }"></textarea>
-<!-- Input Toolbar -->
-<div class="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
-<!-- Left formatting tools -->
-<div class="flex items-center gap-1 text-slate-500">
-<!-- File Attachment -->
-<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Attach file or screenshot" onclick="window.showSystemModal('Action', 'Opening file attachment dialog...', 'alert')">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-<!-- Code Snippet -->
-<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded font-mono text-xs font-bold transition-colors" title="Insert code block" onclick="window.showSystemModal('Action', 'Opening code snippet editor...', 'alert')">
-                &lt;/&gt;
-              </button>
-<!-- Emoji Picker -->
-<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Insert emoji" onclick="window.showSystemModal('Action', 'Opening emoji picker...', 'alert')">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-<!-- Voice Memo -->
-<button class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Send audio clip" onclick="window.showSystemModal('Action', 'Recording voice memo...', 'alert')">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-<!-- Right: Send Action Button -->
-<div class="flex items-center gap-2">
-<span class="text-[10px] text-slate-400 font-medium hidden sm:inline">Press <strong>Enter ↵</strong> to send</span>
-<button class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow transition-all" title="Send Message" onclick="window.showSystemModal('Message Sent', 'Your message has been posted to the channel.', 'alert'); document.querySelector('textarea').value='';">
-<span>Send</span>
-<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-</div>
-</div>
-</footer>
-</main>
-<!-- END: CentralChatStream -->
-<!-- BEGIN: TeamRosterContextSidebar -->
-<!-- Right Sidebar: Team Roster, Hackathon Details & Assets -->
-<aside class="w-72 flex-none bg-slate-50 border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col" data-purpose="team-roster-sidebar">
-<!-- Panel Header -->
-<div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white/70 backdrop-blur-xs sticky top-0 z-10">
-<h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Team Roster • 4 Members</h2>
-<span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">3 Online</span>
-</div>
-<div class="p-4 space-y-6">
-<!-- Category: Leadership & Admin -->
-<div data-purpose="roster-role-admin">
-<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-<span>Admin &amp; SIH Lead — 1</span>
-</div>
-<!-- User Card: Gopale Omkar Ravindra -->
-<div class="flex items-center gap-2.5 p-2 rounded-lg bg-white border border-slate-200/80 hover:border-brand-300 transition-colors shadow-2xs cursor-pointer" onclick="window.location.href='profile.html'">
-<div class="relative flex-none">
-<div class="w-8 h-8 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center">
-                GO
-              </div>
-<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
-</div>
-<div class="min-w-0 flex-1">
-<p class="text-xs font-bold text-slate-800 truncate">Gopale Omkar Ravindra</p>
-<p class="text-[10px] text-slate-500 truncate">AVCOE • Full-stack Lead</p>
-</div>
-<span class="px-1.5 py-0.5 text-[9px] font-bold bg-brand-50 text-brand-700 border border-brand-200 rounded">
-              Lead
-            </span>
-</div>
-</div>
-<!-- Category: Backend & AI -->
-<div data-purpose="roster-role-backend">
-<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-<span>Backend &amp; AI Stack — 2</span>
-</div>
-<div class="space-y-1.5">
-<!-- Member: Don Shri -->
-<div class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer" onclick="window.location.href='profile.html?id=2'">
-<div class="relative flex-none">
-<div class="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
-                  DS
-                </div>
-<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
-</div>
-<div class="min-w-0 flex-1">
-<p class="text-xs font-semibold text-slate-800 truncate">Don Shri</p>
-<p class="text-[10px] text-slate-400 truncate">AVCOE • Systems &amp; Docker</p>
-</div>
-<button class="p-1 text-slate-400 hover:text-brand-600 transition-colors" title="Direct Message" onclick="event.stopPropagation(); window.location.href='inbox.html?target=2'">
-<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-<!-- Member: Rohan Verma (Offline) -->
-<div class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white transition-colors opacity-75 cursor-pointer" onclick="window.location.href='profile.html?id=5'">
-<div class="relative flex-none">
-<div class="w-7 h-7 rounded-full bg-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center">
-                  RV
-                </div>
-<span class="absolute bottom-0 right-0 w-2 h-2 bg-slate-300 border-2 border-white rounded-full"></span>
-</div>
-<div class="min-w-0 flex-1">
-<p class="text-xs font-semibold text-slate-700 truncate">Rohan Verma</p>
-<p class="text-[10px] text-slate-400 truncate">IIT Bombay • ML Engineer</p>
-</div>
-<span class="text-[10px] text-slate-400 font-medium">1h ago</span>
-</div>
-</div>
-</div>
-<!-- Category: Frontend & UI -->
-<div data-purpose="roster-role-frontend">
-<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-<span>Frontend &amp; UI — 1</span>
-</div>
-<div class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer" onclick="window.location.href='profile.html?id=3'">
-<div class="relative flex-none">
-<div class="w-7 h-7 rounded-full bg-violet-600 text-white font-bold text-xs flex items-center justify-center">
-                PP
-              </div>
-<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
-</div>
-<div class="min-w-0 flex-1">
-<p class="text-xs font-semibold text-slate-800 truncate">Priya Patil</p>
-<p class="text-[10px] text-slate-400 truncate">AVCOE • UI/UX &amp; Tailwind</p>
-</div>
-<button class="p-1 text-slate-400 hover:text-brand-600 transition-colors" title="Direct Message" onclick="event.stopPropagation(); window.location.href='inbox.html?target=3'">
-<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-</div>
-<div class="border-t border-slate-200"></div>
-<!-- Shared Project Assets Hub -->
-<div class="space-y-2.5" data-purpose="shared-assets-widget">
-<div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-<span>Project Resources</span>
-</div>
-<!-- Asset 1: GitHub -->
-<a class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-2xs" href="javascript:void(0)" onclick="window.showSystemModal('External Link', 'Opening GitHub repository in new tab.', 'alert')">
-<div class="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center flex-none">
-<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
-<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
-</svg>
-</div>
-<div class="truncate min-w-0">
-<p class="font-semibold text-slate-800 truncate group-hover:text-brand-600">github.com/neon-sih</p>
-<p class="text-[10px] text-slate-400">18 branches • 4 PRs open</p>
-</div>
-</a>
-<!-- Asset 2: Google Colab Notebook -->
-<a class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-2xs" href="javascript:void(0)" onclick="window.showSystemModal('External Link', 'Opening Google Colab in new tab.', 'alert')">
-<div class="w-7 h-7 rounded bg-amber-500 text-white flex items-center justify-center flex-none font-bold text-xs">
-              CO
-            </div>
-<div class="truncate min-w-0">
-<p class="font-semibold text-slate-800 truncate group-hover:text-brand-600">AST_Transformer_Eval.ipynb</p>
-<p class="text-[10px] text-slate-400">Google Drive • Trained model</p>
-</div>
-</a>
-<!-- Asset 3: Hackathon Checklist Summary -->
-<div class="p-3 bg-brand-50/70 border border-brand-200/80 rounded-lg text-xs space-y-2">
-<span class="font-bold text-brand-900 block">Deliverable Checklist</span>
-<label class="flex items-center gap-2 text-slate-700 cursor-pointer text-[11px]">
-<input checked="" class="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5" type="checkbox"/>
-<span>Architecture PDF approved</span>
-</label>
-<label class="flex items-center gap-2 text-slate-700 cursor-pointer text-[11px]">
-<input checked="" class="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5" type="checkbox"/>
-<span>FastAPI Backend Containerized</span>
-</label>
-<label class="flex items-center gap-2 text-slate-700 cursor-pointer text-[11px]">
-<input class="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5" type="checkbox"/>
-<span>3-Minute Pitch Video Recorded</span>
-</label>
-</div>
-</div>
-</div>
-<!-- Bottom Sprint Tracker Widget -->
-<div class="p-3 border-t border-slate-200 bg-white" data-purpose="sprint-progress-widget">
-<div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-<span class="flex items-center gap-1.5">
-<span class="w-2 h-2 rounded-full bg-amber-500"></span>
-            SIH Round 1 Milestone
-          </span>
-<span class="text-brand-600 font-mono">78%</span>
-</div>
-<p class="text-[11px] text-slate-500 mb-2">Submission closes in <strong class="text-slate-700">4 days</strong></p>
-<div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-<div class="bg-brand-600 h-1.5 rounded-full transition-all duration-500" style="width: 78%"></div>
-</div>
-</div>
-</aside>
-<!-- END: TeamRosterContextSidebar -->
+  
+  <!-- Left Rail (Teams) -->
+  <aside class="w-16 flex-none bg-slate-100 border-r border-slate-200 py-3 flex flex-col items-center justify-between z-20 hide-scroll overflow-y-auto">
+    <div id="teams-list" class="flex flex-col items-center gap-2.5 w-full">
+      <!-- Dynamically injected teams -->
+    </div>
+    
+    <div class="flex flex-col items-center gap-2 mt-4 pt-4 border-t border-slate-200 w-full">
+      <button onclick="openCreateTeamModal()" class="w-11 h-11 rounded-3xl hover:rounded-2xl border-2 border-dashed border-slate-300 hover:border-brand-500 text-slate-400 hover:text-brand-600 hover:bg-white flex items-center justify-center transition-all duration-200" title="Create Workspace">
+        <span class="material-symbols-outlined text-xl">add</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Secondary Sidebar (Channels) -->
+  <nav class="w-64 flex-none bg-slate-50 border-r border-slate-200 flex flex-col hidden" id="channels-sidebar">
+    <div class="h-14 flex items-center justify-between px-4 border-b border-slate-200 shadow-sm bg-white cursor-pointer hover:bg-slate-50 transition-colors">
+      <h2 class="font-bold text-slate-800 text-sm truncate font-['Plus_Jakarta_Sans']" id="active-team-name">Select a Team</h2>
+      <span class="material-symbols-outlined text-slate-400 text-[18px]">expand_more</span>
+    </div>
+    <div class="flex-1 overflow-y-auto py-3 px-2 hide-scroll" id="channels-list">
+      <!-- Dynamically injected channels -->
+    </div>
+  </nav>
+
+  <!-- Main Chat Area -->
+  <main class="flex-1 flex flex-col bg-white relative hidden" id="chat-area">
+    <!-- Channel Header -->
+    <header class="h-14 flex-none flex items-center justify-between px-4 border-b border-slate-200 shadow-sm">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-slate-400 text-[20px]">tag</span>
+        <h3 class="font-bold text-slate-800 text-[15px]" id="active-channel-name">general</h3>
+        <span class="text-xs text-slate-500 border-l border-slate-300 pl-2 ml-2">Welcome to the channel.</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="text-slate-400 hover:text-brand-600 transition-colors" title="Start Voice Call" onclick="window.showSystemModal('Voice Call', 'Starting WebRTC connection...', 'alert')">
+          <span class="material-symbols-outlined text-[20px]">call</span>
+        </button>
+        <button class="text-slate-400 hover:text-brand-600 transition-colors" title="Start Video Call" onclick="window.showSystemModal('Video Call', 'Starting video bridge...', 'alert')">
+          <span class="material-symbols-outlined text-[20px]">videocam</span>
+        </button>
+        <button class="text-slate-400 hover:text-slate-600 transition-colors" title="Members" onclick="toggleMembers()">
+          <span class="material-symbols-outlined text-[20px]">group</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Message Feed -->
+    <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-1" id="messages-feed">
+      <!-- Dynamic messages -->
+    </div>
+
+    <!-- Message Input -->
+    <div class="p-4 bg-white border-t border-slate-100">
+      <form id="message-form" class="bg-slate-100 rounded-lg flex items-end p-1 border border-slate-200 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all">
+        <button type="button" class="p-2 text-slate-400 hover:text-slate-600 rounded-md shrink-0 self-end mb-0.5">
+          <span class="material-symbols-outlined text-[20px]">add_circle</span>
+        </button>
+        <textarea id="message-input" rows="1" class="w-full bg-transparent border-none focus:ring-0 resize-none py-2.5 px-2 text-[15px] text-slate-800 placeholder-slate-400" placeholder="Message #general" onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitMessage(); }"></textarea>
+        <button type="submit" class="p-2 text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-md shrink-0 self-end mb-0.5 mr-0.5">
+          <span class="material-symbols-outlined text-[20px]">send</span>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Right Sidebar (Members) -->
+  <aside class="w-60 flex-none bg-slate-50 border-l border-slate-200 hidden" id="members-sidebar">
+    <div class="p-4 border-b border-slate-200">
+      <h3 class="font-bold text-slate-700 text-xs tracking-wider uppercase">Members</h3>
+    </div>
+    <div class="p-3 flex flex-col gap-1" id="members-list">
+      <!-- Dynamic members -->
+    </div>
+  </aside>
+
 </div>
 <!-- END: WorkspaceContainer -->
-<!-- BEGIN: InteractiveScripts -->
-<!-- Lightweight workspace utilities for input behavior and keyboard shortcuts -->
-<script data-purpose="keyboard-shortcuts">
-    document.addEventListener('keydown', function(e) {
-      // CMD/Ctrl + K search focus trigger
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const searchInput = document.querySelector('input[type="text"]');
-        if (searchInput) {
-          searchInput.focus();
-        }
-      }
-      // Escape to close modal/panels
-      if (e.key === 'Escape') {
-        window.closeSystemModal();
-        const notifPanel = document.getElementById('notifications-panel');
-        if (notifPanel) notifPanel.remove();
-      }
-    });
 
-    // ==========================================
-    // GLOBAL MODAL SYSTEM
-    // ==========================================
-    window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
-        const modal = document.getElementById('systemModal');
-        const titleEl = document.getElementById('systemModalTitle');
-        const msgEl = document.getElementById('systemModalMessage');
-        const cancelBtn = document.getElementById('systemModalCancel');
-        const confirmBtn = document.getElementById('systemModalConfirm');
-
-        if (!modal) return console.error("System modal HTML is missing!");
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-        confirmBtn.textContent = confirmText;
-
-        if (type === 'confirm') {
-            cancelBtn.style.display = 'block';
-            cancelBtn.onclick = () => window.closeSystemModal();
-            confirmBtn.onclick = () => {
-                window.closeSystemModal();
-                if (onConfirm) onConfirm();
-            };
-        } else {
-            cancelBtn.style.display = 'none';
-            confirmBtn.onclick = () => {
-                window.closeSystemModal();
-                if (onConfirm) onConfirm();
-            };
-        }
-
-        modal.classList.add('active');
-    };
-
-    window.closeSystemModal = function() {
-        const modal = document.getElementById('systemModal');
-        if (modal) modal.classList.remove('active');
-    };
-
-    // ==========================================
-    // NOTIFICATIONS PANEL
-    // ==========================================
-    function toggleNotificationsPanel() {
-        let existing = document.getElementById('notifications-panel');
-        if (existing) { existing.remove(); return; }
-        const panel = document.createElement('div');
-        panel.id = 'notifications-panel';
-        panel.className = 'fixed top-14 right-4 z-[200] w-80 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden';
-        panel.innerHTML = `
-            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-sm font-bold text-slate-900">Notifications</h3>
-                <button class="text-[11px] text-brand-600 hover:underline font-semibold" onclick="document.querySelectorAll('#notifications-panel .notif-unread').forEach(el=>{el.classList.remove('notif-unread','bg-brand-50')});document.getElementById('notif-badge').style.display='none'">Mark all read</button>
-            </div>
-            <div class="max-h-72 overflow-y-auto">
-                <div class="notif-unread bg-brand-50 px-4 py-3 border-b border-slate-100 flex gap-3 items-start cursor-pointer hover:bg-slate-50 transition-colors">
-                    <span class="material-symbols-outlined text-brand-600 text-[18px] mt-0.5">merge_type</span>
-                    <div>
-                        <p class="text-xs text-slate-800 font-medium">PR #24 approved by Anjali B.</p>
-                        <span class="text-[10px] text-slate-400">2 min ago</span>
-                    </div>
-                </div>
-                <div class="notif-unread bg-brand-50 px-4 py-3 border-b border-slate-100 flex gap-3 items-start cursor-pointer hover:bg-slate-50 transition-colors">
-                    <span class="material-symbols-outlined text-emerald-600 text-[18px] mt-0.5">task_alt</span>
-                    <div>
-                        <p class="text-xs text-slate-800 font-medium">Docker CI passed for neon-sih/main</p>
-                        <span class="text-[10px] text-slate-400">15 min ago</span>
-                    </div>
-                </div>
-                <div class="notif-unread bg-brand-50 px-4 py-3 border-b border-slate-100 flex gap-3 items-start cursor-pointer hover:bg-slate-50 transition-colors">
-                    <span class="material-symbols-outlined text-violet-600 text-[18px] mt-0.5">person_add</span>
-                    <div>
-                        <p class="text-xs text-slate-800 font-medium">Rohan Verma joined the workspace</p>
-                        <span class="text-[10px] text-slate-400">1 hour ago</span>
-                    </div>
-                </div>
-            </div>
-            <div class="px-4 py-2.5 border-t border-slate-100 text-center">
-                <button class="text-xs text-brand-600 hover:underline font-semibold" onclick="window.showSystemModal('Notifications', 'Opening full notification center...', 'alert');document.getElementById('notifications-panel').remove()">View all notifications</button>
-            </div>
-        `;
-        document.body.appendChild(panel);
-        setTimeout(() => {
-            document.addEventListener('click', function closeNotif(e) {
-                const p = document.getElementById('notifications-panel');
-                if (p && !p.contains(e.target) && !e.target.closest('[aria-label="Notifications"]')) {
-                    p.remove();
-                    document.removeEventListener('click', closeNotif);
-                }
-            });
-        }, 10);
-    }
-
-    // ==========================================
-    // REACTION TOGGLE
-    // ==========================================
-    function toggleReaction(btn) {
-        const countEl = btn.querySelector('.reaction-count');
-        if (!countEl) return;
-        const isActive = btn.classList.contains('bg-brand-100');
-        let count = parseInt(countEl.textContent) || 0;
-        if (isActive) {
-            count--;
-            btn.classList.remove('bg-brand-100', 'border-brand-300', 'text-brand-700');
-            btn.classList.add('bg-slate-100', 'border-slate-200', 'text-slate-600');
-        } else {
-            count++;
-            btn.classList.remove('bg-slate-100', 'border-slate-200', 'text-slate-600');
-            btn.classList.add('bg-brand-100', 'border-brand-300', 'text-brand-700');
-        }
-        countEl.textContent = count;
-    }
-
-    function addQuickReaction(btn) {
-        const emojis = ['👍', '❤️', '😂', '🎉', '🤔', '👀', '💯'];
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        const newBtn = document.createElement('button');
-        newBtn.className = 'reaction-btn px-2 py-0.5 bg-brand-100 border-brand-300 border rounded-full text-xs text-brand-700 flex items-center gap-1 transition-colors';
-        newBtn.innerHTML = `<span>${emoji}</span> <span class="font-bold text-[10px] reaction-count">1</span>`;
-        newBtn.onclick = function() { toggleReaction(this); };
-        btn.parentNode.insertBefore(newBtn, btn);
-    }
-
-    // ==========================================
-    // CHANNEL SWITCHING (VISUAL UPDATE)
-    // ==========================================
-    document.querySelectorAll('[data-purpose="text-channels-group"] a').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const channelName = this.querySelector('span.truncate').innerText;
-            // Update active state in sidebar
-            document.querySelectorAll('[data-purpose="text-channels-group"] a').forEach(ch => {
-                ch.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 transition-colors';
-                const badge = ch.querySelector('.ml-auto');
-                if (badge && badge.textContent === 'active') badge.remove();
-            });
-            this.className = 'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-100/70 text-brand-900 border-l-2 border-brand-600 shadow-2xs';
-            // Update channel hash
-            const hashSpan = this.querySelector('span:first-child');
-            if (hashSpan) { hashSpan.className = 'text-brand-600 font-mono text-sm'; }
-            // Add active badge
-            const activeBadge = document.createElement('span');
-            activeBadge.className = 'ml-auto text-[10px] bg-brand-200/80 text-brand-800 px-1.5 py-0.2 rounded font-mono';
-            activeBadge.textContent = 'active';
-            this.appendChild(activeBadge);
-            // Update header
-            document.querySelector('[data-purpose="main-chat-viewport"] h1').textContent = channelName;
-            window.showSystemModal('Channel Changed', 'Switched to #' + channelName, 'alert');
-        });
-    });
-
-    // ==========================================
-    // MESSAGE HOVER ACTIONS (Injected on load)
-    // ==========================================
-    document.querySelectorAll('[data-purpose="message-item"]').forEach(msg => {
-        const actions = document.createElement('div');
-        actions.className = 'absolute -top-3 right-0 hidden group-hover:flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg shadow-sm px-1 py-0.5 z-10';
-        actions.innerHTML = `
-            <button class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded transition-colors" title="Reply" onclick="window.showSystemModal('Reply', 'Opening reply thread...', 'alert')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a5 5 0 015 5v6M3 10l6 6M3 10l6-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-            </button>
-            <button class="p-1 text-slate-400 hover:text-amber-500 hover:bg-slate-100 rounded transition-colors" title="Add reaction" onclick="event.stopPropagation(); addQuickReaction(this)">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-            </button>
-            <button class="p-1 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded transition-colors" title="Pin message" onclick="window.showSystemModal('Pin Message', 'Message has been pinned to #general.', 'alert')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-            </button>
-            <button class="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="More options" onclick="window.showSystemModal('Options', 'Edit • Forward • Delete • Copy Link', 'alert')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
-            </button>
-        `;
-        msg.appendChild(actions);
-    });
-  </script>
-<!-- END: InteractiveScripts -->
-
-<!-- CUSTOM SYSTEM ALERTS MODAL -->
-<div class="modal-overlay" id="systemModal" onclick="if(event.target===this) window.closeSystemModal()">
-    <div class="custom-modal">
-        <h3 id="systemModalTitle">Notification</h3>
-        <p id="systemModalMessage">Message goes here.</p>
-        <div class="modal-buttons">
-            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
-            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
-        </div>
-    </div>
+<!-- Empty State / Loading -->
+<div id="loading-overlay" class="fixed inset-0 bg-white z-[60] flex items-center justify-center transition-opacity duration-300">
+  <div class="flex flex-col items-center gap-4">
+    <div class="w-8 h-8 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
+    <p class="text-slate-500 font-medium">Loading Workspace...</p>
+  </div>
 </div>
 
+<!-- Modals -->
+<div id="create-team-modal" class="modal-overlay">
+  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+    <h3 class="text-xl font-bold text-slate-900 mb-4 font-['Plus_Jakarta_Sans']">Create Workspace</h3>
+    <form id="create-team-form" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Workspace Name</label>
+        <input type="text" id="new-team-name" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Description (Optional)</label>
+        <input type="text" id="new-team-desc" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+      </div>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-md font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded-md font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const container = document.getElementById('dynamic-messages-container');
-      if (!container) return;
+<div id="create-channel-modal" class="modal-overlay">
+  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+    <h3 class="text-xl font-bold text-slate-900 mb-4 font-['Plus_Jakarta_Sans']">Create Channel</h3>
+    <form id="create-channel-form" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Channel Name</label>
+        <div class="relative">
+          <span class="absolute left-3 top-2 text-slate-400">#</span>
+          <input type="text" id="new-channel-name" required class="w-full pl-8 rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="new-channel">
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-md font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded-md font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Shared Script (Header Avatar/Notifs) -->
+<script src="shared.js"></script>
+
+<!-- Workspace Application Engine -->
+<script>
+  let currentTeamId = null;
+  let currentChannelId = null;
+  let ws = null;
+  let currentUser = null;
+
+  async function init() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      window.location.href = 'join.html';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/profiles/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Not auth");
+      currentUser = await res.json();
       
-      const teamId = 1; // Defaulting to 1 for demo purposes
+      await loadTeams();
       
-      const loadingEl = document.createElement('div');
-      loadingEl.className = 'text-center py-4 text-on-surface-variant';
-      loadingEl.innerHTML = '<span class="material-symbols-outlined animate-spin text-[24px]">sync</span>';
-      container.appendChild(loadingEl);
+      document.getElementById('loading-overlay').style.opacity = '0';
+      setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
+      
+    } catch (e) {
+      console.error(e);
+      window.location.href = 'join.html';
+    }
+  }
 
-      fetch(`/api/teams/${teamId}/messages`)
-        .then(res => res.json())
-        .then(messages => {
-          loadingEl.remove();
-          
-          if (!messages || messages.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'text-center py-4 text-on-surface-variant text-sm';
-            empty.textContent = 'No messages yet.';
-            container.appendChild(empty);
-            return;
-          }
-
-          messages.forEach(msg => {
-            const html = `
-              <div class="flex items-start gap-3 group relative" data-purpose="message-item">
-                <div class="w-9 h-9 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-brand-100 cursor-pointer">
-                  ${msg.sender_id}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-baseline gap-2">
-                    <span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">User ${msg.sender_id}</span>
-                    <span class="text-[11px] text-slate-400">${msg.timestamp || 'Just now'}</span>
-                  </div>
-                  <p class="text-xs text-slate-700 mt-1 leading-relaxed">
-                    ${msg.content}
-                  </p>
-                </div>
-              </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          loadingEl.remove();
-          const errEl = document.createElement('div');
-          errEl.className = 'text-center py-4 text-error text-sm';
-          errEl.textContent = 'Failed to load messages.';
-          container.appendChild(errEl);
-        });
+  async function loadTeams() {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch('/api/teams', {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    </script>
-    <script src="shared.js"></script>
+    const teams = await res.json();
+    
+    const list = document.getElementById('teams-list');
+    list.innerHTML = '';
+    
+    teams.forEach(team => {
+      const initial = team.name.charAt(0).toUpperCase();
+      const isActive = team.id === currentTeamId;
+      const html = `
+        <div class="relative group flex items-center justify-center w-full mt-2" onclick="selectTeam(${team.id}, '${team.name}')">
+          <div class="absolute left-0 w-1 ${isActive ? 'h-8 bg-brand-600' : 'h-0 group-hover:h-4 bg-slate-400'} rounded-r-md transition-all"></div>
+          <button class="w-11 h-11 ${isActive ? 'rounded-2xl bg-brand-600 text-white' : 'rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200'} font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm" title="${team.name}">
+            ${initial}
+          </button>
+        </div>
+      `;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+
+    if (teams.length > 0 && !currentTeamId) {
+      selectTeam(teams[0].id, teams[0].name);
+    }
+  }
+
+  async function selectTeam(teamId, teamName) {
+    currentTeamId = teamId;
+    currentChannelId = null;
+    if(ws) { ws.close(); ws = null; }
+    
+    // UI Update
+    document.getElementById('channels-sidebar').classList.remove('hidden');
+    document.getElementById('chat-area').classList.add('hidden');
+    document.getElementById('active-team-name').textContent = teamName;
+    
+    await loadTeams(); // Re-render to update active styling
+    await loadChannels(teamId);
+    await loadMembers(teamId);
+  }
+
+  async function loadChannels(teamId) {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch(`/api/teams/${teamId}/channels`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const channels = await res.json();
+    
+    const list = document.getElementById('channels-list');
+    list.innerHTML = '';
+    
+    channels.forEach(ch => {
+      const isActive = ch.id === currentChannelId;
+      const html = `
+        <div onclick="selectChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 ${isActive ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'} transition-colors">
+          <span class="material-symbols-outlined text-[18px] opacity-70">tag</span>
+          <span class="text-sm truncate">${ch.name}</span>
+        </div>
+      `;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+
+    // Add Create Channel btn
+    list.insertAdjacentHTML('beforeend', `
+      <div onclick="openCreateChannelModal()" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mt-2 text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        <span class="text-sm font-medium">Add Channel</span>
+      </div>
+    `);
+
+    // Auto select general channel if exists
+    if (channels.length > 0 && !currentChannelId) {
+      const general = channels.find(c => c.name === 'general') || channels[0];
+      selectChannel(general.id, general.name);
+    }
+  }
+
+  async function selectChannel(channelId, channelName) {
+    currentChannelId = channelId;
+    document.getElementById('chat-area').classList.remove('hidden');
+    document.getElementById('active-channel-name').textContent = channelName;
+    document.getElementById('message-input').placeholder = `Message #${channelName}`;
+    
+    await loadChannels(currentTeamId); // re-render for active styling
+    await loadMessages(channelId);
+    connectWebsocket(channelId);
+  }
+
+  async function loadMembers(teamId) {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch(`/api/teams/${teamId}/members`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const members = await res.json();
+    
+    const list = document.getElementById('members-list');
+    list.innerHTML = '';
+    
+    members.forEach(m => {
+      const pic = m.user_profile_pic || 'https://via.placeholder.com/40';
+      const roleBadge = m.role === 'Admin' ? '<span class="material-symbols-outlined text-[12px] text-amber-500" title="Admin">stars</span>' : '';
+      const html = `
+        <div class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 cursor-pointer transition-colors group">
+          <img src="${pic}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
+          <div class="flex flex-col flex-1 min-w-0">
+            <div class="flex items-center gap-1">
+              <span class="text-sm font-semibold text-slate-700 truncate group-hover:text-slate-900">${m.user_name}</span>
+              ${roleBadge}
+            </div>
+          </div>
+        </div>
+      `;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+  }
+
+  async function loadMessages(channelId) {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch(`/api/channels/${channelId}/messages`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const messages = await res.json();
+    
+    const feed = document.getElementById('messages-feed');
+    feed.innerHTML = '';
+    
+    messages.forEach(msg => {
+      appendMessage(msg, false);
+    });
+    scrollToBottom();
+  }
+
+  function appendMessage(msg, scroll = true) {
+    const feed = document.getElementById('messages-feed');
+    const pic = msg.sender_pic || 'https://via.placeholder.com/40';
+    const isMe = msg.sender_id === currentUser.id;
+    
+    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    const html = `
+      <div class="flex gap-3 hover:bg-slate-50 py-1.5 px-2 rounded-md transition-colors group ${isMe ? 'bg-brand-50/30' : ''}">
+        <img src="${pic}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 mt-0.5">
+        <div class="flex flex-col min-w-0 flex-1">
+          <div class="flex items-baseline gap-2">
+            <span class="font-semibold text-[15px] text-slate-900">${msg.sender_name}</span>
+            <span class="text-[11px] font-medium text-slate-400 group-hover:text-slate-500">${time}</span>
+          </div>
+          <p class="text-[15px] text-slate-700 leading-relaxed break-words whitespace-pre-wrap">${msg.content}</p>
+        </div>
+      </div>
+    `;
+    feed.insertAdjacentHTML('beforeend', html);
+    if(scroll) scrollToBottom();
+  }
+
+  function scrollToBottom() {
+    const feed = document.getElementById('messages-feed');
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function connectWebsocket(channelId) {
+    if(ws) ws.close();
+    ws = new WebSocket(`ws://${window.location.host}/api/ws/channels/${channelId}/${currentUser.id}`);
+    
+    ws.onmessage = function(event) {
+      const msg = JSON.parse(event.data);
+      // Ensure we don't duplicate our own message if rest API returned first, but for now just append
+      // In a real app we'd check msg.id against rendered ones
+      appendMessage(msg);
+    };
+    ws.onclose = () => console.log("WS closed");
+  }
+
+  function submitMessage() {
+    const input = document.getElementById('message-input');
+    const content = input.value.trim();
+    if(!content || !currentChannelId) return;
+    
+    input.value = '';
+    // reset height if it was auto-expanding
+    
+    const token = localStorage.getItem('access_token');
+    fetch(`/api/channels/${currentChannelId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ content: content })
+    }).catch(e => console.error("Message send failed", e));
+  }
+
+  document.getElementById('message-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitMessage();
+  });
+
+  // Modals & UI
+  function toggleMembers() {
+    const sidebar = document.getElementById('members-sidebar');
+    sidebar.classList.toggle('hidden');
+  }
+
+  function openCreateTeamModal() { document.getElementById('create-team-modal').classList.add('active'); }
+  function openCreateChannelModal() { document.getElementById('create-channel-modal').classList.add('active'); }
+  function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
+
+  document.getElementById('create-team-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-team-name').value;
+    const desc = document.getElementById('new-team-desc').value;
+    const token = localStorage.getItem('access_token');
+    
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name, description: desc })
+      });
+      if(res.ok) {
+        const team = await res.json();
+        // Immediately create a general channel for the new team via backend trigger, but our backend doesn't automatically create one in /api/teams yet!
+        // We will create one manually here:
+        await fetch(`/api/teams/${team.id}/channels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ name: 'general', channel_type: 'text' })
+        });
+
+        closeModals();
+        document.getElementById('create-team-form').reset();
+        await loadTeams();
+        selectTeam(team.id, team.name);
+      }
+    } catch(err) { console.error(err); }
+  });
+
+  document.getElementById('create-channel-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-channel-name').value;
+    const token = localStorage.getItem('access_token');
+    
+    try {
+      const res = await fetch(`/api/teams/${currentTeamId}/channels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name: name, channel_type: 'text' })
+      });
+      if(res.ok) {
+        closeModals();
+        document.getElementById('create-channel-form').reset();
+        await loadChannels(currentTeamId);
+      }
+    } catch(err) { console.error(err); }
+  });
+
+  // Stubs for system modals
+  window.showSystemModal = function(title, text) {
+    alert(`${title}\n\n${text}\n\n(This feature is a UI simulation for demonstration purposes.)`);
+  }
+
+  // Textarea auto-resize
+  const tx = document.getElementById("message-input");
+  tx.setAttribute("style", "height:" + (tx.scrollHeight) + "px;overflow-y:hidden;");
+  tx.addEventListener("input", function() {
+    this.style.height = "auto";
+    this.style.height = (this.scrollHeight) + "px";
+  });
+
+  document.addEventListener("DOMContentLoaded", init);
+</script>
 </body>
-    </html>
+</html>
