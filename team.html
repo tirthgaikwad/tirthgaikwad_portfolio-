@@ -142,11 +142,14 @@
   </main>
 
   <!-- Right Sidebar (Members) -->
-  <aside class="w-60 flex-none bg-slate-50 border-l border-slate-200 hidden" id="members-sidebar">
-    <div class="p-4 border-b border-slate-200">
+  <aside class="w-60 flex-none bg-slate-50 border-l border-slate-200 hidden flex-col" id="members-sidebar">
+    <div class="p-4 border-b border-slate-200 flex justify-between items-center">
       <h3 class="font-bold text-slate-700 text-xs tracking-wider uppercase">Members</h3>
+      <button onclick="openAddMemberModal()" class="text-brand-600 hover:text-brand-700" title="Add Member">
+        <span class="material-symbols-outlined text-[18px]">person_add</span>
+      </button>
     </div>
-    <div class="p-3 flex flex-col gap-1" id="members-list">
+    <div class="p-3 flex flex-col gap-1 overflow-y-auto flex-1 hide-scroll" id="members-list">
       <!-- Dynamic members -->
     </div>
   </aside>
@@ -202,6 +205,29 @@
   </div>
 </div>
 
+<div id="add-member-modal" class="modal-overlay">
+  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+    <h3 class="text-xl font-bold text-slate-900 mb-4 font-['Plus_Jakarta_Sans']">Add Member</h3>
+    <form id="add-member-form" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">User ID</label>
+        <input type="number" id="new-member-id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="e.g. 2">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Role</label>
+        <select id="new-member-role" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+          <option value="Member">Member</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-md font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded-md font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Shared Script (Header Avatar/Notifs) -->
 <script src="shared.js"></script>
 
@@ -215,7 +241,7 @@
   async function init() {
     const currentUserId = localStorage.getItem('currentUserId');
     if (!currentUserId) {
-      window.location.href = 'join.html';
+      window.location.href = 'login.html';
       return;
     }
 
@@ -233,7 +259,7 @@
       
     } catch (e) {
       console.error(e);
-      window.location.href = 'join.html';
+      window.location.href = 'login.html';
     }
   }
 
@@ -398,7 +424,8 @@
 
   function connectWebsocket(channelId) {
     if(ws) ws.close();
-    ws = new WebSocket(`ws://127.0.0.1:8000/api/ws/channels/${channelId}/${currentUser.id}`);
+    const wsUrl = API_BASE.replace(/^http/, 'ws') + `/api/ws/channels/${channelId}/${currentUser.id}`;
+    ws = new WebSocket(wsUrl);
     
     ws.onmessage = function(event) {
       const msg = JSON.parse(event.data);
@@ -433,11 +460,21 @@
   // Modals & UI
   function toggleMembers() {
     const sidebar = document.getElementById('members-sidebar');
-    sidebar.classList.toggle('hidden');
+    if (sidebar.classList.contains('hidden')) {
+      sidebar.classList.remove('hidden');
+      sidebar.classList.add('flex');
+    } else {
+      sidebar.classList.add('hidden');
+      sidebar.classList.remove('flex');
+    }
   }
 
   function openCreateTeamModal() { document.getElementById('create-team-modal').classList.add('active'); }
   function openCreateChannelModal() { document.getElementById('create-channel-modal').classList.add('active'); }
+  function openAddMemberModal() { 
+    if (!currentTeamId) return;
+    document.getElementById('add-member-modal').classList.add('active'); 
+  }
   function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
   document.getElementById('create-team-form').addEventListener('submit', async (e) => {
@@ -484,6 +521,28 @@
         closeModals();
         document.getElementById('create-channel-form').reset();
         await loadChannels(currentTeamId);
+      }
+    } catch(err) { console.error(err); }
+  });
+
+  document.getElementById('add-member-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userId = parseInt(document.getElementById('new-member-id').value);
+    const role = document.getElementById('new-member-role').value;
+    try {
+      const res = await fetch(`${API_BASE}/api/teams/${currentTeamId}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ user_id: userId, role: role })
+      });
+      if(res.ok) {
+        closeModals();
+        document.getElementById('add-member-form').reset();
+        await loadMembers(currentTeamId);
+      } else {
+        const err = await res.json();
+        window.showSystemModal('Error', err.detail || 'Could not add member.');
       }
     } catch(err) { console.error(err); }
   });
