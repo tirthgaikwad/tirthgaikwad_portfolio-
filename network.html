@@ -1,1143 +1,500 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPartner | My Network</title>
-    
-    <!-- Professional Font Stack -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <script>
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
-    </script>
-
-    <style>
-        /* Light Theme - Sleek Professional Colors */
-        :root { 
-            --bg: #FFFFFF; 
-            --surface: rgba(255, 255, 255, 0.9); 
-            --card-bg: #FFFFFF;
-            --border: #E5E5E5; 
-            --primary: #4F46E5; 
-            --secondary: #333333; 
-            --accent: #E5E5E5; 
-            --text: #000000; 
-            --text-dim: #666666; 
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --input-bg: #F5F5F5;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.03);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.04);
-        }
-
-        /* Dark Theme - Totally Dark Mode (No Blue Tints) */
-        [data-theme="dark"] {
-            --bg: #000000; 
-            --surface: rgba(0, 0, 0, 0.85); 
-            --card-bg: #000000;
-            --border: #333333; 
-            --text: #F8FAFC; 
-            --text-dim: #999999;
-            --header-bg: rgba(0, 0, 0, 0.85);
-            --input-bg: #111111;
-            --shadow-sm: 0 1px 3px rgba(255, 255, 255, 0.05);
-            --shadow-md: 0 4px 12px rgba(255, 255, 255, 0.05);
-            --shadow-lg: 0 12px 32px rgba(255, 255, 255, 0.05);
-        }
-
-        /* Premium Custom Scrollbar */
-        ::-webkit-scrollbar { 
-            width: 6px; 
-            height: 6px; 
-        }
-
-        ::-webkit-scrollbar-track { 
-            background: transparent; 
-        }
-
-        ::-webkit-scrollbar-thumb { 
-            background: var(--border); 
-            border-radius: 10px; 
-        }
-
-        ::-webkit-scrollbar-thumb:hover { 
-            background: var(--text-dim); 
-        }
-
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
-        }
-
-        body { 
-            background-color: var(--bg); 
-            color: var(--text); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            overflow-x: hidden; 
-            transition: background-color 0.2s ease, color 0.2s ease; 
-        }
-
-        /* HEADER STYLES */
-        header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 16px 5%; 
-            background: var(--header-bg); 
-            backdrop-filter: blur(12px); 
-            border-bottom: 1px solid var(--border); 
-            box-shadow: var(--shadow-sm); 
-            z-index: 100; 
-            position: relative; 
-            transition: background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
-
-        header h2 { 
-            font-weight: 800; 
-            color: var(--primary);
-            font-size: 1.5rem; 
-            letter-spacing: -0.5px;
-        }
-
-        nav { 
-            display: flex; 
-            gap: 6px; 
-            align-items: center; 
-            flex-wrap: wrap; 
-            justify-content: flex-end;
-        }
-
-        nav a:not(.btn-logout) { 
-            color: var(--text-dim); 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: all 0.2s ease; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            padding: 8px 16px;
-            border-radius: 8px;
-            background: transparent;
-        }
-
-        nav a:not(.btn-logout):hover {
-            color: var(--text);
-            background: var(--input-bg);
-        }
-
-        nav a:not(.btn-logout).active { 
-            background: var(--text); 
-            color: var(--card-bg); 
-        }
-
-        .btn-logout { 
-            background: transparent; 
-            color: #ef4444; 
-            padding: 8px 16px; 
-            border-radius: 8px; 
-            font-weight: 600; 
-            border: 1px solid transparent; 
-            transition: all 0.2s ease;
-            font-size: 0.85rem;
-            margin-left: 8px;
-        }
-
-        .btn-logout:hover { 
-            background: rgba(239, 68, 68, 0.08); 
-        }
-
-        .theme-toggle { 
-            cursor: pointer; 
-            color: var(--text-dim); 
-            transition: 0.2s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-right: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            background: transparent;
-        }
-
-        .theme-toggle:hover { 
-            color: var(--text); 
-            background: var(--input-bg);
-        }
-
-        .theme-toggle svg { width: 18px; height: 18px; }
-
-        .nav-bell-container { 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            margin-right: 12px;
-            padding: 8px;
-            border-radius: 8px;
-            background: transparent;
-            transition: 0.2s;
-        }
-
-        .nav-bell-container:hover {
-            background: var(--input-bg);
-        }
-
-        .nav-bell-icon { width: 18px; height: 18px; color: var(--text-dim); transition: 0.2s; }
-        .nav-bell-container:hover .nav-bell-icon { color: var(--text); }
-
-        .notification-badge { 
-            position: absolute; 
-            top: 2px; 
-            right: 2px; 
-            background: #ef4444; 
-            color: white; 
-            font-size: 0.65rem; 
-            font-weight: bold; 
-            width: 16px; 
-            height: 16px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            opacity: 0; 
-            transition: 0.2s; 
-        }
-
-        .notification-badge.active { opacity: 1; }
-
-        .notification-dropdown { 
-            position: absolute; 
-            top: 45px; 
-            right: 0; 
-            width: 340px; 
-            background: var(--card-bg); 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            box-shadow: var(--shadow-lg); 
-            display: none; 
-            flex-direction: column; 
-            z-index: 1000; 
-            overflow: hidden; 
-            transition: 0.3s; 
-        }
-
-        .notification-dropdown.active { display: flex; animation: slideDown 0.2s ease forwards; }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .notif-header { 
-            padding: 16px 20px; 
-            border-bottom: 1px solid var(--border); 
-            font-weight: 700; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: var(--input-bg);
-            font-size: 0.9rem;
-        }
-
-        .notif-header span { 
-            font-size: 0.75rem; 
-            color: var(--primary); 
-            cursor: pointer; 
-            font-weight: 600;
-        }
-
-        .notif-list { max-height: 350px; overflow-y: auto; }
-
-        .notif-item { 
-            padding: 16px 20px; 
-            border-bottom: 1px solid var(--border); 
-            transition: background 0.2s ease; 
-            font-size: 0.85rem; 
-            color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            cursor: pointer;
-        }
-
-        .notif-item:hover { background: var(--input-bg); }
-        .notif-item.unread { background: rgba(79, 70, 229, 0.04); font-weight: 600; border-left: 3px solid var(--primary); }
-        .notif-time { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
-        .notif-empty { padding: 40px; text-align: center; color: var(--text-dim); font-size: 0.9rem; font-weight: 500; }
-
-        /* Pull Tab Header */
-        .header-toggle-tab {
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 20px;
-            background: var(--header-bg);
-            border: 1px solid var(--border);
-            border-top: none;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            color: var(--text-dim);
-            z-index: 1000;
-            transition: 0.2s;
-        }
-        
-        .header-toggle-tab:hover { color: var(--text); }
-        .header-toggle-tab svg { width: 14px; height: 14px; transition: transform 0.4s; }
-        header.collapsed .header-toggle-tab svg { transform: rotate(180deg); }
-
-        /* PAGE SPECIFIC: NETWORK TABS LAYOUT & SEARCH */
-        .network-hero { 
-            text-align: center; 
-            padding: 60px 5% 20px 5%; 
-        }
-
-        .network-hero h1 { 
-            font-size: 2.5rem; 
-            font-weight: 800; 
-            color: var(--text); 
-            margin-bottom: 16px; 
-            letter-spacing: -1px; 
-        }
-
-        /* Segmented Pill Tabs */
-        .tabs-container {
-            display: inline-flex;
-            background: var(--input-bg);
-            padding: 6px;
-            border-radius: 12px;
-            gap: 8px;
-            margin-top: 10px;
-            border: 1px solid var(--border);
-            margin-bottom: 24px;
-        }
-
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-dim);
-            font-size: 0.95rem;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .tab-btn:hover {
-            color: var(--text);
-        }
-
-        .tab-btn.active {
-            background: var(--card-bg);
-            color: var(--text);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .search-bar-wrapper { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            position: relative;
-        }
-
-        .search-bar-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-dim);
-        }
-
-        .search-bar-wrapper input { 
-            width: 100%; 
-            padding: 14px 20px 14px 48px; 
-            border-radius: 12px; 
-            border: 1px solid var(--border); 
-            background: var(--card-bg); 
-            color: var(--text); 
-            font-size: 1rem; 
-            outline: none; 
-            transition: all 0.3s ease; 
-            box-shadow: var(--shadow-sm); 
-            font-weight: 500; 
-        }
-
-        .search-bar-wrapper input:focus { 
-            border-color: var(--primary); 
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); 
-            transform: translateY(-2px); 
-        }
-
-        .search-bar-wrapper input::placeholder {
-            color: var(--text-dim);
-            opacity: 0.7;
-        }
-
-        /* PAGE SPECIFIC: RESULTS GRID */
-        .main-container { 
-            padding: 40px 5% 60px 5%; 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            width: 100%;
-        }
-
-        .results-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 24px; 
-        }
-        
-        .dev-card { 
-            background: transparent; 
-            border: 1px solid var(--border); 
-            border-radius: 16px; 
-            display: flex; 
-            flex-direction: column; 
-            transition: all 0.3s ease; 
-            text-decoration: none; 
-            overflow: hidden; 
-        }
-
-        .dev-card:hover { 
-            background: var(--card-bg); 
-            border-color: var(--primary); 
-            box-shadow: var(--shadow-md); 
-            transform: translateY(-4px); 
-        }
-        
-        .dev-banner { 
-            height: 80px; 
-            width: 100%; 
-            background-size: cover; 
-            background-position: center; 
-        }
-
-        .dev-avatar { 
-            width: 72px; 
-            height: 72px; 
-            border-radius: 50%; 
-            background: linear-gradient(135deg, var(--border), var(--input-bg)); 
-            color: var(--text); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 700; 
-            font-size: 1.2rem; 
-            border: 3px solid var(--card-bg); 
-            margin: -36px auto 12px auto; 
-            flex-shrink: 0; 
-            background-size: cover; 
-            background-position: center; 
-            box-shadow: var(--shadow-sm); 
-            position: relative; 
-            z-index: 2;
-        }
-        
-        .dev-info { 
-            padding: 0 20px 24px 20px; 
-            display: flex; 
-            flex-direction: column; 
-            flex-grow: 1; 
-            text-align: center; 
-        }
-
-        .dev-name { 
-            font-size: 1.1rem; 
-            font-weight: 700; 
-            color: var(--text); 
-            margin-bottom: 4px; 
-            letter-spacing: -0.3px; 
-        }
-
-        .dev-college { 
-            font-size: 0.8rem; 
-            color: var(--text-dim); 
-            margin-bottom: 4px; 
-            font-weight: 500; 
-            display: -webkit-box; 
-            -webkit-line-clamp: 1; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-        }
-
-        .dev-dept { 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: var(--primary); 
-            margin-bottom: 16px; 
-            display: -webkit-box; 
-            -webkit-line-clamp: 1; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            text-overflow: ellipsis;
-        }
-        
-        .dev-skills { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 6px; 
-            margin-bottom: 24px; 
-            flex-grow: 1; 
-        }
-
-        .dev-skill { 
-            background: var(--input-bg); 
-            color: var(--text); 
-            padding: 4px 12px; 
-            border-radius: 6px; 
-            font-size: 0.75rem; 
-            font-weight: 500; 
-            border: 1px solid var(--border); 
-        }
-
-        .dev-actions { 
-            display: flex; 
-            gap: 8px; 
-            width: 100%; 
-            margin-top: auto;
-        }
-        
-        .btn-outline { 
-            flex: 1; 
-            padding: 8px; 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            background: transparent; 
-            color: var(--text); 
-            font-weight: 600; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            text-align: center; 
-            text-decoration: none; 
-            transition: 0.2s;
-        }
-        
-        .btn-outline:hover { 
-            background: var(--input-bg); 
-        }
-        
-        .btn-team { 
-            flex: 1; 
-            padding: 8px; 
-            border: none; 
-            border-radius: 8px; 
-            background: var(--primary); 
-            color: white; 
-            font-weight: 600; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 6px; 
-            transition: 0.2s;
-        }
-        
-        .btn-team:hover { 
-            filter: brightness(1.1); 
-        }
-
-        .loader-text { 
-            grid-column: 1/-1; 
-            text-align: center; 
-            color: var(--text-dim); 
-            padding: 60px; 
-            font-size: 1rem; 
-            font-weight: 500; 
-        }
-
-        /* MODAL */
-        .modal-overlay { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            background: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(4px); 
-            z-index: 2000; 
-            align-items: center; 
-            justify-content: center; 
-        }
-
-        .modal-overlay.active { 
-            display: flex; 
-        }
-
-        .custom-modal { 
-            background: var(--card-bg); 
-            padding: 32px; 
-            border-radius: 16px; 
-            width: 90%; 
-            max-width: 400px; 
-            box-shadow: var(--shadow-lg); 
-            border: 1px solid var(--border); 
-        }
-
-        .custom-modal h3 { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            margin-bottom: 20px; 
-            font-weight: 800;
-        }
-
-        .form-group { 
-            margin-bottom: 16px; 
-        }
-
-        .form-group label { 
-            display: block; 
-            font-size: 0.85rem; 
-            font-weight: 600; 
-            margin-bottom: 8px; 
-            color: var(--text-dim); 
-        }
-
-        .form-group select, 
-        .form-group input { 
-            width: 100%; 
-            padding: 10px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border); 
-            background: var(--input-bg); 
-            color: var(--text); 
-            outline: none; 
-        }
-
-        .modal-buttons { 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 12px; 
-            margin-top: 24px; 
-        }
-    </style>
-</head>
-<body>
-
-    <header id="mainHeader">
-        <a href="index.html" style="text-decoration: none;">
-            <h2 class="logo">ProPartner</h2>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-xs shrink-0"><img alt="ProPartner Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">ProPartner</span></div><nav class="hidden xl:flex items-center gap-space-lg h-16" data-active-classes="text-primary font-semibold border-b-2 border-primary"><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="discover-talent" href="search.html">Discover Talent</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="opportunities-board" href="board.html">Opportunities Board</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="my-teams" href="team.html">My Teams</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="project-hub" href="project_management.html">Project Hub</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="campus-network" href="college.html">Campus Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-collab" href="research.html">Research Collab</a><a aria-current="page" class="h-full flex items-center transition-colors text-primary font-semibold border-b-2 border-primary" data-path="network" href="network.html">My Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="saved" href="saved.html">Saved Profiles</a></nav></div><div class="flex items-center gap-space-sm"><div class="hidden md:flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-space-sm py-space-xs rounded-lg border border-outline-variant/50 cursor-pointer transition-colors w-48"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><span class="font-body-sm text-body-sm text-on-surface-variant">Search network...</span><kbd class="ml-auto font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-1 rounded border border-outline-variant/50">⌘K</kbd></div><div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block mx-space-2xs"></div><a class="hidden lg:flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md px-space-xs py-space-2xs rounded-lg hover:bg-surface-container-low" data-path="admin-dashboard" href="#"><span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>Admin</a><button aria-label="Notifications" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center font-label-sm text-[10px] leading-none font-bold">3</span></button><button aria-label="Direct Messages" class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></button><div class="relative flex items-center gap-space-xs pl-space-2xs"><div class="relative cursor-pointer"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container-lowest" title="Active Now"></span></div></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Top Utility Context Bar -->
+<section class="w-full bg-surface-container-lowest border-b border-outline-variant/30 py-space-sm">
+<div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-body-sm text-body-sm flex-wrap">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="college.html">
+<span class="material-symbols-outlined text-[16px]">hub</span>
+          Campus Network
         </a>
-        
-        <nav>
-            <div class="theme-toggle" id="themeToggleBtn" title="Toggle Dark Mode">
-                <svg id="moonIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                </svg>
-                <svg id="sunIcon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface font-medium">Personal Network</span>
+<span class="text-outline-variant">/</span>
+<span class="text-primary font-semibold" id="breadcrumbActiveTab">Followers</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-container/10 text-tertiary font-label-sm text-[11px] ml-space-xs" id="collegeBadge">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+          Campus Node
+        </span>
+</div>
+<div class="flex items-center gap-space-xs shrink-0">
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md border border-outline-variant/50 transition-all shadow-sm active:scale-95" id="copyProfileBtn" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">link</span>
+<span>Share Profile Link</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">open_in_new</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all shadow-sm active:scale-95" type="button" id="inviteBtn">
+<span class="material-symbols-outlined text-[16px]">person_add</span>
+<span>+ Invite Classmates</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Network Header & Segmented Navigation -->
+<section class="w-full bg-surface-container-lowest border-b border-outline-variant/30 pt-space-xl pb-space-lg">
+<div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col gap-space-md">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div class="space-y-1.5 max-w-3xl">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm uppercase tracking-wider" id="userDept">Department</span>
+<span class="text-outline-variant">•</span>
+<span class="text-on-surface-variant font-body-sm text-body-sm" id="userRoll">Student ID</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">My Personal Network</h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Connect with classmates, peer researchers, and collegiate developers following your hackathon builds and open-source repositories.
+          </p>
+</div>
+<!-- Metric pill summary -->
+<div class="flex items-center gap-space-sm bg-surface-container-low/70 p-2 rounded-xl border border-outline-variant/40 shrink-0">
+<div class="px-3 py-1.5 rounded-lg bg-surface-container-lowest shadow-sm text-center">
+<p class="font-label-sm text-[10px] uppercase text-on-surface-variant">Network Reach</p>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface">Top 12%</p>
+</div>
+<div class="px-3 py-1.5 text-center">
+<p class="font-label-sm text-[10px] uppercase text-on-surface-variant">Profile Views</p>
+<p class="font-headline-sm text-headline-sm font-bold text-primary">142</p>
+</div>
+</div>
+</div>
+<!-- Segmented Tabs -->
+<div class="flex items-center gap-space-md border-b border-outline-variant/30 pt-space-sm" id="networkTabs">
+<button class="relative pb-3 font-label-md text-label-md text-primary font-semibold flex items-center gap-2 border-b-2 border-primary transition-colors" data-tab="followers" type="button">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span>Followers</span>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] font-bold" id="followersCount">0</span>
+</button>
+<button class="relative pb-3 font-label-md text-label-md text-on-surface-variant hover:text-on-surface font-medium flex items-center gap-2 border-b-2 border-transparent transition-colors" data-tab="following" type="button">
+<span class="material-symbols-outlined text-[18px]">person_check</span>
+<span>Following</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-[11px] font-bold" id="followingCount">0</span>
+</button>
+<button class="relative pb-3 font-label-md text-label-md text-on-surface-variant hover:text-on-surface font-medium flex items-center gap-2 border-b-2 border-transparent transition-colors" data-tab="mutual" type="button">
+<span class="material-symbols-outlined text-[18px]">handshake</span>
+<span>Mutual Collaborators</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-[11px] font-bold" id="mutualCount">0</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Content Workspace -->
+<div class="max-w-container-max mx-auto px-gutter-desktop py-space-xl w-full flex flex-col gap-space-xl">
+<!-- Filter and Search Row -->
+<div class="flex flex-col lg:flex-row gap-space-md lg:items-center justify-between">
+<!-- Search Input Capsule -->
+<div class="relative flex-1 max-w-xl">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-11 pr-24 py-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/60 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" placeholder="Search by name, skills, or batch..." type="text" id="networkSearch"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-outline font-label-sm text-[11px] bg-surface-container-low px-1.5 py-0.5 rounded border border-outline-variant/50" id="filteredCount">Filtered (0)</span>
+</div>
+<!-- Quick Filter Chips -->
+<div class="flex items-center gap-space-xs overflow-x-auto pb-1 lg:pb-0 scrollbar-none" id="networkFilters">
+<button class="px-3 py-1.5 rounded-lg bg-primary-fixed text-on-primary-fixed font-label-md text-label-md border border-primary/20 shadow-sm shrink-0">All Filters</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-label-md text-label-md border border-outline-variant/50 transition-colors shrink-0">Open to Collaborate</button>
+</div>
+</div>
+
+<!-- DYNAMIC CONTENT GRID -->
+<div id="dynamicNetworkGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+    <!-- Rendered via JS -->
+</div>
+
+<!-- MAIN HERO / ZERO STATE INTERACTIVE CARD -->
+<div id="zeroStateContainer" class="hidden w-full bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+<div class="grid grid-cols-1 lg:grid-cols-12">
+<!-- Visual & Context Column -->
+<div class="lg:col-span-7 p-space-xl sm:p-space-2xl flex flex-col justify-between">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-low text-primary font-label-sm text-label-sm font-semibold mb-space-md border border-primary/10">
+<span class="material-symbols-outlined text-[16px]">sensors</span>
+              <span id="zeroStateTitle">Awaiting First Follower</span>
             </div>
-            <div class="nav-bell-container" id="notifBellBtn">
-                <svg class="nav-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <div class="notification-badge" id="notifBadge">0</div>
-                <div class="notification-dropdown" id="notifDropdown">
-                    <div class="notif-header">Notifications</div>
-                    <div class="notif-list" id="notifList"></div>
-                </div>
-            </div>
-            <a href="search.html">Search</a>
-            <a href="board.html">Opportunities Board</a>
-            <a href="team.html">My Teams</a>
-            <a href="register.html">Sign Up</a>
-            <a href="college.html">My College</a>
-            <a href="department.html">My Department</a>
-            <a href="global.html">Global Network</a>
-            <a href="network.html" class="active">My Network</a>
-            <a href="inbox.html">Inbox</a>
-            <a href="history.html">History</a>
-            <a href="profile.html">My Profile</a>
-            <a onclick="logout()" class="btn-logout" style="cursor: pointer;">Log Out</a>
-                <a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="saved" href="saved.html">Saved Profiles</a>
-</nav>
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight mb-space-sm" id="zeroStateHeading">
+              You don't have any followers yet
+            </h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl leading-relaxed mb-space-lg" id="zeroStateBody">
+              When classmates, department professors, or Smart India Hackathon teammates follow your profile, their updates, endorsement badges, and joint repositories will populate here. Kickstart your visibility across the SPPU academic cluster today!
+            </p>
+</div>
+<!-- Direct CTAs & Fast Actions -->
+<div class="flex flex-wrap items-center gap-space-sm pt-space-xs">
+<button class="inline-flex items-center gap-2 px-space-lg py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-md hover:shadow-indigo-500/20 transition-all active:scale-95" id="quickCopyTrigger" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+<span>Copy Profile Share Link</span>
+</button>
+<a class="inline-flex items-center gap-2 px-space-md py-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md border border-outline-variant/60 transition-colors" href="#suggestedPeers">
+<span class="material-symbols-outlined text-[18px] text-primary">person_search</span>
+<span>Browse Recommended Peers</span>
+</a>
+</div>
+<!-- Step Guide to Gain First 10 Followers -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm mt-space-xl pt-space-md border-t border-outline-variant/30">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-primary font-label-md text-label-md">
+<span class="w-5 h-5 rounded-full bg-primary-fixed flex items-center justify-center text-[11px] font-bold text-on-primary-fixed">1</span>
+                Add Projects
+              </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Publish at least 1 repository to Project Hub.</p>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-primary font-label-md text-label-md">
+<span class="w-5 h-5 rounded-full bg-primary-fixed flex items-center justify-center text-[11px] font-bold text-on-primary-fixed">2</span>
+                Follow Peers
+              </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Colleagues typically follow back within 24 hours.</p>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-primary font-label-md text-label-md">
+<span class="w-5 h-5 rounded-full bg-primary-fixed flex items-center justify-center text-[11px] font-bold text-on-primary-fixed">3</span>
+                Share in Labs
+              </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Drop your QR link in WhatsApp class groups.</p>
+</div>
+</div>
+</div>
+<!-- Right Side: Graphic Representation with Real Snapshot Context -->
+<div class="lg:col-span-5 bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-high/60 p-space-xl flex flex-col justify-center items-center relative overflow-hidden border-t lg:border-t-0 lg:border-l border-outline-variant/30">
+<!-- Background Decorative Elements -->
+<div class="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-primary/5 blur-2xl"></div>
+<div class="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-tertiary-container/10 blur-2xl"></div>
+<div class="relative w-full max-w-sm flex flex-col items-center text-center">
+<!-- Node Network Interactive Icon Box -->
+<div class="relative mb-space-lg">
+<div class="w-24 h-24 rounded-2xl bg-surface-container-lowest shadow-lg border border-outline-variant/40 flex items-center justify-center text-primary relative z-10">
+<span class="material-symbols-outlined text-[44px]">diversity_3</span>
+</div>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface" id="collegeHubText">Peer Hub</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 mb-space-md">
+              Over 340+ verified engineering scholars are active on this campus node.
+            </p>
+<!-- Card snapshot from original state -->
+<div class="w-full bg-surface-container-lowest/90 backdrop-blur-sm p-space-sm rounded-xl border border-outline-variant/60 shadow-sm text-left flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[22px]">qr_code_2</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">Fast Discovery Handle</p>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface truncate" id="shareHandleText">propartner.edu/@user</p>
+</div>
+<button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors" onclick="alert('Profile URL copied!');">
+<span class="material-symbols-outlined text-[18px]">copy_all</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
 
-        <div class="header-toggle-tab" id="headerToggleTab" title="Toggle Navigation Bar">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-            </svg>
-        </div>
-    </header>
-
-    <div class="network-hero">
-        <h1>My Personal Network</h1>
-        
-        <div class="tabs-container">
-            <button class="tab-btn active" id="btnFollowers" onclick="switchTab('followers')">Followers</button>
-            <button class="tab-btn" id="btnFollowing" onclick="switchTab('following')">Following</button>
-        </div>
-
-        <div class="search-bar-wrapper" style="margin-top: 24px;">
-            <svg class="search-bar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-            <input type="text" id="networkSearchInput" placeholder="Search your network by name or skills..." autocomplete="off">
-        </div>
-    </div>
-
-    <main class="main-container">
-        <div class="results-grid" id="resultsGrid">
-            <div class="loader-text">Loading network...</div>
-        </div>
-    </main>
-
-    <!-- ADD TO TEAM MODAL -->
-    <div class="modal-overlay" id="teamModal">
-        <div class="custom-modal">
-            <h3>Add to Workspace</h3>
-            <form id="addTeamForm">
-                <input type="hidden" id="targetUserId">
-                <div class="form-group">
-                    <label>Select Team</label>
-                    <select id="teamSelect" required>
-                        <option value="">Loading teams...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Assign Role</label>
-                    <input type="text" id="roleInput" placeholder="e.g. Frontend, Backend, UI/UX" required>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn-outline" onclick="closeModal()" style="border-color: var(--border);">Cancel</button>
-                    <button type="submit" class="btn-team" style="flex: none; padding: 10px 20px;">Add Member</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // ==========================================
-        // HEADER TOGGLE LOGIC
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const header = document.getElementById('mainHeader');
-            const toggleTab = document.getElementById('headerToggleTab');
-            let isHeaderCollapsed = false;
-
-            if (toggleTab) {
-                toggleTab.addEventListener('click', () => {
-                    if (!isHeaderCollapsed) {
-                        const headerHeight = header.offsetHeight;
-                        header.style.marginTop = `-${headerHeight}px`;
-                        header.classList.add('collapsed');
-                        isHeaderCollapsed = true;
-                    } else {
-                        header.style.marginTop = '0px';
-                        header.classList.remove('collapsed');
-                        isHeaderCollapsed = false;
-                    }
-                });
-
-                window.addEventListener('resize', () => {
-                    if (isHeaderCollapsed) {
-                        header.style.transition = 'none';
-                        header.style.marginTop = '0px';
-                        
-                        setTimeout(() => {
-                            const newHeight = header.offsetHeight;
-                            header.style.marginTop = `-${newHeight}px`;
-                            
-                            setTimeout(() => {
-                                header.style.transition = 'background-color 0.2s, margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                            }, 50);
-                        }, 10);
-                    }
-                });
-            }
-        });
-
-        // ==========================================
-        // UI & THEME LOGIC
-        // ==========================================
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const moonIcon = document.getElementById('moonIcon');
-        const sunIcon = document.getElementById('sunIcon');
-
-        if (localStorage.getItem('theme') === 'dark') {
-            moonIcon.style.display = 'none';
-            sunIcon.style.display = 'block';
-        }
-
-        themeToggleBtn.addEventListener('click', () => {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                moonIcon.style.display = 'none';
-                sunIcon.style.display = 'block';
-            }
-        });
-
-        // ==========================================
-        // NETWORK TAB LOGIC & SEARCH
-        // ==========================================
-        let currentUserId = null;
-        let currentTab = 'followers';
-        let currentProfiles = [];
-        let myTeams = [];
-
-        document.addEventListener('DOMContentLoaded', () => {
-            currentUserId = localStorage.getItem('currentUserId');
-            
-            if (!currentUserId) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            initNotifications(currentUserId);
-            fetchMyTeams();
-            fetchNetworkData(currentTab);
-
-            // Network Live Search Logic
-            const searchInput = document.getElementById('networkSearchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', (e) => {
-                    const query = e.target.value.toLowerCase().trim();
-                    const filtered = currentProfiles.filter(p => {
-                        const matchesName = p.name && p.name.toLowerCase().includes(query);
-                        const matchesSkills = p.skills && p.skills.toLowerCase().includes(query);
-                        return matchesName || matchesSkills;
-                    });
-                    renderCards(filtered, currentTab);
-                });
-            }
-        });
-
-        window.switchTab = function(tab) {
-            currentTab = tab;
-            
-            document.getElementById('btnFollowers').classList.remove('active');
-            document.getElementById('btnFollowing').classList.remove('active');
-            
-            if (tab === 'followers') {
-                document.getElementById('btnFollowers').classList.add('active');
-            } else {
-                document.getElementById('btnFollowing').classList.add('active');
-            }
-            
-            fetchNetworkData(tab);
-        }
-
-        function getInitials(name) {
-            if (!name) {
-                return "?";
-            }
-            
-            const parts = name.trim().split(' ');
-            
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[1][0]).toUpperCase();
-            }
-            
-            return parts[0].substring(0, 2).toUpperCase();
-        }
-
-        async function fetchNetworkData(type) {
-            const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '<div class="loader-text">Loading network data...</div>';
-
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/users/${currentUserId}/${type}`, {
-                    credentials: 'include'
-                });
-
-                if (res.ok) {
-                    currentProfiles = await res.json();
-                    renderCards(currentProfiles, type);
-                    
-                    // Reset search input when tab switches
-                    const searchInput = document.getElementById('networkSearchInput');
-                    if (searchInput) searchInput.value = '';
-                }
-            } catch (e) {
-                grid.innerHTML = '<div class="loader-text" style="color: #ef4444;">Failed to fetch network.</div>';
-            }
-        }
-
-        function renderCards(profiles, type) {
-            const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '';
-            
-            if (profiles.length === 0) {
-                const searchVal = document.getElementById('networkSearchInput').value.trim();
-                let msg = '';
-                
-                if (searchVal) {
-                    msg = "No matches found in your network.";
-                } else {
-                    msg = type === 'followers' 
-                        ? "You don't have any followers yet." 
-                        : "You aren't following anyone yet.";
-                }
-                
-                grid.innerHTML = `<div class="loader-text">${msg}</div>`;
-                return;
-            }
-
-            profiles.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'dev-card';
-                
-                const bannerStyle = p.banner_pic 
-                    ? `background-image: url('${p.banner_pic}');` 
-                    : `background: linear-gradient(135deg, var(--border), var(--input-bg));`;
-                
-                // Avatar with flex-shrink fix
-                const avatarHtml = p.profile_pic 
-                    ? `<div class="dev-avatar" style="background-image: url('${p.profile_pic}');"></div>` 
-                    : `<div class="dev-avatar">${getInitials(p.name)}</div>`;
-                
-                const skillsArray = p.skills ? p.skills.split(',').filter(s => s.trim() !== '') : [];
-                
-                const skillsHtml = skillsArray.slice(0, 4).map(s => {
-                    return `<span class="dev-skill">${s.trim()}</span>`;
-                }).join('');
-                
-                let extraSkills = '';
-                
-                if (skillsArray.length > 4) {
-                    extraSkills = `<span class="dev-skill" style="background: var(--text); color: var(--card-bg); border-color: var(--text);">+${skillsArray.length - 4}</span>`;
-                }
-
-                card.innerHTML = `
-                    <div class="dev-banner" style="${bannerStyle}"></div>
-                    ${avatarHtml}
-                    <div class="dev-info">
-                        <div class="dev-name">${p.name}</div>
-                        <div class="dev-college">🎓 ${p.college_name || 'Independent'}</div>
-                        <div class="dev-dept">${p.department || 'N/A'}</div>
-                        <div class="dev-skills">${skillsHtml}${extraSkills}</div>
-                        <div class="dev-actions">
-                            <a href="profile.html?id=${p.id}" class="btn-outline">View Profile</a>
-                            <button class="btn-team" onclick="openTeamModal(${p.id})">
-                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 5v14M5 12h14"></path></svg>
-                                Add to Team
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                grid.appendChild(card);
-            });
-        }
-
-        // ==========================================
-        // TEAM LOGIC & MODALS
-        // ==========================================
-        async function fetchMyTeams() {
-            try {
-                const res = await fetch('http://127.0.0.1:8000/api/teams', { credentials: 'include' });
-                if (res.ok) {
-                    myTeams = await res.json();
-                }
-            } catch (e) { console.error("Failed to load teams", e); }
-        }
-
-        window.openTeamModal = function(targetId) {
-            if (myTeams.length === 0) {
-                alert("You don't have any teams yet! Create one in the 'My Teams' workspace first.");
-                return;
-            }
-            document.getElementById('targetUserId').value = targetId;
-            const select = document.getElementById('teamSelect');
-            select.innerHTML = myTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-            document.getElementById('teamModal').classList.add('active');
-        }
-
-        window.closeModal = function() {
-            document.getElementById('teamModal').classList.remove('active');
-            document.getElementById('addTeamForm').reset();
-        }
-
-        document.getElementById('addTeamForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const targetId = document.getElementById('targetUserId').value;
-            const teamId = document.getElementById('teamSelect').value;
-            const role = document.getElementById('roleInput').value;
-
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/teams/${teamId}/members`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: parseInt(targetId), role: role })
-                });
-
-                if (res.ok) {
-                    alert('Developer successfully added to your workspace!');
-                    closeModal();
-                } else {
-                    const err = await res.json();
-                    alert(`Failed: ${err.detail}`);
-                }
-            } catch (e) {
-                alert("Server connection error.");
-            }
-        });
-
-        // ==========================================
-        // NOTIFICATIONS SYSTEM
-        // ==========================================
-        let unreadCount = 0;
-        let notifSocket = null;
-
-        async function initNotifications(userId) {
-            const bellBtn = document.getElementById('notifBellBtn');
-            const dropdown = document.getElementById('notifDropdown');
-            
-            bellBtn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                dropdown.classList.toggle('active'); 
-            });
-            
-            document.addEventListener('click', (e) => { 
-                if (!bellBtn.contains(e.target)) {
-                    dropdown.classList.remove('active'); 
-                }
-            });
-            
-            dropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-
-            await fetchAndRenderNotifications(userId);
-
-            notifSocket = new WebSocket(`ws://127.0.0.1:8000/api/ws/notifications/${userId}`);
-            
-            notifSocket.onmessage = function(event) {
-                const incomingNotif = JSON.parse(event.data);
-                insertNotificationUI(incomingNotif, true);
-                unreadCount++; 
-                updateBadge();
-            };
-        }
-
-        async function fetchAndRenderNotifications(userId) {
-            try {
-                const res = await fetch(`http://127.0.0.1:8000/api/notifications/${userId}`, { 
-                    credentials: 'include' 
-                });
-                
-                if (res.ok) {
-                    const notifs = await res.json();
-                    const notifList = document.getElementById('notifList');
-                    notifList.innerHTML = ''; 
-                    unreadCount = 0;
-                    
-                    if (notifs.length === 0) { 
-                        notifList.innerHTML = `<div class="notif-empty">No notifications yet.</div>`; 
-                        return; 
-                    }
-                    
-                    notifs.forEach(n => { 
-                        if (n.is_read === 0) {
-                            unreadCount++; 
-                        }
-                        insertNotificationUI(n, false); 
-                    });
-                    
-                    updateBadge();
-                }
-            } catch (err) {
-                console.error("Notification fetch failed");
-            }
-        }
-
-        function insertNotificationUI(notif, prepend = false) {
-            const notifList = document.getElementById('notifList');
-            const emptyState = notifList.querySelector('.notif-empty');
-            
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const dateObj = new Date(notif.timestamp);
-            const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const div = document.createElement('div');
-            div.className = `notif-item ${notif.is_read === 0 ? 'unread' : ''}`;
-            
-            div.innerHTML = `
-                <div>${notif.content}</div>
-                <div class="notif-time">${timeStr}</div>
-            `;
-            
-            div.addEventListener('click', async () => {
-                if (div.classList.contains('unread')) {
-                    try {
-                        await fetch(`http://127.0.0.1:8000/api/notifications/${notif.id}/read`, { 
-                            method: 'PUT', 
-                            credentials: 'include' 
-                        });
-                        
-                        div.classList.remove('unread'); 
-                        unreadCount = Math.max(0, unreadCount - 1); 
-                        updateBadge();
-                        
-                        if(notif.type === 'message') {
-                            window.location.href = 'inbox.html';
-                        }
-                        if(notif.type === 'follow') {
-                            window.location.href = 'network.html';
-                        }
-                    } catch(e) {
-                        console.error(e);
-                    }
-                }
-            });
-            
-            if (prepend) {
-                notifList.prepend(div); 
-            } else {
-                notifList.appendChild(div);
-            }
-        }
-
-        function updateBadge() {
-            const badge = document.getElementById('notifBadge');
-            
-            if (unreadCount > 0) { 
-                badge.textContent = unreadCount; 
-                badge.classList.add('active'); 
-            } else {
-                badge.classList.remove('active');
-            }
-        }
-
-        async function logout() {
-            try { 
-                await fetch('http://127.0.0.1:8000/api/logout', { 
-                    method: 'POST', 
-                    credentials: 'include' 
-                }); 
-            } catch (err) {}
-            
-            localStorage.removeItem('currentUserId');
-            window.location.href = 'login.html';
-        }
-    </script>
+<!-- SUGGESTED COLLABORATORS SECTION -->
+<section class="w-full space-y-space-md pt-space-xs" id="suggestedPeers">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">school</span>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface" id="suggestedTitle">Suggested Collaborators</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Classmates and campus developers actively seeking research teammates &amp; hackathon partners.</p>
+</div>
+<button class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-label-md text-label-md self-start sm:self-auto py-1" type="button" id="refreshSuggestedBtn">
+<span class="material-symbols-outlined text-[18px]">cached</span>
+<span>Refresh Suggestions</span>
+</button>
+</div>
+<!-- 4-Column Roster Cards rendered dynamically -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md" id="suggestedGrid">
+    <div class="col-span-full py-8 text-center text-on-surface-variant">Loading suggestions...</div>
+</div>
+</section>
+<!-- PROMOTIONAL / FAST ACTION PROFILE SHARE FOOTER BANNER -->
+<section class="w-full rounded-2xl bg-gradient-to-r from-primary via-primary-container to-[#3730A3] text-on-primary p-space-lg sm:p-space-xl shadow-lg relative overflow-hidden">
+<!-- Ambient pattern shapes -->
+<div class="absolute right-0 top-0 translate-x-12 -translate-y-8 w-64 h-64 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+<div class="max-w-2xl space-y-2">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-white font-label-sm text-[11px] backdrop-blur-sm">
+<span class="material-symbols-outlined text-[14px]">rocket_launch</span>
+            Fast-Track Verification
+          </div>
+<h3 class="font-headline-md text-headline-md font-bold text-white tracking-tight">
+            Boost Your Visibility in Regional Hackathons &amp; Labs
+          </h3>
+<p class="font-body-sm text-body-sm text-white/80 leading-relaxed">
+            Attach your unique ProPartner handle to your GitHub README and LinkedIn featured cards. Recruiters and peer captains verify academic credentials directly via our gateway.
+          </p>
+</div>
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-space-xs shrink-0">
+<div class="flex items-center bg-surface-container-lowest/15 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-white/20 text-white font-body-sm text-body-sm">
+<span class="text-white/60 select-none mr-1 font-mono text-[13px]">propartner.edu/@</span>
+<span class="font-semibold font-mono text-[13px]" id="footerHandle">user</span>
+</div>
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container-lowest text-primary hover:bg-surface-container-low font-label-md text-label-md font-bold transition-all shadow active:scale-95 text-center flex items-center justify-center gap-1.5" id="bannerCopyBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">link</span>
+<span>Copy Link</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Include Shared Utilities for API_BASE and auth -->
 <script src="shared.js"></script>
-</body>
-</html>
+<script>
+  const currentUserId = localStorage.getItem('currentUserId');
+  let currentTab = 'followers';
+  let followersData = [];
+  let followingData = [];
+  let mutualData = [];
+  let profileUrl = '';
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!currentUserId || !localStorage.getItem('authToken')) {
+       window.location.href = 'login.html';
+       return;
+    }
+
+    try {
+        const userRes = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, { credentials: 'include' });
+        if(userRes.ok) {
+            const user = await userRes.json();
+            document.getElementById('collegeBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>${user.college_name || 'Campus Node'}`;
+            document.getElementById('userDept').innerText = user.department || 'Department';
+            document.getElementById('userRoll').innerText = `Student ID: #${user.roll_no || 'Unknown'}`;
+            document.getElementById('collegeHubText').innerText = `${user.college_name || 'Campus'} Peer Hub`;
+            
+            const handle = user.name ? user.name.replace(/\s+/g, '-').toLowerCase() : 'user';
+            profileUrl = `https://propartner.edu/@${handle}`;
+            
+            document.getElementById('shareHandleText').innerText = `propartner.edu/@${handle}`;
+            document.getElementById('footerHandle').innerText = handle;
+            
+            document.getElementById('suggestedTitle').innerText = `Suggested Collaborators from ${user.college_name || 'Campus'}`;
+        }
+
+        await loadNetworkData();
+        loadSuggestedPeers();
+
+    } catch (e) {
+        console.error("Error init:", e);
+    }
+
+    // Tab Listeners
+    document.querySelectorAll('#networkTabs button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tab = e.currentTarget.dataset.tab;
+            switchTab(tab);
+        });
+    });
+
+    document.getElementById('networkSearch').addEventListener('input', (e) => {
+        renderGrid(e.target.value.toLowerCase());
+    });
+    
+    document.getElementById('refreshSuggestedBtn').addEventListener('click', () => {
+        loadSuggestedPeers();
+    });
+
+    // Copy setups
+    setupCopy('copyProfileBtn', profileUrl, 'Link Copied!');
+    setupCopy('quickCopyTrigger', profileUrl, 'Link Copied!');
+    setupCopy('bannerCopyBtn', profileUrl, 'Copied!');
+  });
+
+  async function loadNetworkData() {
+      try {
+          const [followersRes, followingRes] = await Promise.all([
+              fetch(`${API_BASE}/api/users/${currentUserId}/followers`, { credentials: 'include' }),
+              fetch(`${API_BASE}/api/users/${currentUserId}/following`, { credentials: 'include' })
+          ]);
+
+          if (followersRes.ok) followersData = await followersRes.json();
+          if (followingRes.ok) followingData = await followingRes.json();
+
+          // Mutuals = intersection
+          const followingIds = new Set(followingData.map(u => u.id));
+          mutualData = followersData.filter(u => followingIds.has(u.id));
+
+          document.getElementById('followersCount').innerText = followersData.length;
+          document.getElementById('followingCount').innerText = followingData.length;
+          document.getElementById('mutualCount').innerText = mutualData.length;
+
+          switchTab('followers');
+      } catch (err) {
+          console.error(err);
+      }
+  }
+
+  function switchTab(tab) {
+      currentTab = tab;
+      
+      // Update UI Tabs
+      document.querySelectorAll('#networkTabs button').forEach(btn => {
+          if (btn.dataset.tab === tab) {
+              btn.classList.add('text-primary', 'border-primary', 'font-semibold');
+              btn.classList.remove('text-on-surface-variant', 'border-transparent', 'font-medium');
+              const badge = btn.querySelector('span:last-child');
+              badge.classList.remove('bg-surface-container', 'text-on-surface-variant');
+              badge.classList.add('bg-primary/10', 'text-primary');
+          } else {
+              btn.classList.remove('text-primary', 'border-primary', 'font-semibold');
+              btn.classList.add('text-on-surface-variant', 'border-transparent', 'font-medium');
+              const badge = btn.querySelector('span:last-child');
+              badge.classList.add('bg-surface-container', 'text-on-surface-variant');
+              badge.classList.remove('bg-primary/10', 'text-primary');
+          }
+      });
+      
+      let tabName = "Followers";
+      if(tab === "following") tabName = "Following";
+      if(tab === "mutual") tabName = "Mutual Collaborators";
+      document.getElementById('breadcrumbActiveTab').innerText = tabName;
+
+      renderGrid();
+  }
+
+  function renderGrid(query = "") {
+      let data = [];
+      if (currentTab === 'followers') data = followersData;
+      else if (currentTab === 'following') data = followingData;
+      else if (currentTab === 'mutual') data = mutualData;
+
+      if (query) {
+          data = data.filter(u => 
+              (u.name && u.name.toLowerCase().includes(query)) ||
+              (u.skills && u.skills.toLowerCase().includes(query)) ||
+              (u.department && u.department.toLowerCase().includes(query)) ||
+              (u.college_name && u.college_name.toLowerCase().includes(query))
+          );
+      }
+
+      const grid = document.getElementById('dynamicNetworkGrid');
+      const zero = document.getElementById('zeroStateContainer');
+      document.getElementById('filteredCount').innerText = `Filtered (${data.length})`;
+
+      if (data.length === 0 && !query) {
+          grid.classList.add('hidden');
+          zero.classList.remove('hidden');
+          
+          if (currentTab === 'followers') {
+              document.getElementById('zeroStateTitle').innerText = "Awaiting First Follower";
+              document.getElementById('zeroStateHeading').innerText = "You don't have any followers yet";
+              document.getElementById('zeroStateBody').innerText = "When classmates, department professors, or teammates follow your profile, their updates will populate here.";
+          } else if (currentTab === 'following') {
+              document.getElementById('zeroStateTitle').innerText = "Start Connecting";
+              document.getElementById('zeroStateHeading').innerText = "You aren't following anyone yet";
+              document.getElementById('zeroStateBody').innerText = "Follow developers from your college to see their updates and repositories.";
+          } else {
+              document.getElementById('zeroStateTitle').innerText = "No Mutual Connections";
+              document.getElementById('zeroStateHeading').innerText = "You don't have mutual collaborators";
+              document.getElementById('zeroStateBody').innerText = "When you follow someone and they follow you back, they will appear here.";
+          }
+      } else {
+          zero.classList.add('hidden');
+          grid.classList.remove('hidden');
+          grid.innerHTML = '';
+
+          data.forEach(user => {
+              grid.appendChild(createPeerCard(user));
+          });
+      }
+  }
+
+  async function loadSuggestedPeers() {
+      try {
+          const res = await fetch(`${API_BASE}/api/profiles`, { credentials: 'include' });
+          if(res.ok) {
+              const allUsers = await res.json();
+              // Filter out current user and already followed
+              const followingIds = new Set(followingData.map(u => u.id));
+              const suggestions = allUsers.filter(u => u.id != currentUserId && !followingIds.has(u.id));
+              
+              // Shuffle
+              suggestions.sort(() => 0.5 - Math.random());
+              const toShow = suggestions.slice(0, 4);
+              
+              const sGrid = document.getElementById('suggestedGrid');
+              sGrid.innerHTML = '';
+              if (toShow.length === 0) {
+                  sGrid.innerHTML = '<div class="col-span-full py-8 text-center text-on-surface-variant">No new suggestions at the moment.</div>';
+              } else {
+                  toShow.forEach(u => sGrid.appendChild(createPeerCard(u)));
+              }
+          }
+      } catch (err) {}
+  }
+
+  function createPeerCard(user) {
+      const skillsList = user.skills ? user.skills.split(',').map(s => s.trim()).filter(s => s) : [];
+      const skillsHtml = skillsList.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill truncate max-w-[80px]">${s}</span>`).join('');
+      
+      let initials = user.name ? user.name.substring(0,2).toUpperCase() : "U";
+      
+      // Check if following
+      const isFollowing = followingData.some(u => u.id == user.id);
+      
+      const div = document.createElement('div');
+      div.className = "bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-space-md flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all group";
+      div.innerHTML = `
+        <div>
+          <div class="flex items-start justify-between gap-2 mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${user.id}'">
+            <div class="relative">
+              <div class="w-14 h-14 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-inner">
+                ${initials}
+              </div>
+            </div>
+            ${user.cgpa ? `<span class="px-2 py-0.5 rounded-full bg-tertiary-container/10 text-tertiary font-label-sm text-[11px] font-bold">${user.cgpa} CGPA</span>` : ''}
+          </div>
+          <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${user.id}'">
+            <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">
+              ${user.name}
+            </h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant truncate">${user.department || 'Unknown Dept'} • ${user.college_name || ''}</p>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-space-md">
+            ${skillsHtml}
+          </div>
+        </div>
+        <div class="flex items-center gap-2 pt-space-xs border-t border-outline-variant/30">
+          <button class="flex-1 py-2 px-3 rounded-lg ${isFollowing ? 'bg-surface-container-low text-on-surface border border-outline-variant/50' : 'bg-primary hover:bg-primary-container text-on-primary'} font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors shadow-sm" type="button" onclick="toggleFollow(this, ${user.id})">
+            <span class="material-symbols-outlined text-[16px]">${isFollowing ? 'person_remove' : 'person_add'}</span>
+            <span>${isFollowing ? 'Unfollow' : 'Connect'}</span>
+          </button>
+          <button class="p-2 rounded-lg border border-outline-variant/50 text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" title="Quick Message" type="button" onclick="window.location.href='inbox.html?user=${user.id}'">
+            <span class="material-symbols-outlined text-[18px]">chat</span>
+          </button>
+        </div>
+      `;
+      return div;
+  }
+
+  async function toggleFollow(btn, userId) {
+      try {
+          const res = await fetch(`${API_BASE}/api/follow/${userId}`, { method: 'POST', credentials: 'include' });
+          if(res.ok) {
+              await loadNetworkData();
+              loadSuggestedPeers();
+          }
+      } catch (err) { console.error(err); }
+  }
+
+  function setupCopy(buttonId, textToCopy, successLabel) {
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      let t = profileUrl || textToCopy;
+      navigator.clipboard.writeText(t).then(() => {
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">check_circle</span><span>${successLabel}</span>`;
+        btn.classList.add('bg-tertiary-container', 'text-white');
+        setTimeout(() => {
+          btn.innerHTML = originalContent;
+          btn.classList.remove('bg-tertiary-container', 'text-white');
+        }, 2200);
+      }).catch(() => {
+        alert('Copied link to clipboard: ' + t);
+      });
+    });
+  }
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer></body></html>
