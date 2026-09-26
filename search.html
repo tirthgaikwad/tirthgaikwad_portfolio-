@@ -155,8 +155,9 @@
 </div>
 
 <script>
+
     // ==========================================
-    // GLOBAL MODAL SYSTEM
+    // GLOBAL MODAL SYSTEM (Preserved)
     // ==========================================
     window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
         const modal = document.getElementById('systemModal');
@@ -202,96 +203,246 @@
     };
 
     // ==========================================
-    // SEARCH & INTERACTION LOGIC
+    // DYNAMIC DATA, SEARCH & PAGINATION LOGIC
     // ==========================================
+    window.allProfiles = [];
+    window.filteredProfiles = [];
+    window.currentPage = 1;
+    window.itemsPerPage = 6;
+
+    window.updateTechPills = function() {
+        const buttons = document.querySelectorAll('button[onclick^="window.setSearch"]');
+        buttons.forEach(btn => {
+            const match = btn.getAttribute('onclick').match(/'([^']+)'/);
+            if(match) {
+                const term = match[1].toLowerCase();
+                let count = window.allProfiles.filter(p => {
+                    return (p.skills && p.skills.toLowerCase().includes(term)) ||
+                           (p.name && p.name.toLowerCase().includes(term));
+                }).length;
+                const span = btn.querySelector('span');
+                if(span) span.textContent = count;
+            }
+        });
+    };
+
+    window.renderPagination = function() {
+        const container = document.querySelector('.mt-space-xl.flex');
+        if(!container) return;
+        
+        const total = window.filteredProfiles.length;
+        const totalPages = Math.ceil(total / window.itemsPerPage) || 1;
+        
+        if (window.currentPage > totalPages) window.currentPage = totalPages;
+        if (window.currentPage < 1) window.currentPage = 1;
+        
+        const start = total === 0 ? 0 : (window.currentPage - 1) * window.itemsPerPage + 1;
+        const end = Math.min(window.currentPage * window.itemsPerPage, total);
+        
+        let html = `
+        <div class="font-body-sm text-body-sm text-on-surface-variant">
+          Showing <span class="font-medium text-on-surface">${start} - ${end}</span> of <span id="resultCountBottom">${total}</span> student builders
+        </div>
+        <div class="flex items-center gap-1">
+          <button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1" ${window.currentPage === 1 ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage - 1})">
+            <span class="material-symbols-outlined text-[16px]">chevron_left</span> Previous
+          </button>
+        `;
+        
+        for(let i=1; i<=totalPages; i++) {
+            if(i === 1 || i === totalPages || (i >= window.currentPage - 1 && i <= window.currentPage + 1)) {
+                if(i === window.currentPage) {
+                    html += `<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold shadow-sm" type="button">${i}</button>`;
+                } else {
+                    html += `<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" onclick="window.goToPage(${i})">${i}</button>`;
+                }
+            } else if (i === window.currentPage - 2 || i === window.currentPage + 2) {
+                html += `<span class="px-1 text-outline font-label-md">...</span>`;
+            }
+        }
+        
+        html += `
+          <button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors" ${window.currentPage === totalPages ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage + 1})">
+            Next <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          </button>
+        </div>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Also update top counts if they exist
+        const countEls = document.querySelectorAll('#resultCount, #headerResultCount');
+        countEls.forEach(el => { if(el) el.textContent = total; });
+    };
+
+    window.goToPage = function(page) {
+        window.currentPage = page;
+        window.renderGrid();
+    };
+
+    window.renderGrid = function() {
+        const grid = document.getElementById('search-results-grid');
+        grid.innerHTML = '';
+        
+        const total = window.filteredProfiles.length;
+        if (total === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found.</div>';
+            window.renderPagination();
+            return;
+        }
+        
+        const start = (window.currentPage - 1) * window.itemsPerPage;
+        const end = Math.min(start + window.itemsPerPage, total);
+        const pageProfiles = window.filteredProfiles.slice(start, end);
+        
+        pageProfiles.forEach(profile => {
+            const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+            const avatarHtml = profile.profile_pic 
+              ? `<img src="${profile.profile_pic}" class="w-full h-full object-cover">`
+              : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
+              
+            const skillsArray = profile.skills ? profile.skills.split(',').map(s => s.trim()).filter(s => s) : [];
+            const skillsHtml = skillsArray.map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`).join('');
+              
+            const cardHtml = `
+              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+                <div class="flex items-start justify-between gap-space-sm mb-space-md">
+                  <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                    <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
+                      ${avatarHtml}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
+                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
+                    ${profile.name}
+                  </h3>
+                  <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
+                    <span class="material-symbols-outlined text-[15px]">school</span>
+                    ${profile.college_name || 'No college listed'}
+                  </p>
+                </div>
+                <div class="mb-space-lg mt-space-sm">
+                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${skillsHtml}
+                  </div>
+                </div>
+                <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
+                  <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            `;
+            grid.innerHTML += cardHtml;
+        });
+        
+        window.renderPagination();
+    };
+
     window.setSearch = function(term) {
         const input = document.getElementById('talent-search-input');
-        if(input) {
-            input.value = term;
-            window.executeSearch(true);
-        }
+        if(input) input.value = term;
+        window.executeSearch(true);
+        
+        // Handle pill active state
+        const buttons = document.querySelectorAll('button[onclick^="window.setSearch"]');
+        buttons.forEach(btn => {
+            if(btn.getAttribute('onclick').includes(term)) {
+                btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
+                btn.classList.add('bg-primary', 'text-on-primary');
+                const span = btn.querySelector('span');
+                if(span) {
+                    span.classList.remove('bg-surface-container-high', 'text-on-surface');
+                    span.classList.add('bg-white/20');
+                }
+            } else {
+                btn.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
+                btn.classList.remove('bg-primary', 'text-on-primary');
+                const span = btn.querySelector('span');
+                if(span) {
+                    span.classList.add('bg-surface-container-high', 'text-on-surface');
+                    span.classList.remove('bg-white/20');
+                }
+            }
+        });
     };
 
     window.executeSearch = function(showPopup = false) {
         const input = document.getElementById('talent-search-input');
         const val = input ? input.value.toLowerCase().trim() : '';
-        const cards = document.querySelectorAll('.developer-card');
-        let visibleCount = 0;
         
-        cards.forEach(card => {
-            const text = card.textContent.toLowerCase();
-            if(!val || text.includes(val)) {
-                card.style.display = 'flex';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
+        if(!val) {
+            window.filteredProfiles = [...window.allProfiles];
+        } else {
+            window.filteredProfiles = window.allProfiles.filter(p => {
+                const searchStr = `${p.name || ''} ${p.college_name || ''} ${p.skills || ''} ${p.department || ''} ${p.bio || ''}`.toLowerCase();
+                return searchStr.includes(val);
+            });
+        }
         
-        const countEls = document.querySelectorAll('#resultCount, #headerResultCount, #resultCountBottom');
-        countEls.forEach(el => { if(el) el.textContent = visibleCount; });
+        window.currentPage = 1;
+        window.renderGrid();
         
         if(val && showPopup === true) {
-            window.showSystemModal('Search Applied', `Showing ${visibleCount} results for "${val}".`, 'alert');
+            window.showSystemModal('Search Applied', `Showing ${window.filteredProfiles.length} results for "${val}".`, 'alert');
         }
     };
 
-    (function () {
-      const searchInput = document.getElementById('talent-search-input');
-      const filterPills = document.querySelectorAll('.filter-pill');
-      const tagPills = document.querySelectorAll('.tag-pill');
-
-      if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-          // Dynamic live filtering as user types - NO POPUP
-          window.executeSearch(false);
-        });
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                window.executeSearch(true); // POPUP ON ENTER
+    document.addEventListener("DOMContentLoaded", () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const query = searchParams.get('q') || searchParams.get('skill') || '';
+      
+      const grid = document.getElementById('search-results-grid');
+      let fetchUrl = 'http://127.0.0.1:8000/api/profiles';
+      
+      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading all profiles...</p></div>';
+      
+      fetch(fetchUrl, { credentials: 'include' })
+        .then(res => res.json())
+        .then(profiles => {
+            window.allProfiles = profiles || [];
+            window.updateTechPills();
+            
+            const input = document.getElementById('talent-search-input');
+            if (input) {
+                input.addEventListener('input', (e) => {
+                    // Reset pills state if user types
+                    const buttons = document.querySelectorAll('button[onclick^="window.setSearch"]');
+                    buttons.forEach(btn => {
+                        btn.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
+                        btn.classList.remove('bg-primary', 'text-on-primary');
+                        const span = btn.querySelector('span');
+                        if(span) {
+                            span.classList.add('bg-surface-container-high', 'text-on-surface');
+                            span.classList.remove('bg-white/20');
+                        }
+                    });
+                    window.executeSearch(false);
+                });
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        window.executeSearch(true);
+                    }
+                });
             }
+            
+            if(query) {
+                if(input) input.value = query;
+                window.executeSearch(false);
+            } else {
+                window.filteredProfiles = [...window.allProfiles];
+                window.renderGrid();
+            }
+        })
+        .catch(err => {
+          console.error(err);
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading profiles. Are you logged in?</div>';
         });
-      }
+    });
 
-      const resetBtn = document.getElementById('resetFiltersBtn');
-      if (resetBtn) {
-          resetBtn.addEventListener('click', () => {
-             if(searchInput) searchInput.value = '';
-             filterPills.forEach((p) => {
-                p.classList.remove('active', 'bg-primary', 'text-on-primary');
-                p.classList.add('bg-surface-container', 'text-on-surface-variant');
-             });
-             if(filterPills.length > 0) {
-                 filterPills[0].classList.remove('bg-surface-container', 'text-on-surface-variant');
-                 filterPills[0].classList.add('active', 'bg-primary', 'text-on-primary');
-             }
-             window.executeSearch(false); // NO DOUBLE POPUP
-             window.showSystemModal('Filters Reset', 'Showing all verified peers.', 'alert');
-          });
-      }
-
-      filterPills.forEach((pill) => {
-        pill.addEventListener('click', () => {
-          filterPills.forEach((p) => {
-            p.classList.remove('active', 'bg-primary', 'text-on-primary');
-            p.classList.add('bg-surface-container', 'text-on-surface-variant');
-          });
-          pill.classList.remove('bg-surface-container', 'text-on-surface-variant');
-          pill.classList.add('active', 'bg-primary', 'text-on-primary');
-
-          const collegeName = pill.textContent.replace(/\(.*\)/, '').trim();
-          if (collegeName.includes('All Universities')) {
-            if(searchInput) searchInput.value = '';
-            window.executeSearch(false);
-          } else {
-            if(searchInput) searchInput.value = collegeName;
-            window.executeSearch(true);
-          }
-        });
-      });
-
-    })();
 </script>
 
     <script>
