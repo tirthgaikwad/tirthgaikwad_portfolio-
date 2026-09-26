@@ -97,19 +97,19 @@
 <div class="w-full mt-space-xl flex flex-col lg:flex-row items-center justify-between gap-space-md">
 <!-- Category Segmented Control -->
 <div class="flex items-center flex-wrap gap-space-xs p-1.5 bg-surface-container-lowest border border-outline-variant/60 rounded-xl shadow-sm">
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md transition-all bg-on-surface text-surface-container-lowest shadow-sm" data-category-btn="" type="button">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md transition-all bg-on-surface text-surface-container-lowest shadow-sm" data-category-btn="" type="button" onclick="window.setCategoryFilter(\'\')">
             All Opportunities
           </button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter(\'Hackathon\')">
             Hackathons <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-error-container text-on-error-container font-bold">28</span>
 </button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter(\'Side Project\')">
             Side Projects <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-surface-container text-on-surface-variant">9</span>
 </button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter(\'Research / AI\')">
             Research / AI <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-surface-container text-on-surface-variant">5</span>
 </button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter(\'Open Source\')">
             Open Source
           </button>
 </div>
@@ -124,22 +124,22 @@
 <!-- Search Input -->
 <div class="relative flex-1 w-full flex items-center pl-space-sm text-on-surface-variant">
 <span class="material-symbols-outlined text-[20px] text-outline mr-space-xs">search</span>
-<input class="w-full bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none py-2" placeholder="Search by role, required tech stack, hackathon event name, or college..." type="text"/>
+<input id="board-search-input" class="w-full bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none py-2" placeholder="Search by role, required tech stack, hackathon event name, or college..." type="text"/>
 </div>
 <div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block"></div>
 <!-- Quick Filters -->
 <div class="flex items-center gap-space-xs w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
 <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider pl-1 hidden lg:inline">Quick:</span>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch(\'python\')">
             Python <span class="text-outline font-normal">18</span>
 </button>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch(\'react\')">
             React / Next.js <span class="text-outline font-normal">14</span>
 </button>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch(\'pytorch\')">
             PyTorch <span class="text-outline font-normal">7</span>
 </button>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button">
+<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch(\'solidity\')">
             Solidity <span class="text-outline font-normal">5</span>
 </button>
 <!-- Sort Dropdown trigger -->
@@ -161,7 +161,7 @@
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-space-md text-on-surface-variant font-body-sm text-body-sm gap-2">
 <div class="flex items-center gap-2">
 <span class="font-headline-sm text-headline-sm font-bold text-on-surface">Available Positions</span>
-<span class="py-0.5 px-2 rounded-full bg-primary-fixed font-label-sm text-label-sm text-on-primary-fixed font-bold">42 active calls</span>
+<span id="activeCallsCount" class="py-0.5 px-2 rounded-full bg-primary-fixed font-label-sm text-label-sm text-on-primary-fixed font-bold">0 active calls</span>
 </div>
 <div class="flex items-center gap-4 text-outline">
 <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-error"></span> SIH &amp; National Contests Closing Soon</span>
@@ -192,34 +192,10 @@
 </div>
 </div>
 <!-- Pagination Controls matching Screen 4 standard -->
-<div class="mt-space-xl pt-space-md border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant">
-<div>
-          Showing <span class="font-semibold text-on-surface">1 - 6</span> of <span class="font-semibold text-on-surface">42</span> open opportunities
+<div id="board-pagination-container" class="mt-space-xl pt-space-md border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant">
+          </div>
         </div>
-<div class="flex items-center gap-1">
-<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors cursor-not-allowed opacity-50" disabled="" type="button" onclick="window.showSystemModal('Pagination', 'Loading previous page...', 'alert')">
-<span class="material-symbols-outlined text-[18px]">chevron_left</span>
-</button>
-<button class="w-9 h-9 rounded-lg flex items-center justify-center bg-primary text-on-primary font-semibold shadow-sm" type="button">
-            1
-          </button>
-<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 2...', 'alert')">
-            2
-          </button>
-<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 3...', 'alert')">
-            3
-          </button>
-<span class="px-1 text-outline">...</span>
-<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 7...', 'alert')">
-            7
-          </button>
-<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading next page...', 'alert')">
-<span class="material-symbols-outlined text-[18px]">chevron_right</span>
-</button>
-</div>
-</div>
-</div>
-</section>
+      </section>
 </div></main>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
@@ -235,8 +211,9 @@
 </div>
 
 <script>
+
 // ==========================================
-// GLOBAL MODAL SYSTEM
+// GLOBAL MODAL SYSTEM (Preserved)
 // ==========================================
 window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
     const modal = document.getElementById('systemModal');
@@ -273,6 +250,297 @@ window.closeSystemModal = function() {
     const modal = document.getElementById('systemModal');
     if (modal) modal.classList.remove('active');
 };
+
+window.logout = function() {
+    window.showSystemModal("Log Out", "Are you sure you want to securely log out of ProPartner?", "confirm", () => {
+        localStorage.removeItem('currentUserId');
+        window.location.href = "login.html";
+    }, "Log Out");
+};
+
+// ==========================================
+// DYNAMIC DATA, SEARCH & PAGINATION LOGIC
+// ==========================================
+window.allPosts = [];
+window.filteredPosts = [];
+window.currentPage = 1;
+window.itemsPerPage = 6;
+window.currentCategory = '';
+
+window.updateCounts = function() {
+    // Category Counts
+    const hackathonCount = window.allPosts.filter(p => p.category === 'Hackathon').length;
+    const sideProjectCount = window.allPosts.filter(p => p.category === 'Side Project').length;
+    const researchCount = window.allPosts.filter(p => p.category === 'Research / AI').length;
+    const openSourceCount = window.allPosts.filter(p => p.category === 'Open Source').length;
+
+    const catButtons = document.querySelectorAll('button[data-category-btn]');
+    catButtons.forEach(btn => {
+        const onclick = btn.getAttribute('onclick') || '';
+        const span = btn.querySelector('span');
+        if(onclick.includes('Hackathon') && span) span.textContent = hackathonCount;
+        if(onclick.includes('Side Project') && span) span.textContent = sideProjectCount;
+        if(onclick.includes('Research') && span) span.textContent = researchCount;
+        if(onclick.includes('Open Source') && span) span.textContent = openSourceCount;
+    });
+
+    // Pill Counts
+    const buttons = document.querySelectorAll('button[data-filter-pill]');
+    buttons.forEach(btn => {
+        const match = btn.getAttribute('onclick').match(/'([^']+)'/);
+        if(match) {
+            const term = match[1].toLowerCase();
+            let count = window.allPosts.filter(p => {
+                return (p.skills_required && p.skills_required.toLowerCase().includes(term)) ||
+                       (p.title && p.title.toLowerCase().includes(term));
+            }).length;
+            const span = btn.querySelector('span');
+            if(span) span.textContent = count;
+        }
+    });
+};
+
+window.setCategoryFilter = function(category) {
+    window.currentCategory = category;
+    
+    // Update active class on category buttons
+    const catButtons = document.querySelectorAll('button[data-category-btn]');
+    catButtons.forEach(btn => {
+        const onclick = btn.getAttribute('onclick') || '';
+        if((category === '' && onclick.includes("('')")) || 
+           (category !== '' && onclick.includes(category))) {
+            btn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-low');
+            btn.classList.add('bg-on-surface', 'text-surface-container-lowest');
+        } else {
+            btn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-low');
+            btn.classList.remove('bg-on-surface', 'text-surface-container-lowest');
+        }
+    });
+
+    window.executeSearch(false);
+};
+
+window.setSearch = function(term) {
+    const input = document.getElementById('board-search-input');
+    if(input) input.value = term;
+    window.executeSearch(true);
+    
+    // Handle pill active state
+    const buttons = document.querySelectorAll('button[data-filter-pill]');
+    buttons.forEach(btn => {
+        if(btn.getAttribute('onclick').includes(term)) {
+            btn.classList.remove('border-outline-variant/70', 'hover:bg-surface-container-low');
+            btn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
+            const span = btn.querySelector('span');
+            if(span) {
+                span.classList.remove('text-outline');
+                span.classList.add('text-white/80');
+            }
+        } else {
+            btn.classList.add('border-outline-variant/70', 'hover:bg-surface-container-low');
+            btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+            const span = btn.querySelector('span');
+            if(span) {
+                span.classList.add('text-outline');
+                span.classList.remove('text-white/80');
+            }
+        }
+    });
+};
+
+window.executeSearch = function(showPopup = false) {
+    const input = document.getElementById('board-search-input');
+    const val = input ? input.value.toLowerCase().trim() : '';
+    
+    window.filteredPosts = window.allPosts.filter(p => {
+        if (window.currentCategory && p.category !== window.currentCategory) return false;
+        
+        if (!val) return true;
+        
+        const searchStr = `${p.title || ''} ${p.author_college || ''} ${p.skills_required || ''} ${p.description || ''}`.toLowerCase();
+        return searchStr.includes(val);
+    });
+    
+    // Update active calls
+    const activeCallsCount = document.getElementById('activeCallsCount');
+    if(activeCallsCount) activeCallsCount.textContent = `${window.filteredPosts.length} active calls`;
+    
+    window.currentPage = 1;
+    window.renderGrid();
+    
+    if(val && showPopup === true) {
+        window.showSystemModal('Search Applied', `Showing ${window.filteredPosts.length} results for "${val}".`, 'alert');
+    }
+};
+
+window.renderPagination = function() {
+    const container = document.getElementById('board-pagination-container');
+    if(!container) return;
+    
+    const total = window.filteredPosts.length;
+    const totalPages = Math.ceil(total / window.itemsPerPage) || 1;
+    
+    if (window.currentPage > totalPages) window.currentPage = totalPages;
+    if (window.currentPage < 1) window.currentPage = 1;
+    
+    const start = total === 0 ? 0 : (window.currentPage - 1) * window.itemsPerPage + 1;
+    const end = Math.min(window.currentPage * window.itemsPerPage, total);
+    
+    let html = `
+    <div>
+      Showing <span class="font-semibold text-on-surface">${start} - ${end}</span> of <span class="font-semibold text-on-surface">${total}</span> open opportunities
+    </div>
+    <div class="flex items-center gap-1">
+      <button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${window.currentPage === 1 ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage - 1})">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+    `;
+    
+    for(let i=1; i<=totalPages; i++) {
+        if(i === 1 || i === totalPages || (i >= window.currentPage - 1 && i <= window.currentPage + 1)) {
+            if(i === window.currentPage) {
+                html += `<button class="w-9 h-9 rounded-lg flex items-center justify-center bg-primary text-on-primary font-semibold shadow-sm" type="button">${i}</button>`;
+            } else {
+                html += `<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.goToPage(${i})">${i}</button>`;
+            }
+        } else if (i === window.currentPage - 2 || i === window.currentPage + 2) {
+            html += `<span class="px-1 text-outline">...</span>`;
+        }
+    }
+    
+    html += `
+      <button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${window.currentPage === totalPages ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage + 1})">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+    `;
+    
+    container.innerHTML = html;
+};
+
+window.goToPage = function(page) {
+    window.currentPage = page;
+    window.renderGrid();
+};
+
+window.renderGrid = function() {
+    const grid = document.getElementById('board-grid');
+    if(!grid) return;
+    
+    grid.innerHTML = '';
+    
+    const total = window.filteredPosts.length;
+    if (total === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No opportunities found matching your criteria.</div>';
+        window.renderPagination();
+        return;
+    }
+    
+    const start = (window.currentPage - 1) * window.itemsPerPage;
+    const end = Math.min(start + window.itemsPerPage, total);
+    const pagePosts = window.filteredPosts.slice(start, end);
+    
+    pagePosts.forEach(post => {
+        const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Recent';
+        const categoryIcon = post.category === 'Hackathon' ? 'emoji_events' : post.category === 'Research / AI' ? 'science' : post.category === 'Open Source' ? 'code' : 'work';
+        
+        const cardHtml = `
+          <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between border border-outline-variant/30 relative overflow-hidden">
+            <div class="absolute top-0 right-0 px-3 py-1 bg-tertiary text-on-tertiary font-label-sm text-[10px] font-bold rounded-bl-lg flex items-center gap-1 z-10 shadow-sm">
+              <span class="material-symbols-outlined text-[14px]">${categoryIcon}</span> ${post.category || 'Opportunity'}
+            </div>
+            <div>
+              <div class="mb-space-sm mt-2">
+                <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors pr-20">
+                  ${post.title}
+                </h3>
+              </div>
+              <div class="flex items-center gap-2 mb-space-md text-on-surface-variant font-label-sm text-label-sm">
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">person</span>
+                  ${post.author_name || 'Unknown'}
+                </span>
+                <span>•</span>
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">apartment</span>
+                  ${post.author_college || 'Unknown College'}
+                </span>
+              </div>
+              <p class="font-body-md text-body-md text-on-surface-variant mb-space-sm line-clamp-3">
+                ${post.description || 'No description provided.'}
+              </p>
+              <div class="flex items-center gap-1.5 flex-wrap mb-space-md">
+                ${(post.skills_required || '').split(',').map(s => s.trim()).filter(s => s).map(skill => 
+                  `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${skill}</span>`
+                ).join('')}
+              </div>
+            </div>
+            <div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between">
+              <div class="font-label-sm text-label-sm text-on-surface-variant">
+                Posted ${dateStr}
+              </div>
+              <button class="px-space-md py-1.5 rounded-lg bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md transition-colors" type="button" onclick="window.showSystemModal('Apply', 'Application feature is coming soon!', 'alert')">
+                Apply Now
+              </button>
+            </div>
+          </div>
+        `;
+        grid.innerHTML += cardHtml;
+    });
+    
+    window.renderPagination();
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const grid = document.getElementById('board-grid');
+  
+  if(grid) {
+      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading opportunities...</p></div>';
+  }
+  
+  fetch(`http://127.0.0.1:8000/api/board/posts`, { credentials: 'include' })
+    .then(res => {
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      return res.json();
+    })
+    .then(posts => {
+        window.allPosts = posts || [];
+        window.updateCounts();
+        
+        const input = document.getElementById('board-search-input');
+        if (input) {
+            input.addEventListener('input', (e) => {
+                // Reset pills state if user types
+                const buttons = document.querySelectorAll('button[data-filter-pill]');
+                buttons.forEach(btn => {
+                    btn.classList.add('border-outline-variant/70', 'hover:bg-surface-container-low');
+                    btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+                    const span = btn.querySelector('span');
+                    if(span) {
+                        span.classList.add('text-outline');
+                        span.classList.remove('text-white/80');
+                    }
+                });
+                window.executeSearch(false);
+            });
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    window.executeSearch(true);
+                }
+            });
+        }
+        
+        window.executeSearch(false);
+    })
+    .catch(err => {
+      console.error(err);
+      if(grid) {
+          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Could not load opportunities. Please check your connection and try refreshing.</div>';
+      }
+    });
+});
+
 </script>
 
 
