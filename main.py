@@ -330,6 +330,7 @@ class UserLogin(BaseModel):
 
 class ProfileResponse(BaseModel):
     id: int
+    is_admin: int = 0
     name: str
     college_name: str
     department: str
@@ -342,6 +343,9 @@ class ProfileResponse(BaseModel):
     banner_pic: str
     account_type: str
     github_username: Optional[str] = ""
+
+    class Config:
+        from_attributes = True
     
     class Config:
         from_attributes = True
@@ -648,7 +652,7 @@ async def login_user(request: Request, credentials: UserLogin, response: Respons
     )
     
     await log_user_activity(db, user.id, "Session Active", "You successfully logged into your account.")
-    return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type}
+    return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type, "is_admin": user.is_admin}
 
 
 @app.post("/api/logout")
@@ -1374,7 +1378,7 @@ async def delete_board_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found.")
         
-    if post.author_id != current_user.id:
+    if post.author_id != current_user.id and current_user.is_admin != 1:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post.")
         
     title = post.title

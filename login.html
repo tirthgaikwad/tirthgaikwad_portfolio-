@@ -329,7 +329,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     localStorage.setItem('currentUserId', data.user_id);
-                    localStorage.setItem('userRole', 'user'); 
+                    localStorage.setItem('userRole', data.is_admin ? 'admin' : 'user'); 
                     window.location.href = 'inbox.html'; 
                 } else {
                     const err = await res.json();
