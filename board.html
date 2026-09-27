@@ -78,9 +78,11 @@
     });
   </script>
 <!-- Page Header & Hero Section -->
-<section class="relative w-full pt-space-2xl pb-space-xl overflow-hidden">
+<section class="relative w-full pt-space-2xl pb-space-xl z-20">
 <!-- Subtle architectural background glow -->
-<div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-container-max h-80 bg-gradient-to-b from-primary/5 via-secondary-container/20 to-transparent pointer-events-none -z-10 rounded-full blur-3xl opacity-70"></div>
+<div class="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-container-max h-80 bg-gradient-to-b from-primary/5 via-secondary-container/20 to-transparent rounded-full blur-3xl opacity-70"></div>
+</div>
 <div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col items-center text-center">
 <!-- Collegiate Badge -->
 <div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-high/60 border border-outline-variant/50 text-primary font-label-sm text-label-sm uppercase tracking-wider mb-space-md shadow-sm">
@@ -142,12 +144,22 @@
 <button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch('solidity')">
             Solidity <span class="text-outline font-normal">5</span>
 </button>
+</div>
 <!-- Sort Dropdown trigger -->
-<div class="relative ml-auto md:ml-space-xs">
-<button class="flex items-center gap-1 px-space-sm py-1.5 rounded-lg bg-surface-container-low font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors whitespace-nowrap" type="button" onclick="window.showSystemModal('Sort', 'Sorting options will open here.', 'alert')">
-<span class="material-symbols-outlined text-[18px] text-secondary">tune</span>
+<div class="relative inline-block ml-auto md:ml-space-xs shrink-0 z-50">
+<button id="sortDropdownBtn" class="flex items-center gap-1 px-space-md py-2 rounded-lg bg-surface-container-lowest border border-outline-variant/60 font-label-md text-label-md text-on-surface hover:bg-surface-container-low hover:border-outline-variant transition-all whitespace-nowrap shadow-sm" type="button" onclick="document.getElementById('sortDropdownMenu').classList.toggle('hidden')">
+<span class="material-symbols-outlined text-[18px] text-primary">tune</span>
+<span id="sortLabel">Newest First</span>
+<span class="material-symbols-outlined text-[18px] text-outline ml-1">keyboard_arrow_down</span>
+</button>
+<div id="sortDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.1)] border border-outline-variant/40 transition-all z-50 overflow-hidden py-2">
+<button id="sort-newest-btn" class="w-full text-left flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 hover:bg-surface-container-low transition-colors font-label-md" onclick="window.setSort('newest'); document.getElementById('sortDropdownMenu').classList.add('hidden')">
 <span>Newest First</span>
-<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+<span class="material-symbols-outlined text-[18px]">check</span>
+</button>
+<button id="sort-oldest-btn" class="w-full text-left flex items-center justify-between px-4 py-2.5 text-on-surface hover:bg-surface-container-low transition-colors font-label-md" onclick="window.setSort('oldest'); document.getElementById('sortDropdownMenu').classList.add('hidden')">
+<span>Oldest First</span>
+<span class="material-symbols-outlined text-[18px] opacity-0">check</span>
 </button>
 </div>
 </div>
@@ -266,6 +278,43 @@ window.filteredPosts = [];
 window.currentPage = 1;
 window.itemsPerPage = 6;
 window.currentCategory = '';
+window.currentSort = 'newest';
+
+window.setSort = function(sortType) {
+    window.currentSort = sortType;
+    const label = document.getElementById('sortLabel');
+    if (label) {
+        label.textContent = sortType === 'newest' ? 'Newest First' : 'Oldest First';
+    }
+    
+    // Update active state in dropdown
+    const newestBtn = document.getElementById('sort-newest-btn');
+    const oldestBtn = document.getElementById('sort-oldest-btn');
+    if (newestBtn && oldestBtn) {
+        if (sortType === 'newest') {
+            newestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 hover:bg-surface-container-low transition-colors font-label-md";
+            newestBtn.querySelector('.material-symbols-outlined').classList.remove('opacity-0');
+            oldestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-on-surface hover:bg-surface-container-low transition-colors font-label-md";
+            oldestBtn.querySelector('.material-symbols-outlined').classList.add('opacity-0');
+        } else {
+            oldestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 hover:bg-surface-container-low transition-colors font-label-md";
+            oldestBtn.querySelector('.material-symbols-outlined').classList.remove('opacity-0');
+            newestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-on-surface hover:bg-surface-container-low transition-colors font-label-md";
+            newestBtn.querySelector('.material-symbols-outlined').classList.add('opacity-0');
+        }
+    }
+    
+    window.executeSearch(false);
+};
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (event) => {
+    const btn = document.getElementById('sortDropdownBtn');
+    const menu = document.getElementById('sortDropdownMenu');
+    if (btn && menu && !btn.contains(event.target) && !menu.contains(event.target)) {
+        menu.classList.add('hidden');
+    }
+});
 
 window.updateCounts = function() {
     // Category Counts
@@ -360,6 +409,12 @@ window.executeSearch = function(showPopup = false) {
         const searchStr = `${p.title || ''} ${p.author_college || ''} ${p.skills_required || ''} ${p.description || ''}`.toLowerCase();
         return searchStr.includes(val);
     });
+    
+    if (window.currentSort === 'newest') {
+        window.filteredPosts.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    } else if (window.currentSort === 'oldest') {
+        window.filteredPosts.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    }
     
     // Update active calls
     const activeCallsCount = document.getElementById('activeCallsCount');
@@ -557,78 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const grid = document.getElementById('board-grid');
-      
-      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading opportunities...</p></div>';
-      
-      fetch(`http://127.0.0.1:8000/api/board/posts`, { credentials: 'include' })
-        .then(res => {
-          if (!res.ok) throw new Error(`Server returned ${res.status}`);
-          return res.json();
-        })
-        .then(posts => {
-          grid.innerHTML = '';
-          if (posts.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No opportunities posted yet. Be the first to post one!</div>';
-            return;
-          }
 
-          posts.forEach(post => {
-            const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Recent';
-            const categoryIcon = post.category === 'Hackathon' ? 'emoji_events' : post.category === 'Research / AI' ? 'science' : post.category === 'Open Source' ? 'code' : 'work';
-            
-            const cardHtml = `
-              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between border border-outline-variant/30 relative overflow-hidden">
-                <div class="absolute top-0 right-0 px-3 py-1 bg-tertiary text-on-tertiary font-label-sm text-[10px] font-bold rounded-bl-lg flex items-center gap-1 z-10 shadow-sm">
-                  <span class="material-symbols-outlined text-[14px]">${categoryIcon}</span> ${post.category || 'Opportunity'}
-                </div>
-                <div>
-                  <div class="mb-space-sm mt-2">
-                    <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors pr-20">
-                      ${post.title}
-                    </h3>
-                  </div>
-                  <div class="flex items-center gap-2 mb-space-md text-on-surface-variant font-label-sm text-label-sm">
-                    <span class="flex items-center gap-1">
-                      <span class="material-symbols-outlined text-[14px]">person</span>
-                      ${post.author_name || 'Unknown'}
-                    </span>
-                    <span>•</span>
-                    <span class="flex items-center gap-1">
-                      <span class="material-symbols-outlined text-[14px]">apartment</span>
-                      ${post.author_college || 'Unknown College'}
-                    </span>
-                  </div>
-                  <p class="font-body-md text-body-md text-on-surface-variant mb-space-sm line-clamp-3">
-                    ${post.description || 'No description provided.'}
-                  </p>
-                  <div class="flex items-center gap-1.5 flex-wrap mb-space-md">
-                    ${(post.skills_required || '').split(',').map(s => s.trim()).filter(s => s).map(skill => 
-                      `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${skill}</span>`
-                    ).join('')}
-                  </div>
-                </div>
-                <div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between">
-                  <div class="font-label-sm text-label-sm text-on-surface-variant">
-                    Posted ${dateStr}
-                  </div>
-                  <button class="px-space-md py-1.5 rounded-lg bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md transition-colors" type="button">
-                    Apply Now
-                  </button>
-                </div>
-              </div>
-            `;
-            grid.innerHTML += cardHtml;
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Could not load opportunities. Please check your connection and try refreshing.</div>';
-        });
-    });
-    </script>
     <script src="shared.js"></script>
     
 <!-- Post Opportunity Modal -->
