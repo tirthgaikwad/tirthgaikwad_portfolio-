@@ -4,18 +4,21 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>My Teams | Connect2Minds Workspace</title>
-<!-- Google Fonts -->
+<meta name="description" content="Collaborate with your teams in real-time with voice, video, and text channels."/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
   tailwind.config = {
     darkMode: "class",
     theme: {
       extend: {
+        fontFamily: {
+          sans: ['Plus Jakarta Sans', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
         colors: {
           brand: { 50: "#eef2ff", 100: "#e0e7ff", 200: "#c7d2fe", 300: "#a5b4fc", 400: "#818cf8", 500: "#6366f1", 600: "#4f46e5", 700: "#4338ca", 800: "#3730a3", 900: "#312e81" },
           surface: { container: { lowest: "#ffffff", low: "#eff4ff", DEFAULT: "#e5eeff" } },
@@ -26,21 +29,77 @@
   };
 </script>
 <style>
-  /* Custom Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
   ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-  
   .hide-scroll::-webkit-scrollbar { display: none; }
   .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Modals */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
   .modal-overlay.active { display: flex; }
+
+  .code-block {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+  .voice-pulse::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.3);
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+  
+  /* Video call overlay */
+  .call-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    background: #0f172a;
+    display: none; flex-direction: column;
+  }
+  .call-overlay.active { display: flex; }
+  
+  /* Emoji picker */
+  .emoji-picker {
+    display: none; position: absolute; bottom: 100%; left: 0;
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100;
+    max-width: 280px; flex-wrap: wrap; gap: 4px;
+  }
+  .emoji-picker.active { display: flex; }
+  .emoji-picker button { font-size: 20px; padding: 4px; border-radius: 6px; cursor: pointer; transition: background 0.15s; border: none; background: transparent; }
+  .emoji-picker button:hover { background: #f1f5f9; }
+  
+  /* File attachment preview */
+  .file-preview {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 8px; margin-top: 6px; font-size: 12px;
+  }
 </style>
 </head>
 <body class="h-full flex flex-col overflow-hidden font-sans select-none">
+
+<!-- System Modal (required by shared.js) -->
+<div id="systemModal" class="modal-overlay">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+    <div class="p-6">
+      <h3 id="systemModalTitle" class="text-lg font-bold text-slate-900 mb-2"></h3>
+      <div id="systemModalMessage" class="text-sm text-slate-600 leading-relaxed whitespace-pre-line"></div>
+    </div>
+    <div class="flex justify-end gap-3 px-6 pb-5">
+      <button id="systemModalCancel" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+      <button id="systemModalConfirm" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm">OK</button>
+    </div>
+  </div>
+</div>
 
 <!-- BEGIN: GlobalHeader -->
 <header class="h-16 flex-none w-full z-50 bg-white border-b border-slate-200 shadow-sm">
@@ -48,7 +107,7 @@
     <div class="flex items-center gap-8">
       <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="window.location.href='index.html'">
         <img alt="Connect2Minds" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/>
-        <span class="text-xl font-bold tracking-tight text-slate-900 font-['Plus_Jakarta_Sans']">ProPartner</span>
+        <span class="text-xl font-bold tracking-tight text-slate-900">ProPartner</span>
       </div>
       <nav class="hidden xl:flex items-center gap-6 h-16">
         <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="search.html">Discover Talent</a>
@@ -57,12 +116,14 @@
         <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="project_management.html">Project Hub</a>
         <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="college.html">Campus Network</a>
         <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="research.html">Research Collab</a>
-              <a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="network" href="network.html">My Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="saved" href="saved.html">Saved Profiles</a>
-</nav>
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="network.html">My Network</a>
+        <a class="h-full flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors" href="saved.html">Saved Profiles</a>
+      </nav>
     </div>
     <div class="flex items-center gap-3">
       <button aria-label="Notifications" class="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button" data-notif-btn>
         <span class="material-symbols-outlined text-[20px]">notifications</span>
+        <span data-notif-badge class="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full items-center justify-center border-2 border-white" style="display:none;"></span>
       </button>
       <div class="relative cursor-pointer" onclick="window.location.href='profile.html'">
         <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden" data-header-avatar>
@@ -87,139 +148,378 @@
       <button onclick="openCreateTeamModal()" class="w-11 h-11 rounded-3xl hover:rounded-2xl border-2 border-dashed border-slate-300 hover:border-brand-500 text-slate-400 hover:text-brand-600 hover:bg-white flex items-center justify-center transition-all duration-200" title="Create Workspace">
         <span class="material-symbols-outlined text-xl">add</span>
       </button>
+      <button onclick="window.location.href='inbox.html'" class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center transition-colors" title="Direct Messages">
+        <span class="material-symbols-outlined text-xl">chat</span>
+      </button>
+      <button class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center transition-colors" title="Workspace Preferences" onclick="openSettingsModal()">
+        <span class="material-symbols-outlined text-xl">settings</span>
+      </button>
     </div>
   </aside>
 
-  <!-- Secondary Sidebar (Channels) -->
+  <!-- Channels Sidebar -->
   <nav class="w-64 flex-none bg-slate-50 border-r border-slate-200 flex flex-col hidden" id="channels-sidebar">
-    <div class="h-14 flex items-center justify-between px-4 border-b border-slate-200 shadow-sm bg-white cursor-pointer hover:bg-slate-50 transition-colors">
-      <h2 class="font-bold text-slate-800 text-sm truncate font-['Plus_Jakarta_Sans']" id="active-team-name">Select a Team</h2>
+    <!-- Team Header -->
+    <div class="h-14 flex items-center justify-between px-4 border-b border-slate-200 shadow-sm bg-white cursor-pointer hover:bg-slate-50 transition-colors" onclick="toggleTeamMenu()">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-7 h-7 rounded-md bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-none shadow-xs" id="active-team-icon">⚡</div>
+        <div class="min-w-0">
+          <h2 class="font-bold text-slate-800 text-sm truncate leading-tight" id="active-team-name">Select a Team</h2>
+          <p class="text-[11px] font-medium text-emerald-600 flex items-center gap-1" id="team-status">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span id="team-member-count">Active</span>
+          </p>
+        </div>
+      </div>
       <span class="material-symbols-outlined text-slate-400 text-[18px]">expand_more</span>
     </div>
-    <div class="flex-1 overflow-y-auto py-3 px-2 hide-scroll" id="channels-list">
-      <!-- Dynamically injected channels -->
+
+    <!-- Team Menu Dropdown -->
+    <div id="team-menu" class="hidden absolute left-16 top-[80px] w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1.5">
+      <button onclick="openInviteMemberModal()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors">
+        <span class="material-symbols-outlined text-[16px]">person_add</span>
+        Invite People
+      </button>
+      <button onclick="openCreateChannelModal()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors">
+        <span class="material-symbols-outlined text-[16px]">add_circle</span>
+        Create Channel
+      </button>
+      <button onclick="openSettingsModal()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors">
+        <span class="material-symbols-outlined text-[16px]">settings</span>
+        Workspace Settings
+      </button>
+      <div class="border-t border-slate-100 my-1"></div>
+      <button onclick="deleteCurrentTeam()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors">
+        <span class="material-symbols-outlined text-[16px]">delete</span>
+        Delete Workspace
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-3 px-2 hide-scroll space-y-5" id="channels-container">
+      <!-- Text Channels Group -->
+      <div>
+        <div class="px-2 mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span>Text Channels</span>
+          <button onclick="openCreateChannelModal()" class="hover:text-slate-600 text-sm leading-none" title="Create channel">+</button>
+        </div>
+        <div id="channels-list" class="space-y-0.5">
+          <!-- Dynamically injected channels -->
+        </div>
+      </div>
+
+      <!-- Voice Channels Group -->
+      <div>
+        <div class="px-2 mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span>Voice & Collab Hub</span>
+          <span class="text-[10px] text-emerald-600 font-bold" id="voice-live-count"></span>
+        </div>
+        <div id="voice-channels-list" class="space-y-1">
+          <!-- Voice channels -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Voice Connected Panel -->
+    <div id="voice-connected-panel" class="hidden p-3 border-t border-slate-200 bg-white">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="relative">
+            <span class="material-symbols-outlined text-emerald-600 text-[18px]">graphic_eq</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-emerald-700 truncate" id="voice-status-text">Voice Connected</p>
+            <p class="text-[10px] text-slate-500 truncate" id="voice-channel-name-display"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="toggleMic()" id="mic-toggle" class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Toggle Microphone">
+            <span class="material-symbols-outlined text-[16px]">mic</span>
+          </button>
+          <button onclick="disconnectVoice()" class="p-1.5 text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors" title="Disconnect">
+            <span class="material-symbols-outlined text-[16px]">call_end</span>
+          </button>
+        </div>
+      </div>
     </div>
   </nav>
 
   <!-- Main Chat Area -->
   <main class="flex-1 flex flex-col bg-white relative hidden" id="chat-area">
     <!-- Channel Header -->
-    <header class="h-14 flex-none flex items-center justify-between px-4 border-b border-slate-200 shadow-sm">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-slate-400 text-[20px]">tag</span>
-        <h3 class="font-bold text-slate-800 text-[15px]" id="active-channel-name">general</h3>
-        <span class="text-xs text-slate-500 border-l border-slate-300 pl-2 ml-2">Welcome to the channel.</span>
+    <header class="h-14 flex-none flex items-center justify-between px-5 border-b border-slate-200 bg-white z-10">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-mono text-xl font-bold">#</span>
+          <h1 class="text-base font-bold text-slate-900 tracking-tight" id="active-channel-name">general</h1>
+        </div>
+        <div class="h-4 w-px bg-slate-200"></div>
+        <p class="text-xs text-slate-500 hidden md:inline truncate max-w-sm" id="channel-description">Team discussion channel</p>
       </div>
-      <div class="flex items-center gap-3">
-        <button class="text-slate-400 hover:text-brand-600 transition-colors" title="Start Voice Call" onclick="window.showSystemModal('Voice Call', 'Starting WebRTC connection...', 'alert')">
-          <span class="material-symbols-outlined text-[20px]">call</span>
+      <div class="flex items-center gap-1.5 text-slate-500">
+        <button class="p-1.5 hover:bg-slate-100 hover:text-slate-700 rounded-md transition-colors" title="Pinned Messages" onclick="showPinnedMessages()">
+          <span class="material-symbols-outlined text-[18px]">push_pin</span>
         </button>
-        <button class="text-slate-400 hover:text-brand-600 transition-colors" title="Start Video Call" onclick="window.showSystemModal('Video Call', 'Starting video bridge...', 'alert')">
-          <span class="material-symbols-outlined text-[20px]">videocam</span>
+        <button class="p-1.5 hover:bg-slate-100 hover:text-emerald-600 rounded-md transition-colors" title="Start Voice Call" onclick="startCall('audio')">
+          <span class="material-symbols-outlined text-[18px]">call</span>
         </button>
-        <button class="text-slate-400 hover:text-slate-600 transition-colors" title="Members" onclick="toggleMembers()">
-          <span class="material-symbols-outlined text-[20px]">group</span>
+        <button class="p-1.5 hover:bg-slate-100 hover:text-brand-600 rounded-md transition-colors" title="Start Video Call" onclick="startCall('video')">
+          <span class="material-symbols-outlined text-[18px]">videocam</span>
+        </button>
+        <button class="p-1.5 hover:bg-slate-100 hover:text-slate-700 rounded-md transition-colors" title="Members" onclick="toggleMembers()">
+          <span class="material-symbols-outlined text-[18px]">group</span>
+        </button>
+        <button class="p-1.5 hover:bg-slate-100 hover:text-slate-700 rounded-md transition-colors" title="Search Messages" onclick="searchMessages()">
+          <span class="material-symbols-outlined text-[18px]">search</span>
         </button>
       </div>
     </header>
 
     <!-- Message Feed -->
-    <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-1" id="messages-feed">
+    <div class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-0.5" id="messages-feed">
       <!-- Dynamic messages -->
     </div>
 
-    <!-- Message Input -->
-    <div class="p-4 bg-white border-t border-slate-100">
-      <form id="message-form" class="bg-slate-100 rounded-lg flex items-end p-1 border border-slate-200 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all">
-        <button type="button" class="p-2 text-slate-400 hover:text-slate-600 rounded-md shrink-0 self-end mb-0.5">
-          <span class="material-symbols-outlined text-[20px]">add_circle</span>
-        </button>
-        <textarea id="message-input" rows="1" class="w-full bg-transparent border-none focus:ring-0 resize-none py-2.5 px-2 text-[15px] text-slate-800 placeholder-slate-400" placeholder="Message #general" onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitMessage(); }"></textarea>
-        <button type="submit" class="p-2 text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-md shrink-0 self-end mb-0.5 mr-0.5">
-          <span class="material-symbols-outlined text-[20px]">send</span>
-        </button>
-      </form>
+    <!-- Typing Indicator -->
+    <div id="typing-indicator" class="hidden px-5 py-1">
+      <p class="text-xs text-slate-500 flex items-center gap-1">
+        <span class="flex gap-0.5">
+          <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+          <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+          <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+        </span>
+        <span id="typing-text">Someone is typing...</span>
+      </p>
     </div>
+
+    <!-- Rich Message Input -->
+    <footer class="p-4 border-t border-slate-200 bg-white">
+      <!-- File attachment preview -->
+      <div id="attachment-preview" class="hidden mb-2"></div>
+      
+      <div class="bg-slate-50 border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 rounded-xl p-2.5 transition-all shadow-sm">
+        <textarea id="message-input" rows="1" class="w-full bg-transparent border-0 resize-none text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-0 p-1" placeholder="Message #general" onkeydown="handleMessageKeydown(event)"></textarea>
+        
+        <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
+          <div class="flex items-center gap-0.5 text-slate-500 relative">
+            <!-- File Attachment -->
+            <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)" multiple accept="image/*,.pdf,.doc,.docx,.txt,.js,.py,.html,.css"/>
+            <button onclick="document.getElementById('file-input').click()" class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Attach file">
+              <span class="material-symbols-outlined text-[18px]">attach_file</span>
+            </button>
+            <!-- Code Block -->
+            <button onclick="insertCodeBlock()" class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded font-mono text-xs font-bold transition-colors" title="Insert code block">
+              &lt;/&gt;
+            </button>
+            <!-- Emoji Picker -->
+            <div class="relative">
+              <button onclick="toggleEmojiPicker()" class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Emoji">
+                <span class="material-symbols-outlined text-[18px]">sentiment_satisfied</span>
+              </button>
+              <div id="emoji-picker" class="emoji-picker">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+            <!-- Voice Memo -->
+            <button onclick="recordVoiceMemo()" id="voice-memo-btn" class="p-1.5 hover:text-slate-700 hover:bg-slate-200/60 rounded transition-colors" title="Voice message">
+              <span class="material-symbols-outlined text-[18px]">mic</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-400 font-medium hidden sm:inline">Press <strong>Enter ↵</strong> to send</span>
+            <button onclick="submitMessage()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow transition-all" title="Send Message">
+              <span>Send</span>
+              <span class="material-symbols-outlined text-[14px]">send</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </footer>
   </main>
 
-  <!-- Right Sidebar (Members) -->
-  <aside class="w-60 flex-none bg-slate-50 border-l border-slate-200 hidden flex-col" id="members-sidebar">
-    <div class="p-4 border-b border-slate-200 flex justify-between items-center">
-      <h3 class="font-bold text-slate-700 text-xs tracking-wider uppercase">Members</h3>
-      <button onclick="openAddMemberModal()" class="text-brand-600 hover:text-brand-700" title="Add Member">
-        <span class="material-symbols-outlined text-[18px]">person_add</span>
+  <!-- Placeholder when no team selected -->
+  <div id="empty-state" class="flex-1 flex flex-col items-center justify-center bg-white">
+    <div class="text-center max-w-md px-8">
+      <div class="w-20 h-20 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-6">
+        <span class="material-symbols-outlined text-4xl">workspaces</span>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome to My Teams</h2>
+      <p class="text-sm text-slate-500 mb-6 leading-relaxed">Create or join a workspace to start collaborating with your team. Chat, share files, make voice & video calls — all in one place.</p>
+      <button onclick="openCreateTeamModal()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-brand-600/25 hover:shadow-brand-600/40 transition-all">
+        Create Your First Workspace
       </button>
     </div>
-    <div class="p-3 flex flex-col gap-1 overflow-y-auto flex-1 hide-scroll" id="members-list">
-      <!-- Dynamic members -->
+  </div>
+
+  <!-- Right Sidebar (Members) -->
+  <aside class="w-72 flex-none bg-slate-50 border-l border-slate-200 hidden flex-col overflow-y-auto" id="members-sidebar">
+    <div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white/70 backdrop-blur-sm sticky top-0 z-10">
+      <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider" id="members-header">Team Members</h2>
+      <button onclick="openAddMemberModal()" class="text-brand-600 hover:text-brand-700 flex items-center gap-1 text-xs font-semibold" title="Add Member">
+        <span class="material-symbols-outlined text-[16px]">person_add</span>
+      </button>
+    </div>
+    <div class="p-3 flex flex-col gap-4 overflow-y-auto flex-1 hide-scroll" id="members-container">
+      <!-- Dynamic members grouped by role -->
+    </div>
+
+    <!-- Project Resources Section -->
+    <div class="p-3 border-t border-slate-200 space-y-2" id="project-resources">
+      <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">Shared Resources</div>
+      <div id="resources-list" class="space-y-1.5">
+        <!-- Dynamic resources -->
+      </div>
+      <button onclick="addResource()" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors w-full">
+        <span class="material-symbols-outlined text-[16px]">add_link</span>
+        Add Resource
+      </button>
     </div>
   </aside>
 
 </div>
 <!-- END: WorkspaceContainer -->
 
-
+<!-- Call Overlay -->
+<div id="call-overlay" class="call-overlay">
+  <div class="flex-1 flex items-center justify-center p-6">
+    <div class="grid grid-cols-2 gap-4 max-w-4xl w-full" id="video-grid">
+      <!-- Video elements injected dynamically -->
+      <div class="relative bg-slate-800 rounded-2xl overflow-hidden aspect-video flex items-center justify-center">
+        <video id="local-video" autoplay muted playsinline class="w-full h-full object-cover"></video>
+        <div id="local-video-off" class="absolute inset-0 flex items-center justify-center bg-slate-800 hidden">
+          <div class="w-20 h-20 rounded-full bg-brand-600 text-white flex items-center justify-center text-2xl font-bold" id="local-avatar-call">You</div>
+        </div>
+        <div class="absolute bottom-3 left-3 px-2.5 py-1 bg-black/50 backdrop-blur-sm rounded-lg text-white text-xs font-semibold" id="local-name-label">You</div>
+      </div>
+    </div>
+  </div>
+  <div class="h-20 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center gap-4">
+    <button onclick="toggleCallMic()" id="call-mic-btn" class="w-12 h-12 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined">mic</span>
+    </button>
+    <button onclick="toggleCallVideo()" id="call-video-btn" class="w-12 h-12 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined">videocam</span>
+    </button>
+    <button onclick="toggleScreenShare()" id="call-screen-btn" class="w-12 h-12 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined">screen_share</span>
+    </button>
+    <button onclick="endCall()" class="w-14 h-12 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined">call_end</span>
+    </button>
+  </div>
+</div>
 
 <!-- Modals -->
 <div id="create-team-modal" class="modal-overlay">
-  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
-    <h3 class="text-xl font-bold text-slate-900 mb-4 font-['Plus_Jakarta_Sans']">Create Workspace</h3>
+  <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+    <h3 class="text-xl font-bold text-slate-900 mb-4">Create Workspace</h3>
     <form id="create-team-form" class="flex flex-col gap-4">
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">Workspace Name</label>
-        <input type="text" id="new-team-name" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+        <input type="text" id="new-team-name" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="e.g. SIH 2026 Team">
       </div>
       <div>
-        <label class="block text-sm font-semibold text-slate-700 mb-1">Description (Optional)</label>
-        <input type="text" id="new-team-desc" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Description</label>
+        <input type="text" id="new-team-desc" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="What's this workspace for?">
       </div>
-      <div class="flex justify-end gap-3 mt-4">
-        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-md font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
-        <button type="submit" class="px-4 py-2 rounded-md font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Create</button>
+      <div class="flex justify-end gap-3 mt-2">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-lg font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors">Create</button>
       </div>
     </form>
   </div>
 </div>
 
 <div id="create-channel-modal" class="modal-overlay">
-  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
-    <h3 class="text-xl font-bold text-slate-900 mb-4 font-['Plus_Jakarta_Sans']">Create Channel</h3>
+  <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+    <h3 class="text-xl font-bold text-slate-900 mb-4">Create Channel</h3>
     <form id="create-channel-form" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Channel Type</label>
+        <div class="flex gap-2">
+          <label class="flex-1 flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors border-brand-500 bg-brand-50 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+            <input type="radio" name="channel-type" value="text" checked class="text-brand-600 focus:ring-brand-500">
+            <span class="material-symbols-outlined text-[16px]">tag</span>
+            <span class="text-sm font-medium">Text</span>
+          </label>
+          <label class="flex-1 flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors border-slate-200 hover:border-slate-300 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+            <input type="radio" name="channel-type" value="voice" class="text-brand-600 focus:ring-brand-500">
+            <span class="material-symbols-outlined text-[16px]">volume_up</span>
+            <span class="text-sm font-medium">Voice</span>
+          </label>
+        </div>
+      </div>
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">Channel Name</label>
         <div class="relative">
           <span class="absolute left-3 top-2 text-slate-400">#</span>
-          <input type="text" id="new-channel-name" required class="w-full pl-8 rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="new-channel">
+          <input type="text" id="new-channel-name" required class="w-full pl-8 rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="new-channel">
         </div>
       </div>
-      <div class="flex justify-end gap-3 mt-4">
-        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-md font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
-        <button type="submit" class="px-4 py-2 rounded-md font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Create</button>
+      <div class="flex justify-end gap-3 mt-2">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-lg font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors">Create</button>
       </div>
     </form>
   </div>
 </div>
 
 <div id="add-member-modal" class="modal-overlay">
-  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
-    <h3 class="text-xl font-bold text-slate-900 mb-4 font-['Plus_Jakarta_Sans']">Add Member</h3>
+  <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+    <h3 class="text-xl font-bold text-slate-900 mb-4">Invite Member</h3>
     <form id="add-member-form" class="flex flex-col gap-4">
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">User ID</label>
-        <input type="number" id="new-member-id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="e.g. 2">
+        <input type="number" id="new-member-id" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="Enter user ID to invite">
       </div>
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">Role</label>
-        <select id="new-member-role" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500">
+        <select id="new-member-role" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
           <option value="Member">Member</option>
           <option value="Admin">Admin</option>
         </select>
       </div>
-      <div class="flex justify-end gap-3 mt-4">
-        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-md font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
-        <button type="submit" class="px-4 py-2 rounded-md font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Add</button>
+      <div class="flex justify-end gap-3 mt-2">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-lg font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors">Add Member</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Add Resource Modal -->
+<div id="add-resource-modal" class="modal-overlay">
+  <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+    <h3 class="text-xl font-bold text-slate-900 mb-4">Add Shared Resource</h3>
+    <form id="add-resource-form" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Resource Name</label>
+        <input type="text" id="resource-name" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="e.g. GitHub Repo">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">URL</label>
+        <input type="url" id="resource-url" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="https://github.com/...">
+      </div>
+      <div class="flex justify-end gap-3 mt-2">
+        <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-lg font-semibold text-sm text-slate-600 hover:bg-slate-100">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg font-semibold text-sm text-white bg-brand-600 hover:bg-brand-700 shadow-sm">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Search Messages Modal -->
+<div id="search-modal" class="modal-overlay">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[70vh] flex flex-col">
+    <div class="p-4 border-b border-slate-200 flex items-center gap-3">
+      <span class="material-symbols-outlined text-slate-400">search</span>
+      <input type="text" id="search-messages-input" class="w-full border-0 focus:ring-0 text-sm placeholder-slate-400" placeholder="Search messages in this channel..." oninput="performSearch(this.value)">
+      <button onclick="closeModals()" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-2" id="search-results">
+      <p class="text-center text-sm text-slate-400 py-6">Type to search messages...</p>
+    </div>
   </div>
 </div>
 
@@ -228,11 +528,40 @@
 
 <!-- Workspace Application Engine -->
 <script>
+  // ==========================================
+  // STATE
+  // ==========================================
   let currentTeamId = null;
+  let currentTeamData = null;
   let currentChannelId = null;
+  let currentChannelType = 'text';
   let ws = null;
   let currentUser = null;
+  let teamsData = [];
+  let membersData = [];
+  let channelsData = [];
+  let messagesCache = [];
+  let pinnedMessages = []; // stored per-channel in localStorage
+  let teamResources = {}; // stored per-team in localStorage
+  let selectedFiles = [];
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+  
+  // WebRTC state
+  let localStream = null;
+  let callActive = false;
+  let micMuted = false;
+  let videoMuted = false;
+  let screenSharing = false;
+  
+  // Voice channel state
+  let voiceConnected = false;
+  let voiceChannelId = null;
 
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
   async function init() {
     const currentUserId = localStorage.getItem('currentUserId');
     if (!currentUserId) {
@@ -241,18 +570,16 @@
     }
 
     try {
-      // Reuse profile already fetched by shared.js to avoid a duplicate API call
       if (window.currentUserProfile) {
         currentUser = window.currentUserProfile;
       } else {
-        const res = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, {
-          credentials: 'include'
-        });
+        const res = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, { credentials: 'include' });
         if (!res.ok) throw new Error("Not auth");
         currentUser = await res.json();
       }
       
       await loadTeams();
+      setupEmojiPicker();
       
     } catch (e) {
       console.error(e);
@@ -260,50 +587,67 @@
     }
   }
 
+  // ==========================================
+  // TEAMS
+  // ==========================================
   async function loadTeams() {
-    const res = await fetch(`${API_BASE}/api/teams`, {
-      credentials: 'include'
-    });
-    const teams = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/api/teams`, { credentials: 'include' });
+      teamsData = await res.json();
+    } catch(e) {
+      console.error('Failed to load teams:', e);
+      teamsData = [];
+    }
     
     const list = document.getElementById('teams-list');
     list.innerHTML = '';
     
-    teams.forEach(team => {
+    if (teamsData.length === 0) {
+      document.getElementById('empty-state').classList.remove('hidden');
+      return;
+    }
+    
+    teamsData.forEach(team => {
       const initial = team.name.charAt(0).toUpperCase();
       const isActive = team.id === currentTeamId;
-      const escapedName = team.name.replace(/'/g, "\\'");
-      const html = `
-        <div class="relative group flex items-center justify-center w-full mt-2" data-team-id="${team.id}" onclick="selectTeam(${team.id}, '${escapedName}')">
-          <div class="absolute left-0 w-1 ${isActive ? 'h-8 bg-brand-600' : 'h-0 group-hover:h-4 bg-slate-400'} rounded-r-md transition-all"></div>
-          <button class="w-11 h-11 ${isActive ? 'rounded-2xl bg-brand-600 text-white' : 'rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200'} font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm" title="${team.name}">
-            ${initial}
-          </button>
-        </div>
+      const div = document.createElement('div');
+      div.className = 'relative group flex items-center justify-center w-full mt-2';
+      div.setAttribute('data-team-id', team.id);
+      div.onclick = () => selectTeam(team.id);
+      div.innerHTML = `
+        <div class="absolute left-0 w-1 ${isActive ? 'h-8 bg-brand-600' : 'h-0 group-hover:h-4 bg-slate-400'} rounded-r-md transition-all"></div>
+        <button class="w-11 h-11 ${isActive ? 'rounded-2xl bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200'} font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm" title="${team.name}">
+          ${initial}
+        </button>
       `;
-      list.insertAdjacentHTML('beforeend', html);
+      list.appendChild(div);
     });
 
-    if (teams.length > 0 && !currentTeamId) {
-      selectTeam(teams[0].id, teams[0].name);
+    if (teamsData.length > 0 && !currentTeamId) {
+      selectTeam(teamsData[0].id);
     }
   }
 
-  async function selectTeam(teamId, teamName) {
+  async function selectTeam(teamId) {
     currentTeamId = teamId;
+    currentTeamData = teamsData.find(t => t.id === teamId);
     currentChannelId = null;
     if(ws) { ws.close(); ws = null; }
     
-    // UI Update
+    document.getElementById('empty-state').classList.add('hidden');
     document.getElementById('channels-sidebar').classList.remove('hidden');
     document.getElementById('chat-area').classList.add('hidden');
-    document.getElementById('active-team-name').textContent = teamName;
     
-    // Update active team styling locally — no API refetch needed
+    // Update team header
+    const nameEl = document.getElementById('active-team-name');
+    nameEl.textContent = currentTeamData ? currentTeamData.name : 'Team';
+    document.getElementById('active-team-icon').textContent = currentTeamData ? currentTeamData.name.charAt(0).toUpperCase() : '⚡';
+    
     updateTeamActiveState(teamId);
     
-    // Load channels and members in parallel instead of sequentially
+    // Load channels and members in parallel
     await Promise.all([loadChannels(teamId), loadMembers(teamId)]);
+    loadResources(teamId);
   }
 
   function updateTeamActiveState(activeTeamId) {
@@ -317,60 +661,84 @@
       
       if (isActive) {
         indicator.className = 'absolute left-0 w-1 h-8 bg-brand-600 rounded-r-md transition-all';
-        btn.className = btn.className.replace(/rounded-3xl|bg-white|text-slate-700|hover:bg-brand-50|border border-slate-200/g, '');
-        btn.classList.add('rounded-2xl', 'bg-brand-600', 'text-white');
-        btn.classList.remove('rounded-3xl', 'bg-white', 'text-slate-700', 'border');
+        btn.className = 'w-11 h-11 rounded-2xl bg-brand-600 text-white shadow-md shadow-brand-500/30 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm';
       } else {
         indicator.className = 'absolute left-0 w-1 h-0 group-hover:h-4 bg-slate-400 rounded-r-md transition-all';
-        btn.classList.remove('rounded-2xl', 'bg-brand-600', 'text-white');
-        btn.classList.add('rounded-3xl', 'bg-white', 'text-slate-700', 'border');
+        btn.className = 'w-11 h-11 rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200 font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm';
       }
     });
   }
 
+  // ==========================================
+  // CHANNELS
+  // ==========================================
   async function loadChannels(teamId) {
-    const res = await fetch(`${API_BASE}/api/teams/${teamId}/channels`, {
-      credentials: 'include'
-    });
-    const channels = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/api/teams/${teamId}/channels`, { credentials: 'include' });
+      channelsData = await res.json();
+    } catch(e) {
+      console.error('Failed to load channels:', e);
+      channelsData = [];
+    }
     
-    const list = document.getElementById('channels-list');
-    list.innerHTML = '';
+    const textList = document.getElementById('channels-list');
+    const voiceList = document.getElementById('voice-channels-list');
+    textList.innerHTML = '';
+    voiceList.innerHTML = '';
     
-    channels.forEach(ch => {
+    let voiceLiveCount = 0;
+    
+    channelsData.forEach(ch => {
       const isActive = ch.id === currentChannelId;
-      const html = `
-        <div data-channel-id="${ch.id}" onclick="selectChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 ${isActive ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'} transition-colors">
-          <span class="material-symbols-outlined text-[18px] opacity-70">tag</span>
-          <span class="text-sm truncate">${ch.name}</span>
-        </div>
-      `;
-      list.insertAdjacentHTML('beforeend', html);
+      
+      if (ch.channel_type === 'voice') {
+        voiceList.insertAdjacentHTML('beforeend', `
+          <div data-channel-id="${ch.id}" onclick="joinVoiceChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-xs font-medium ${voiceConnected && voiceChannelId === ch.id ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'} transition-colors">
+            <span class="material-symbols-outlined text-[16px] ${voiceConnected && voiceChannelId === ch.id ? 'text-emerald-600' : 'text-slate-400'}">volume_up</span>
+            <span class="truncate">${ch.name}</span>
+            ${voiceConnected && voiceChannelId === ch.id ? '<span class="ml-auto px-1.5 py-0.5 text-[9px] bg-emerald-200/80 text-emerald-800 rounded font-mono font-bold">LIVE</span>' : ''}
+          </div>
+        `);
+      } else {
+        const html = `
+          <div data-channel-id="${ch.id}" onclick="selectChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer mb-0.5 ${isActive ? 'bg-brand-100/70 text-brand-900 font-semibold border-l-2 border-brand-600' : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'} transition-colors text-xs">
+            <span class="text-slate-400 font-mono text-sm">#</span>
+            <span class="truncate">${ch.name}</span>
+          </div>
+        `;
+        textList.insertAdjacentHTML('beforeend', html);
+      }
     });
 
-    // Add Create Channel btn
-    list.insertAdjacentHTML('beforeend', `
-      <div onclick="openCreateChannelModal()" class="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mt-2 text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors">
-        <span class="material-symbols-outlined text-[18px]">add</span>
-        <span class="text-sm font-medium">Add Channel</span>
-      </div>
-    `);
+    const voiceLiveEl = document.getElementById('voice-live-count');
+    if (voiceLiveCount > 0) {
+      voiceLiveEl.textContent = `${voiceLiveCount} Live`;
+    } else {
+      voiceLiveEl.textContent = '';
+    }
 
-    // Auto select general channel if exists
-    if (channels.length > 0 && !currentChannelId) {
-      const general = channels.find(c => c.name === 'general') || channels[0];
+    // Update team member count
+    const memberCountEl = document.getElementById('team-member-count');
+    memberCountEl.textContent = `${channelsData.length} channels`;
+
+    // Auto select first text channel
+    const textChannels = channelsData.filter(c => c.channel_type !== 'voice');
+    if (textChannels.length > 0 && !currentChannelId) {
+      const general = textChannels.find(c => c.name === 'general') || textChannels[0];
       selectChannel(general.id, general.name);
     }
   }
 
   async function selectChannel(channelId, channelName) {
     currentChannelId = channelId;
+    currentChannelType = 'text';
     document.getElementById('chat-area').classList.remove('hidden');
     document.getElementById('active-channel-name').textContent = channelName;
     document.getElementById('message-input').placeholder = `Message #${channelName}`;
+    document.getElementById('channel-description').textContent = `Discussion in #${channelName}`;
     
-    // Update active channel styling locally — no API refetch needed
     updateChannelActiveState(channelId);
+    loadPinnedMessages(channelId);
     
     await loadMessages(channelId);
     connectWebsocket(channelId);
@@ -381,83 +749,209 @@
     channelItems.forEach(item => {
       const isActive = item.getAttribute('data-channel-id') === String(activeChannelId);
       if (isActive) {
-        item.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 bg-brand-50 text-brand-700 font-semibold transition-colors';
+        item.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer mb-0.5 bg-brand-100/70 text-brand-900 font-semibold border-l-2 border-brand-600 transition-colors text-xs';
       } else {
-        item.className = 'flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer mb-0.5 text-slate-600 hover:bg-slate-100 transition-colors';
+        item.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer mb-0.5 text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors text-xs';
       }
     });
   }
 
+  // ==========================================
+  // MEMBERS
+  // ==========================================
   async function loadMembers(teamId) {
-    const res = await fetch(`${API_BASE}/api/teams/${teamId}/members`, {
-      credentials: 'include'
-    });
-    const members = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/api/teams/${teamId}/members`, { credentials: 'include' });
+      membersData = await res.json();
+    } catch(e) {
+      console.error('Failed to load members:', e);
+      membersData = [];
+    }
     
-    const list = document.getElementById('members-list');
-    list.innerHTML = '';
+    const container = document.getElementById('members-container');
+    container.innerHTML = '';
     
-    members.forEach(m => {
-      const pic = m.user_profile_pic || 'https://via.placeholder.com/40';
-      const roleBadge = m.role === 'Admin' ? '<span class="material-symbols-outlined text-[12px] text-amber-500" title="Admin">stars</span>' : '';
-      const html = `
-        <div class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 cursor-pointer transition-colors group">
-          <img src="${pic}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
-          <div class="flex flex-col flex-1 min-w-0">
-            <div class="flex items-center gap-1">
-              <span class="text-sm font-semibold text-slate-700 truncate group-hover:text-slate-900">${m.user_name}</span>
-              ${roleBadge}
-            </div>
-          </div>
+    const admins = membersData.filter(m => m.role === 'Admin');
+    const members = membersData.filter(m => m.role !== 'Admin');
+    
+    document.getElementById('members-header').textContent = `Team Roster • ${membersData.length} Members`;
+    
+    if (admins.length > 0) {
+      container.insertAdjacentHTML('beforeend', `
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Admin — ${admins.length}</div>
+          <div class="space-y-1">${admins.map(m => memberCard(m, true)).join('')}</div>
         </div>
-      `;
-      list.insertAdjacentHTML('beforeend', html);
-    });
+      `);
+    }
+    
+    if (members.length > 0) {
+      container.insertAdjacentHTML('beforeend', `
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Members — ${members.length}</div>
+          <div class="space-y-1">${members.map(m => memberCard(m, false)).join('')}</div>
+        </div>
+      `);
+    }
   }
 
+  function memberCard(m, isAdmin) {
+    const initials = m.user_name ? m.user_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+    const isCurrentUser = m.user_id === currentUser?.id;
+    const colors = ['bg-brand-700', 'bg-violet-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'bg-cyan-600'];
+    const color = colors[m.user_id % colors.length];
+    
+    const avatarHtml = m.user_profile_pic 
+      ? `<img src="${m.user_profile_pic}" class="w-8 h-8 rounded-full object-cover" alt="${m.user_name}">`
+      : `<div class="w-8 h-8 rounded-full ${color} text-white font-bold text-xs flex items-center justify-center">${initials}</div>`;
+    
+    return `
+      <div class="flex items-center gap-2.5 p-2 rounded-lg ${isAdmin ? 'bg-white border border-slate-200/80 shadow-sm' : 'hover:bg-white'} transition-colors">
+        <div class="relative flex-none">
+          ${avatarHtml}
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-bold text-slate-800 truncate">${m.user_name}${isCurrentUser ? ' (You)' : ''}</p>
+          <p class="text-[10px] text-slate-400 truncate">${m.role}</p>
+        </div>
+        ${isAdmin ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-brand-50 text-brand-700 border border-brand-200 rounded">Admin</span>` : ''}
+        ${!isCurrentUser ? `
+          <button onclick="dmMember(${m.user_id})" class="p-1 text-slate-400 hover:text-brand-600 transition-colors" title="Direct Message">
+            <span class="material-symbols-outlined text-[14px]">chat</span>
+          </button>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function dmMember(userId) {
+    window.location.href = `inbox.html?chat=${userId}`;
+  }
+
+  // ==========================================
+  // MESSAGES
+  // ==========================================
   async function loadMessages(channelId) {
-    const res = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, {
-      credentials: 'include'
-    });
-    const messages = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, { credentials: 'include' });
+      messagesCache = await res.json();
+    } catch(e) {
+      console.error('Failed to load messages:', e);
+      messagesCache = [];
+    }
     
     const feed = document.getElementById('messages-feed');
     feed.innerHTML = '';
     
-    messages.forEach(msg => {
-      appendMessage(msg, false);
-    });
+    // Welcome banner
+    const chName = document.getElementById('active-channel-name').textContent;
+    feed.insertAdjacentHTML('beforeend', `
+      <div class="p-4 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-100 flex items-start gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-sm flex-none">#</div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Welcome to #${chName}!</h3>
+          <p class="text-xs text-slate-600 mt-0.5 leading-relaxed">This is the start of the <strong>#${chName}</strong> channel. Send a message to get the conversation going!</p>
+        </div>
+      </div>
+    `);
+    
+    if (messagesCache.length > 0) {
+      // Date separator
+      const firstDate = new Date(messagesCache[0].timestamp);
+      feed.insertAdjacentHTML('beforeend', `
+        <div class="relative flex items-center justify-center my-3">
+          <div class="border-t border-slate-200 w-full"></div>
+          <span class="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider absolute whitespace-nowrap">${firstDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        </div>
+      `);
+    }
+    
+    messagesCache.forEach(msg => appendMessage(msg, false));
     scrollToBottom();
   }
 
   function appendMessage(msg, scroll = true) {
     const feed = document.getElementById('messages-feed');
-    const pic = msg.sender_pic || 'https://via.placeholder.com/40';
-    const isMe = msg.sender_id === currentUser.id;
-    
+    const isMe = msg.sender_id === currentUser?.id;
     const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
-    const html = `
-      <div class="flex gap-3 hover:bg-slate-50 py-1.5 px-2 rounded-md transition-colors group ${isMe ? 'bg-brand-50/30' : ''}">
-        <img src="${pic}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 mt-0.5">
-        <div class="flex flex-col min-w-0 flex-1">
-          <div class="flex items-baseline gap-2">
-            <span class="font-semibold text-[15px] text-slate-900">${msg.sender_name}</span>
-            <span class="text-[11px] font-medium text-slate-400 group-hover:text-slate-500">${time}</span>
-          </div>
-          <p class="text-[15px] text-slate-700 leading-relaxed break-words whitespace-pre-wrap">${msg.content}</p>
+    const initials = msg.sender_name ? msg.sender_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SY';
+    const colors = ['bg-brand-700', 'bg-violet-600', 'bg-emerald-700', 'bg-amber-600', 'bg-rose-600', 'bg-cyan-600'];
+    const color = colors[(msg.sender_id || 0) % colors.length];
+    
+    const avatarHtml = msg.sender_pic 
+      ? `<img src="${msg.sender_pic}" class="w-9 h-9 rounded-full object-cover flex-none ring-2 ring-slate-100 mt-0.5" alt="">`
+      : `<div class="w-9 h-9 rounded-full ${color} text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-slate-100 mt-0.5">${initials}</div>`;
+    
+    // Check if message contains code (triple backtick)
+    let contentHtml = escapeHtml(msg.content);
+    contentHtml = contentHtml.replace(/```([\s\S]*?)```/g, '<pre class="code-block p-3 rounded-lg mt-2 overflow-x-auto text-[11px] leading-snug"><code>$1</code></pre>');
+    contentHtml = contentHtml.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-slate-100 text-slate-800 rounded text-xs font-mono">$1</code>');
+    contentHtml = contentHtml.replace(/\n/g, '<br>');
+    
+    // Role badge
+    const memberInfo = membersData.find(m => m.user_id === msg.sender_id);
+    const roleBadge = memberInfo?.role === 'Admin' 
+      ? `<span class="px-1.5 py-0.5 bg-brand-100 text-brand-700 text-[10px] font-bold rounded">ADMIN</span>` 
+      : '';
+    
+    // System message styling
+    if (msg.is_system_message) {
+      feed.insertAdjacentHTML('beforeend', `
+        <div class="flex items-center gap-2 py-1 text-xs text-slate-500 italic">
+          <span class="material-symbols-outlined text-[14px]">info</span>
+          <span>${contentHtml}</span>
+          <span class="text-[10px] text-slate-400">${time}</span>
         </div>
-      </div>
-    `;
-    feed.insertAdjacentHTML('beforeend', html);
+      `);
+    } else {
+      const msgId = msg.id || Date.now();
+      const isPinned = pinnedMessages.includes(msgId);
+      
+      feed.insertAdjacentHTML('beforeend', `
+        <div class="flex items-start gap-3 hover:bg-slate-50 py-2 px-2 rounded-lg transition-colors group" data-msg-id="${msgId}">
+          ${avatarHtml}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-2">
+              <span class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">${escapeHtml(msg.sender_name || 'System')}</span>
+              ${roleBadge}
+              <span class="text-[11px] text-slate-400">${time}</span>
+              ${isPinned ? '<span class="material-symbols-outlined text-amber-500 text-[12px]">push_pin</span>' : ''}
+            </div>
+            <div class="text-sm text-slate-700 mt-0.5 leading-relaxed break-words">${contentHtml}</div>
+            <!-- Reaction bar -->
+            <div class="flex items-center gap-1.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onclick="addReaction(${msgId}, '👍')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs transition-colors">👍</button>
+              <button onclick="addReaction(${msgId}, '🔥')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs transition-colors">🔥</button>
+              <button onclick="addReaction(${msgId}, '🚀')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs transition-colors">🚀</button>
+              <button onclick="pinMessage(${msgId})" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Pin message">📌</button>
+              <button onclick="replyToMessage(${msgId}, '${escapeHtml(msg.sender_name || '')}')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Reply">↩️</button>
+            </div>
+            <div class="flex items-center gap-1 mt-1 flex-wrap" id="reactions-${msgId}"></div>
+          </div>
+        </div>
+      `);
+    }
+    
     if(scroll) scrollToBottom();
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   function scrollToBottom() {
     const feed = document.getElementById('messages-feed');
-    feed.scrollTop = feed.scrollHeight;
+    requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
   }
 
+  // ==========================================
+  // WEBSOCKET
+  // ==========================================
   function connectWebsocket(channelId) {
     if(ws) ws.close();
     const wsUrl = API_BASE.replace(/^http/, 'ws') + `/api/ws/channels/${channelId}/${currentUser.id}`;
@@ -465,11 +959,20 @@
     
     ws.onmessage = function(event) {
       const msg = JSON.parse(event.data);
-      // Ensure we don't duplicate our own message if rest API returned first, but for now just append
-      // In a real app we'd check msg.id against rendered ones
       appendMessage(msg);
     };
+    ws.onerror = () => console.log("WS error");
     ws.onclose = () => console.log("WS closed");
+  }
+
+  // ==========================================
+  // MESSAGE SENDING
+  // ==========================================
+  function handleMessageKeydown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      submitMessage();
+    }
   }
 
   function submitMessage() {
@@ -478,22 +981,566 @@
     if(!content || !currentChannelId) return;
     
     input.value = '';
-    // reset height if it was auto-expanding
+    input.style.height = 'auto';
+    
+    // Clear attachment preview
+    clearAttachments();
     
     fetch(`${API_BASE}/api/channels/${currentChannelId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ content: content })
-    }).catch(e => console.error("Message send failed", e));
+    }).then(res => {
+      if (res.ok) return res.json();
+      throw new Error('Failed to send');
+    }).then(msg => {
+      // Message will come via WebSocket, but append locally for instant feedback
+      appendMessage(msg);
+    }).catch(e => {
+      console.error("Message send failed", e);
+      window.showSystemModal('Error', 'Failed to send message. Please try again.');
+    });
   }
 
-  document.getElementById('message-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    submitMessage();
+  // ==========================================
+  // REACTIONS (Client-side, stored in localStorage)
+  // ==========================================
+  let reactionsData = {};
+  
+  function loadReactions() {
+    const key = `reactions_${currentTeamId}_${currentChannelId}`;
+    reactionsData = JSON.parse(localStorage.getItem(key) || '{}');
+  }
+
+  function saveReactions() {
+    const key = `reactions_${currentTeamId}_${currentChannelId}`;
+    localStorage.setItem(key, JSON.stringify(reactionsData));
+  }
+
+  function addReaction(msgId, emoji) {
+    loadReactions();
+    if (!reactionsData[msgId]) reactionsData[msgId] = {};
+    if (!reactionsData[msgId][emoji]) reactionsData[msgId][emoji] = 0;
+    reactionsData[msgId][emoji]++;
+    saveReactions();
+    renderReactions(msgId);
+  }
+
+  function renderReactions(msgId) {
+    loadReactions();
+    const container = document.getElementById(`reactions-${msgId}`);
+    if (!container) return;
+    const reactions = reactionsData[msgId] || {};
+    container.innerHTML = Object.entries(reactions).map(([emoji, count]) => 
+      `<button onclick="addReaction(${msgId}, '${emoji}')" class="px-2 py-0.5 bg-slate-100 hover:bg-brand-50 hover:border-brand-300 border border-slate-200 rounded-full text-xs text-slate-600 flex items-center gap-1 transition-colors">
+        <span>${emoji}</span> <span class="font-bold text-[10px]">${count}</span>
+      </button>`
+    ).join('');
+  }
+
+  // ==========================================
+  // PINNED MESSAGES (localStorage per channel)
+  // ==========================================
+  function loadPinnedMessages(channelId) {
+    pinnedMessages = JSON.parse(localStorage.getItem(`pinned_${channelId}`) || '[]');
+  }
+
+  function pinMessage(msgId) {
+    if (pinnedMessages.includes(msgId)) {
+      pinnedMessages = pinnedMessages.filter(id => id !== msgId);
+      window.showSystemModal('Unpinned', 'Message has been unpinned.');
+    } else {
+      pinnedMessages.push(msgId);
+      window.showSystemModal('Pinned', 'Message has been pinned to this channel!');
+    }
+    localStorage.setItem(`pinned_${currentChannelId}`, JSON.stringify(pinnedMessages));
+  }
+
+  function showPinnedMessages() {
+    loadPinnedMessages(currentChannelId);
+    if (pinnedMessages.length === 0) {
+      window.showSystemModal('Pinned Messages', 'No pinned messages in this channel yet.\n\nHover over any message and click 📌 to pin it.');
+      return;
+    }
+    
+    const pinned = messagesCache.filter(m => pinnedMessages.includes(m.id));
+    if (pinned.length === 0) {
+      window.showSystemModal('Pinned Messages', 'No pinned messages found.');
+      return;
+    }
+    
+    const text = pinned.map(m => `📌 ${m.sender_name}: ${m.content}`).join('\n\n');
+    window.showSystemModal(`Pinned Messages (${pinned.length})`, text);
+  }
+
+  function replyToMessage(msgId, senderName) {
+    const input = document.getElementById('message-input');
+    input.value = `@${senderName} `;
+    input.focus();
+  }
+
+  // ==========================================
+  // FILE ATTACHMENTS
+  // ==========================================
+  function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    selectedFiles = files;
+    
+    const preview = document.getElementById('attachment-preview');
+    preview.classList.remove('hidden');
+    preview.innerHTML = files.map((f, i) => `
+      <div class="file-preview">
+        <span class="material-symbols-outlined text-[16px] text-brand-600">${f.type.startsWith('image/') ? 'image' : 'description'}</span>
+        <span class="flex-1 truncate text-slate-700 font-medium">${f.name}</span>
+        <span class="text-slate-400">${(f.size / 1024).toFixed(1)} KB</span>
+        <button onclick="removeFile(${i})" class="text-slate-400 hover:text-rose-500">
+          <span class="material-symbols-outlined text-[14px]">close</span>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    if (selectedFiles.length === 0) clearAttachments();
+    else handleFileSelect({ target: { files: selectedFiles } });
+  }
+
+  function clearAttachments() {
+    selectedFiles = [];
+    const preview = document.getElementById('attachment-preview');
+    preview.classList.add('hidden');
+    preview.innerHTML = '';
+    document.getElementById('file-input').value = '';
+  }
+
+  // ==========================================
+  // CODE BLOCK INSERT
+  // ==========================================
+  function insertCodeBlock() {
+    const input = document.getElementById('message-input');
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+    const selected = text.substring(start, end);
+    
+    if (selected) {
+      input.value = text.substring(0, start) + '```\n' + selected + '\n```' + text.substring(end);
+    } else {
+      input.value = text.substring(0, start) + '```\n// your code here\n```' + text.substring(end);
+    }
+    input.focus();
+  }
+
+  // ==========================================
+  // EMOJI PICKER
+  // ==========================================
+  const emojis = ['😀','😂','🥰','😎','🤔','👍','👎','🔥','🚀','💯','❤️','🎉','😱','🤝','💪','✨','⚡','🎯','💡','🙏','👏','🫡','✅','❌','⚠️','📌','🎨','💻','🐛','📝'];
+  
+  function setupEmojiPicker() {
+    const picker = document.getElementById('emoji-picker');
+    picker.innerHTML = emojis.map(e => 
+      `<button onclick="insertEmoji('${e}')">${e}</button>`
+    ).join('');
+  }
+
+  function toggleEmojiPicker() {
+    document.getElementById('emoji-picker').classList.toggle('active');
+  }
+
+  function insertEmoji(emoji) {
+    const input = document.getElementById('message-input');
+    input.value += emoji;
+    input.focus();
+    document.getElementById('emoji-picker').classList.remove('active');
+  }
+
+  // Close emoji picker on outside click
+  document.addEventListener('click', (e) => {
+    const picker = document.getElementById('emoji-picker');
+    if (picker && !e.target.closest('.relative') && picker.classList.contains('active')) {
+      picker.classList.remove('active');
+    }
   });
 
-  // Modals & UI
+  // ==========================================
+  // VOICE MEMO
+  // ==========================================
+  async function recordVoiceMemo() {
+    if (isRecording) {
+      mediaRecorder.stop();
+      isRecording = false;
+      document.getElementById('voice-memo-btn').innerHTML = '<span class="material-symbols-outlined text-[18px]">mic</span>';
+      return;
+    }
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const duration = audioChunks.length > 0 ? 'Voice message recorded' : '';
+        
+        // Send as a text message indicating voice memo (file upload would need backend support)
+        const input = document.getElementById('message-input');
+        input.value = '🎤 [Voice Message Recorded]';
+        submitMessage();
+      };
+      
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('voice-memo-btn').innerHTML = '<span class="material-symbols-outlined text-[18px] text-rose-500 animate-pulse">stop_circle</span>';
+      
+    } catch(e) {
+      window.showSystemModal('Microphone Access', 'Please allow microphone access to record voice messages.\n\nCheck your browser permissions and try again.');
+    }
+  }
+
+  // ==========================================
+  // VOICE CHANNELS (WebRTC)
+  // ==========================================
+  async function joinVoiceChannel(channelId, channelName) {
+    if (voiceConnected && voiceChannelId === channelId) {
+      disconnectVoice();
+      return;
+    }
+    
+    try {
+      if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+      }
+      
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceConnected = true;
+      voiceChannelId = channelId;
+      micMuted = false;
+      
+      // Show voice connected panel
+      document.getElementById('voice-connected-panel').classList.remove('hidden');
+      document.getElementById('voice-status-text').textContent = 'Voice Connected';
+      document.getElementById('voice-channel-name-display').textContent = `#${channelName}`;
+      document.getElementById('mic-toggle').innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span>';
+      
+      // Refresh channel list to show live indicator
+      await loadChannels(currentTeamId);
+      
+      // Send system message
+      if (currentChannelId) {
+        fetch(`${API_BASE}/api/channels/${currentChannelId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: `${currentUser.name} joined voice channel #${channelName}`, is_system_message: 1 })
+        }).catch(() => {});
+      }
+      
+    } catch(e) {
+      window.showSystemModal('Voice Channel', 'Could not access your microphone.\n\nPlease check browser permissions and try again.');
+    }
+  }
+
+  function toggleMic() {
+    if (!localStream) return;
+    micMuted = !micMuted;
+    localStream.getAudioTracks().forEach(t => t.enabled = !micMuted);
+    
+    const btn = document.getElementById('mic-toggle');
+    btn.innerHTML = micMuted 
+      ? '<span class="material-symbols-outlined text-[16px] text-rose-500">mic_off</span>'
+      : '<span class="material-symbols-outlined text-[16px]">mic</span>';
+    
+    document.getElementById('voice-status-text').textContent = micMuted ? 'Muted' : 'Voice Connected';
+  }
+
+  function disconnectVoice() {
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+    voiceConnected = false;
+    voiceChannelId = null;
+    
+    document.getElementById('voice-connected-panel').classList.add('hidden');
+    
+    // Refresh channels
+    if (currentTeamId) loadChannels(currentTeamId);
+  }
+
+  // ==========================================
+  // VIDEO/AUDIO CALLS (WebRTC)
+  // ==========================================
+  async function startCall(type) {
+    if (callActive) return;
+    
+    try {
+      const constraints = type === 'video' 
+        ? { audio: true, video: { width: 640, height: 480 } }
+        : { audio: true, video: false };
+      
+      localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      callActive = true;
+      micMuted = false;
+      videoMuted = type !== 'video';
+      
+      // Show call overlay
+      const overlay = document.getElementById('call-overlay');
+      overlay.classList.add('active');
+      
+      // Attach local stream
+      const localVideo = document.getElementById('local-video');
+      localVideo.srcObject = localStream;
+      
+      if (type === 'video') {
+        localVideo.classList.remove('hidden');
+        document.getElementById('local-video-off').classList.add('hidden');
+      } else {
+        localVideo.classList.add('hidden');
+        document.getElementById('local-video-off').classList.remove('hidden');
+      }
+      
+      // Set display name
+      const initials = currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'You';
+      document.getElementById('local-avatar-call').textContent = initials;
+      document.getElementById('local-name-label').textContent = currentUser?.name || 'You';
+      
+      // Update button states
+      updateCallButtons();
+      
+      // Notify channel
+      if (currentChannelId) {
+        const callType = type === 'video' ? 'video' : 'voice';
+        fetch(`${API_BASE}/api/channels/${currentChannelId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: `📞 ${currentUser.name} started a ${callType} call`, is_system_message: 1 })
+        }).catch(() => {});
+      }
+      
+    } catch(e) {
+      window.showSystemModal('Call Failed', `Could not access your ${type === 'video' ? 'camera and microphone' : 'microphone'}.\n\nPlease check browser permissions and try again.`);
+    }
+  }
+
+  function toggleCallMic() {
+    if (!localStream) return;
+    micMuted = !micMuted;
+    localStream.getAudioTracks().forEach(t => t.enabled = !micMuted);
+    updateCallButtons();
+  }
+
+  function toggleCallVideo() {
+    if (!localStream) return;
+    const videoTracks = localStream.getVideoTracks();
+    
+    if (videoTracks.length === 0) {
+      // Start video
+      navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+        .then(stream => {
+          const videoTrack = stream.getVideoTracks()[0];
+          localStream.addTrack(videoTrack);
+          document.getElementById('local-video').srcObject = localStream;
+          document.getElementById('local-video').classList.remove('hidden');
+          document.getElementById('local-video-off').classList.add('hidden');
+          videoMuted = false;
+          updateCallButtons();
+        }).catch(() => {});
+    } else {
+      videoMuted = !videoMuted;
+      videoTracks.forEach(t => t.enabled = !videoMuted);
+      
+      if (videoMuted) {
+        document.getElementById('local-video').classList.add('hidden');
+        document.getElementById('local-video-off').classList.remove('hidden');
+      } else {
+        document.getElementById('local-video').classList.remove('hidden');
+        document.getElementById('local-video-off').classList.add('hidden');
+      }
+      updateCallButtons();
+    }
+  }
+
+  async function toggleScreenShare() {
+    if (!callActive) return;
+    
+    if (screenSharing) {
+      // Stop screen share
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) videoTrack.stop();
+      
+      // Restore camera if it was on
+      try {
+        const camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+        const camTrack = camStream.getVideoTracks()[0];
+        localStream.getVideoTracks().forEach(t => localStream.removeTrack(t));
+        localStream.addTrack(camTrack);
+        document.getElementById('local-video').srcObject = localStream;
+      } catch(e) {}
+      
+      screenSharing = false;
+    } else {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = screenStream.getVideoTracks()[0];
+        
+        // Replace video track
+        localStream.getVideoTracks().forEach(t => {
+          t.stop();
+          localStream.removeTrack(t);
+        });
+        localStream.addTrack(screenTrack);
+        document.getElementById('local-video').srcObject = localStream;
+        document.getElementById('local-video').classList.remove('hidden');
+        document.getElementById('local-video-off').classList.add('hidden');
+        
+        screenTrack.onended = () => {
+          screenSharing = false;
+          updateCallButtons();
+        };
+        
+        screenSharing = true;
+      } catch(e) {
+        // User cancelled screen share
+      }
+    }
+    updateCallButtons();
+  }
+
+  function updateCallButtons() {
+    const micBtn = document.getElementById('call-mic-btn');
+    const videoBtn = document.getElementById('call-video-btn');
+    const screenBtn = document.getElementById('call-screen-btn');
+    
+    micBtn.className = `w-12 h-12 rounded-full ${micMuted ? 'bg-rose-600' : 'bg-slate-700 hover:bg-slate-600'} text-white flex items-center justify-center transition-colors`;
+    micBtn.innerHTML = `<span class="material-symbols-outlined">${micMuted ? 'mic_off' : 'mic'}</span>`;
+    
+    videoBtn.className = `w-12 h-12 rounded-full ${videoMuted ? 'bg-rose-600' : 'bg-slate-700 hover:bg-slate-600'} text-white flex items-center justify-center transition-colors`;
+    videoBtn.innerHTML = `<span class="material-symbols-outlined">${videoMuted ? 'videocam_off' : 'videocam'}</span>`;
+    
+    screenBtn.className = `w-12 h-12 rounded-full ${screenSharing ? 'bg-emerald-600' : 'bg-slate-700 hover:bg-slate-600'} text-white flex items-center justify-center transition-colors`;
+    screenBtn.innerHTML = `<span class="material-symbols-outlined">${screenSharing ? 'stop_screen_share' : 'screen_share'}</span>`;
+  }
+
+  function endCall() {
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+    callActive = false;
+    micMuted = false;
+    videoMuted = false;
+    screenSharing = false;
+    
+    document.getElementById('call-overlay').classList.remove('active');
+    document.getElementById('local-video').srcObject = null;
+    
+    // Notify channel
+    if (currentChannelId) {
+      fetch(`${API_BASE}/api/channels/${currentChannelId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: `📞 ${currentUser.name} ended the call`, is_system_message: 1 })
+      }).catch(() => {});
+    }
+  }
+
+  // ==========================================
+  // SEARCH MESSAGES
+  // ==========================================
+  function searchMessages() {
+    document.getElementById('search-modal').classList.add('active');
+    document.getElementById('search-messages-input').value = '';
+    document.getElementById('search-messages-input').focus();
+    document.getElementById('search-results').innerHTML = '<p class="text-center text-sm text-slate-400 py-6">Type to search messages...</p>';
+  }
+
+  function performSearch(query) {
+    const results = document.getElementById('search-results');
+    if (!query.trim()) {
+      results.innerHTML = '<p class="text-center text-sm text-slate-400 py-6">Type to search messages...</p>';
+      return;
+    }
+    
+    const matches = messagesCache.filter(m => 
+      m.content.toLowerCase().includes(query.toLowerCase()) || 
+      (m.sender_name && m.sender_name.toLowerCase().includes(query.toLowerCase()))
+    );
+    
+    if (matches.length === 0) {
+      results.innerHTML = '<p class="text-center text-sm text-slate-400 py-6">No messages found.</p>';
+      return;
+    }
+    
+    results.innerHTML = matches.map(m => {
+      const time = new Date(m.timestamp).toLocaleString();
+      return `
+        <div class="p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-slate-100">
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xs font-bold text-slate-900">${escapeHtml(m.sender_name)}</span>
+            <span class="text-[10px] text-slate-400">${time}</span>
+          </div>
+          <p class="text-xs text-slate-700">${escapeHtml(m.content)}</p>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ==========================================
+  // RESOURCES (localStorage per team)
+  // ==========================================
+  function loadResources(teamId) {
+    teamResources = JSON.parse(localStorage.getItem(`resources_${teamId}`) || '[]');
+    renderResources();
+  }
+
+  function renderResources() {
+    const list = document.getElementById('resources-list');
+    if (!list) return;
+    
+    list.innerHTML = teamResources.map((r, i) => {
+      const domain = (() => { try { return new URL(r.url).hostname; } catch(e) { return r.url; } })();
+      const icon = domain.includes('github') ? 'code' : domain.includes('figma') ? 'design_services' : domain.includes('google') ? 'article' : 'link';
+      
+      return `
+        <a href="${r.url}" target="_blank" class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-sm">
+          <div class="w-7 h-7 rounded bg-slate-100 text-slate-600 flex items-center justify-center flex-none">
+            <span class="material-symbols-outlined text-[16px]">${icon}</span>
+          </div>
+          <div class="truncate min-w-0 flex-1">
+            <p class="font-semibold text-slate-800 truncate group-hover:text-brand-600">${escapeHtml(r.name)}</p>
+            <p class="text-[10px] text-slate-400 truncate">${domain}</p>
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function addResource() {
+    if (!currentTeamId) return;
+    document.getElementById('add-resource-modal').classList.add('active');
+  }
+
+  document.getElementById('add-resource-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('resource-name').value;
+    const url = document.getElementById('resource-url').value;
+    
+    teamResources.push({ name, url });
+    localStorage.setItem(`resources_${currentTeamId}`, JSON.stringify(teamResources));
+    renderResources();
+    closeModals();
+    document.getElementById('add-resource-form').reset();
+  });
+
+  // ==========================================
+  // MODALS & UI
+  // ==========================================
   function toggleMembers() {
     const sidebar = document.getElementById('members-sidebar');
     if (sidebar.classList.contains('hidden')) {
@@ -505,58 +1552,138 @@
     }
   }
 
+  function toggleTeamMenu() {
+    document.getElementById('team-menu').classList.toggle('hidden');
+  }
+
+  // Close team menu on outside click
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('team-menu');
+    if (menu && !e.target.closest('#team-menu') && !e.target.closest('[onclick="toggleTeamMenu()"]')) {
+      menu.classList.add('hidden');
+    }
+  });
+
   function openCreateTeamModal() { document.getElementById('create-team-modal').classList.add('active'); }
-  function openCreateChannelModal() { document.getElementById('create-channel-modal').classList.add('active'); }
+  function openCreateChannelModal() { 
+    if (!currentTeamId) {
+      window.showSystemModal('No Workspace', 'Please select or create a workspace first.');
+      return;
+    }
+    document.getElementById('team-menu').classList.add('hidden');
+    document.getElementById('create-channel-modal').classList.add('active'); 
+  }
   function openAddMemberModal() { 
     if (!currentTeamId) return;
     document.getElementById('add-member-modal').classList.add('active'); 
   }
+  function openInviteMemberModal() {
+    document.getElementById('team-menu').classList.add('hidden');
+    openAddMemberModal();
+  }
+  function openSettingsModal() {
+    document.getElementById('team-menu').classList.add('hidden');
+    window.showSystemModal('Workspace Settings', `Workspace: ${currentTeamData?.name || 'N/A'}\nDescription: ${currentTeamData?.description || 'No description'}\nCreated: ${currentTeamData?.created_at ? new Date(currentTeamData.created_at).toLocaleDateString() : 'N/A'}\nMembers: ${membersData.length}\nChannels: ${channelsData.length}`);
+  }
   function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
+  async function deleteCurrentTeam() {
+    if (!currentTeamId) return;
+    document.getElementById('team-menu').classList.add('hidden');
+    
+    window.showSystemModal('Delete Workspace', `Are you sure you want to permanently delete "${currentTeamData?.name}"?\n\nThis will remove all channels, messages, and members. This action cannot be undone.`, 'confirm', async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/teams/${currentTeamId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        
+        if (res.ok) {
+          currentTeamId = null;
+          currentChannelId = null;
+          currentTeamData = null;
+          document.getElementById('channels-sidebar').classList.add('hidden');
+          document.getElementById('chat-area').classList.add('hidden');
+          document.getElementById('members-sidebar').classList.add('hidden');
+          document.getElementById('empty-state').classList.remove('hidden');
+          await loadTeams();
+          window.showSystemModal('Deleted', 'Workspace has been permanently deleted.');
+        } else {
+          const err = await res.json();
+          window.showSystemModal('Error', err.detail || 'Could not delete workspace.');
+        }
+      } catch(e) {
+        window.showSystemModal('Error', 'Failed to delete workspace.');
+      }
+    }, 'Delete');
+  }
+
+  // ==========================================
+  // FORM HANDLERS
+  // ==========================================
   document.getElementById('create-team-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('new-team-name').value;
-    const desc = document.getElementById('new-team-desc').value;
+    const name = document.getElementById('new-team-name').value.trim();
+    const desc = document.getElementById('new-team-desc').value.trim();
+    if (!name) return;
+    
     try {
       const res = await fetch(`${API_BASE}/api/teams`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, description: desc })
+        body: JSON.stringify({ name, description: desc || 'A new workspace' })
       });
       if(res.ok) {
         const team = await res.json();
-        // Immediately create a general channel for the new team via backend trigger, but our backend doesn't automatically create one in /api/teams yet!
-        // We will create one manually here:
+        // Create default channels
         await fetch(`${API_BASE}/api/teams/${team.id}/channels`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({ name: 'general', channel_type: 'text' })
         });
+        await fetch(`${API_BASE}/api/teams/${team.id}/channels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: 'voice-lounge', channel_type: 'voice' })
+        });
 
         closeModals();
         document.getElementById('create-team-form').reset();
         await loadTeams();
-        selectTeam(team.id, team.name);
+        selectTeam(team.id);
+      } else {
+        const err = await res.json();
+        window.showSystemModal('Error', err.detail || 'Failed to create workspace.');
       }
-    } catch(err) { console.error(err); }
+    } catch(err) { 
+      console.error(err);
+      window.showSystemModal('Error', 'Failed to create workspace.');
+    }
   });
 
   document.getElementById('create-channel-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('new-channel-name').value;
+    const name = document.getElementById('new-channel-name').value.trim();
+    const channelType = document.querySelector('input[name="channel-type"]:checked')?.value || 'text';
+    if (!name) return;
+    
     try {
       const res = await fetch(`${API_BASE}/api/teams/${currentTeamId}/channels`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name: name, channel_type: 'text' })
+        body: JSON.stringify({ name: name, channel_type: channelType })
       });
       if(res.ok) {
         closeModals();
         document.getElementById('create-channel-form').reset();
         await loadChannels(currentTeamId);
+      } else {
+        const err = await res.json();
+        window.showSystemModal('Error', err.detail || 'Failed to create channel.');
       }
     } catch(err) { console.error(err); }
   });
@@ -565,6 +1692,8 @@
     e.preventDefault();
     const userId = parseInt(document.getElementById('new-member-id').value);
     const role = document.getElementById('new-member-role').value;
+    if (!userId) return;
+    
     try {
       const res = await fetch(`${API_BASE}/api/teams/${currentTeamId}/members`, {
         method: 'POST',
@@ -576,6 +1705,7 @@
         closeModals();
         document.getElementById('add-member-form').reset();
         await loadMembers(currentTeamId);
+        window.showSystemModal('Success', 'Member added successfully!');
       } else {
         const err = await res.json();
         window.showSystemModal('Error', err.detail || 'Could not add member.');
@@ -583,19 +1713,50 @@
     } catch(err) { console.error(err); }
   });
 
-  // Stubs for system modals
-  window.showSystemModal = function(title, text) {
-    alert(`${title}\n\n${text}\n\n(This feature is a UI simulation for demonstration purposes.)`);
+  // ==========================================
+  // TEXTAREA AUTO-RESIZE
+  // ==========================================
+  const tx = document.getElementById("message-input");
+  if (tx) {
+    tx.addEventListener("input", function() {
+      this.style.height = "auto";
+      this.style.height = Math.min(this.scrollHeight, 120) + "px";
+    });
   }
 
-  // Textarea auto-resize
-  const tx = document.getElementById("message-input");
-  tx.setAttribute("style", "height:" + (tx.scrollHeight) + "px;overflow-y:hidden;");
-  tx.addEventListener("input", function() {
-    this.style.height = "auto";
-    this.style.height = (this.scrollHeight) + "px";
+  // ==========================================
+  // KEYBOARD SHORTCUTS
+  // ==========================================
+  document.addEventListener('keydown', (e) => {
+    // Escape closes modals and call overlay
+    if (e.key === 'Escape') {
+      closeModals();
+      if (callActive) endCall();
+    }
+    // Ctrl+K opens search
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      searchMessages();
+    }
   });
 
+  // Channel type radio styling
+  document.querySelectorAll('input[name="channel-type"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('input[name="channel-type"]').forEach(r => {
+        const label = r.closest('label');
+        if (r.checked) {
+          label.className = 'flex-1 flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors border-brand-500 bg-brand-50';
+        } else {
+          label.className = 'flex-1 flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors border-slate-200 hover:border-slate-300';
+        }
+      });
+    });
+  });
+
+  // ==========================================
+  // INIT
+  // ==========================================
   document.addEventListener("DOMContentLoaded", init);
 </script>
 </body>
