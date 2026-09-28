@@ -145,14 +145,81 @@
 <body>
 
     <header>
-        <a href="index.html" style="text-decoration: none;"><h2>ProPartner Admin</h2></a>
-        <nav>
-            <a href="search.html">Main Site</a>
-            <a href="#" class="btn-founder" id="roleBadge">Founder Mode</a>
-            <a onclick="logout()" style="color: var(--danger); border: 1px solid var(--border);">Sign Out</a>
-                <a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="network" href="network.html">My Network</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="saved" href="saved.html">Saved Profiles</a>
-</nav>
-    </header>
+<div class="h-16 max-w-[1536px] mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
+    <!-- Left: Logo + Navigation -->
+    <div class="flex items-center gap-4 xl:gap-8">
+      <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="window.location.href='index.html'">
+        <img alt="ProPartner" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/>
+        <span class="text-xl font-bold tracking-tight text-slate-900">ProPartner</span>
+      </div>
+      <nav class="hidden xl:flex items-center gap-0.5 h-16">
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="search.html">Discover Talent</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="board.html">Opportunities Board</a>
+        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="team.html">My Teams</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="project_management.html">Project Hub</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="college.html">Campus Network</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="research.html">Research Collab</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="network.html">My Network</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="saved.html">Saved Profiles</a>
+      </nav>
+    </div>
+
+    <!-- Right: Search + Utilities + Profile -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <!-- Search Bar -->
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="document.getElementById('search-modal') && document.getElementById('search-modal').classList.add('active')">
+        <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
+        <span class="text-[12px] text-slate-400 truncate">Search network...</span>
+        <kbd class="ml-auto text-[10px] font-semibold text-slate-400 bg-white px-1 py-0.5 rounded border border-slate-200 shadow-sm">⌘K</kbd>
+      </div>
+
+      <!-- Divider -->
+      <div class="h-5 w-px bg-slate-200 hidden md:block mx-0.5"></div>
+
+      <!-- Admin Link -->
+      <a class="hidden lg:flex items-center gap-1 text-slate-500 hover:text-primary transition-colors text-[13px] font-semibold px-2 py-1.5 rounded-lg hover:bg-slate-50 whitespace-nowrap" href="admin_dashboard.html">
+        <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+        Admin
+      </a>
+
+      <!-- Notifications -->
+      <button aria-label="Notifications" class="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button" data-notif-btn>
+        <span class="material-symbols-outlined text-[20px]">notifications</span>
+        <span data-notif-badge class="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white" style="display:none;"></span>
+      </button>
+
+      <!-- Direct Messages -->
+      <button aria-label="Direct Messages" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
+        <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+      </button>
+
+      <!-- Menu Dropdown -->
+      <div class="relative group inline-block">
+        <button aria-label="More Options" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button">
+          <span class="material-symbols-outlined text-[20px]">menu</span>
+        </button>
+        <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+          <a href="history.html" class="flex items-center gap-2 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors text-[13px] font-medium">
+            <span class="material-symbols-outlined text-[18px]">history</span>
+            Activity History
+          </a>
+          <button onclick="window.logout()" class="w-full flex items-center gap-2 px-4 py-3 text-rose-600 hover:bg-rose-50 transition-colors text-[13px] font-medium">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+            Log Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Profile Avatar -->
+      <div class="relative cursor-pointer pl-0.5" onclick="window.location.href='profile.html'">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden" data-header-avatar>
+          <span class="material-symbols-outlined text-white text-[18px]">person</span>
+        </div>
+        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="Active Now"></span>
+      </div>
+    </div>
+  </div>
+</header>
 
     <div class="dashboard-container">
         <div class="dashboard-header">

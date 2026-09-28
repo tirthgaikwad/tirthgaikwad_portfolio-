@@ -253,13 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
     navLinks.forEach(link => {
         const linkPath = link.getAttribute('href');
         
-        // Remove active styling from all links
-        link.classList.remove('text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+        // Remove active styling and ensure inactive styling is present
+        link.classList.remove('text-primary', 'border-b-2', 'border-primary');
+        link.classList.add('text-slate-500', 'hover:text-slate-900');
         link.removeAttribute('aria-current');
         
         // Add active styling to current link
         if (linkPath === currentPath) {
-            link.classList.add('text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+            link.classList.remove('text-slate-500', 'hover:text-slate-900');
+            link.classList.add('text-primary', 'border-b-2', 'border-primary');
             link.setAttribute('aria-current', 'page');
         }
     });
