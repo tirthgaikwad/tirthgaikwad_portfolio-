@@ -1085,6 +1085,8 @@
     
     ws.onmessage = function(event) {
       const msg = JSON.parse(event.data);
+      // Skip if this is our own message (already shown optimistically)
+      if (msg.sender_id === currentUser?.id) return;
       appendMessage(msg);
     };
     ws.onerror = () => console.log("WS error");
@@ -1112,7 +1114,24 @@
     // Clear attachment preview
     clearAttachments();
     
-    fetch(`${API_BASE}/api/channels/${currentChannelId}/messages`, {
+    // Generate a temporary ID for optimistic rendering
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    
+    // OPTIMISTIC: Show the message INSTANTLY before the server responds
+    const optimisticMsg = {
+      id: tempId,
+      content: content,
+      sender_id: currentUser?.id,
+      sender_name: currentUser?.name || 'You',
+      sender_pic: currentUser?.profile_pic || null,
+      timestamp: new Date().toISOString(),
+      is_system_message: 0
+    };
+    appendMessage(optimisticMsg);
+    
+    // Fire-and-forget: send to server in background
+    const channelId = currentChannelId;
+    fetch(`${API_BASE}/api/channels/${channelId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -1120,13 +1139,42 @@
     }).then(res => {
       if (res.ok) return res.json();
       throw new Error('Failed to send');
-    }).then(msg => {
-      // Message will come via WebSocket, but append locally for instant feedback
-      appendMessage(msg);
+    }).then(serverMsg => {
+      // Replace temp message with confirmed server message (update the ID for reactions/pins)
+      const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
+      if (tempEl) {
+        tempEl.setAttribute('data-msg-id', serverMsg.id);
+        // Update reaction button IDs
+        tempEl.querySelectorAll('button[onclick*="' + tempId + '"]').forEach(btn => {
+          btn.setAttribute('onclick', btn.getAttribute('onclick').replace(tempId, serverMsg.id));
+        });
+        const reactionsContainer = tempEl.querySelector(`#reactions-${tempId}`);
+        if (reactionsContainer) reactionsContainer.id = `reactions-${serverMsg.id}`;
+      }
     }).catch(e => {
       console.error("Message send failed", e);
-      window.showSystemModal('Error', 'Failed to send message. Please try again.');
+      // Mark the optimistic message as failed
+      const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
+      if (tempEl) {
+        tempEl.classList.add('opacity-60');
+        tempEl.insertAdjacentHTML('beforeend', `
+          <div class="flex items-center gap-1.5 mt-1 ml-12">
+            <span class="text-[10px] text-rose-500 font-semibold">Failed to send</span>
+            <button onclick="retryMessage('${escapeHtml(content)}', '${tempId}')" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold underline">Retry</button>
+          </div>
+        `);
+      }
     });
+  }
+
+  function retryMessage(content, tempId) {
+    // Remove the failed message
+    const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
+    if (tempEl) tempEl.remove();
+    // Re-send
+    const input = document.getElementById('message-input');
+    input.value = content;
+    submitMessage();
   }
 
   // ==========================================
