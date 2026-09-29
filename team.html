@@ -68,14 +68,77 @@
   
   /* Emoji picker */
   .emoji-picker {
-    display: none; position: absolute; bottom: 100%; left: 0;
-    background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-    padding: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100;
-    max-width: 280px; flex-wrap: wrap; gap: 4px;
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.95);
+    opacity: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08);
+    z-index: 200;
+    width: 340px;
+    max-height: 380px;
+    flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
-  .emoji-picker.active { display: flex; }
-  .emoji-picker button { font-size: 20px; padding: 4px; border-radius: 6px; cursor: pointer; transition: background 0.15s; border: none; background: transparent; }
-  .emoji-picker button:hover { background: #f1f5f9; }
+  .emoji-picker.active {
+    display: flex;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  .emoji-picker-header {
+    display: flex;
+    gap: 2px;
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+    border-radius: 16px 16px 0 0;
+    flex-shrink: 0;
+  }
+  .emoji-picker-header button {
+    flex: 1;
+    padding: 6px 4px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    white-space: nowrap;
+  }
+  .emoji-picker-header button:hover { color: #475569; background: #e2e8f0; }
+  .emoji-picker-header button.active { color: #4f46e5; background: #eef2ff; }
+  .emoji-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  .emoji-picker-grid button {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.12s;
+    border: none;
+    background: transparent;
+    line-height: 1;
+  }
+  .emoji-picker-grid button:hover { background: #eef2ff; transform: scale(1.2); }
   
   /* File attachment preview */
   .file-preview {
@@ -361,7 +424,15 @@
                 <span class="material-symbols-outlined text-[18px]">sentiment_satisfied</span>
               </button>
               <div id="emoji-picker" class="emoji-picker">
-                <!-- Populated by JS -->
+                <div class="emoji-picker-header" id="emoji-tabs">
+                  <button class="active" onclick="switchEmojiTab('smileys')">😀 Smileys</button>
+                  <button onclick="switchEmojiTab('gestures')">👍 Gestures</button>
+                  <button onclick="switchEmojiTab('symbols')">✨ Symbols</button>
+                  <button onclick="switchEmojiTab('objects')">🎯 Objects</button>
+                </div>
+                <div class="emoji-picker-grid" id="emoji-grid">
+                  <!-- Populated by JS -->
+                </div>
               </div>
             </div>
             <!-- Voice Memo -->
@@ -1191,17 +1262,44 @@
   // ==========================================
   // EMOJI PICKER
   // ==========================================
-  const emojis = ['😀','😂','🥰','😎','🤔','👍','👎','🔥','🚀','💯','❤️','🎉','😱','🤝','💪','✨','⚡','🎯','💡','🙏','👏','🫡','✅','❌','⚠️','📌','🎨','💻','🐛','📝'];
+  const emojiCategories = {
+    smileys: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🫢','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','😮‍💨','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐'],
+    gestures: ['👍','👎','👊','✊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','✌️','🤟','🤘','🤙','💪','🫡','👋','🖐️','✋','🖖','👌','🤌','🤏','✍️','🫰','🫳','🫴','👆','👇','👈','👉','☝️','🫵','🖕','👀','👁️','👄','💋','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💝','💘'],
+    symbols: ['✨','⚡','🔥','💥','💫','💦','💨','🌟','⭐','🌈','☀️','🌤️','⛅','🌙','✅','❌','⚠️','🚫','❗','❓','‼️','⁉️','💯','🔴','🟠','🟡','🟢','🔵','🟣','⚪','⚫','🟤','🔶','🔷','▶️','⏸️','⏹️','⏺️','🔄','🔃','➕','➖','✖️','➗','💲','🔔','🔕','📣','📢','🏁','🚩','🎌'],
+    objects: ['🎯','💡','📌','🎨','💻','🐛','📝','🔧','⚙️','🔬','🧪','💊','🧬','🔭','📊','📈','📉','🗂️','📁','📂','📋','📎','🔗','🖇️','📐','📏','🗓️','📅','📆','⏰','⏱️','⏲️','🕐','🔑','🗝️','🔒','🔓','📱','💾','💿','🎬','📷','📹','🎵','🎶','🎸','🎮','🕹️','🏆','🥇','🥈','🥉','🎖️','🏅','🎗️','🎪']
+  };
+  
+  let activeEmojiTab = 'smileys';
   
   function setupEmojiPicker() {
-    const picker = document.getElementById('emoji-picker');
-    picker.innerHTML = emojis.map(e => 
-      `<button onclick="insertEmoji('${e}')">${e}</button>`
+    renderEmojiGrid('smileys');
+  }
+
+  function renderEmojiGrid(category) {
+    const grid = document.getElementById('emoji-grid');
+    if (!grid) return;
+    const emojis = emojiCategories[category] || [];
+    grid.innerHTML = emojis.map(e => 
+      `<button onclick="insertEmoji('${e}')" title="${e}">${e}</button>`
     ).join('');
   }
 
+  function switchEmojiTab(category) {
+    activeEmojiTab = category;
+    renderEmojiGrid(category);
+    // Update tab active state
+    const tabs = document.querySelectorAll('#emoji-tabs button');
+    tabs.forEach(tab => {
+      tab.classList.remove('active');
+      if (tab.getAttribute('onclick')?.includes(category)) {
+        tab.classList.add('active');
+      }
+    });
+  }
+
   function toggleEmojiPicker() {
-    document.getElementById('emoji-picker').classList.toggle('active');
+    const picker = document.getElementById('emoji-picker');
+    picker.classList.toggle('active');
   }
 
   function insertEmoji(emoji) {
