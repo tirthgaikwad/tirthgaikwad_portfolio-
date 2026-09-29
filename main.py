@@ -1256,6 +1256,42 @@ async def upload_project_pic(
     return {"message": "Project image uploaded successfully!", "url": image_url}
 
 
+@app.post("/api/upload/chat-file")
+async def upload_chat_file(
+    file: UploadFile = File(...),
+    current_user: DBUser = Depends(get_current_user)
+):
+    """Upload any file (image, video, pdf, doc) for chat messages."""
+    ALLOWED_TYPES = [
+        "image/", "video/", "application/pdf",
+        "application/msword", "application/vnd.openxmlformats-officedocument",
+        "text/plain", "text/css", "text/html", "text/javascript",
+        "application/json", "application/zip", "application/x-rar",
+    ]
+    
+    allowed = any(file.content_type and file.content_type.startswith(t) for t in ALLOWED_TYPES)
+    if not allowed:
+        raise HTTPException(status_code=400, detail=f"File type '{file.content_type}' is not allowed.")
+    
+    os.makedirs("static/uploads/chat", exist_ok=True)
+    
+    file_extension = file.filename.split(".")[-1] if "." in file.filename else "bin"
+    safe_filename = f"chat_{current_user.id}_{uuid.uuid4().hex[:10]}.{file_extension}"
+    file_location = f"static/uploads/chat/{safe_filename}"
+    
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    file_url = f"http://127.0.0.1:8000/{file_location}"
+    
+    return {
+        "url": file_url,
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size": os.path.getsize(file_location)
+    }
+
+
 # ==========================================
 # 9. PROJECT PORTFOLIO ENDPOINTS
 # ==========================================

@@ -1010,11 +1010,8 @@
       ? `<img src="${msg.sender_pic}" class="w-9 h-9 rounded-full object-cover flex-none ring-2 ring-slate-100 mt-0.5" alt="">`
       : `<div class="w-9 h-9 rounded-full ${color} text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-slate-100 mt-0.5">${initials}</div>`;
     
-    // Check if message contains code (triple backtick)
-    let contentHtml = escapeHtml(msg.content);
-    contentHtml = contentHtml.replace(/```([\s\S]*?)```/g, '<pre class="code-block p-3 rounded-lg mt-2 overflow-x-auto text-[11px] leading-snug"><code>$1</code></pre>');
-    contentHtml = contentHtml.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-slate-100 text-slate-800 rounded text-xs font-mono">$1</code>');
-    contentHtml = contentHtml.replace(/\n/g, '<br>');
+    // Format text, code blocks, and attachments
+    let contentHtml = formatMessageContent(msg.content);
     
     // Role badge
     const memberInfo = membersData.find(m => m.user_id === msg.sender_id);
@@ -1069,6 +1066,43 @@
     div.textContent = text;
     return div.innerHTML;
   }
+  
+  function formatMessageContent(content) {
+    if (!content) return '';
+    let html = escapeHtml(content);
+    
+    // Process attachments
+    html = html.replace(/\[IMAGE\|([^|]+)\|([^\]]+)\]/g, (match, url, name) => {
+      return `<div class="mt-2 mb-1"><a href="${url}" target="_blank"><img src="${url}" alt="${name}" class="max-w-[280px] max-h-[300px] rounded-lg object-cover border border-slate-200 shadow-sm hover:opacity-90 transition-opacity"></a></div>`;
+    });
+    
+    html = html.replace(/\[VIDEO\|([^|]+)\|([^\]]+)\]/g, (match, url, name) => {
+      return `<div class="mt-2 mb-1"><video src="${url}" controls class="max-w-[280px] max-h-[300px] rounded-lg bg-black border border-slate-200 shadow-sm"></video></div>`;
+    });
+    
+    html = html.replace(/\[FILE\|([^|]+)\|([^|]+)\|([^\]]+)\]/g, (match, url, name, size) => {
+      return `
+        <div class="mt-2 mb-1">
+          <a href="${url}" target="_blank" download class="inline-flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm w-64 max-w-full group">
+            <div class="w-10 h-10 rounded bg-brand-50 flex items-center justify-center flex-none group-hover:bg-brand-100 transition-colors">
+              <span class="material-symbols-outlined text-brand-600">description</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-slate-800 truncate">${name}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">${size}</p>
+            </div>
+            <span class="material-symbols-outlined text-slate-300 group-hover:text-brand-600 transition-colors mr-1">download</span>
+          </a>
+        </div>`;
+    });
+    
+    // Check if message contains code (triple backtick)
+    html = html.replace(/```([\s\S]*?)```/g, '<pre class="code-block p-3 rounded-lg mt-2 overflow-x-auto text-[11px] leading-snug"><code>$1</code></pre>');
+    html = html.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-slate-100 text-slate-800 rounded text-xs font-mono">$1</code>');
+    html = html.replace(/\n/g, '<br>');
+    
+    return html;
+  }
 
   function scrollToBottom() {
     const feed = document.getElementById('messages-feed');
@@ -1103,24 +1137,26 @@
     }
   }
 
-  function submitMessage() {
+  async function submitMessage() {
     const input = document.getElementById('message-input');
-    const content = input.value.trim();
-    if(!content || !currentChannelId) return;
+    const rawContent = input.value.trim();
+    const filesToUpload = [...selectedFiles]; // copy current selection
+    
+    if (!rawContent && filesToUpload.length === 0) return;
+    if (!currentChannelId) return;
     
     input.value = '';
     input.style.height = 'auto';
-    
-    // Clear attachment preview
     clearAttachments();
     
     // Generate a temporary ID for optimistic rendering
     const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const optimisticContent = rawContent + (filesToUpload.length ? '\n[Sending attachments...]' : '');
     
     // OPTIMISTIC: Show the message INSTANTLY before the server responds
     const optimisticMsg = {
       id: tempId,
-      content: content,
+      content: optimisticContent,
       sender_id: currentUser?.id,
       sender_name: currentUser?.name || 'You',
       sender_pic: currentUser?.profile_pic || null,
@@ -1129,51 +1165,86 @@
     };
     appendMessage(optimisticMsg);
     
-    // Fire-and-forget: send to server in background
     const channelId = currentChannelId;
-    fetch(`${API_BASE}/api/channels/${channelId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ content: content })
-    }).then(res => {
-      if (res.ok) return res.json();
-      throw new Error('Failed to send');
-    }).then(serverMsg => {
-      // Replace temp message with confirmed server message (update the ID for reactions/pins)
+    let finalContent = rawContent;
+
+    try {
+      // 1. Upload files first if any
+      if (filesToUpload.length > 0) {
+        for (const file of filesToUpload) {
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          const uploadRes = await fetch(`${API_BASE}/api/upload/chat-file`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+          });
+          
+          if (!uploadRes.ok) throw new Error('File upload failed');
+          const fileData = await uploadRes.json();
+          
+          // Append special markdown-like syntax for rendering
+          const type = fileData.content_type.split('/')[0];
+          if (type === 'image') {
+            finalContent += `\n[IMAGE|${fileData.url}|${fileData.filename}]`;
+          } else if (type === 'video') {
+            finalContent += `\n[VIDEO|${fileData.url}|${fileData.filename}]`;
+          } else {
+            finalContent += `\n[FILE|${fileData.url}|${fileData.filename}|${(fileData.size / 1024).toFixed(1)} KB]`;
+          }
+        }
+        
+        // Update optimistic UI to show correct content before sending to channel
+        const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
+        if (tempEl) {
+           const bodyEl = tempEl.querySelector('.text-slate-700.break-words');
+           if (bodyEl) bodyEl.innerHTML = formatMessageContent(finalContent);
+        }
+      }
+
+      // 2. Send the message to the channel
+      const msgRes = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: finalContent.trim() })
+      });
+      
+      if (!msgRes.ok) throw new Error('Failed to send');
+      const serverMsg = await msgRes.json();
+      
+      // Replace temp message with confirmed server message
       const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
       if (tempEl) {
         tempEl.setAttribute('data-msg-id', serverMsg.id);
-        // Update reaction button IDs
         tempEl.querySelectorAll('button[onclick*="' + tempId + '"]').forEach(btn => {
           btn.setAttribute('onclick', btn.getAttribute('onclick').replace(tempId, serverMsg.id));
         });
         const reactionsContainer = tempEl.querySelector(`#reactions-${tempId}`);
         if (reactionsContainer) reactionsContainer.id = `reactions-${serverMsg.id}`;
       }
-    }).catch(e => {
+    } catch (e) {
       console.error("Message send failed", e);
-      // Mark the optimistic message as failed
       const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
       if (tempEl) {
         tempEl.classList.add('opacity-60');
         tempEl.insertAdjacentHTML('beforeend', `
           <div class="flex items-center gap-1.5 mt-1 ml-12">
             <span class="text-[10px] text-rose-500 font-semibold">Failed to send</span>
-            <button onclick="retryMessage('${escapeHtml(content)}', '${tempId}')" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold underline">Retry</button>
+            <button onclick="retryMessage('${escapeHtml(rawContent)}', '${tempId}')" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold underline">Retry</button>
           </div>
         `);
       }
-    });
+    }
   }
 
   function retryMessage(content, tempId) {
-    // Remove the failed message
     const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
     if (tempEl) tempEl.remove();
-    // Re-send
     const input = document.getElementById('message-input');
     input.value = content;
+    // Note: Retrying attachments is complex, we just retry text for now
     submitMessage();
   }
 
