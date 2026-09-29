@@ -134,7 +134,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="dev-name">${dev.name}</div>
                             <div class="dev-college">🎓 ${dev.college_name} (${dev.department})</div>
                             <div class="dev-skills">${dev.skills}</div>
-                            <a href="profile.html?id=${dev.id}" class="btn-view">View Profile</a>
+                            <div style="display: flex; gap: 8px;">
+                                <a href="profile.html?id=${dev.id}" class="btn-view" style="flex: 1; text-align: center;">View Profile</a>
+                                <a href="inbox.html?user=${dev.id}" title="Quick Chat" style="display: flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 8px; background: var(--surface-container); color: var(--on-surface-variant); text-decoration: none;">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">chat</span>
+                                </a>
+                            </div>
                         </div>
                     `;
                 });
