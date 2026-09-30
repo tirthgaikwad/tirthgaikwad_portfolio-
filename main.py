@@ -82,6 +82,7 @@ class DBMessage(Base):
     receiver_id = Column(Integer, index=True)
     content = Column(String)
     timestamp = Column(String)
+    message_status = Column(String, default="sent")  # sent, delivered, read
 
 class DBProject(Base):
     __tablename__ = "projects"
@@ -234,6 +235,12 @@ class ConnectionManager:
             if not self.active_connections[user_id]:
                 del self.active_connections[user_id]
 
+    def is_online(self, user_id: int) -> bool:
+        return user_id in self.active_connections and len(self.active_connections[user_id]) > 0
+
+    def get_online_user_ids(self) -> List[int]:
+        return [uid for uid, conns in self.active_connections.items() if len(conns) > 0]
+
     async def send_personal_message(self, message: str, user_id: int):
         if user_id in self.active_connections:
             for connection in self.active_connections[user_id]:
@@ -367,6 +374,7 @@ class MessageResponse(BaseModel):
     receiver_id: int
     content: str
     timestamp: datetime
+    message_status: Optional[str] = "sent"
     
     class Config:
         from_attributes = True
@@ -843,6 +851,19 @@ async def chat_websocket_endpoint(websocket: WebSocket, user_id: int):
     try:
         while True:
             data = await websocket.receive_text()
+            # Handle typing indicator messages from client
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "typing":
+                    target_id = msg.get("to")
+                    if target_id:
+                        await chat_manager.send_personal_message(json.dumps({
+                            "type": "typing",
+                            "from": user_id,
+                            "typing": msg.get("typing", False)
+                        }), int(target_id))
+            except (json.JSONDecodeError, ValueError):
+                pass
     except WebSocketDisconnect:
         chat_manager.disconnect(websocket, user_id)
 
@@ -872,11 +893,15 @@ async def send_message(
     if b2_result.scalars().first():
         raise HTTPException(status_code=403, detail="You have blocked this user.")
         
+    # Determine initial status: delivered if receiver is online, else sent
+    initial_status = "delivered" if chat_manager.is_online(msg.receiver_id) else "sent"
+    
     new_msg = DBMessage(
         sender_id=msg.sender_id,
         receiver_id=msg.receiver_id,
         content=msg.content,
-        timestamp=datetime.now().isoformat()
+        timestamp=datetime.now().isoformat(),
+        message_status=initial_status
     )
     db.add(new_msg)
     
@@ -912,7 +937,8 @@ async def send_message(
         "sender_id": new_msg.sender_id,
         "receiver_id": new_msg.receiver_id,
         "content": new_msg.content,
-        "timestamp": new_msg.timestamp.isoformat() if isinstance(new_msg.timestamp, datetime) else new_msg.timestamp
+        "timestamp": new_msg.timestamp.isoformat() if isinstance(new_msg.timestamp, datetime) else new_msg.timestamp,
+        "message_status": new_msg.message_status
     }
     await chat_manager.send_personal_message(json.dumps(msg_data), msg.receiver_id)
     
@@ -962,6 +988,51 @@ async def get_messages(
         filtered_msgs.append(msg)
         
     return filtered_msgs
+
+# ==========================================
+# 6.3 ONLINE STATUS & READ RECEIPTS
+# ==========================================
+@app.get("/api/users/online")
+async def get_online_users(current_user: DBUser = Depends(get_current_user)):
+    """Return list of user IDs currently connected via WebSocket."""
+    online_ids = chat_manager.get_online_user_ids()
+    return {"online_user_ids": online_ids}
+
+@app.get("/api/users/{user_id}/online")
+async def check_user_online(user_id: int, current_user: DBUser = Depends(get_current_user)):
+    """Check if a specific user is online."""
+    return {"user_id": user_id, "is_online": chat_manager.is_online(user_id)}
+
+@app.post("/api/messages/read/{contact_id}")
+async def mark_messages_read(
+    contact_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user)
+):
+    """Mark all messages from contact_id to current_user as 'read' (blue tick)."""
+    result = await db.execute(
+        select(DBMessage).filter(
+            DBMessage.sender_id == contact_id,
+            DBMessage.receiver_id == current_user.id,
+            DBMessage.message_status != "read"
+        )
+    )
+    msgs = result.scalars().all()
+    updated_ids = []
+    for msg in msgs:
+        msg.message_status = "read"
+        updated_ids.append(msg.id)
+    await db.commit()
+    
+    # Notify the sender that their messages were read
+    if updated_ids:
+        await chat_manager.send_personal_message(json.dumps({
+            "type": "read_receipt",
+            "reader_id": current_user.id,
+            "message_ids": updated_ids
+        }), contact_id)
+    
+    return {"status": "ok", "updated_count": len(updated_ids)}
 
 # ==========================================
 # 6.5 CHAT ACTIONS (MUTE, BLOCK, CLEAR)
@@ -1263,7 +1334,7 @@ async def upload_chat_file(
 ):
     """Upload any file (image, video, pdf, doc) for chat messages."""
     ALLOWED_TYPES = [
-        "image/", "video/", "application/pdf",
+        "image/", "video/", "audio/", "application/pdf",
         "application/msword", "application/vnd.openxmlformats-officedocument",
         "text/plain", "text/css", "text/html", "text/javascript",
         "application/json", "application/zip", "application/x-rar",
