@@ -556,6 +556,22 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         
     return user
 
+async def get_current_user_id(request: Request) -> int:
+    token = request.cookies.get("authToken")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated. No secure cookie found.")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
+        return int(user_id)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired. Please log in again.")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication token.")
+
+
 
 # ==========================================
 # 5. CORE API ENDPOINTS
@@ -675,7 +691,7 @@ async def get_all_profiles(
     college: Optional[str] = None, 
     department: Optional[str] = None, 
     db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user_id)
 ):
     query = select(DBUser)
     if college:
@@ -965,12 +981,12 @@ async def delete_personal_message(msg_id: int, db: AsyncSession = Depends(get_db
 async def get_messages(
     user_id: int, 
     db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    if current_user.id != user_id:
+    if current_user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view these messages.")
         
-    clear_res = await db.execute(select(DBClearedChat).filter(DBClearedChat.user_id == current_user.id))
+    clear_res = await db.execute(select(DBClearedChat).filter(DBClearedChat.user_id == current_user_id))
     cleared_records = clear_res.scalars().all()
     cleared_map = {rec.cleared_with_user_id: rec.cleared_at for rec in cleared_records}
         
@@ -993,13 +1009,13 @@ async def get_messages(
 # 6.3 ONLINE STATUS & READ RECEIPTS
 # ==========================================
 @app.get("/api/users/online")
-async def get_online_users(current_user: DBUser = Depends(get_current_user)):
+async def get_online_users(current_user_id: int = Depends(get_current_user_id)):
     """Return list of user IDs currently connected via WebSocket."""
     online_ids = chat_manager.get_online_user_ids()
     return {"online_user_ids": online_ids}
 
 @app.get("/api/users/{user_id}/online")
-async def check_user_online(user_id: int, current_user: DBUser = Depends(get_current_user)):
+async def check_user_online(user_id: int, current_user_id: int = Depends(get_current_user_id)):
     """Check if a specific user is online."""
     return {"user_id": user_id, "is_online": chat_manager.is_online(user_id)}
 
@@ -1076,9 +1092,9 @@ async def clear_chat(target_id: int, db: AsyncSession = Depends(get_db), current
     return {"status": "cleared"}
 
 @app.get("/api/chat/actions/state")
-async def get_chat_actions_state(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
-    m_res = await db.execute(select(DBMutedUser).filter(DBMutedUser.user_id == current_user.id))
-    b_res = await db.execute(select(DBBlockedUser).filter(DBBlockedUser.user_id == current_user.id))
+async def get_chat_actions_state(db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    m_res = await db.execute(select(DBMutedUser).filter(DBMutedUser.user_id == current_user_id))
+    b_res = await db.execute(select(DBBlockedUser).filter(DBBlockedUser.user_id == current_user_id))
     muted = [m.muted_user_id for m in m_res.scalars().all()]
     blocked = [b.blocked_user_id for b in b_res.scalars().all()]
     return {"muted": muted, "blocked": blocked}
@@ -1592,15 +1608,15 @@ async def create_team(
 
 
 @app.get("/api/teams", response_model=List[TeamResponse])
-async def get_my_teams(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
-    t_res = await db.execute(select(DBTeamMember.team_id).filter(DBTeamMember.user_id == current_user.id))
+async def get_my_teams(db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    t_res = await db.execute(select(DBTeamMember.team_id).filter(DBTeamMember.user_id == current_user_id))
     t_ids = [t for t in t_res.scalars().all()]
     
     if not t_ids:
-        res = await db.execute(select(DBTeam).filter(DBTeam.created_by == current_user.id))
+        res = await db.execute(select(DBTeam).filter(DBTeam.created_by == current_user_id))
         return res.scalars().all()
         
-    res = await db.execute(select(DBTeam).filter((DBTeam.created_by == current_user.id) | (DBTeam.id.in_(t_ids))))
+    res = await db.execute(select(DBTeam).filter((DBTeam.created_by == current_user_id) | (DBTeam.id.in_(t_ids))))
     return res.scalars().all()
 
 
@@ -1654,9 +1670,9 @@ async def add_team_member(
 async def get_team_members(
     team_id: int, 
     db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == team_id, DBTeamMember.user_id == current_user.id))
+    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == team_id, DBTeamMember.user_id == user_id))
     if not in_team_res.scalars().first():
         raise HTTPException(status_code=403, detail="You are not a member of this team.")
 
@@ -1688,9 +1704,9 @@ async def get_team_members(
 async def get_team_channels(
     team_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == team_id, DBTeamMember.user_id == current_user.id))
+    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == team_id, DBTeamMember.user_id == user_id))
     if not in_team_res.scalars().first():
         raise HTTPException(status_code=403, detail="Not a member of this team.")
 
@@ -1729,16 +1745,17 @@ async def create_team_channel(
 async def get_channel_messages(
     channel_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    channel_res = await db.execute(select(DBChannel).filter(DBChannel.id == channel_id))
-    channel = channel_res.scalars().first()
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found.")
-
-    in_team_res = await db.execute(select(DBTeamMember).filter(DBTeamMember.team_id == channel.team_id, DBTeamMember.user_id == current_user.id))
-    if not in_team_res.scalars().first():
-        raise HTTPException(status_code=403, detail="Not a member of this team.")
+    # Single query to verify channel exists and user is a member of the team
+    auth_query = (
+        select(DBChannel)
+        .join(DBTeamMember, DBTeamMember.team_id == DBChannel.team_id)
+        .filter(DBChannel.id == channel_id, DBTeamMember.user_id == user_id)
+    )
+    auth_res = await db.execute(auth_query)
+    if not auth_res.scalars().first():
+        raise HTTPException(status_code=403, detail="Not a member of this team or channel not found.")
 
     # FAST JOIN FOR CHANNEL MESSAGES
     query = (

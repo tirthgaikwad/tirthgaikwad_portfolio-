@@ -3,7 +3,7 @@
 // Loaded on every page to make user data appear in real-time
 // ==========================================
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = `${window.location.protocol}//${window.location.hostname || '127.0.0.1'}:8000`;
 
 // ==========================================
 // 1. GLOBAL MODAL SYSTEM (Shared across all pages)

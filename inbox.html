@@ -679,76 +679,131 @@ const emojiData = {
   'Flags': ['🏳️','🏴','🏁','🚩','🎌','🏴‍☠️','🇮🇳','🇺🇸','🇬🇧','🇯🇵','🇰🇷','🇨🇳','🇫🇷','🇩🇪','🇧🇷','🇦🇺','🇨🇦','🇮🇹','🇪🇸','🇷🇺','🇲🇽','🇸🇦','🇦🇪','🇸🇬']
 };
 
+// Helper for fetching with a timeout to prevent hanging
+function timeoutFetch(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
+function getMessagePreview(content) {
+  if (!content) return '';
+  if (content.startsWith('<img') || content.startsWith('data:image')) return '📷 Photo';
+  if (content.startsWith('<div class="audio') || content.startsWith('<audio') || content.startsWith('[🎤')) return '🎤 Voice memo';
+  if (content.startsWith('[📎')) return '📎 Attachment';
+  if (content.startsWith('```')) return '💻 Code snippet';
+  const text = content.replace(/<[^>]*>/g, '').trim();
+  return text.length > 50 ? text.substring(0, 50) + '...' : text;
+}
+
 // ===== INITIALIZATION =====
 async function initInbox() {
+  // 1. FAST CACHE HYDRATION: render contacts immediately if cached so there is zero initial delay
   try {
-    await fetchAllProfiles();
-    await fetchMessages();
-    await fetchTeams();
-    await fetchChatActionsState();
-    buildContacts();
-    renderContacts();
-    setupWebSocket();
-    initEmojiPicker();
-    pollOnlineStatus();
-    setInterval(pollOnlineStatus, 15000);
-
-    // Setup typing indicator on input
-    const msgInput = document.getElementById('message-input');
-    msgInput.addEventListener('input', handleTypingInput);
-
-    // Update online count
-    const onlineText = document.getElementById('online-count-text');
-    const profileCount = Object.keys(globalProfiles).length;
-    onlineText.textContent = `${profileCount} Collaborators`;
-
-    // Auto-select from URL param
-    const urlParams = new URLSearchParams(window.location.search);
-    const autoUser = urlParams.get('user');
-    if (autoUser) {
-      const uid = parseInt(autoUser);
-      if (uid !== currentUserId) {
-        if (!contacts[uid]) {
-          const profile = globalProfiles[uid];
-          contacts[uid] = {
-            id: uid,
-            name: profile ? profile.name : `User #${uid}`,
-            profile_pic: profile ? profile.profile_pic : '',
-            college_name: profile ? profile.college_name : '',
-            department: profile ? profile.department : '',
-            skills: profile ? profile.skills : '',
-            lastMessage: '',
-            timestamp: ''
-          };
-          renderContacts();
-        }
-        selectContact(uid);
-      }
+    const cachedProfiles = localStorage.getItem('cachedProfiles');
+    const cachedContacts = localStorage.getItem('cachedContacts');
+    const cachedTeams = localStorage.getItem('cachedTeams');
+    if (cachedProfiles) {
+      globalProfiles = JSON.parse(cachedProfiles);
+      const onlineText = document.getElementById('online-count-text');
+      if (onlineText) onlineText.textContent = `${Object.keys(globalProfiles).length} Collaborators`;
+    }
+    if (cachedContacts) {
+      contacts = JSON.parse(cachedContacts);
+      renderContacts();
+    }
+    if (cachedTeams) {
+      myTeams = JSON.parse(cachedTeams);
     }
   } catch (e) {
-    console.error('Inbox init error:', e);
+    console.warn('Cache load warning:', e);
+  }
+
+  // 2. Setup real-time and handlers
+  setupWebSocket();
+  initEmojiPicker();
+  pollOnlineStatus();
+  setInterval(pollOnlineStatus, 15000);
+
+  const msgInput = document.getElementById('message-input');
+  if (msgInput) msgInput.addEventListener('input', handleTypingInput);
+
+  // 3. PARALLEL BACKGROUND FETCH: Fetch all data sources concurrently with timeout protection
+  try {
+    await Promise.allSettled([
+      fetchAllProfiles(),
+      fetchMessages(),
+      fetchTeams(),
+      fetchChatActionsState()
+    ]);
+  } catch (e) {
+    console.error('Parallel fetch error:', e);
+  } finally {
+    // Rebuild and render contacts with latest data
+    buildContacts();
+    renderContacts();
+  }
+
+  // 4. Auto-select from URL param
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoUser = urlParams.get('user');
+  if (autoUser) {
+    const uid = parseInt(autoUser);
+    if (uid !== currentUserId) {
+      if (!contacts[uid]) {
+        const profile = globalProfiles[uid];
+        contacts[uid] = {
+          id: uid,
+          name: profile ? profile.name : `User #${uid}`,
+          profile_pic: profile ? profile.profile_pic : '',
+          college_name: profile ? profile.college_name : '',
+          department: profile ? profile.department : '',
+          skills: profile ? profile.skills : '',
+          lastMessage: '',
+          timestamp: ''
+        };
+        renderContacts();
+      }
+      selectContact(uid);
+    }
   }
 }
 
 async function fetchAllProfiles() {
-  const res = await fetch(`${API_BASE}/api/profiles`, { credentials: 'include' });
-  if (res.ok) {
-    const profiles = await res.json();
-    profiles.forEach(p => { globalProfiles[p.id] = p; });
+  try {
+    const res = await timeoutFetch(`${API_BASE}/api/profiles`, { credentials: 'include' });
+    if (res.ok) {
+      const profiles = await res.json();
+      profiles.forEach(p => { globalProfiles[p.id] = p; });
+      try { localStorage.setItem('cachedProfiles', JSON.stringify(globalProfiles)); } catch(e){}
+      const onlineText = document.getElementById('online-count-text');
+      if (onlineText) onlineText.textContent = `${profiles.length} Collaborators`;
+    }
+  } catch (err) {
+    console.warn('fetchAllProfiles error or timeout:', err);
   }
 }
 
 async function fetchChatActionsState() {
-  const res = await fetch(`${API_BASE}/api/chat/actions/state`, { credentials: 'include' });
-  if (res.ok) {
-    chatActionsState = await res.json();
+  try {
+    const res = await timeoutFetch(`${API_BASE}/api/chat/actions/state`, { credentials: 'include' });
+    if (res.ok) {
+      chatActionsState = await res.json();
+    }
+  } catch (err) {
+    console.warn('fetchChatActionsState error or timeout:', err);
   }
 }
 
 async function fetchMessages() {
-  const res = await fetch(`${API_BASE}/api/messages/${currentUserId}`, { credentials: 'include' });
-  if (res.ok) {
-    allMessages = await res.json();
+  try {
+    const res = await timeoutFetch(`${API_BASE}/api/messages/${currentUserId}`, { credentials: 'include' }, 12000);
+    if (res.ok) {
+      allMessages = await res.json();
+    }
+  } catch (err) {
+    console.warn('fetchMessages error or timeout:', err);
   }
 }
 
@@ -779,11 +834,16 @@ function buildContacts() {
     const otherId = m.sender_id === currentUserId ? m.receiver_id : m.sender_id;
     if (contacts[otherId]) {
       if (!contacts[otherId].timestamp || new Date(m.timestamp) > new Date(contacts[otherId].timestamp)) {
-        contacts[otherId].lastMessage = m.sender_id === currentUserId ? `You: ${m.content}` : m.content;
+        const preview = getMessagePreview(m.content);
+        contacts[otherId].lastMessage = m.sender_id === currentUserId ? `You: ${preview}` : preview;
         contacts[otherId].timestamp = m.timestamp;
       }
     }
   });
+
+  try {
+    localStorage.setItem('cachedContacts', JSON.stringify(contacts));
+  } catch(e) {}
 }
 
 // ===== ONLINE STATUS =====
@@ -878,11 +938,15 @@ function hideTypingIndicator(fromUserId) {
 // ===== TEAMS & GROUPS DATA =====
 async function fetchTeams() {
   try {
-    const res = await fetch(`${API_BASE}/api/teams`, { credentials: 'include' });
+    const res = await timeoutFetch(`${API_BASE}/api/teams`, { credentials: 'include' }, 8000);
     if (res.ok) {
       myTeams = await res.json();
+      try { localStorage.setItem('cachedTeams', JSON.stringify(myTeams)); } catch(e){}
+      if (currentTab === 'groups') {
+        renderGroups();
+      }
     }
-  } catch (err) { console.error('Error fetching teams:', err); }
+  } catch (err) { console.warn('fetchTeams error or timeout:', err); }
 }
 
 function switchInboxTab(tab) {
@@ -991,7 +1055,21 @@ async function selectTeam(id) {
 async function selectChannel(channelId) {
   activeChannelId = channelId;
   
+  // Show loading state immediately to prevent UI freeze
+  document.getElementById('empty-chat-state').style.display = 'none';
+  document.getElementById('active-chat-container').style.display = 'flex';
+  
+  const scrollArea = document.getElementById('messages-scroll-area');
   if (!allTeamMessages[channelId]) {
+    scrollArea.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
+        <span class="material-symbols-outlined text-[48px] animate-spin text-outline mb-3">refresh</span>
+        <p class="font-body-md text-body-md">Loading messages...</p>
+      </div>`;
+    
+    // Also update info panel skeleton if team is selected
+    updateTeamInfoPanel();
+    
     try {
       const res = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, { credentials: 'include' });
       if (res.ok) {
@@ -1005,9 +1083,6 @@ async function selectChannel(channelId) {
   setupTeamWebSocket(channelId);
   renderTeamChat();
   updateTeamInfoPanel();
-  
-  document.getElementById('empty-chat-state').style.display = 'none';
-  document.getElementById('active-chat-container').style.display = 'flex';
 }
 
 
@@ -1193,15 +1268,35 @@ function renderChat() {
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tickHtml = getTickHtml(msg);
     
-    // Check if content is a code snippet
+    // Check message content format
     const isCode = msg.content.startsWith('```');
-    const isFile = msg.content.startsWith('[📎') || msg.content.startsWith('[🎤');
     
     let contentHtml;
     if (isCode) {
       // Render code block
       const codeContent = msg.content.replace(/^```\w*\n?/, '').replace(/```$/, '');
       contentHtml = `<pre class="text-[13px] font-mono bg-black/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap"><code>${escapeHtml(codeContent)}</code></pre>`;
+    } else if (msg.content.startsWith('[📎 File:')) {
+      const match = msg.content.match(/^\[📎 File:\s*([^\]]+)\]\(([^)]+)\)$/);
+      if (match) {
+        const fileName = escapeHtml(match[1]);
+        const fileUrl = encodeURI(match[2]);
+        contentHtml = `<a href="${fileUrl}" target="_blank" download class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/10 hover:bg-black/20 transition-colors font-medium text-sm underline decoration-primary"><span class="material-symbols-outlined text-[18px]">attachment</span> ${fileName}</a>`;
+      } else {
+        contentHtml = escapeHtml(msg.content);
+      }
+    } else if (msg.content.startsWith('[🎤 Voice memo')) {
+      const match = msg.content.match(/^\[🎤 Voice memo\s*([^\]]*)\]\(([^)]+)\)$/);
+      if (match) {
+        const duration = escapeHtml(match[1]);
+        const audioUrl = encodeURI(match[2]);
+        contentHtml = `<div class="flex flex-col gap-1"><span class="text-xs opacity-75">🎤 Voice memo ${duration}</span><audio controls src="${audioUrl}" class="max-w-[220px] sm:max-w-[260px] h-8"></audio></div>`;
+      } else {
+        contentHtml = escapeHtml(msg.content);
+      }
+    } else if (msg.content.startsWith('<img') || msg.content.startsWith('<audio') || msg.content.startsWith('<div class="audio')) {
+      // Direct media tags rendered smoothly
+      contentHtml = msg.content;
     } else {
       contentHtml = escapeHtml(msg.content);
     }
@@ -2236,7 +2331,11 @@ document.addEventListener('click', (e) => {
 });
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded', initInbox);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initInbox);
+} else {
+  initInbox();
+}
 </script>
 </body>
 </html>
