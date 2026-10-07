@@ -31,3 +31,11 @@ uvicorn main:app --reload --port 8000
 Serve the HTML files on port 5500 (for example with the VS Code Live Server extension) and open `index.html`. The pages call the API on port 8000 of the same hostname, and the API only accepts requests from `http://127.0.0.1:5500` and `http://localhost:5500` (see the CORS settings in `main.py`).
 
 Tables are created automatically on startup.
+
+## Chat page
+
+`inbox.html` loads `inbox.js` (direct chats, groups, attachments, search, settings) and `inbox-calls.js` (one-to-one voice and video calls).
+
+- Calls use WebRTC with public STUN servers and no relay server, so a call can fail to connect between two very restrictive networks. Browsers only allow camera and microphone access on `localhost`/`127.0.0.1` or over HTTPS.
+- Images and recordings embedded in older messages are decoded once and kept in `media_cache/` (not public, not committed).
+- Every database query costs one network round trip to the database host. If the app feels slow, check how far the database region is from where the API runs.

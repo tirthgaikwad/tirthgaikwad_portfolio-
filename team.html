@@ -1123,6 +1123,13 @@
     
     ws.onmessage = function(event) {
       const msg = JSON.parse(event.data);
+      // A message was deleted (from here or from the Messages page)
+      if (msg.type === 'message_deleted') {
+        const deleted = document.querySelector(`[data-msg-id="${msg.id}"]`);
+        if (deleted) deleted.remove();
+        return;
+      }
+      if (msg.type) return;
       // Skip if this is our own message (already shown optimistically)
       if (msg.sender_id === currentUser?.id) return;
       appendMessage(msg);
@@ -1912,13 +1919,7 @@
       });
       if(res.ok) {
         const team = await res.json();
-        // Create default channels
-        await fetch(`${API_BASE}/api/teams/${team.id}/channels`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ name: 'general', channel_type: 'text' })
-        });
+        // The server creates #general with the team; add the voice channel
         await fetch(`${API_BASE}/api/teams/${team.id}/channels`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

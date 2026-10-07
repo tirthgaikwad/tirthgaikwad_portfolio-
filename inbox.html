@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>ProPartner | Messages</title>
+<script>
+// Ask for the conversation list right away, while styles and scripts are still downloading. inbox.js picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__inboxPrefetch = fetch(apiBase + '/api/conversations', { credentials: 'include' })
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .catch(function () { return null; });
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
@@ -69,6 +79,20 @@
 .call-btn-mute { background: #e5eeff; color: #0b1c30; }
 @keyframes callRing { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(15deg); } }
 .ringing { animation: callRing 0.5s ease-in-out infinite; }
+
+/* ===== Phone layout: show either the list or the open chat ===== */
+@media (max-width: 1023px) {
+  body.chat-open #conversation-pane { display: none; }
+  body:not(.chat-open) #chat-area { display: none; }
+}
+
+/* ===== Message bubbles ===== */
+.msg-bubble a.msg-link { text-decoration: underline; word-break: break-all; }
+.msg-media { display: block; max-width: 260px; max-height: 300px; border-radius: 12px; }
+.msg-system { text-align: center; font-size: 12px; color: #777587; margin: 6px 0; }
+.unread-pill { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #4f46e5; color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10000; box-shadow: 0 8px 24px rgba(0,0,0,0.25); animation: fadeIn 0.2s ease-out; max-width: 90vw; }
+.call-btn.is-off { background: #ba1a1a; color: #fff; }
 
 /* ===== Online Status Dot ===== */
 .online-dot { width: 10px; height: 10px; border-radius: 50%; background: #005338; border: 2px solid white; position: absolute; bottom: 0; right: 0; }
@@ -195,11 +219,7 @@
       <span class="material-symbols-outlined text-[18px]">add_comment</span>
       <span>New Chat</span>
     </button>
-    <button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container shadow-sm transition-all font-label-md text-label-md" onclick="window.showSystemModal('Meet Room', 'Video conferencing will be available in a future update. Stay tuned!', 'alert')">
-      <span class="material-symbols-outlined text-[18px]">video_call</span>
-      <span>Meet Room</span>
-    </button>
-    <button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors" title="Archived Messages" onclick="window.showSystemModal('Archived Messages', 'You have no archived conversations yet.', 'alert')">
+    <button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors" title="Archived Messages" id="archived-toggle-btn" onclick="toggleArchivedView()">
       <span class="material-symbols-outlined text-[20px]">inventory_2</span>
     </button>
   </div>
@@ -211,18 +231,18 @@
 <div class="w-full bg-surface-container-lowest border-t border-outline-variant/30 flex flex-col lg:flex-row h-[calc(100vh-6.5rem)] overflow-hidden">
 
 <!-- ==================== LEFT COLUMN: Conversation Directory ==================== -->
-<aside class="w-full lg:w-[350px] xl:w-[380px] shrink-0 border-r border-outline-variant/30 flex flex-col bg-surface-container-lowest h-full">
+<aside class="w-full lg:w-[350px] xl:w-[380px] shrink-0 border-r border-outline-variant/30 flex flex-col bg-surface-container-lowest h-full" id="conversation-pane">
   <!-- Sidebar Header -->
   <div class="p-space-md border-b border-outline-variant/20 flex items-center justify-between gap-space-xs">
     <div class="flex items-center gap-space-xs">
-      <h1 class="font-headline-md text-headline-md font-bold text-on-surface">Messages</h1>
+      <h1 class="font-headline-md text-headline-md font-bold text-on-surface" id="list-title">Messages</h1>
       <span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold" id="unread-badge" style="display:none;">0 Unread</span>
     </div>
     <div class="flex items-center gap-1">
       <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Create Project Group" onclick="openNewGroupModal()">
         <span class="material-symbols-outlined text-[20px]">group_add</span>
       </button>
-      <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Message Settings" onclick="window.showSystemModal('Message Settings', 'Notification preferences and message settings coming soon!', 'alert')">
+      <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" title="Message Settings" onclick="openSettingsModal()">
         <span class="material-symbols-outlined text-[20px]">tune</span>
       </button>
     </div>
@@ -247,11 +267,6 @@
       <input class="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-transparent focus:border-primary/40 focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/10 rounded-xl text-body-sm font-body-sm text-on-surface placeholder:text-outline transition-all outline-none" placeholder="Search..." type="text" id="conversation-search-input" oninput="filterConversations()"/>
     </div>
   </div>
-  <!-- Category Filter Pills (Groups Only) -->
-  <div id="group-filters" class="hidden px-space-md pt-space-xs pb-space-xs flex items-center gap-1.5 overflow-x-auto no-scrollbar text-nowrap">
-    <button class="px-2.5 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold" type="button">All Groups</button>
-  </div>
-  
   <!-- Conversations List (Direct) -->
   <div class="flex-1 overflow-y-auto divide-y divide-outline-variant/10 px-space-xs pb-space-md" id="contactList">
     <!-- Loading state -->
@@ -286,7 +301,10 @@
   <div class="flex-1 flex flex-col h-full" id="active-chat-container" style="display:none;">
     <!-- Active Chat Header -->
     <header class="h-16 px-space-md border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest shrink-0 shadow-xs z-10">
-      <div class="flex items-center gap-space-sm min-w-0 cursor-pointer" id="chat-header-profile-link">
+      <button class="lg:hidden p-2 -ml-2 mr-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors shrink-0" title="Back to conversations" type="button" onclick="closeActiveChat()">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </button>
+      <div class="flex items-center gap-space-sm min-w-0 cursor-pointer flex-1" id="chat-header-profile-link">
         <div class="relative shrink-0">
           <div class="w-10 h-10 rounded-xl overflow-hidden bg-primary-container flex items-center justify-center text-on-primary font-bold" id="chat-header-avatar"></div>
           <span class="online-dot offline" id="chat-header-online-dot"></span>
@@ -305,10 +323,10 @@
         <button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors" title="Search in conversation" onclick="toggleChatSearch()">
           <span class="material-symbols-outlined text-[20px]">search</span>
         </button>
-        <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="Voice Call" onclick="initiateVoiceCall()">
+        <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="Voice Call" id="voice-call-btn" onclick="startCall('audio')">
           <span class="material-symbols-outlined text-[20px]">call</span>
         </button>
-        <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="Video Meeting" onclick="initiateVideoCall()">
+        <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="Video Call" id="video-call-btn" onclick="startCall('video')">
           <span class="material-symbols-outlined text-[20px]">videocam</span>
         </button>
         <div class="h-5 w-px bg-outline-variant/40 mx-1 hidden sm:block"></div>
@@ -321,19 +339,6 @@
           </button>
           
           <div id="chat-actions-menu" class="hidden absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 overflow-hidden z-50 origin-top-right animate-fade-in py-1">
-            <button onclick="toggleMute()" class="w-full text-left px-4 py-2.5 text-body-sm font-medium text-on-surface hover:bg-surface-container transition-colors flex items-center gap-3">
-              <span id="mute-icon" class="material-symbols-outlined text-[20px]">notifications_off</span>
-              <span id="mute-text">Mute notifications</span>
-            </button>
-            <button onclick="clearChatHistory()" class="w-full text-left px-4 py-2.5 text-body-sm font-medium text-on-surface hover:bg-surface-container transition-colors flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px]">delete_sweep</span>
-              <span>Clear chat history</span>
-            </button>
-            <div class="h-[1px] w-full bg-outline-variant/30 my-1"></div>
-            <button onclick="toggleBlock()" class="w-full text-left px-4 py-2.5 text-body-sm font-medium text-error hover:bg-error/10 transition-colors flex items-center gap-3">
-              <span id="block-icon" class="material-symbols-outlined text-[20px]">block</span>
-              <span id="block-text">Block user</span>
-            </button>
           </div>
         </div>
       </div>
@@ -343,10 +348,19 @@
     <div class="px-space-md py-space-xs bg-surface-container-lowest border-b border-outline-variant/20" id="chat-search-bar" style="display:none;">
       <div class="relative flex items-center">
         <span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span>
-        <input class="w-full pl-9 pr-10 py-2 bg-surface-container-low border border-primary/30 focus:ring-2 focus:ring-primary/10 rounded-xl text-body-sm font-body-sm text-on-surface placeholder:text-outline transition-all outline-none" placeholder="Search in this conversation..." type="text" id="chat-search-input" oninput="searchInChat()"/>
-        <button class="absolute right-2 p-1 text-on-surface-variant hover:text-on-surface" onclick="toggleChatSearch()">
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
+        <input class="w-full pl-9 pr-10 py-2 bg-surface-container-low border border-primary/30 focus:ring-2 focus:ring-primary/10 rounded-xl text-body-sm font-body-sm text-on-surface placeholder:text-outline transition-all outline-none" placeholder="Search in this conversation..." type="text" id="chat-search-input" oninput="searchInChat()" style="padding-right: 9.5rem;"/>
+        <div class="absolute right-2 flex items-center gap-0.5">
+          <span class="text-[11px] text-on-surface-variant font-semibold mr-1" id="chat-search-count"></span>
+          <button class="p-1 text-on-surface-variant hover:text-on-surface" title="Previous match" type="button" onclick="stepChatSearch(-1)">
+            <span class="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+          </button>
+          <button class="p-1 text-on-surface-variant hover:text-on-surface" title="Next match" type="button" onclick="stepChatSearch(1)">
+            <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+          </button>
+          <button class="p-1 text-on-surface-variant hover:text-on-surface" title="Close search" type="button" onclick="toggleChatSearch()">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -367,7 +381,11 @@
     <!-- Chat Composition Bar -->
     <footer class="p-space-sm md:p-space-md bg-surface-container-lowest border-t border-outline-variant/30 shrink-0">
       <div id="blocked-msg-area" class="hidden p-4 text-center text-on-surface-variant text-body-md bg-surface-container-low rounded-xl max-w-4xl mx-auto border border-outline-variant/20">
-        You have blocked this user. Unblock them to send a message.
+        You have blocked this user. <button type="button" class="text-primary font-semibold underline" onclick="toggleBlock()">Unblock</button> to send a message.
+      </div>
+      <div id="upload-progress" class="hidden max-w-4xl mx-auto mb-2 px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/30 text-[12px] text-on-surface-variant">
+        <div class="flex items-center justify-between gap-3 mb-1"><span class="truncate" id="upload-progress-name"></span><span id="upload-progress-percent">0%</span></div>
+        <div class="h-1 rounded-full bg-outline-variant/30 overflow-hidden"><div class="h-full bg-primary transition-all" id="upload-progress-bar" style="width:0%"></div></div>
       </div>
       
       <!-- Voice Recording Bar (hidden by default) -->
@@ -389,7 +407,7 @@
       </div>
       
       <form class="w-full flex flex-col gap-2" id="chat-composer-form">
-        <div class="relative flex items-center bg-surface-container-low rounded-2xl border border-outline-variant/40 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all p-1.5">
+        <div class="relative flex items-end bg-surface-container-low rounded-2xl border border-outline-variant/40 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all p-1.5">
           
           <!-- Emoji Picker (floating above) -->
           <div class="emoji-picker-container" id="emoji-picker">
@@ -407,12 +425,12 @@
             <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-xl transition-colors" title="Attach File" type="button" onclick="document.getElementById('chat-file-input').click()">
               <span class="material-symbols-outlined text-[20px]">attach_file</span>
             </button>
-            <input type="file" id="chat-file-input" style="display:none" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,.rar,.json,.css,.html,.js" onchange="handleFileAttach(event)"/>
+            <input type="file" id="chat-file-input" style="display:none" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.json,.css,.html,.js,.py" multiple onchange="handleFileAttach(event)"/>
             <button class="hidden sm:inline-flex p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-xl transition-colors" title="Insert Code Snippet" type="button" onclick="openCodeSnippetModal()">
               <span class="material-symbols-outlined text-[20px]">code</span>
             </button>
           </div>
-          <input autocomplete="off" class="flex-1 bg-transparent px-3 py-2 text-body-md font-body-md text-on-surface placeholder:text-outline outline-none min-w-0" id="message-input" placeholder="Type a message..." type="text"/>
+          <textarea autocomplete="off" rows="1" maxlength="5000" class="flex-1 bg-transparent px-3 py-2 text-body-md font-body-md text-on-surface placeholder:text-outline outline-none min-w-0 resize-none" style="max-height: 9rem;" id="message-input" placeholder="Type a message..."></textarea>
           <div class="flex items-center gap-1 pr-1 shrink-0">
             <button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-xl transition-colors" title="Record Voice Memo" type="button" id="voice-record-btn" onclick="toggleVoiceRecording()">
               <span class="material-symbols-outlined text-[20px]">mic</span>
@@ -424,12 +442,12 @@
         </div>
         <div class="flex items-center justify-between px-space-xs text-[11px] text-on-surface-variant font-label-sm">
           <div class="flex items-center gap-3">
-            <span class="flex items-center gap-1 text-tertiary">
+            <span class="flex items-center gap-1 text-tertiary" id="connection-status">
               <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
-              End-to-end campus network
+              <span>Connected</span>
             </span>
             <span class="hidden md:inline text-outline">•</span>
-            <span class="hidden md:inline text-outline">Press Enter to send</span>
+            <span class="hidden md:inline text-outline" id="send-hint">Press Enter to send, Shift+Enter for a new line</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-primary font-semibold">ProPartner Collab Sync</span>
@@ -537,68 +555,96 @@
   </div>
 </div>
 
-<!-- ==================== VOICE CALL MODAL ==================== -->
-<div id="voice-call-modal" class="modal-overlay">
+<!-- ==================== CALL WINDOW ==================== -->
+<div id="call-modal" class="modal-overlay">
+  <div class="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-2xl border border-outline-variant/30 overflow-hidden" style="animation: slideDown 0.3s ease;">
+    <div class="relative bg-slate-900 aspect-video flex items-center justify-center">
+      <video id="call-remote-video" autoplay playsinline class="absolute inset-0 w-full h-full object-contain" style="display:none;"></video>
+      <div class="text-center relative" id="call-identity">
+        <div class="call-avatar mx-auto mb-3" id="call-avatar"></div>
+        <h3 class="font-headline-sm text-headline-sm font-bold text-white" id="call-name">User</h3>
+        <p class="text-[13px] text-slate-300 mt-1" id="call-status">Calling...</p>
+      </div>
+      <video id="call-local-video" autoplay playsinline muted class="absolute bottom-3 right-3 w-32 h-24 rounded-lg bg-slate-800 border-2 border-slate-600 object-cover" style="display:none;"></video>
+    </div>
+    <div class="p-4 flex items-center justify-center gap-4 bg-surface-container-lowest">
+      <button class="call-btn call-btn-mute" id="call-mute-btn" title="Mute microphone" type="button" onclick="toggleCallMute()">
+        <span class="material-symbols-outlined text-[22px]">mic</span>
+      </button>
+      <button class="call-btn call-btn-mute" id="call-camera-btn" title="Turn camera off" type="button" onclick="toggleCallCamera()">
+        <span class="material-symbols-outlined text-[22px]">videocam</span>
+      </button>
+      <button class="call-btn call-btn-mute" id="call-screen-btn" title="Share screen" type="button" onclick="toggleScreenShare()">
+        <span class="material-symbols-outlined text-[22px]">screen_share</span>
+      </button>
+      <button class="call-btn call-btn-mute" id="call-speaker-btn" title="Mute speaker" type="button" onclick="toggleCallSpeaker()">
+        <span class="material-symbols-outlined text-[22px]">volume_up</span>
+      </button>
+      <button class="call-btn call-btn-reject" title="End call" type="button" onclick="hangUpCall()">
+        <span class="material-symbols-outlined text-[22px]">call_end</span>
+      </button>
+    </div>
+    <p class="text-center text-[12px] text-outline pb-3" id="call-timer">00:00</p>
+  </div>
+</div>
+
+<!-- ==================== INCOMING CALL ==================== -->
+<div id="incoming-call-modal" class="modal-overlay">
   <div class="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm border border-outline-variant/30" style="animation: slideDown 0.3s ease;">
     <div class="call-modal-content">
-      <div class="call-avatar" id="voice-call-avatar">
-        <span class="material-symbols-outlined text-on-primary text-[32px]">person</span>
-      </div>
-      <h3 class="font-headline-md text-headline-md font-bold text-on-surface" id="voice-call-name">User</h3>
-      <p class="call-status" id="voice-call-status">
-        <span class="material-symbols-outlined text-[16px] ringing align-middle">call</span>
-        Calling...
-      </p>
+      <div class="call-avatar" id="incoming-call-avatar"></div>
+      <h3 class="font-headline-md text-headline-md font-bold text-on-surface" id="incoming-call-name">User</h3>
+      <p class="call-status" id="incoming-call-kind">Incoming call</p>
       <div class="call-actions">
-        <button class="call-btn call-btn-mute" title="Mute" onclick="toggleCallMute(this)">
-          <span class="material-symbols-outlined text-[24px]">mic</span>
-        </button>
-        <button class="call-btn call-btn-mute" title="Speaker" onclick="toggleCallSpeaker(this)">
-          <span class="material-symbols-outlined text-[24px]">volume_up</span>
-        </button>
-        <button class="call-btn call-btn-reject" title="End Call" onclick="endCall('voice')">
+        <button class="call-btn call-btn-reject" title="Decline" type="button" onclick="declineIncomingCall()">
           <span class="material-symbols-outlined text-[24px]">call_end</span>
         </button>
+        <button class="call-btn call-btn-accept" title="Accept" type="button" onclick="acceptIncomingCall()">
+          <span class="material-symbols-outlined text-[24px] ringing">call</span>
+        </button>
       </div>
-      <p class="text-[12px] text-outline mt-6" id="voice-call-timer">00:00</p>
     </div>
   </div>
 </div>
 
-<!-- ==================== VIDEO CALL MODAL ==================== -->
-<div id="video-call-modal" class="modal-overlay">
-  <div class="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-md border border-outline-variant/30 overflow-hidden" style="animation: slideDown 0.3s ease;">
-    <div class="relative bg-slate-900 aspect-video flex items-center justify-center">
-      <div class="text-center">
-        <div class="call-avatar mx-auto mb-3" id="video-call-avatar" style="width:64px;height:64px;">
-          <span class="material-symbols-outlined text-on-primary text-[28px]">person</span>
-        </div>
-        <h3 class="font-headline-sm text-headline-sm font-bold text-white" id="video-call-name">User</h3>
-        <p class="text-[13px] text-slate-400 mt-1" id="video-call-status">
-          <span class="material-symbols-outlined text-[14px] ringing align-middle">videocam</span>
-          Connecting video...
-        </p>
-      </div>
-      <!-- Self-view pip -->
-      <div class="absolute bottom-3 right-3 w-28 h-20 rounded-lg bg-slate-800 border-2 border-slate-600 flex items-center justify-center overflow-hidden">
-        <span class="material-symbols-outlined text-slate-500 text-[24px]">videocam</span>
-      </div>
+<!-- ==================== SETTINGS ==================== -->
+<div id="settings-modal" class="modal-overlay">
+  <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-xl w-full max-w-md border border-outline-variant/30" style="animation: slideDown 0.3s ease;">
+    <h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-4">Message Settings</h3>
+    <div class="flex flex-col gap-3">
+      <label class="flex items-center justify-between gap-4 p-3 rounded-xl bg-surface-container-low cursor-pointer">
+        <span><span class="block font-label-md text-label-md text-on-surface font-semibold">Notification sound</span><span class="block text-[12px] text-on-surface-variant">Play a sound when a new message arrives.</span></span>
+        <input type="checkbox" id="setting-sound" class="w-5 h-5 accent-primary" onchange="saveSettingsFromModal()"/>
+      </label>
+      <label class="flex items-center justify-between gap-4 p-3 rounded-xl bg-surface-container-low cursor-pointer">
+        <span><span class="block font-label-md text-label-md text-on-surface font-semibold">Desktop notifications</span><span class="block text-[12px] text-on-surface-variant">Show a pop-up for new messages while this tab is in the background.</span></span>
+        <input type="checkbox" id="setting-desktop" class="w-5 h-5 accent-primary" onchange="saveSettingsFromModal()"/>
+      </label>
+      <label class="flex items-center justify-between gap-4 p-3 rounded-xl bg-surface-container-low cursor-pointer">
+        <span><span class="block font-label-md text-label-md text-on-surface font-semibold">Press Enter to send</span><span class="block text-[12px] text-on-surface-variant">When off, Enter adds a new line and Ctrl+Enter sends.</span></span>
+        <input type="checkbox" id="setting-enter" class="w-5 h-5 accent-primary" onchange="saveSettingsFromModal()"/>
+      </label>
     </div>
-    <div class="p-4 flex items-center justify-center gap-4 bg-surface-container-lowest">
-      <button class="call-btn call-btn-mute" title="Mute" onclick="toggleCallMute(this)">
-        <span class="material-symbols-outlined text-[22px]">mic</span>
-      </button>
-      <button class="call-btn call-btn-mute" title="Toggle Camera" onclick="toggleCallCamera(this)">
-        <span class="material-symbols-outlined text-[22px]">videocam</span>
-      </button>
-      <button class="call-btn call-btn-mute" title="Screen Share">
-        <span class="material-symbols-outlined text-[22px]">screen_share</span>
-      </button>
-      <button class="call-btn call-btn-reject" title="End Call" onclick="endCall('video')">
-        <span class="material-symbols-outlined text-[22px]">call_end</span>
-      </button>
+    <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-outline-variant/20">
+      <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-lg font-label-md text-label-md text-on-primary bg-primary hover:bg-primary-container shadow-sm transition-colors">Done</button>
     </div>
-    <p class="text-center text-[12px] text-outline pb-3" id="video-call-timer">00:00</p>
+  </div>
+</div>
+
+<!-- ==================== ADD GROUP MEMBER ==================== -->
+<div id="add-member-modal" class="modal-overlay">
+  <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-xl w-full max-w-md border border-outline-variant/30" style="animation: slideDown 0.3s ease;">
+    <h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-4">Add Member</h3>
+    <div class="relative mb-4">
+      <span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">search</span>
+      <input class="w-full pl-9 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 rounded-xl text-body-md font-body-md text-on-surface placeholder:text-outline transition-all outline-none" placeholder="Search by name..." type="text" id="add-member-search" oninput="searchAddMemberUsers()"/>
+    </div>
+    <div class="max-h-64 overflow-y-auto space-y-1" id="add-member-user-list">
+      <p class="text-center text-on-surface-variant font-body-sm py-4">Type a name to search...</p>
+    </div>
+    <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-outline-variant/20">
+      <button type="button" onclick="closeAddMemberModal()" class="px-4 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors">Close</button>
+    </div>
   </div>
 </div>
 
@@ -631,1880 +677,8 @@
 </div>
 </footer>
 
-<!-- ==================== INBOX APPLICATION ENGINE ==================== -->
-<script>
-const currentUserId = parseInt(localStorage.getItem('currentUserId'));
-if (!currentUserId) { window.location.href = 'login.html'; }
-
-let contacts = {};
-let allMessages = [];
-let activeContactId = null;
-let ws = null;
-let globalProfiles = {};
-let chatActionsState = { muted: [], blocked: [] };
-let onlineUserIds = new Set();
-
-// Teams state
-let currentTab = 'direct';
-let myTeams = [];
-let activeTeamId = null;
-let activeChannelId = null;
-let teamChannels = {}; 
-let allTeamMessages = {};
-let teamWs = null;
-
-// Typing state
-let typingTimeout = null;
-let isTyping = false;
-let typingIndicatorTimeout = null;
-
-// Voice recording state
-let mediaRecorder = null;
-let audioChunks = [];
-let recordingInterval = null;
-let recordingSeconds = 0;
-
-// Call state
-let callTimerInterval = null;
-let callSeconds = 0;
-
-// ===== EMOJI DATA =====
-const emojiData = {
-  'Smileys': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','😮‍💨','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥴','😵','🤯','🥳','🥸','😎','🤓','🧐'],
-  'Gestures': ['👋','🤚','🖐️','✋','🖖','🫱','🫲','🫳','🫴','👌','🤌','🤏','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','🫵','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏'],
-  'Hearts': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','💟'],
-  'Objects': ['💻','⌨️','🖥️','📱','📲','☎️','📞','📟','📠','🔋','🔌','💡','🔦','📷','📸','📹','🎥','📽️','🎬','📺','📻','🎙️','🎚️','🎛️','⏱️','⏰','📡','🔬','🔭','📐','📏','✂️','📎','📌','📍','🗂️','📁','📂','📊','📈','📉','📋','📝','✏️','🖊️','🖋️','✒️'],
-  'Nature': ['🌸','💐','🌷','🌹','🥀','🌺','🌻','🌼','🌱','🪴','🌲','🌳','🌴','🌵','🌾','🌿','☘️','🍀','🍁','🍂','🍃','🍄','🌰','🦀','🦞','🦐','🦑','🐙','🦈','🐳','🐋','🐬','🦭','🐟','🐠','🐡','🦇','🐝','🐛','🦋','🐌','🐞','🐜','🪰','🪲'],
-  'Food': ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🍆','🌶️','🫑','🥒','🥬','🥦','🧄','🧅','🥔','🍠','🫘','🥜','🌰','🍞','🥐','🥖','🫓','🥨','🥯','🧇','🥞','🧈','🍕','🍔','🍟','🌭','🥪','🌮','🌯','🫔','🥙','🧆','🥚','🍳','🥘','🍲'],
-  'Flags': ['🏳️','🏴','🏁','🚩','🎌','🏴‍☠️','🇮🇳','🇺🇸','🇬🇧','🇯🇵','🇰🇷','🇨🇳','🇫🇷','🇩🇪','🇧🇷','🇦🇺','🇨🇦','🇮🇹','🇪🇸','🇷🇺','🇲🇽','🇸🇦','🇦🇪','🇸🇬']
-};
-
-// Helper for fetching with a timeout to prevent hanging
-function timeoutFetch(url, options = {}, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: controller.signal })
-    .finally(() => clearTimeout(timer));
-}
-
-function getMessagePreview(content) {
-  if (!content) return '';
-  if (content.startsWith('<img') || content.startsWith('data:image')) return '📷 Photo';
-  if (content.startsWith('<div class="audio') || content.startsWith('<audio') || content.startsWith('[🎤')) return '🎤 Voice memo';
-  if (content.startsWith('[📎')) return '📎 Attachment';
-  if (content.startsWith('```')) return '💻 Code snippet';
-  const text = content.replace(/<[^>]*>/g, '').trim();
-  return text.length > 50 ? text.substring(0, 50) + '...' : text;
-}
-
-// ===== INITIALIZATION =====
-async function initInbox() {
-  // 1. FAST CACHE HYDRATION: render contacts immediately if cached so there is zero initial delay
-  try {
-    const cachedProfiles = localStorage.getItem('cachedProfiles');
-    const cachedContacts = localStorage.getItem('cachedContacts');
-    const cachedTeams = localStorage.getItem('cachedTeams');
-    if (cachedProfiles) {
-      globalProfiles = JSON.parse(cachedProfiles);
-      const onlineText = document.getElementById('online-count-text');
-      if (onlineText) onlineText.textContent = `${Object.keys(globalProfiles).length} Collaborators`;
-    }
-    if (cachedContacts) {
-      contacts = JSON.parse(cachedContacts);
-      renderContacts();
-    }
-    if (cachedTeams) {
-      myTeams = JSON.parse(cachedTeams);
-    }
-  } catch (e) {
-    console.warn('Cache load warning:', e);
-  }
-
-  // 2. Setup real-time and handlers
-  setupWebSocket();
-  initEmojiPicker();
-  pollOnlineStatus();
-  setInterval(pollOnlineStatus, 15000);
-
-  const msgInput = document.getElementById('message-input');
-  if (msgInput) {
-    msgInput.addEventListener('input', handleTypingInput);
-    msgInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        document.getElementById('chat-composer-form').dispatchEvent(new Event('submit', { cancelable: true }));
-      }
-    });
-  }
-
-  // 3. PARALLEL BACKGROUND FETCH: Fetch all data sources concurrently with timeout protection
-  try {
-    await Promise.allSettled([
-      fetchAllProfiles(),
-      fetchMessages(),
-      fetchTeams(),
-      fetchChatActionsState()
-    ]);
-  } catch (e) {
-    console.error('Parallel fetch error:', e);
-  } finally {
-    // Rebuild and render contacts with latest data
-    buildContacts();
-    renderContacts();
-  }
-
-  // 4. Auto-select from URL param
-  const urlParams = new URLSearchParams(window.location.search);
-  const autoUser = urlParams.get('user');
-  if (autoUser) {
-    const uid = parseInt(autoUser);
-    if (uid !== currentUserId) {
-      if (!contacts[uid]) {
-        const profile = globalProfiles[uid];
-        contacts[uid] = {
-          id: uid,
-          name: profile ? profile.name : `User #${uid}`,
-          profile_pic: profile ? profile.profile_pic : '',
-          college_name: profile ? profile.college_name : '',
-          department: profile ? profile.department : '',
-          skills: profile ? profile.skills : '',
-          lastMessage: '',
-          timestamp: ''
-        };
-        renderContacts();
-      }
-      selectContact(uid);
-    }
-  }
-}
-
-async function fetchAllProfiles() {
-  try {
-    const res = await timeoutFetch(`${API_BASE}/api/profiles`, { credentials: 'include' });
-    if (res.ok) {
-      const profiles = await res.json();
-      profiles.forEach(p => { globalProfiles[p.id] = p; });
-      try { localStorage.setItem('cachedProfiles', JSON.stringify(globalProfiles)); } catch(e){}
-      const onlineText = document.getElementById('online-count-text');
-      if (onlineText) onlineText.textContent = `${profiles.length} Collaborators`;
-    }
-  } catch (err) {
-    console.warn('fetchAllProfiles error or timeout:', err);
-  }
-}
-
-async function fetchChatActionsState() {
-  try {
-    const res = await timeoutFetch(`${API_BASE}/api/chat/actions/state`, { credentials: 'include' });
-    if (res.ok) {
-      chatActionsState = await res.json();
-    }
-  } catch (err) {
-    console.warn('fetchChatActionsState error or timeout:', err);
-  }
-}
-
-async function fetchMessages() {
-  try {
-    const res = await timeoutFetch(`${API_BASE}/api/messages/${currentUserId}`, { credentials: 'include' }, 12000);
-    if (res.ok) {
-      allMessages = await res.json();
-    }
-  } catch (err) {
-    console.warn('fetchMessages error or timeout:', err);
-  }
-}
-
-function buildContacts() {
-  // First, identify users we have chatted with
-  const chattedUserIds = new Set();
-  allMessages.forEach(m => {
-    const otherId = m.sender_id === currentUserId ? m.receiver_id : m.sender_id;
-    chattedUserIds.add(otherId);
-  });
-
-  // Only create contact entries for those users
-  chattedUserIds.forEach(id => {
-    const profile = globalProfiles[id];
-    contacts[id] = {
-      id: id,
-      name: profile ? profile.name : `User #${id}`,
-      profile_pic: profile ? profile.profile_pic : '',
-      college_name: profile ? profile.college_name : '',
-      department: profile ? profile.department : '',
-      skills: profile ? profile.skills : '',
-      lastMessage: '',
-      timestamp: ''
-    };
-  });
-
-  allMessages.forEach(m => {
-    const otherId = m.sender_id === currentUserId ? m.receiver_id : m.sender_id;
-    if (contacts[otherId]) {
-      if (!contacts[otherId].timestamp || new Date(m.timestamp) > new Date(contacts[otherId].timestamp)) {
-        const preview = getMessagePreview(m.content);
-        contacts[otherId].lastMessage = m.sender_id === currentUserId ? `You: ${preview}` : preview;
-        contacts[otherId].timestamp = m.timestamp;
-      }
-    }
-  });
-
-  try {
-    localStorage.setItem('cachedContacts', JSON.stringify(contacts));
-  } catch(e) {}
-}
-
-// ===== ONLINE STATUS =====
-async function pollOnlineStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/api/users/online`, { credentials: 'include' });
-    if (res.ok) {
-      const data = await res.json();
-      onlineUserIds = new Set(data.online_user_ids || []);
-      updateOnlineIndicators();
-    }
-  } catch (e) { /* silent */ }
-}
-
-function updateOnlineIndicators() {
-  // Update chat header online dot
-  if (activeContactId && currentTab === 'direct') {
-    const dot = document.getElementById('chat-header-online-dot');
-    const infoEl = document.getElementById('chat-header-info');
-    if (dot) {
-      if (onlineUserIds.has(activeContactId)) {
-        dot.classList.remove('offline');
-        // Show "Online" status
-        const c = contacts[activeContactId];
-        const baseInfo = [c.college_name, c.department].filter(Boolean).join(' • ');
-        infoEl.innerHTML = `${baseInfo ? baseInfo + ' · ' : ''}<span class="text-tertiary font-semibold">Online</span>`;
-      } else {
-        dot.classList.add('offline');
-        const c = contacts[activeContactId];
-        infoEl.textContent = [c.college_name, c.department].filter(Boolean).join(' • ') || '';
-      }
-    }
-  }
-}
-
-// ===== TYPING INDICATOR =====
-function handleTypingInput() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  
-  const targetId = currentTab === 'direct' ? activeContactId : null;
-  if (!targetId) return;
-
-  if (!isTyping) {
-    isTyping = true;
-    ws.send(JSON.stringify({ type: 'typing', to: targetId, typing: true }));
-  }
-
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    isTyping = false;
-    ws.send(JSON.stringify({ type: 'typing', to: targetId, typing: false }));
-  }, 2000);
-}
-
-function showTypingIndicator(fromUserId) {
-  if (currentTab === 'direct' && activeContactId === fromUserId) {
-    const indicator = document.getElementById('typing-indicator');
-    const avatar = document.getElementById('typing-avatar');
-    const nameEl = document.getElementById('typing-name');
-    const headerTyping = document.getElementById('chat-header-typing');
-    const headerInfo = document.getElementById('chat-header-info');
-    
-    const c = contacts[fromUserId];
-    if (c) {
-      avatar.innerHTML = c.profile_pic
-        ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
-        : `<span class="text-[10px] font-bold">${getInitials(c.name)}</span>`;
-      nameEl.textContent = `${c.name} is typing`;
-    }
-    
-    indicator.classList.add('active');
-    if (headerTyping) headerTyping.classList.remove('hidden');
-    if (headerInfo) headerInfo.classList.add('hidden');
-    
-    const scrollArea = document.getElementById('messages-scroll-area');
-    scrollArea.scrollTop = scrollArea.scrollHeight;
-  }
-}
-
-function hideTypingIndicator(fromUserId) {
-  if (currentTab === 'direct' && activeContactId === fromUserId) {
-    const indicator = document.getElementById('typing-indicator');
-    const headerTyping = document.getElementById('chat-header-typing');
-    const headerInfo = document.getElementById('chat-header-info');
-    
-    indicator.classList.remove('active');
-    if (headerTyping) headerTyping.classList.add('hidden');
-    if (headerInfo) headerInfo.classList.remove('hidden');
-  }
-}
-
-// ===== TEAMS & GROUPS DATA =====
-async function fetchTeams() {
-  try {
-    const res = await timeoutFetch(`${API_BASE}/api/teams`, { credentials: 'include' }, 8000);
-    if (res.ok) {
-      myTeams = await res.json();
-      try { localStorage.setItem('cachedTeams', JSON.stringify(myTeams)); } catch(e){}
-      if (currentTab === 'groups') {
-        renderGroups();
-      }
-    }
-  } catch (err) { console.warn('fetchTeams error or timeout:', err); }
-}
-
-function switchInboxTab(tab) {
-  currentTab = tab;
-  const tabDirect = document.getElementById('tab-direct');
-  const tabGroups = document.getElementById('tab-groups');
-  const listDirect = document.getElementById('contactList');
-  const listGroups = document.getElementById('groupsList');
-  const groupFilters = document.getElementById('group-filters');
-  
-  if (tab === 'direct') {
-    tabDirect.className = 'py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold';
-    tabGroups.className = 'py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5';
-    listDirect.classList.remove('hidden');
-    listGroups.classList.add('hidden');
-    if (groupFilters) groupFilters.classList.add('hidden');
-    
-    if (activeContactId) {
-       selectContact(activeContactId);
-    } else {
-       document.getElementById('empty-chat-state').style.display = 'flex';
-       document.getElementById('active-chat-container').style.display = 'none';
-    }
-  } else {
-    tabGroups.className = 'py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold';
-    tabDirect.className = 'py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5';
-    listGroups.classList.remove('hidden');
-    listDirect.classList.add('hidden');
-    if (groupFilters) groupFilters.classList.remove('hidden');
-    
-    renderGroups();
-    
-    if (activeTeamId) {
-       selectTeam(activeTeamId);
-    } else {
-       document.getElementById('empty-chat-state').style.display = 'flex';
-       document.getElementById('active-chat-container').style.display = 'none';
-    }
-  }
-}
-
-function renderGroups() {
-  const list = document.getElementById('groupsList');
-  if (myTeams.length === 0) {
-    list.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
-        <span class="material-symbols-outlined text-[40px] text-outline mb-3">groups</span>
-        <p class="font-body-md text-body-md">No groups yet.</p>
-        <p class="font-body-sm text-body-sm text-outline mt-1">Create or join a team to get started!</p>
-      </div>`;
-    return;
-  }
-  
-  list.innerHTML = myTeams.map(t => {
-    const isActive = activeTeamId === t.id;
-    const avatarHtml = t.avatar_url
-      ? `<img src="${escapeHtml(t.avatar_url)}" alt="${escapeHtml(t.name)}" class="w-full h-full object-cover"/>`
-      : `<span class="font-bold text-sm">${getInitials(t.name)}</span>`;
-      
-    return `
-      <div class="group relative p-space-sm rounded-xl ${isActive ? 'bg-primary-fixed/30 hover:bg-primary-fixed/40' : 'hover:bg-surface-container-low'} transition-all cursor-pointer mt-1" data-team-id="${t.id}" onclick="selectTeam(${t.id})">
-        <div class="flex items-start gap-space-sm">
-          <div class="relative shrink-0">
-            <div class="w-12 h-12 rounded-xl bg-surface-container-high overflow-hidden flex items-center justify-center text-on-surface-variant font-headline-sm">
-              ${avatarHtml}
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-1">
-              <span class="font-headline-sm text-headline-sm ${isActive ? 'font-bold' : 'font-semibold'} text-on-surface truncate">${escapeHtml(t.name)}</span>
-            </div>
-            ${t.description ? `<div class="flex items-center gap-1 text-[12px] text-on-surface-variant mt-0.5"><span class="truncate">${escapeHtml(t.description)}</span></div>` : ''}
-          </div>
-        </div>
-        ${isActive ? '<div class="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full"></div>' : ''}
-      </div>`;
-  }).join('');
-}
-
-async function selectTeam(id) {
-  activeTeamId = id;
-  renderGroups();
-  
-  if (!teamChannels[id]) {
-    try {
-      const res = await fetch(`${API_BASE}/api/teams/${id}/channels`, { credentials: 'include' });
-      if (res.ok) {
-        teamChannels[id] = await res.json();
-      } else {
-        teamChannels[id] = [];
-      }
-    } catch (e) { console.error(e); teamChannels[id] = []; }
-  }
-  
-  const channels = teamChannels[id] || [];
-  if (channels.length > 0) {
-    let defaultChan = channels.find(c => c.name.toLowerCase() === 'general') || channels[0];
-    await selectChannel(defaultChan.id);
-  } else {
-    document.getElementById('empty-chat-state').style.display = 'flex';
-    document.getElementById('active-chat-container').style.display = 'none';
-    updateTeamInfoPanel();
-  }
-}
-
-async function selectChannel(channelId) {
-  activeChannelId = channelId;
-  
-  // Show loading state immediately to prevent UI freeze
-  document.getElementById('empty-chat-state').style.display = 'none';
-  document.getElementById('active-chat-container').style.display = 'flex';
-  
-  const scrollArea = document.getElementById('messages-scroll-area');
-  if (!allTeamMessages[channelId]) {
-    scrollArea.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
-        <span class="material-symbols-outlined text-[48px] animate-spin text-outline mb-3">refresh</span>
-        <p class="font-body-md text-body-md">Loading messages...</p>
-      </div>`;
-    
-    // Also update info panel skeleton if team is selected
-    updateTeamInfoPanel();
-    
-    try {
-      const res = await fetch(`${API_BASE}/api/channels/${channelId}/messages`, { credentials: 'include' });
-      if (res.ok) {
-        allTeamMessages[channelId] = await res.json();
-      } else {
-        allTeamMessages[channelId] = [];
-      }
-    } catch (e) { console.error(e); allTeamMessages[channelId] = []; }
-  }
-  
-  setupTeamWebSocket(channelId);
-  renderTeamChat();
-  updateTeamInfoPanel();
-}
-
-
-// ===== RENDERING =====
-function getInitials(name) {
-  if (!name || name.startsWith('User #')) return name ? name.split('#')[1] : '?';
-  const parts = name.trim().split(' ');
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return parts[0].substring(0, 2).toUpperCase();
-}
-
-function escapeHtml(str) {
-  return String(str === null || str === undefined ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-}
-
-function formatTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  const diff = now - d;
-  const oneDay = 86400000;
-
-  if (diff < oneDay && d.getDate() === now.getDate()) {
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else if (diff < 7 * oneDay) {
-    return d.toLocaleDateString([], { weekday: 'short' });
-  } else {
-    return d.toLocaleDateString([], { day: '2-digit', month: 'short' });
-  }
-}
-
-// ===== TICK ICONS =====
-function getTickHtml(msg) {
-  if (msg.sender_id !== currentUserId) return ''; // Only show ticks on sent messages
-  
-  const status = msg.message_status || 'sent';
-  
-  if (status === 'sending') {
-    return `<span class="material-symbols-outlined text-[13px] text-outline opacity-60 animate-spin" title="Sending...">progress_activity</span>`;
-  } else if (status === 'failed') {
-    return `<span class="material-symbols-outlined text-[14px] text-error" title="Failed to send">error</span>`;
-  } else if (status === 'read') {
-    // Blue double tick
-    return `<span class="material-symbols-outlined text-[14px]" style="color: #3b82f6;">done_all</span>`;
-  } else if (status === 'delivered') {
-    // Grey double tick
-    return `<span class="material-symbols-outlined text-[14px] text-outline">done_all</span>`;
-  } else {
-    // Single grey tick (sent)
-    return `<span class="material-symbols-outlined text-[14px] text-outline">check</span>`;
-  }
-}
-
-function renderContacts() {
-  const list = document.getElementById('contactList');
-  const sorted = Object.values(contacts).sort((a, b) => {
-    if (!a.timestamp) return 1;
-    if (!b.timestamp) return -1;
-    return new Date(b.timestamp) - new Date(a.timestamp);
-  });
-
-  if (sorted.length === 0) {
-    list.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
-        <span class="material-symbols-outlined text-[40px] text-outline mb-3">chat_bubble_outline</span>
-        <p class="font-body-md text-body-md">No conversations yet.</p>
-        <p class="font-body-sm text-body-sm text-outline mt-1">Start a new chat to get going!</p>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = sorted.map(c => {
-    const isActive = activeContactId === c.id;
-    const isOnline = onlineUserIds.has(c.id);
-    const avatarHtml = c.profile_pic
-      ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
-      : `<span class="font-bold text-sm">${getInitials(c.name)}</span>`;
-
-    return `
-      <div class="group relative p-space-sm rounded-xl ${isActive ? 'bg-primary-fixed/30 hover:bg-primary-fixed/40' : 'hover:bg-surface-container-low'} transition-all cursor-pointer mt-1" data-contact-id="${c.id}" onclick="selectContact(${c.id})">
-        <div class="flex items-start gap-space-sm">
-          <div class="relative shrink-0">
-            <div class="w-12 h-12 rounded-xl bg-surface-container-high overflow-hidden flex items-center justify-center text-on-surface-variant font-headline-sm">
-              ${avatarHtml}
-            </div>
-            <span class="online-dot ${isOnline ? '' : 'offline'}"></span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-1">
-              <span class="font-headline-sm text-headline-sm ${isActive ? 'font-bold' : 'font-semibold'} text-on-surface truncate">${escapeHtml(c.name)}</span>
-              <span class="font-label-sm text-[11px] ${isActive ? 'text-primary font-semibold' : 'text-outline'} shrink-0">${formatTime(c.timestamp)}</span>
-            </div>
-            ${c.college_name ? `<div class="flex items-center gap-1 text-[12px] text-on-surface-variant mt-0.5"><span class="truncate">${escapeHtml(c.college_name)}${c.department ? ' • ' + escapeHtml(c.department) : ''}</span></div>` : ''}
-            <div class="flex items-center justify-between gap-1 mt-1 text-body-sm text-on-surface-variant">
-              <p class="truncate">${c.lastMessage ? escapeHtml(c.lastMessage) : '<span class="italic">New connection</span>'}</p>
-            </div>
-          </div>
-        </div>
-        ${isActive ? '<div class="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full"></div>' : ''}
-      </div>`;
-  }).join('');
-}
-
-function selectContact(id) {
-  activeContactId = id;
-  renderContacts();
-  renderChat();
-  updateInfoPanel();
-  markMessagesAsRead(id);
-
-  document.getElementById('empty-chat-state').style.display = 'none';
-  document.getElementById('active-chat-container').style.display = 'flex';
-  
-  // Update online status immediately
-  updateOnlineIndicators();
-}
-
-// ===== MARK MESSAGES AS READ =====
-async function markMessagesAsRead(contactId) {
-  try {
-    await fetch(`${API_BASE}/api/messages/read/${contactId}`, {
-      method: 'POST',
-      credentials: 'include'
-    });
-  } catch (e) { /* silent */ }
-}
-
-function renderChat() {
-  if (!activeContactId) return;
-  const c = contacts[activeContactId];
-  const scrollArea = document.getElementById('messages-scroll-area');
-
-  // Update header
-  const avatarEl = document.getElementById('chat-header-avatar');
-  if (c.profile_pic) {
-    avatarEl.innerHTML = `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`;
-  } else {
-    avatarEl.innerHTML = `<span class="text-on-primary font-bold">${getInitials(c.name)}</span>`;
-  }
-  document.getElementById('chat-header-name').textContent = c.name;
-  
-  // Set info with online status
-  const infoEl = document.getElementById('chat-header-info');
-  const baseInfo = [c.college_name, c.department].filter(Boolean).join(' • ');
-  if (onlineUserIds.has(c.id)) {
-    infoEl.innerHTML = `${baseInfo ? baseInfo + ' · ' : ''}<span class="text-tertiary font-semibold">Online</span>`;
-    document.getElementById('chat-header-online-dot').classList.remove('offline');
-  } else {
-    infoEl.textContent = baseInfo || '';
-    document.getElementById('chat-header-online-dot').classList.add('offline');
-  }
-  
-  document.getElementById('chat-header-profile-link').onclick = () => { window.location.href = `profile.html?id=${c.id}`; };
-  document.getElementById('message-input').placeholder = `Message ${c.name}...`;
-
-  // Filter messages for this conversation
-  const chatMsgs = allMessages.filter(m =>
-    (m.sender_id === currentUserId && m.receiver_id === activeContactId) ||
-    (m.receiver_id === currentUserId && m.sender_id === activeContactId)
-  ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  if (chatMsgs.length === 0) {
-    scrollArea.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
-        <span class="material-symbols-outlined text-[48px] text-outline mb-3">waving_hand</span>
-        <p class="font-body-md text-body-md">No messages yet.</p>
-        <p class="font-body-sm text-body-sm text-outline mt-1">Say hi to ${escapeHtml(c.name)}!</p>
-      </div>`;
-    return;
-  }
-
-  // Group messages by date
-  let lastDate = '';
-  let html = '';
-  chatMsgs.forEach(msg => {
-    const d = new Date(msg.timestamp);
-    const dateStr = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    if (dateStr !== lastDate) {
-      lastDate = dateStr;
-      html += `
-        <div class="flex items-center justify-center my-space-xs">
-          <div class="px-space-sm py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-sm text-label-sm border border-outline-variant/30 shadow-xs">${dateStr}</div>
-        </div>`;
-    }
-
-    const isSent = msg.sender_id === currentUserId;
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const tickHtml = getTickHtml(msg);
-    
-    // Check message content format
-    const isCode = msg.content.startsWith('```');
-    
-    let contentHtml;
-    if (isCode) {
-      // Render code block
-      const codeContent = msg.content.replace(/^```\w*\n?/, '').replace(/```$/, '');
-      contentHtml = `<pre class="text-[13px] font-mono bg-black/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap"><code>${escapeHtml(codeContent)}</code></pre>`;
-    } else if (msg.content.startsWith('[📎 File:')) {
-      const match = msg.content.match(/^\[📎 File:\s*([^\]]+)\]\(([^)]+)\)$/);
-      if (match) {
-        const fileName = escapeHtml(match[1]);
-        const fileUrl = escapeHtml(safeUrl(match[2]));
-        contentHtml = `<a href="${fileUrl}" target="_blank" download class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/10 hover:bg-black/20 transition-colors font-medium text-sm underline decoration-primary"><span class="material-symbols-outlined text-[18px]">attachment</span> ${fileName}</a>`;
-      } else {
-        contentHtml = escapeHtml(msg.content);
-      }
-    } else if (msg.content.startsWith('[🎤 Voice memo')) {
-      const match = msg.content.match(/^\[🎤 Voice memo\s*([^\]]*)\]\(([^)]+)\)$/);
-      if (match) {
-        const duration = escapeHtml(match[1]);
-        const audioUrl = escapeHtml(safeUrl(match[2]));
-        contentHtml = `<div class="flex flex-col gap-1"><span class="text-xs opacity-75">🎤 Voice memo ${duration}</span><audio controls src="${audioUrl}" class="max-w-[220px] sm:max-w-[260px] h-8"></audio></div>`;
-      } else {
-        contentHtml = escapeHtml(msg.content);
-      }
-    } else if (msg.content.startsWith('<img') || msg.content.startsWith('<audio')) {
-      // Legacy media messages: rebuild the tag from its src instead of trusting stored HTML
-      const legacySrc = (msg.content.match(/src="([^"]+)"/) || [])[1];
-      if (!legacySrc) {
-        contentHtml = escapeHtml(msg.content);
-      } else if (msg.content.startsWith('<img')) {
-        contentHtml = `<img src="${escapeHtml(safeUrl(legacySrc))}" class="max-w-[220px] sm:max-w-[260px] rounded-lg"/>`;
-      } else {
-        contentHtml = `<audio controls src="${escapeHtml(safeUrl(legacySrc))}" class="max-w-[220px] sm:max-w-[260px] h-8"></audio>`;
-      }
-    } else {
-      contentHtml = escapeHtml(msg.content);
-    }
-
-    if (isSent) {
-      html += `
-        <div class="flex flex-col items-end ml-auto max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
-          <div class="px-4 py-2.5 rounded-2xl rounded-br-xs bg-primary text-on-primary shadow-sm text-body-md font-medium whitespace-pre-wrap break-all" data-msg-id="${msg.id}">${contentHtml}</div>
-          <div class="flex items-center gap-1 mt-1 mr-1">
-            <span class="font-label-sm text-[10px] text-outline">${time}</span>
-            ${tickHtml}
-            <button class="hidden group-hover/msg:inline-flex p-0.5 text-on-surface-variant hover:text-error transition-colors" title="Delete message" onclick="deleteMessage(${msg.id})">
-              <span class="material-symbols-outlined text-[14px]">delete</span>
-            </button>
-          </div>
-        </div>`;
-    } else {
-      const senderPic = c.profile_pic
-        ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
-        : `<span class="text-[10px] font-bold">${getInitials(c.name)}</span>`;
-
-      html += `
-        <div class="flex items-end gap-2.5 max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
-          <div class="w-8 h-8 rounded-lg overflow-hidden bg-primary-fixed shrink-0 self-end mb-1 flex items-center justify-center text-on-primary-fixed">${senderPic}</div>
-          <div class="flex flex-col min-w-0">
-            <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs bg-surface-container-lowest border border-outline-variant/20 shadow-xs text-on-surface text-body-md whitespace-pre-wrap break-all" data-msg-id="${msg.id}">${contentHtml}</div>
-            <div class="flex items-center gap-1 ml-1 mt-1">
-              <span class="font-label-sm text-[10px] text-outline">${time}</span>
-              <button class="hidden group-hover/msg:inline-flex p-0.5 text-on-surface-variant hover:text-error transition-colors" title="Delete message" onclick="deleteMessage(${msg.id})">
-                <span class="material-symbols-outlined text-[14px]">delete</span>
-              </button>
-            </div>
-          </div>
-        </div>`;
-    }
-  });
-
-  scrollArea.innerHTML = html;
-  scrollArea.scrollTop = scrollArea.scrollHeight;
-}
-
-function renderTeamChat() {
-  if (!activeTeamId || !activeChannelId) return;
-  const team = myTeams.find(t => t.id === activeTeamId);
-  const channels = teamChannels[activeTeamId] || [];
-  const activeChannel = channels.find(c => c.id === activeChannelId);
-  const scrollArea = document.getElementById('messages-scroll-area');
-
-  // Update header
-  const avatarEl = document.getElementById('chat-header-avatar');
-  if (team.avatar_url) {
-    avatarEl.innerHTML = `<img src="${escapeHtml(team.avatar_url)}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`;
-  } else {
-    avatarEl.innerHTML = `<span class="text-on-primary font-bold">${getInitials(team.name)}</span>`;
-  }
-  document.getElementById('chat-header-name').textContent = team.name;
-  document.getElementById('chat-header-info').textContent = activeChannel ? `# ${activeChannel.name}` : '';
-  document.getElementById('chat-header-profile-link').onclick = null;
-  document.getElementById('message-input').placeholder = `Message #${activeChannel ? activeChannel.name : 'channel'}...`;
-
-  const chatMsgs = (allTeamMessages[activeChannelId] || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  if (chatMsgs.length === 0) {
-    scrollArea.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
-        <span class="material-symbols-outlined text-[48px] text-outline mb-3">tag</span>
-        <p class="font-body-md text-body-md">Welcome to #${escapeHtml(activeChannel ? activeChannel.name : 'channel')}!</p>
-        <p class="font-body-sm text-body-sm text-outline mt-1">This is the start of the channel.</p>
-      </div>`;
-    return;
-  }
-
-  let lastDate = '';
-  let html = '';
-  chatMsgs.forEach(msg => {
-    const d = new Date(msg.timestamp);
-    const dateStr = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    if (dateStr !== lastDate) {
-      lastDate = dateStr;
-      html += `
-        <div class="flex items-center justify-center my-space-xs">
-          <div class="px-space-sm py-1 rounded-full bg-surface-container-high/80 text-on-surface-variant font-label-sm text-label-sm border border-outline-variant/30 shadow-xs">${dateStr}</div>
-        </div>`;
-    }
-
-    const isSent = msg.sender_id === currentUserId;
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    // Check if content is a code snippet
-    const isCode = msg.content.startsWith('```');
-    let contentHtml;
-    if (isCode) {
-      const codeContent = msg.content.replace(/^```\w*\n?/, '').replace(/```$/, '');
-      contentHtml = `<pre class="text-[13px] font-mono bg-black/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap"><code>${escapeHtml(codeContent)}</code></pre>`;
-    } else {
-      contentHtml = escapeHtml(msg.content);
-    }
-
-    if (isSent) {
-      // Ticks for group sent messages
-      const tickHtml = `<span class="material-symbols-outlined text-[14px]" style="color: #3b82f6;">done_all</span>`;
-      
-      html += `
-        <div class="flex flex-col items-end ml-auto max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
-          <div class="px-4 py-2.5 rounded-2xl rounded-br-xs bg-primary text-on-primary shadow-sm text-body-md font-medium whitespace-pre-wrap break-all" data-msg-id="${msg.id}">${contentHtml}</div>
-          <div class="flex items-center gap-1 mt-1 mr-1">
-            <span class="font-label-sm text-[10px] text-outline">${time}</span>
-            ${tickHtml}
-          </div>
-        </div>`;
-    } else {
-      const senderPic = msg.sender_pic
-        ? `<img src="${escapeHtml(msg.sender_pic)}" alt="${escapeHtml(msg.sender_name)}" class="w-full h-full object-cover"/>`
-        : `<span class="text-[10px] font-bold">${getInitials(msg.sender_name || 'User')}</span>`;
-
-      html += `
-        <div class="flex flex-col items-start max-w-[85%] md:max-w-[70%] group/msg animate-fade-in w-full">
-          <span class="text-[12px] font-semibold text-on-surface-variant mb-1 ml-10">${escapeHtml(msg.sender_name || 'Unknown')}</span>
-          <div class="flex items-end gap-2.5 w-full">
-            <div class="w-8 h-8 rounded-lg overflow-hidden bg-primary-fixed shrink-0 self-end mb-1 flex items-center justify-center text-on-primary-fixed" title="${escapeHtml(msg.sender_name || 'User')}">${senderPic}</div>
-            <div class="flex flex-col min-w-0">
-              <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs bg-surface-container-lowest border border-outline-variant/20 shadow-xs text-on-surface text-body-md whitespace-pre-wrap break-all" data-msg-id="${msg.id}">${contentHtml}</div>
-              <div class="flex items-center gap-1 ml-1 mt-1">
-                <span class="font-label-sm text-[10px] text-outline">${time}</span>
-              </div>
-            </div>
-          </div>
-        </div>`;
-    }
-  });
-
-  scrollArea.innerHTML = html;
-  scrollArea.scrollTop = scrollArea.scrollHeight;
-}
-
-// ===== INFO PANEL =====
-function updateTeamInfoPanel() {
-  if (!activeTeamId) return;
-  const team = myTeams.find(t => t.id === activeTeamId);
-  const panel = document.getElementById('info-panel-content');
-  
-  const avatarHtml = team.avatar_url
-    ? `<img src="${escapeHtml(team.avatar_url)}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`
-    : `<div class="w-full h-full rounded-2xl bg-primary-fixed flex items-center justify-center"><span class="text-2xl font-bold text-on-primary-fixed">${getInitials(team.name)}</span></div>`;
-
-  const channels = teamChannels[activeTeamId] || [];
-  
-  panel.innerHTML = `
-    <div class="p-space-md flex flex-col items-center text-center border-b border-outline-variant/20">
-      <div class="relative mb-space-xs">
-        <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-sm bg-primary-fixed">${avatarHtml}</div>
-      </div>
-      <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">${escapeHtml(team.name)}</h4>
-      <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">${escapeHtml(team.description || '')}</p>
-    </div>
-    <div class="p-space-md border-b border-outline-variant/20">
-      <div class="flex items-center justify-between mb-2">
-        <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Channels</span>
-        <button class="p-1 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors" onclick="openNewChannelModal()"><span class="material-symbols-outlined text-[16px]">add</span></button>
-      </div>
-      <div class="flex flex-col gap-1">
-        ${channels.map(c => `
-          <button class="w-full text-left px-3 py-2 rounded-lg font-label-md text-label-md transition-colors ${activeChannelId === c.id ? 'bg-primary-fixed/30 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'}" onclick="selectChannel(${c.id})">
-            # ${escapeHtml(c.name)}
-          </button>
-        `).join('') || '<span class="text-outline text-body-sm">No channels</span>'}
-      </div>
-    </div>
-    <div class="p-space-md border-b border-outline-variant/20">
-      <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Members</span>
-      <div class="flex flex-col gap-2 mt-2" id="team-members-list">
-        <span class="text-outline text-body-sm italic">Loading members...</span>
-      </div>
-    </div>`;
-    
-    fetch(`${API_BASE}/api/teams/${activeTeamId}/members`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(members => {
-        const list = document.getElementById('team-members-list');
-        if (list) {
-          list.innerHTML = members.map(m => `
-            <div class="flex items-center gap-2">
-              <div class="w-6 h-6 rounded-full overflow-hidden bg-primary-fixed shrink-0 text-on-primary-fixed flex items-center justify-center font-bold text-[10px]">
-                ${m.user_profile_pic ? `<img src="${escapeHtml(m.user_profile_pic)}" class="w-full h-full object-cover"/>` : getInitials(m.user_name || 'U')}
-              </div>
-              <span class="font-body-sm text-body-sm text-on-surface truncate">${escapeHtml(m.user_name || 'Unknown')}</span>
-              <span class="ml-auto font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">${escapeHtml(m.role)}</span>
-            </div>
-          `).join('');
-        }
-      })
-      .catch(e => console.error(e));
-}
-
-function updateInfoPanel() {
-  if (currentTab === 'groups') {
-    updateTeamInfoPanel();
-    return;
-  }
-  if (!activeContactId) return;
-  const c = contacts[activeContactId];
-  const panel = document.getElementById('info-panel-content');
-
-  const avatarHtml = c.profile_pic
-    ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
-    : `<div class="w-full h-full rounded-2xl bg-primary-fixed flex items-center justify-center"><span class="text-2xl font-bold text-on-primary-fixed">${getInitials(c.name)}</span></div>`;
-
-  const isOnline = onlineUserIds.has(c.id);
-  const skillsHtml = c.skills
-    ? c.skills.split(',').map(s => s.trim()).filter(Boolean).map(s =>
-        `<span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface font-skill-pill text-skill-pill border border-outline-variant/30 font-medium">${escapeHtml(s)}</span>`
-      ).join('')
-    : '<span class="text-outline font-body-sm text-body-sm">No skills listed</span>';
-
-  panel.innerHTML = `
-    <div class="p-space-md flex flex-col items-center text-center border-b border-outline-variant/20">
-      <div class="relative mb-space-xs">
-        <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-sm bg-primary-fixed">${avatarHtml}</div>
-        <span class="online-dot ${isOnline ? '' : 'offline'}" style="width:14px;height:14px;border-width:3px;bottom:-2px;right:-2px;"></span>
-      </div>
-      <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">${escapeHtml(c.name)}</h4>
-      <p class="font-label-sm text-label-sm ${isOnline ? 'text-tertiary' : 'text-outline'} mt-0.5 font-semibold">${isOnline ? '● Online' : '○ Offline'}</p>
-      ${c.college_name ? `<p class="font-body-sm text-body-sm text-primary font-medium mt-0.5">${escapeHtml(c.college_name)}${c.department ? ' • ' + escapeHtml(c.department) : ''}</p>` : ''}
-      <div class="flex items-center gap-space-xs mt-space-sm w-full">
-        <a class="flex-1 py-1.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold text-center transition-colors" href="profile.html?id=${c.id}">View Profile</a>
-      </div>
-    </div>
-    <div class="p-space-md border-b border-outline-variant/20">
-      <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Skills</span>
-      <div class="flex flex-wrap gap-1.5 mt-space-xs">${skillsHtml}</div>
-    </div>
-    <div class="p-space-md">
-      <button class="w-full py-2 px-3 rounded-xl bg-surface-container-low hover:bg-error-container/20 text-on-surface-variant hover:text-error font-label-md text-label-md flex items-center justify-between transition-colors" onclick="window.showSystemModal('Mute', 'Notifications for this conversation muted.', 'alert')">
-        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">notifications_off</span>Mute Notifications</span>
-        <span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
-      </button>
-    </div>`;
-}
-
-function toggleInfoPanel() {
-  const panel = document.getElementById('collab-info-panel');
-  if (panel.style.display === 'none' || !panel.style.display) {
-    panel.style.display = 'flex';
-    updateInfoPanel();
-  } else {
-    panel.style.display = 'none';
-  }
-}
-
-// ===== MESSAGE SENDING =====
-document.getElementById('chat-composer-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const input = document.getElementById('message-input');
-  const content = input.value.trim();
-  if (!content) return;
-  
-  // Close emoji picker if open
-  const emojiPicker = document.getElementById('emoji-picker');
-  if (emojiPicker) emojiPicker.classList.remove('active');
-
-  if (currentTab === 'direct') {
-    if (!activeContactId) return;
-    
-    // Clear input field immediately
-    input.value = '';
-    
-    // Clear typing state
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      isTyping = false;
-      clearTimeout(typingTimeout);
-      ws.send(JSON.stringify({ type: 'typing', to: activeContactId, typing: false }));
-    }
-
-    // 1. INSTANT OPTIMISTIC RENDERING (0ms)
-    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-    const nowIso = new Date().toISOString();
-    const optimisticMsg = {
-      id: tempId,
-      temp_id: tempId,
-      sender_id: currentUserId,
-      receiver_id: activeContactId,
-      content: content,
-      timestamp: nowIso,
-      message_status: 'sending'
-    };
-
-    allMessages.push(optimisticMsg);
-    
-    // Update contact preview immediately
-    const preview = getMessagePreview(content);
-    if (contacts[activeContactId]) {
-      contacts[activeContactId].lastMessage = `You: ${preview}`;
-      contacts[activeContactId].timestamp = nowIso;
-      renderContacts();
-    }
-    
-    // Render chat feed immediately
-    renderChat();
-    const scrollArea = document.getElementById('messages-scroll-area');
-    if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
-
-    // 2. SEND OVER WEBSOCKET OR FALLBACK TO HTTP
-    let sentViaWs = false;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(JSON.stringify({
-          type: 'chat_message',
-          to: activeContactId,
-          content: content,
-          temp_id: tempId
-        }));
-        sentViaWs = true;
-        // No acknowledgement from the server means the message did not go through
-        setTimeout(() => {
-          if (optimisticMsg.message_status === 'sending') {
-            optimisticMsg.message_status = 'failed';
-            renderChat();
-          }
-        }, 10000);
-      } catch (err) {
-        console.warn('WS send failed, falling back to HTTP:', err);
-      }
-    }
-
-    if (!sentViaWs) {
-      // Fallback: Send via HTTP POST
-      try {
-        const res = await fetch(`${API_BASE}/api/messages`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender_id: currentUserId, receiver_id: activeContactId, content: content })
-        });
-        if (res.ok) {
-          const newMsg = await res.json();
-          optimisticMsg.id = newMsg.id;
-          optimisticMsg.message_status = newMsg.message_status || 'sent';
-          optimisticMsg.timestamp = newMsg.timestamp;
-          renderChat();
-          renderContacts();
-        } else {
-          optimisticMsg.message_status = 'failed';
-          renderChat();
-        }
-      } catch (err) {
-        console.error('Send failed:', err);
-        optimisticMsg.message_status = 'failed';
-        renderChat();
-      }
-    }
-  } else {
-    // Teams / Group Chat Tab
-    if (!activeChannelId) return;
-    input.value = '';
-    
-    const tempId = 'temp_' + Date.now();
-    const nowIso = new Date().toISOString();
-    const currentUserProfile = window.currentUserProfile || {};
-    
-    const optimisticTeamMsg = {
-      id: tempId,
-      team_id: activeTeamId,
-      channel_id: activeChannelId,
-      sender_id: currentUserId,
-      content: content,
-      timestamp: nowIso,
-      is_system_message: 0,
-      sender_name: currentUserProfile.name || 'You',
-      sender_pic: currentUserProfile.profile_pic || ''
-    };
-    
-    if (!allTeamMessages[activeChannelId]) allTeamMessages[activeChannelId] = [];
-    allTeamMessages[activeChannelId].push(optimisticTeamMsg);
-    renderTeamChat();
-    const scrollArea = document.getElementById('messages-scroll-area');
-    if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
-
-    try {
-      const res = await fetch(`${API_BASE}/api/channels/${activeChannelId}/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: content, is_system_message: 0 })
-      });
-      if (res.ok) {
-        const newMsg = await res.json();
-        optimisticTeamMsg.id = newMsg.id;
-        renderTeamChat();
-      }
-    } catch (err) {
-      console.error('Send group message failed:', err);
-    }
-  }
-});
-
-// ===== MESSAGE DELETION =====
-async function deleteMessage(msgId) {
-  window.showSystemModal('Delete Message', 'Are you sure you want to delete this message?', 'confirm', async () => {
-    try {
-      await fetch(`${API_BASE}/api/messages/${msgId}`, { method: 'DELETE', credentials: 'include' });
-      allMessages = allMessages.filter(m => m.id !== msgId);
-      buildContacts();
-      renderContacts();
-      renderChat();
-    } catch (err) { console.error(err); }
-  }, 'Delete');
-}
-
-// ===== WEBSOCKET =====
-function setupTeamWebSocket(channelId) {
-  if (teamWs) {
-    teamWs.close();
-    teamWs = null;
-  }
-  teamWs = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/api/ws/channels/${channelId}/${currentUserId}`);
-  teamWs.onmessage = (event) => {
-    const newMsg = JSON.parse(event.data);
-    if (!allTeamMessages[channelId]) allTeamMessages[channelId] = [];
-    allTeamMessages[channelId].push(newMsg);
-    if (activeChannelId === channelId) renderTeamChat();
-  };
-  teamWs.onclose = () => { console.log('Team WS closed.'); };
-  teamWs.onerror = () => { teamWs.close(); };
-}
-
-function setupWebSocket() {
-  ws = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/api/ws/${currentUserId}`);
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    
-    // Handle typing indicator
-    if (data.type === 'typing') {
-      if (data.typing) {
-        showTypingIndicator(data.from);
-        clearTimeout(typingIndicatorTimeout);
-        typingIndicatorTimeout = setTimeout(() => hideTypingIndicator(data.from), 3000);
-      } else {
-        hideTypingIndicator(data.from);
-      }
-      return;
-    }
-    
-    // Handle read receipts
-    if (data.type === 'read_receipt') {
-      const readerId = data.reader_id;
-      const msgIds = data.message_ids || [];
-      // Update local message status
-      allMessages.forEach(m => {
-        if (msgIds.includes(m.id)) {
-          m.message_status = 'read';
-        }
-      });
-      // Re-render if we're viewing that conversation
-      if (activeContactId === readerId && currentTab === 'direct') {
-        renderChat();
-      }
-      return;
-    }
-    
-    // Handle ACK for our sent message
-    if (data.type === 'message_ack') {
-      const msg = allMessages.find(m => m.id === data.temp_id || m.temp_id === data.temp_id);
-      if (msg) {
-        msg.id = data.id;
-        msg.message_status = data.message_status || 'sent';
-        msg.timestamp = data.timestamp;
-        renderChat();
-      }
-      return;
-    }
-
-    // Server refused or could not save our message
-    if (data.type === 'message_failed') {
-      const msg = allMessages.find(m => m.temp_id === data.temp_id);
-      if (msg) {
-        msg.message_status = 'failed';
-        renderChat();
-      }
-      if (data.detail) window.showSystemModal('Message not sent', escapeHtml(data.detail), 'alert');
-      return;
-    }
-
-    // Handle ID update for incoming message
-    if (data.type === 'message_id_update') {
-      const msg = allMessages.find(m => m.temp_id === data.temp_id);
-      if (msg) {
-        msg.id = data.id;
-      }
-      return;
-    }
-
-    // Avoid duplicate if this is our own message we already optimistically added
-    if (data.sender_id === currentUserId) {
-      const existing = allMessages.find(m => (m.temp_id && m.temp_id === data.temp_id) || m.id === data.id);
-      if (existing) {
-        if (data.id) existing.id = data.id;
-        existing.message_status = data.message_status || 'sent';
-        renderChat();
-        return;
-      }
-    } else if (allMessages.some(m => m.id && m.id === data.id)) {
-      return;
-    }
-
-    // Normal message from another user
-    const newMsg = data;
-    allMessages.push(newMsg);
-    const otherId = newMsg.sender_id === currentUserId ? newMsg.receiver_id : newMsg.sender_id;
-
-    if (!contacts[otherId]) {
-      const profile = globalProfiles[otherId];
-      contacts[otherId] = {
-        id: otherId,
-        name: profile ? profile.name : `User #${otherId}`,
-        profile_pic: profile ? profile.profile_pic : '',
-        college_name: profile ? profile.college_name : '',
-        department: profile ? profile.department : '',
-        skills: profile ? profile.skills : '',
-        lastMessage: '',
-        timestamp: ''
-      };
-    }
-
-    const preview = getMessagePreview(newMsg.content);
-    contacts[otherId].lastMessage = newMsg.sender_id === currentUserId ? `You: ${preview}` : preview;
-    contacts[otherId].timestamp = newMsg.timestamp;
-    renderContacts();
-    if (activeContactId === otherId && currentTab === 'direct') {
-      renderChat();
-      // Auto mark as read when viewing conversation
-      if (newMsg.sender_id !== currentUserId) {
-        markMessagesAsRead(otherId);
-      }
-    }
-  };
-  ws.onclose = () => { console.log('WS closed. Reconnecting in 3s...'); setTimeout(setupWebSocket, 3000); };
-  ws.onerror = () => { ws.close(); };
-}
-
-// ===== SEARCH =====
-function filterConversations() {
-  const query = document.getElementById('conversation-search-input').value.toLowerCase();
-  const items = document.querySelectorAll('#contactList > [data-contact-id]');
-  items.forEach(item => {
-    const id = parseInt(item.getAttribute('data-contact-id'));
-    const c = contacts[id];
-    const match = !query || (c && (c.name.toLowerCase().includes(query) || (c.lastMessage && c.lastMessage.toLowerCase().includes(query))));
-    item.style.display = match ? '' : 'none';
-  });
-}
-
-let searchMatchIndex = 0;
-let searchMatches = [];
-
-function toggleChatSearch() {
-  const bar = document.getElementById('chat-search-bar');
-  const input = document.getElementById('chat-search-input');
-  if (bar.style.display === 'none') {
-    bar.style.display = 'block';
-    input.focus();
-    searchMatchIndex = 0;
-    searchMatches = [];
-  } else {
-    bar.style.display = 'none';
-    input.value = '';
-    searchMatches = [];
-    searchMatchIndex = 0;
-    // Re-render to clear highlights
-    if (currentTab === 'direct') renderChat();
-    else renderTeamChat();
-  }
-}
-
-function searchInChat() {
-  const query = document.getElementById('chat-search-input').value.toLowerCase();
-  if (!query) { 
-    if (currentTab === 'direct') renderChat();
-    else renderTeamChat();
-    return; 
-  }
-  
-  const bubbles = document.querySelectorAll('#messages-scroll-area [data-msg-id]');
-  searchMatches = [];
-  
-  bubbles.forEach(b => {
-    if (b.textContent.toLowerCase().includes(query)) {
-      b.classList.add('search-highlight');
-      searchMatches.push(b);
-    } else {
-      b.classList.remove('search-highlight');
-      b.classList.remove('search-match-current');
-    }
-  });
-  
-  // Scroll to first match
-  if (searchMatches.length > 0) {
-    searchMatchIndex = 0;
-    searchMatches[0].classList.add('search-match-current');
-    searchMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
-// ===== EMOJI PICKER =====
-function initEmojiPicker() {
-  const categoriesContainer = document.getElementById('emoji-categories');
-  const grid = document.getElementById('emoji-grid');
-  
-  const categoryIcons = {
-    'Smileys': '😀', 'Gestures': '👋', 'Hearts': '❤️',
-    'Objects': '💻', 'Nature': '🌸', 'Food': '🍎', 'Flags': '🏳️'
-  };
-  
-  let catHtml = '';
-  Object.keys(emojiData).forEach((cat, i) => {
-    catHtml += `<button class="${i === 0 ? 'active' : ''}" onclick="selectEmojiCategory('${cat}', this)">${categoryIcons[cat] || '📁'}</button>`;
-  });
-  categoriesContainer.innerHTML = catHtml;
-  
-  // Load first category
-  renderEmojiGrid(Object.keys(emojiData)[0]);
-}
-
-function selectEmojiCategory(cat, btn) {
-  document.querySelectorAll('.emoji-categories button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderEmojiGrid(cat);
-}
-
-function renderEmojiGrid(category) {
-  const grid = document.getElementById('emoji-grid');
-  const emojis = emojiData[category] || [];
-  grid.innerHTML = emojis.map(e => `<button type="button" onclick="insertEmoji('${e}')">${e}</button>`).join('');
-}
-
-function filterEmojis() {
-  const query = document.getElementById('emoji-search-input').value.toLowerCase();
-  const grid = document.getElementById('emoji-grid');
-  if (!query) {
-    renderEmojiGrid(Object.keys(emojiData)[0]);
-    return;
-  }
-  let all = [];
-  Object.values(emojiData).forEach(arr => all.push(...arr));
-  grid.innerHTML = all.map(e => `<button type="button" onclick="insertEmoji('${e}')">${e}</button>`).join('');
-}
-
-function toggleEmojiPicker() {
-  const picker = document.getElementById('emoji-picker');
-  picker.classList.toggle('active');
-}
-
-function insertEmoji(emoji) {
-  const input = document.getElementById('message-input');
-  const start = input.selectionStart;
-  const end = input.selectionEnd;
-  input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
-  input.focus();
-  input.setSelectionRange(start + emoji.length, start + emoji.length);
-}
-
-// ===== FILE ATTACHMENT =====
-async function handleFileAttach(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  try {
-    const res = await fetch(`${API_BASE}/api/upload/chat-file`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      // Send as a message with file info
-      const fileMsg = `[📎 File: ${data.filename}](${data.url})`;
-      const input = document.getElementById('message-input');
-      input.value = fileMsg;
-      document.getElementById('chat-composer-form').dispatchEvent(new Event('submit', { cancelable: true }));
-    } else {
-      window.showSystemModal('Upload Error', 'Failed to upload file. Please try again.', 'alert');
-    }
-  } catch (err) {
-    console.error('File upload error:', err);
-    window.showSystemModal('Upload Error', 'Failed to upload file.', 'alert');
-  }
-  
-  // Reset file input
-  event.target.value = '';
-}
-
-// ===== CODE SNIPPET =====
-function openCodeSnippetModal() {
-  document.getElementById('code-snippet-modal').classList.add('active');
-  document.getElementById('code-snippet-input').value = '';
-  document.getElementById('code-language-select').value = '';
-  setTimeout(() => document.getElementById('code-snippet-input').focus(), 100);
-}
-
-function closeCodeSnippetModal() {
-  document.getElementById('code-snippet-modal').classList.remove('active');
-}
-
-function sendCodeSnippet() {
-  const code = document.getElementById('code-snippet-input').value.trim();
-  const lang = document.getElementById('code-language-select').value;
-  if (!code) return window.showSystemModal('Error', 'Please enter some code.', 'alert');
-  
-  const codeMsg = '```' + lang + '\n' + code + '\n```';
-  const input = document.getElementById('message-input');
-  input.value = codeMsg;
-  closeCodeSnippetModal();
-  document.getElementById('chat-composer-form').dispatchEvent(new Event('submit', { cancelable: true }));
-}
-
-// ===== VOICE RECORDING =====
-async function toggleVoiceRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    // Already recording, stop and send
-    sendVoiceRecording();
-    return;
-  }
-  
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioChunks = [];
-    mediaRecorder = new MediaRecorder(stream);
-    
-    mediaRecorder.ondataavailable = (e) => {
-      audioChunks.push(e.data);
-    };
-    
-    mediaRecorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
-    };
-    
-    mediaRecorder.start();
-    recordingSeconds = 0;
-    
-    // Show recording bar
-    document.getElementById('voice-recording-bar').classList.add('active');
-    document.getElementById('voice-record-btn').querySelector('span').textContent = 'stop';
-    
-    // Start timer
-    recordingInterval = setInterval(() => {
-      recordingSeconds++;
-      const mins = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
-      const secs = (recordingSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('recording-timer').textContent = `${mins}:${secs}`;
-    }, 1000);
-    
-  } catch (err) {
-    window.showSystemModal('Microphone Access', 'Please allow microphone access to record voice memos.', 'alert');
-  }
-}
-
-function cancelVoiceRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-  }
-  clearInterval(recordingInterval);
-  document.getElementById('voice-recording-bar').classList.remove('active');
-  document.getElementById('voice-record-btn').querySelector('span').textContent = 'mic';
-  audioChunks = [];
-  mediaRecorder = null;
-}
-
-async function sendVoiceRecording() {
-  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
-  
-  mediaRecorder.stop();
-  clearInterval(recordingInterval);
-  document.getElementById('voice-recording-bar').classList.remove('active');
-  document.getElementById('voice-record-btn').querySelector('span').textContent = 'mic';
-  
-  // Wait for data
-  await new Promise(resolve => {
-    mediaRecorder.onstop = () => {
-      mediaRecorder.stream.getTracks().forEach(t => t.stop());
-      resolve();
-    };
-  });
-  
-  const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-  const formData = new FormData();
-  formData.append('file', audioBlob, `voice_memo_${Date.now()}.webm`);
-  
-  try {
-    const res = await fetch(`${API_BASE}/api/upload/chat-file`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      const duration = `${Math.floor(recordingSeconds / 60)}:${(recordingSeconds % 60).toString().padStart(2, '0')}`;
-      const voiceMsg = `[🎤 Voice memo (${duration})](${data.url})`;
-      const input = document.getElementById('message-input');
-      input.value = voiceMsg;
-      document.getElementById('chat-composer-form').dispatchEvent(new Event('submit', { cancelable: true }));
-    }
-  } catch (err) {
-    console.error('Voice upload error:', err);
-  }
-  
-  audioChunks = [];
-  mediaRecorder = null;
-}
-
-// ===== VOICE CALL =====
-function initiateVoiceCall() {
-  if (!activeContactId && currentTab === 'direct') return;
-  const name = currentTab === 'direct' ? contacts[activeContactId]?.name : myTeams.find(t => t.id === activeTeamId)?.name;
-  const pic = currentTab === 'direct' ? contacts[activeContactId]?.profile_pic : null;
-  
-  document.getElementById('voice-call-name').textContent = name || 'User';
-  const avatarEl = document.getElementById('voice-call-avatar');
-  avatarEl.innerHTML = pic
-    ? `<img src="${escapeHtml(pic)}" alt="${escapeHtml(name)}"/>`
-    : `<span class="material-symbols-outlined text-on-primary text-[32px]">person</span>`;
-  
-  document.getElementById('voice-call-status').innerHTML = '<span class="material-symbols-outlined text-[16px] ringing align-middle">call</span> Calling...';
-  
-  document.getElementById('voice-call-modal').classList.add('active');
-  
-  // Simulate connection after 2s
-  callSeconds = 0;
-  setTimeout(() => {
-    document.getElementById('voice-call-status').innerHTML = '<span class="text-tertiary font-semibold">● Connected</span>';
-    callTimerInterval = setInterval(() => {
-      callSeconds++;
-      const m = Math.floor(callSeconds / 60).toString().padStart(2, '0');
-      const s = (callSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('voice-call-timer').textContent = `${m}:${s}`;
-    }, 1000);
-  }, 2000);
-}
-
-function initiateVideoCall() {
-  if (!activeContactId && currentTab === 'direct') return;
-  const name = currentTab === 'direct' ? contacts[activeContactId]?.name : myTeams.find(t => t.id === activeTeamId)?.name;
-  const pic = currentTab === 'direct' ? contacts[activeContactId]?.profile_pic : null;
-  
-  document.getElementById('video-call-name').textContent = name || 'User';
-  const avatarEl = document.getElementById('video-call-avatar');
-  avatarEl.innerHTML = pic
-    ? `<img src="${escapeHtml(pic)}" alt="${escapeHtml(name)}"/>`
-    : `<span class="material-symbols-outlined text-on-primary text-[28px]">person</span>`;
-  
-  document.getElementById('video-call-status').innerHTML = '<span class="material-symbols-outlined text-[14px] ringing align-middle">videocam</span> Connecting video...';
-  
-  document.getElementById('video-call-modal').classList.add('active');
-  
-  callSeconds = 0;
-  setTimeout(() => {
-    document.getElementById('video-call-status').innerHTML = '<span class="text-emerald-400 font-semibold">● Connected</span>';
-    callTimerInterval = setInterval(() => {
-      callSeconds++;
-      const m = Math.floor(callSeconds / 60).toString().padStart(2, '0');
-      const s = (callSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('video-call-timer').textContent = `${m}:${s}`;
-    }, 1000);
-  }, 2000);
-}
-
-function endCall(type) {
-  clearInterval(callTimerInterval);
-  if (type === 'voice') {
-    document.getElementById('voice-call-modal').classList.remove('active');
-  } else {
-    document.getElementById('video-call-modal').classList.remove('active');
-  }
-  document.getElementById('voice-call-timer').textContent = '00:00';
-  document.getElementById('video-call-timer').textContent = '00:00';
-}
-
-function toggleCallMute(btn) {
-  const icon = btn.querySelector('span');
-  if (icon.textContent === 'mic') {
-    icon.textContent = 'mic_off';
-    btn.style.background = '#ba1a1a';
-    btn.style.color = 'white';
-  } else {
-    icon.textContent = 'mic';
-    btn.style.background = '';
-    btn.style.color = '';
-  }
-}
-
-function toggleCallSpeaker(btn) {
-  const icon = btn.querySelector('span');
-  if (icon.textContent === 'volume_up') {
-    icon.textContent = 'volume_off';
-  } else {
-    icon.textContent = 'volume_up';
-  }
-}
-
-function toggleCallCamera(btn) {
-  const icon = btn.querySelector('span');
-  if (icon.textContent === 'videocam') {
-    icon.textContent = 'videocam_off';
-    btn.style.background = '#ba1a1a';
-    btn.style.color = 'white';
-  } else {
-    icon.textContent = 'videocam';
-    btn.style.background = '';
-    btn.style.color = '';
-  }
-}
-
-// ===== NEW CHAT MODAL =====
-function openNewChatModal() {
-  document.getElementById('new-chat-modal').classList.add('active');
-  document.getElementById('new-chat-search').value = '';
-  document.getElementById('new-chat-user-list').innerHTML = '<p class="text-center text-on-surface-variant font-body-sm py-4">Type a name to search...</p>';
-  setTimeout(() => document.getElementById('new-chat-search').focus(), 100);
-}
-function closeNewChatModal() {
-  document.getElementById('new-chat-modal').classList.remove('active');
-}
-
-// ===== NEW GROUP MODAL =====
-function openNewGroupModal() {
-  document.getElementById('new-group-modal').classList.add('active');
-  document.getElementById('new-group-name').value = '';
-  document.getElementById('new-group-desc').value = '';
-  setTimeout(() => document.getElementById('new-group-name').focus(), 100);
-}
-
-function closeNewGroupModal() {
-  document.getElementById('new-group-modal').classList.remove('active');
-}
-
-async function createNewGroup() {
-  const name = document.getElementById('new-group-name').value.trim();
-  const desc = document.getElementById('new-group-desc').value.trim();
-  if (!name) return window.showSystemModal('Error', 'Group name is required.', 'alert');
-  
-  try {
-    const res = await fetch(`${API_BASE}/api/teams`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, description: desc })
-    });
-    if (res.ok) {
-      closeNewGroupModal();
-      window.showSystemModal('Success', 'Group created successfully!', 'alert');
-      fetchTeams();
-    } else {
-      window.showSystemModal('Error', 'Failed to create group.', 'alert');
-    }
-  } catch (err) {
-    console.error(err);
-    window.showSystemModal('Error', 'Failed to create group.', 'alert');
-  }
-}
-
-// ===== NEW CHANNEL MODAL =====
-function openNewChannelModal() {
-  if (!activeTeamId) return;
-  document.getElementById('new-channel-modal').classList.add('active');
-  document.getElementById('new-channel-name').value = '';
-  setTimeout(() => document.getElementById('new-channel-name').focus(), 100);
-}
-
-function closeNewChannelModal() {
-  document.getElementById('new-channel-modal').classList.remove('active');
-}
-
-async function createNewChannel() {
-  const name = document.getElementById('new-channel-name').value.trim();
-  if (!name || !activeTeamId) return;
-  
-  try {
-    const res = await fetch(`${API_BASE}/api/teams/${activeTeamId}/channels`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, channel_type: "text" })
-    });
-    if (res.ok) {
-      closeNewChannelModal();
-      await selectTeam(activeTeamId);
-    } else {
-      if (res.status === 403) {
-        window.showSystemModal('Permission Denied', 'Only Admins can create channels.', 'alert');
-      } else {
-        window.showSystemModal('Error', 'Failed to create channel.', 'alert');
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    window.showSystemModal('Error', 'Failed to create channel.', 'alert');
-  }
-}
-
-
-function searchNewChatUsers() {
-  const query = document.getElementById('new-chat-search').value.toLowerCase().trim();
-  const list = document.getElementById('new-chat-user-list');
-
-  if (!query) {
-    list.innerHTML = '<p class="text-center text-on-surface-variant font-body-sm py-4">Type a name to search...</p>';
-    return;
-  }
-
-  const results = Object.values(globalProfiles).filter(p =>
-    p.id !== currentUserId && p.name && p.name.toLowerCase().includes(query)
-  ).slice(0, 10);
-
-  if (results.length === 0) {
-    list.innerHTML = '<p class="text-center text-on-surface-variant font-body-sm py-4">No users found.</p>';
-    return;
-  }
-
-  list.innerHTML = results.map(p => {
-    const avatarHtml = p.profile_pic
-      ? `<img src="${escapeHtml(p.profile_pic)}" class="w-full h-full object-cover"/>`
-      : `<span class="text-sm font-bold">${getInitials(p.name)}</span>`;
-    const isOnline = onlineUserIds.has(p.id);
-    return `
-      <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors" onclick="startChatWith(${p.id})">
-        <div class="relative">
-          <div class="w-10 h-10 rounded-xl bg-surface-container-high overflow-hidden flex items-center justify-center text-on-surface-variant">${avatarHtml}</div>
-          <span class="online-dot ${isOnline ? '' : 'offline'}" style="width:8px;height:8px;"></span>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-headline-sm text-headline-sm font-semibold text-on-surface truncate">${escapeHtml(p.name)}</p>
-          <p class="font-body-sm text-body-sm text-on-surface-variant truncate">${escapeHtml(p.college_name || '')} ${p.department ? '• ' + escapeHtml(p.department) : ''}</p>
-        </div>
-        ${isOnline ? '<span class="text-[11px] text-tertiary font-semibold">Online</span>' : ''}
-      </div>`;
-  }).join('');
-}
-
-function startChatWith(userId) {
-  closeNewChatModal();
-  if (!contacts[userId]) {
-    const profile = globalProfiles[userId];
-    contacts[userId] = {
-      id: userId,
-      name: profile ? profile.name : `User #${userId}`,
-      profile_pic: profile ? profile.profile_pic : '',
-      college_name: profile ? profile.college_name : '',
-      department: profile ? profile.department : '',
-      skills: profile ? profile.skills : '',
-      lastMessage: '',
-      timestamp: ''
-    };
-    renderContacts();
-  }
-  selectContact(userId);
-}
-
-// ===== CHAT ACTIONS LOGIC =====
-function toggleChatActionsMenu() {
-  if (!activeContactId) return;
-  const menu = document.getElementById('chat-actions-menu');
-  
-  if (menu.classList.contains('hidden')) {
-    const isMuted = chatActionsState.muted.includes(activeContactId);
-    const isBlocked = chatActionsState.blocked.includes(activeContactId);
-    
-    document.getElementById('mute-text').textContent = isMuted ? 'Unmute notifications' : 'Mute notifications';
-    document.getElementById('mute-icon').textContent = isMuted ? 'notifications_active' : 'notifications_off';
-    document.getElementById('block-text').textContent = isBlocked ? 'Unblock user' : 'Block user';
-    
-    menu.classList.remove('hidden');
-    
-    setTimeout(() => {
-      document.addEventListener('click', closeChatActionsMenu);
-    }, 10);
-  } else {
-    menu.classList.add('hidden');
-  }
-}
-
-function closeChatActionsMenu(e) {
-  const menu = document.getElementById('chat-actions-menu');
-  const btn = document.getElementById('chat-actions-btn');
-  if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
-    menu.classList.add('hidden');
-    document.removeEventListener('click', closeChatActionsMenu);
-  }
-}
-
-async function toggleMute() {
-  if (!activeContactId) return;
-  const menu = document.getElementById('chat-actions-menu');
-  menu.classList.add('hidden');
-  document.removeEventListener('click', closeChatActionsMenu);
-  
-  const res = await fetch(`${API_BASE}/api/users/${activeContactId}/mute`, { 
-    method: 'POST',
-    credentials: 'include' 
-  });
-  
-  if (res.ok) {
-    const data = await res.json();
-    if (data.status === 'muted') {
-      chatActionsState.muted.push(activeContactId);
-      window.showSystemModal('Notifications Muted', 'You will no longer receive notifications for messages from this user.', 'alert');
-    } else {
-      chatActionsState.muted = chatActionsState.muted.filter(id => id !== activeContactId);
-      window.showSystemModal('Notifications Unmuted', 'You will now receive notifications for messages from this user.', 'alert');
-    }
-  }
-}
-
-async function toggleBlock() {
-  if (!activeContactId) return;
-  const menu = document.getElementById('chat-actions-menu');
-  menu.classList.add('hidden');
-  document.removeEventListener('click', closeChatActionsMenu);
-  
-  const isCurrentlyBlocked = chatActionsState.blocked.includes(activeContactId);
-  const c = contacts[activeContactId];
-  const confirmMsg = isCurrentlyBlocked ? 
-    `Are you sure you want to unblock ${c.name}?` : 
-    `Are you sure you want to block ${c.name}? They won't be able to message you.`;
-    
-  if (confirm(confirmMsg)) {
-    const res = await fetch(`${API_BASE}/api/users/${activeContactId}/block`, { 
-      method: 'POST',
-      credentials: 'include' 
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === 'blocked') {
-        chatActionsState.blocked.push(activeContactId);
-      } else {
-        chatActionsState.blocked = chatActionsState.blocked.filter(id => id !== activeContactId);
-      }
-      renderChat();
-    }
-  }
-}
-
-async function clearChatHistory() {
-  if (!activeContactId) return;
-  const menu = document.getElementById('chat-actions-menu');
-  menu.classList.add('hidden');
-  document.removeEventListener('click', closeChatActionsMenu);
-  
-  const c = contacts[activeContactId];
-  if (confirm(`Are you sure you want to clear your chat history with ${c.name}? This cannot be undone.`)) {
-    const res = await fetch(`${API_BASE}/api/users/${activeContactId}/clear_chat`, { 
-      method: 'POST',
-      credentials: 'include' 
-    });
-    
-    if (res.ok) {
-      allMessages = allMessages.filter(msg => {
-        const otherId = msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
-        return otherId !== activeContactId;
-      });
-      renderChat();
-      
-      if (contacts[activeContactId]) {
-        contacts[activeContactId].lastMessage = '';
-        contacts[activeContactId].timestamp = '';
-        renderContacts();
-      }
-    }
-  }
-}
-
-// Close emoji picker when clicking outside
-document.addEventListener('click', (e) => {
-  const picker = document.getElementById('emoji-picker');
-  const emojiBtn = e.target.closest('[title="Insert Emoji"]');
-  if (picker && picker.classList.contains('active') && !picker.contains(e.target) && !emojiBtn) {
-    picker.classList.remove('active');
-  }
-});
-
-// ===== INIT =====
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initInbox);
-} else {
-  initInbox();
-}
-</script>
+<!-- ==================== INBOX APPLICATION ==================== -->
+<script src="inbox.js"></script>
+<script src="inbox-calls.js"></script>
 </body>
 </html>

@@ -22,7 +22,8 @@ engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"ssl": "require"},
     pool_pre_ping=False,     # Skip expensive round-trip pre-ping on remote Supabase pooler
-    pool_recycle=300,        # Recycles connections every 5 minutes to avoid stale connections
+    pool_recycle=1800,       # main.py pings the pool every 2 minutes, so connections stay alive between requests
+    pool_use_lifo=True,      # Reuse the most recently used connection, which already has its statements prepared
     pool_size=10,            # Keeps 10 connections open and ready
     max_overflow=20          # Allows up to 20 extra connections during traffic spikes
 )
@@ -36,6 +37,14 @@ SessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
+# Each statement commits on its own: no BEGIN/COMMIT round trips to the remote database.
+# Use for reads and for single-statement writes; use SessionLocal when several writes must succeed together.
+AutocommitSession = sessionmaker(
+    bind=engine.execution_options(isolation_level="AUTOCOMMIT"),
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
 Base = declarative_base()
 
 async def get_db():
@@ -45,3 +54,7 @@ async def get_db():
         except Exception:
             await db.rollback()
             raise
+
+async def get_fast_db():
+    async with AutocommitSession() as db:
+        yield db
