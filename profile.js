@@ -1,460 +1,831 @@
 // ==========================================
-// GLOBAL MODAL SYSTEM (Replaces alerts)
+// PROFILE.JS — Viewing and editing a profile, projects, GitHub, followers, resume
+// Loaded after shared.js and chat-common.js (api, caches, toast, el, getInitials).
 // ==========================================
-window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
-    const modal = document.getElementById('systemModal');
-    const titleEl = document.getElementById('systemModalTitle');
-    const msgEl = document.getElementById('systemModalMessage');
-    const cancelBtn = document.getElementById('systemModalCancel');
-    const confirmBtn = document.getElementById('systemModalConfirm');
 
-    if (!modal) return console.error("System modal HTML is missing!");
+const viewedUserId = parseInt(new URLSearchParams(window.location.search).get('id')) || currentUserId;
+const isOwnProfile = viewedUserId === currentUserId;
+const CROPPER_VERSION = '1.5.13';
 
-    titleEl.textContent = title;
-    msgEl.textContent = message;
-    confirmBtn.textContent = confirmText;
+let profile = null;            // the profile on screen, as returned by /api/profiles/{id}/page
+let previewingPublic = false;  // owner looking at their page the way visitors see it
+let githubStats = null;
 
-    if (type === 'confirm') {
-        cancelBtn.style.display = 'block';
-        cancelBtn.onclick = () => window.closeSystemModal();
-        confirmBtn.onclick = () => {
-            window.closeSystemModal();
-            if (onConfirm) onConfirm();
-        };
+// Picture cropping
+let cropper = null;
+let cropKind = null;           // 'profile' or 'banner'
+let cropperLoading = null;
+
+// Project being added or edited
+let editingProjectId = null;
+let projectImageUrl = '';
+
+// ==========================================
+// 1. LOADING
+// ==========================================
+async function initProfile() {
+  document.body.classList.toggle('is-own', isOwnProfile);
+  el('breadcrumbKind').textContent = isOwnProfile ? 'My Profile' : 'Profile';
+  el('editProfileForm').addEventListener('submit', saveProfile);
+  el('projectForm').addEventListener('submit', saveProject);
+  el('githubForm').addEventListener('submit', connectGithub);
+  el('pictureFileInput').addEventListener('change', onPictureChosen);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProfileModals(); });
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay && overlay.id !== 'cropModal' && overlay.id !== 'systemModal') overlay.classList.remove('active'); });
+  });
+
+  // 1. The copy saved on the last visit, so the page is never blank
+  const cached = cacheGet(`profile:${viewedUserId}`);
+  if (cached) {
+    profile = cached;
+    renderProfile();
+  }
+
+  // 2. The real thing (already requested from the page head)
+  await loadProfile();
+}
+
+async function loadProfile() {
+  let data;
+  try {
+    const prefetched = window.__profilePrefetch ? await window.__profilePrefetch : null;
+    window.__profilePrefetch = null;
+    if (prefetched && prefetched.status === 200) {
+      data = prefetched.data;
+    } else if (prefetched && prefetched.status === 401) {
+      return handleLoggedOut();
     } else {
-        cancelBtn.style.display = 'none';
-        confirmBtn.onclick = () => {
-            window.closeSystemModal();
-            if (onConfirm) onConfirm();
-        };
+      data = await api(`/api/profiles/${viewedUserId}/page`);
     }
+  } catch (err) {
+    if (err.status === 404) {
+      return showProblem('person_off', 'Profile not found', 'This account does not exist or has been removed.', '<a href="search.html" class="btn-primary-modal">Discover people</a>');
+    }
+    if (!profile) {
+      showProblem('cloud_off', 'Could not load this profile', err.message, '<button type="button" class="btn-primary-modal" onclick="retryLoadProfile()">Try again</button>');
+    }
+    return;
+  }
 
-    modal.classList.add('active');
-};
+  profile = data;
+  cacheSet(`profile:${viewedUserId}`, profile);
+  hideProblem();
+  renderProfile();
+  loadGithub();
+}
 
-window.closeSystemModal = function() {
-    const modal = document.getElementById('systemModal');
-    if (modal) modal.classList.remove('active');
-};
+function retryLoadProfile() {
+  hideProblem();
+  loadProfile();
+}
+
+function showProblem(icon, title, text, actionsHtml) {
+  el('profileContent').classList.add('hidden');
+  el('profileProblemIcon').textContent = icon;
+  el('profileProblemTitle').textContent = title;
+  el('profileProblemText').textContent = text;
+  el('profileProblemActions').innerHTML = actionsHtml || '';
+  el('profileProblem').classList.remove('hidden');
+  el('breadcrumbName').textContent = title;
+}
+
+function hideProblem() {
+  el('profileProblem').classList.add('hidden');
+  el('profileContent').classList.remove('hidden');
+}
+
+// Keep the cached copy, and the site header if this is our own profile, in step with what is on screen
+function profileChanged() {
+  cacheSet(`profile:${viewedUserId}`, profile);
+  if (isOwnProfile && typeof window.applyHeaderProfile === 'function') {
+    const card = Object.assign({}, profile);
+    delete card.projects;
+    window.applyHeaderProfile(card);
+    try { localStorage.setItem(`c2m:${currentUserId}:me`, JSON.stringify(card)); } catch (e) { /* storage unavailable */ }
+  }
+}
 
 // ==========================================
-// MAIN PROFILE LOGIC
+// 2. RENDERING
 // ==========================================
-document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize Choices.js immediately so it's ready before data loads
-    let collegeChoice, deptChoice;
-    const collegeEl = document.getElementById('editCollege');
-    const deptEl = document.getElementById('editDept');
-    
-    if (collegeEl && deptEl) {
-        collegeChoice = new Choices(collegeEl, {
-            searchEnabled: true,
-            itemSelectText: '',
-            shouldSort: false
-        });
-        deptChoice = new Choices(deptEl, {
-            searchEnabled: true,
-            itemSelectText: '',
-            shouldSort: false
-        });
+function showsOwnerControls() {
+  return isOwnProfile && !previewingPublic;
+}
+
+function splitList(text) {
+  return String(text || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function pillsHtml(items, emptyText) {
+  if (items.length === 0) return `<span class="font-body-sm text-body-sm text-on-surface-variant">${escapeHtml(emptyText)}</span>`;
+  return items.map(item => `<span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(item)}</span>`).join('');
+}
+
+function renderProfile() {
+  if (!profile) return;
+  document.title = `${profile.name || 'Profile'} | ProPartner`;
+  el('breadcrumbName').textContent = profile.name || 'Developer';
+
+  // Identity
+  el('profileName').textContent = profile.name || 'Unknown Developer';
+  el('profileBio').textContent = profile.bio || (showsOwnerControls() ? 'Add a short bio so people know what you are working on.' : 'No bio yet.');
+  el('profileRoll').textContent = profile.roll_no || 'N/A';
+  el('followersCount').textContent = profile.followers_count || 0;
+  el('followingCount').textContent = profile.following_count || 0;
+
+  const avatar = el('displayAvatar');
+  const placeholder = el('avatarPlaceholder');
+  placeholder.textContent = getInitials(profile.name || '?');
+  if (profile.profile_pic) {
+    avatar.src = profile.profile_pic;
+    avatar.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+  } else {
+    avatar.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+  }
+  avatar.onerror = () => { avatar.classList.add('hidden'); placeholder.classList.remove('hidden'); };
+
+  const banner = el('displayBanner');
+  if (profile.banner_pic) {
+    banner.src = profile.banner_pic;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+  banner.onerror = () => banner.classList.add('hidden');
+
+  // Badges come from the account itself, not decoration
+  const verified = profile.account_status === 'verified';
+  el('verifiedTick').classList.toggle('hidden', !verified);
+  const badges = [];
+  if (profile.account_type && profile.account_type !== 'standard') {
+    badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold uppercase">${escapeHtml(profile.account_type)}</span>`);
+  }
+  if (profile.is_admin) badges.push('<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold uppercase">Admin</span>');
+  if (verified) {
+    badges.push('<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed/40 text-tertiary font-label-sm text-label-sm font-bold">Verified student</span>');
+  } else if (showsOwnerControls() && profile.account_status) {
+    const label = { pending: 'Verification pending', rejected: 'Verification rejected', appealed: 'Appeal under review' }[profile.account_status] || profile.account_status;
+    badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">${escapeHtml(label)}</span>`);
+  }
+  el('profileBadges').innerHTML = badges.join('');
+
+  // Academics and skills
+  el('profileCollege').textContent = profile.college_name || 'Not listed';
+  el('profileDept').textContent = profile.department || 'Not listed';
+  el('profileDiv').textContent = profile.division || '—';
+  el('profileCity').textContent = profile.city || 'Not listed';
+  el('profileSkills').innerHTML = pillsHtml(splitList(profile.skills), 'No skills listed yet.');
+
+  renderActions();
+  renderProjects();
+  renderGithub();
+}
+
+function actionButton(id, icon, label, handler, primary, extra) {
+  const style = primary
+    ? 'bg-primary hover:bg-primary-container text-on-primary shadow-sm'
+    : 'bg-surface-container-high hover:bg-surface-variant text-primary font-bold';
+  return `<button id="${id}" type="button" onclick="${handler}" ${extra || ''} class="w-full py-2 px-space-md ${style} font-label-md text-label-md rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60">
+      <span class="material-symbols-outlined text-[18px]">${icon}</span><span>${label}</span>
+    </button>`;
+}
+
+function renderActions() {
+  const container = el('actionBtnsContainer');
+  if (showsOwnerControls()) {
+    container.innerHTML =
+      actionButton('editProfileBtn', 'edit_note', 'Edit Profile', 'openEditModal()', false) +
+      actionButton('logoutBtn', 'logout', 'Log Out', 'window.logout()', true);
+    return;
+  }
+  // What a visitor gets. In the owner's preview the buttons are shown but do nothing.
+  const inert = previewingPublic ? 'disabled' : '';
+  container.innerHTML =
+    actionButton('openMessageBtn', 'chat', 'Message', `window.location.href='inbox.html?user=${viewedUserId}'`, true, inert) +
+    actionButton('followBtn', profile.is_following ? 'person_remove' : 'person_add', profile.is_following ? 'Following' : 'Follow', 'toggleFollow()', false, inert) +
+    actionButton('saveProfileBtn', profile.is_saved ? 'bookmark_added' : 'bookmark_add', profile.is_saved ? 'Saved' : 'Save Profile', 'toggleSave()', false, inert);
+}
+
+// ==========================================
+// 3. FOLLOW, SAVE, FOLLOWER LISTS
+// ==========================================
+async function toggleFollow() {
+  const button = el('followBtn');
+  if (button) button.disabled = true;
+  try {
+    const result = await api(`/api/follow/${viewedUserId}`, { method: 'POST' });
+    const nowFollowing = result.status === 'followed';
+    if (nowFollowing !== profile.is_following) profile.followers_count = Math.max(0, (profile.followers_count || 0) + (nowFollowing ? 1 : -1));
+    profile.is_following = nowFollowing;
+    profileChanged();
+    el('followersCount').textContent = profile.followers_count;
+    showToast(nowFollowing ? `You are now following ${profile.name}.` : `You unfollowed ${profile.name}.`);
+  } catch (err) {
+    showToast(err.message);
+  }
+  renderActions();
+}
+
+async function toggleSave() {
+  const button = el('saveProfileBtn');
+  if (button) button.disabled = true;
+  try {
+    const result = await api(`/api/save/${viewedUserId}`, { method: 'POST' });
+    profile.is_saved = result.status === 'saved';
+    profileChanged();
+    showToast(profile.is_saved ? 'Saved. Find it under Saved Profiles.' : 'Removed from Saved Profiles.');
+  } catch (err) {
+    showToast(err.message);
+  }
+  renderActions();
+}
+
+let connectionsKind = 'followers';
+let connectionsPeople = [];
+
+async function openConnections(kind) {
+  connectionsKind = kind;
+  el('connectionsTitle').textContent = kind === 'followers' ? 'Followers' : 'Following';
+  el('connectionsList').innerHTML = '<p class="text-center text-on-surface-variant py-6" style="margin:0;">Loading...</p>';
+  el('connectionsModal').classList.add('active');
+  try {
+    connectionsPeople = await api(`/api/users/${viewedUserId}/${kind}`);
+    renderConnections();
+  } catch (err) {
+    el('connectionsList').innerHTML = `<p class="text-center py-6" style="margin:0; color:#ba1a1a;">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderConnections() {
+  const list = el('connectionsList');
+  if (connectionsPeople.length === 0) {
+    const who = isOwnProfile ? 'You' : (profile ? profile.name : 'They');
+    const text = connectionsKind === 'followers'
+      ? `${isOwnProfile ? 'Nobody follows you yet.' : 'Nobody follows ' + who + ' yet.'}`
+      : `${isOwnProfile ? 'You are not following anyone yet.' : who + ' is not following anyone yet.'}`;
+    list.innerHTML = `<p class="text-center text-on-surface-variant py-6" style="margin:0;">${escapeHtml(text)}</p>`;
+    return;
+  }
+  list.innerHTML = connectionsPeople.map(person => {
+    const picture = person.profile_pic
+      ? `<img src="${escapeHtml(person.profile_pic)}" alt="" class="w-full h-full object-cover">`
+      : `<span class="text-sm font-bold">${escapeHtml(getInitials(person.name || '?'))}</span>`;
+    const followButton = person.id === currentUserId ? '' :
+      `<button type="button" onclick="toggleFollowInList(${person.id})" class="px-3 py-1 rounded-lg font-label-sm text-label-sm font-semibold shrink-0 ${person.is_following ? 'bg-surface-container text-on-surface-variant' : 'bg-primary text-on-primary'}">${person.is_following ? 'Following' : 'Follow'}</button>`;
+    return `
+      <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-container-low" data-person-id="${person.id}">
+        <a href="profile.html?id=${person.id}" class="w-10 h-10 rounded-full overflow-hidden bg-primary text-on-primary flex items-center justify-center shrink-0">${picture}</a>
+        <a href="profile.html?id=${person.id}" class="flex-1 min-w-0">
+          <span class="block font-label-md text-label-md font-semibold text-on-surface truncate">${escapeHtml(person.name)}${person.id === currentUserId ? ' (You)' : ''}</span>
+          <span class="block font-body-sm text-body-sm text-on-surface-variant truncate">${escapeHtml([person.college_name, person.department].filter(Boolean).join(' • '))}</span>
+        </a>
+        ${followButton}
+      </div>`;
+  }).join('');
+}
+
+async function toggleFollowInList(personId) {
+  const person = connectionsPeople.find(p => p.id === personId);
+  if (!person) return;
+  try {
+    const result = await api(`/api/follow/${personId}`, { method: 'POST' });
+    person.is_following = result.status === 'followed';
+    // On our own profile, the "Following" number is ours
+    if (isOwnProfile && profile) {
+      profile.following_count = Math.max(0, (profile.following_count || 0) + (person.is_following ? 1 : -1));
+      el('followingCount').textContent = profile.following_count;
+      profileChanged();
     }
+    renderConnections();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let profileIdFromUrl = urlParams.get('id');
-    const currentUserId = localStorage.getItem('currentUserId');
-    
-    let profileId = profileIdFromUrl || currentUserId;
-    let isOwnProfile = (!profileIdFromUrl || profileId === currentUserId);
+// ==========================================
+// 4. HEADER BAR: SHARE, PUBLIC VIEW, RESUME
+// ==========================================
+async function shareProfile() {
+  const link = `${window.location.origin}${window.location.pathname}?id=${viewedUserId}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    showToast('Profile link copied.');
+  } catch (err) {
+    // Clipboard access can be blocked: show the link so it can be copied by hand
+    window.showSystemModal('Share Profile', `Copy this link:\n${escapeHtml(link)}`, 'alert');
+  }
+}
 
-    if (!profileId) {
-        const nameEl = document.getElementById('profileName');
-        const bioEl = document.getElementById('profileBio');
-        if(nameEl) nameEl.textContent = "Error: Please log in.";
-        if(bioEl) bioEl.textContent = "Please go to the Log In page first.";
-        return;
-    }
+function togglePublicView() {
+  if (!isOwnProfile) return;
+  previewingPublic = !previewingPublic;
+  document.body.classList.toggle('is-own', !previewingPublic);
+  el('previewBanner').classList.toggle('hidden', !previewingPublic);
+  renderProfile();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    const actionBtnsContainer = document.getElementById('actionBtnsContainer');
-    if (actionBtnsContainer) {
-        if (isOwnProfile) {
-            // Render Tailwind styled buttons for own profile
-            actionBtnsContainer.innerHTML = `
-                <button id="editProfileBtn" class="w-full py-2 px-space-md bg-surface-container-high hover:bg-surface-variant text-primary font-label-md text-label-md rounded-lg transition-colors flex items-center justify-center gap-1.5 font-bold" type="button">
-                    <span class="material-symbols-outlined text-[18px]">edit_note</span>
-                    <span>Edit Profile</span>
-                </button>
-                <button id="logoutBtn" class="w-full py-2 px-space-md bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5" type="button">
-                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                    <span>Log Out</span>
-                </button>
-            `;
+function buildResumeSheet() {
+  const skills = splitList(profile.skills);
+  const facts = [profile.college_name, profile.department, profile.division ? `Division ${profile.division}` : '', profile.city].filter(Boolean);
+  const link = `${window.location.origin}${window.location.pathname}?id=${viewedUserId}`;
+  const github = profile.github_username ? `<p>GitHub: github.com/${escapeHtml(profile.github_username)}</p>` : '';
+  const projects = (profile.projects || []).map(p => `
+    <div class="project">
+      <h3>${escapeHtml(p.title)}</h3>
+      ${p.tech_stack ? `<p class="muted">${escapeHtml(p.tech_stack)}</p>` : ''}
+      ${p.description ? `<p>${escapeHtml(p.description)}</p>` : ''}
+      ${[p.github_link, p.live_link].filter(Boolean).map(l => `<p class="muted">${escapeHtml(l)}</p>`).join('')}
+    </div>`).join('');
 
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                window.showSystemModal("Log Out", "Are you sure you want to securely log out of ProPartner?", "confirm", () => {
-                    localStorage.removeItem('currentUserId');
-                    window.location.href = "login.html";
-                }, "Log Out");
-            });
+  el('resumeSheet').innerHTML = `
+    <h1>${escapeHtml(profile.name || '')}</h1>
+    <p class="muted">${escapeHtml(facts.join(' · '))}</p>
+    <p class="muted">${escapeHtml(link)}</p>
+    ${github}
+    ${profile.bio ? `<h2>About</h2><p>${escapeHtml(profile.bio)}</p>` : ''}
+    <h2>Education</h2>
+    <p><strong>${escapeHtml(profile.college_name || 'Not listed')}</strong></p>
+    <p>${escapeHtml([profile.department, profile.roll_no ? 'Roll no. ' + profile.roll_no : ''].filter(Boolean).join(' · '))}</p>
+    ${skills.length ? `<h2>Skills</h2><p>${escapeHtml(skills.join(', '))}</p>` : ''}
+    ${projects ? `<h2>Projects</h2>${projects}` : ''}`;
+}
 
-            const editModal = document.getElementById('editModal');
-            const editProfileBtn = document.getElementById('editProfileBtn');
-            if(editProfileBtn && editModal) {
-                editProfileBtn.addEventListener('click', () => editModal.style.display = 'flex');
-            }
-            const closeModalBtn = document.getElementById('closeModalBtn');
-            if(closeModalBtn && editModal) {
-                closeModalBtn.addEventListener('click', () => editModal.style.display = 'none');
-            }
-        } else {
-            // Render Tailwind styled buttons for other user's profile
-            actionBtnsContainer.innerHTML = `
-                <button id="openMessageBtn" class="w-full py-2 px-space-md bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5" type="button">
-                    <span class="material-symbols-outlined text-[18px]">chat</span>
-                    <span>Message</span>
-                </button>
-                <button id="followBtn" class="w-full py-2 px-space-md bg-surface-container-high hover:bg-surface-variant text-primary font-label-md text-label-md rounded-lg transition-colors flex items-center justify-center gap-1.5 font-bold" type="button">
-                    <span class="material-symbols-outlined text-[18px]">person_add</span>
-                    <span>Follow Developer</span>
-                </button>
-            `;
+function exportResume() {
+  if (!profile) return;
+  buildResumeSheet();
+  // The browser's print dialog offers "Save as PDF"
+  window.print();
+}
 
-            const messageModal = document.getElementById('messageModal');
-            
-            document.getElementById('openMessageBtn').addEventListener('click', () => {
-                if (!currentUserId) {
-                    window.showSystemModal("Authentication Required", "You must be logged in to send messages to other developers.", "alert", () => {
-                        window.location.href = "login.html";
-                    }, "Go to Login");
-                    return;
-                }
-                const dmReceiverName = document.getElementById('dmReceiverName');
-                if(dmReceiverName && currentProfileData) dmReceiverName.textContent = currentProfileData.name;
-                if(messageModal) messageModal.style.display = 'flex';
-            });
+// ==========================================
+// 5. EDITING THE PROFILE
+// ==========================================
+function closeProfileModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => { if (m.id !== 'systemModal') m.classList.remove('active'); });
+  destroyCropper();
+}
 
-            const closeMessageBtn = document.getElementById('closeMessageBtn');
-            if(closeMessageBtn && messageModal) {
-                closeMessageBtn.addEventListener('click', () => messageModal.style.display = 'none');
-            }
+function showFormError(id, message) {
+  const node = el(id);
+  node.textContent = message || '';
+  node.classList.toggle('hidden', !message);
+}
 
-            document.getElementById('followBtn').addEventListener('click', async (e) => {
-                if (!currentUserId) {
-                    window.showSystemModal("Authentication Required", "You must be logged in to follow developers and expand your network.", "alert", () => {
-                        window.location.href = "login.html";
-                    }, "Go to Login");
-                    return;
-                }
-                
-                e.target.textContent = "Following...";
-                try {
-                    const res = await fetch(`${API_BASE}/api/follow/${profileId}`, {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
+function renderSkillPreview() {
+  el('editSkillsPreview').innerHTML = splitList(el('editSkills').value)
+    .map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`).join('');
+}
 
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'followed') {
-                            e.target.closest('button').innerHTML = '<span class="material-symbols-outlined text-[18px]">person_remove</span><span>Following ✓</span>';
-                            e.target.closest('button').style.background = '#e2e8f0';
-                        } else {
-                            e.target.closest('button').innerHTML = '<span class="material-symbols-outlined text-[18px]">person_add</span><span>Follow Developer</span>';
-                            e.target.closest('button').style.background = '';
-                        }
-                    }
-                } catch (err) { console.error('Follow error:', err); }
-            });
-        }
-    }
+function updateBioCount() {
+  el('editBioCount').textContent = `${el('editBio').value.length} / 500`;
+}
 
-    // --- FETCH PROFILE DATA ---
-    let currentProfileData = {}; 
+function renderEditPreviews() {
+  el('editAvatarPreview').innerHTML = profile.profile_pic
+    ? `<img src="${escapeHtml(profile.profile_pic)}" alt="" class="w-full h-full object-cover">`
+    : escapeHtml(getInitials(profile.name || '?'));
+  el('editBannerPreview').innerHTML = profile.banner_pic
+    ? `<img src="${escapeHtml(profile.banner_pic)}" alt="" class="w-full h-full object-cover">`
+    : '';
+}
+
+let profileOptionsLoaded = false;
+async function loadProfileOptions() {
+  if (profileOptionsLoaded) return;
+  profileOptionsLoaded = true;
+  try {
+    const options = await api('/api/profile-options');
+    el('collegeOptions').innerHTML = options.colleges.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+    el('departmentOptions').innerHTML = options.departments.map(d => `<option value="${escapeHtml(d)}"></option>`).join('');
+  } catch (err) {
+    profileOptionsLoaded = false;   // suggestions are a convenience; try again next time
+  }
+}
+
+function openEditModal(focusId) {
+  if (!isOwnProfile || !profile) return;
+  el('editName').value = profile.name || '';
+  el('editCollege').value = profile.college_name || '';
+  el('editCity').value = profile.city || '';
+  el('editDept').value = profile.department || '';
+  el('editDiv').value = profile.division || '';
+  el('editSkills').value = profile.skills || '';
+  el('editBio').value = profile.bio || '';
+  showFormError('editError', '');
+  renderSkillPreview();
+  updateBioCount();
+  renderEditPreviews();
+  loadProfileOptions();
+  el('editModal').classList.add('active');
+  setTimeout(() => el(focusId || 'editName').focus(), 50);
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  const button = el('editSaveBtn');
+  button.disabled = true;
+  button.textContent = 'Saving...';
+  showFormError('editError', '');
+  try {
+    const result = await api(`/api/profiles/${currentUserId}`, {
+      method: 'PUT',
+      body: {
+        name: el('editName').value,
+        college_name: el('editCollege').value,
+        city: el('editCity').value,
+        department: el('editDept').value,
+        division: el('editDiv').value,
+        skills: el('editSkills').value,
+        bio: el('editBio').value
+      }
+    });
+    Object.assign(profile, result.profile);
+    profileChanged();
+    renderProfile();
+    el('editModal').classList.remove('active');
+    showToast('Profile updated.');
+  } catch (err) {
+    showFormError('editError', err.message);
+  }
+  button.disabled = false;
+  button.textContent = 'Save Changes';
+}
+
+// ===== PICTURES =====
+function loadCropper() {
+  if (window.Cropper) return Promise.resolve();
+  if (!cropperLoading) {
+    cropperLoading = new Promise((resolve, reject) => {
+      const base = `https://cdnjs.cloudflare.com/ajax/libs/cropperjs/${CROPPER_VERSION}`;
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = `${base}/cropper.min.css`;
+      document.head.appendChild(css);
+      const script = document.createElement('script');
+      script.src = `${base}/cropper.min.js`;
+      script.onload = resolve;
+      script.onerror = () => { cropperLoading = null; reject(new Error('The picture editor could not be loaded. Check your connection.')); };
+      document.head.appendChild(script);
+    });
+  }
+  return cropperLoading;
+}
+
+function choosePicture(kind) {
+  if (!isOwnProfile) return;
+  cropKind = kind;
+  el('pictureFileInput').click();
+}
+
+function onPictureChosen(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Please choose an image file.');
+  if (file.size > 15 * 1024 * 1024) return showToast('That image is too large to edit. Please choose one under 15 MB.');
+
+  const reader = new FileReader();
+  reader.onload = async () => {
     try {
-        const response = await fetch(`${API_BASE}/api/profiles/${profileId}`, { credentials: 'include' });
-        if (response.ok) {
-            currentProfileData = await response.json();
-            
-            const profileNameEl = document.getElementById('profileName');
-            if(profileNameEl) profileNameEl.textContent = currentProfileData.name || "Unknown Developer";
-            
-            const profileCollegeEl = document.getElementById('profileCollege');
-            if(profileCollegeEl) profileCollegeEl.textContent = currentProfileData.college_name || "Unknown College";
-            
-            const profileCityEl = document.getElementById('profileCity');
-            if(profileCityEl) profileCityEl.textContent = currentProfileData.city || "Unknown City";
-            
-            const profileBioEl = document.getElementById('profileBio');
-            if(profileBioEl) profileBioEl.textContent = currentProfileData.bio || "No bio yet.";
-            
-            // Populate extra placeholders
-            const addProjectBtn = document.getElementById('addProjectBtn');
-            if (addProjectBtn) addProjectBtn.style.display = isOwnProfile ? 'flex' : 'none';
-            
-            const profileRoll = document.getElementById('profileRoll');
-            if (profileRoll) profileRoll.textContent = currentProfileData.roll_no || "N/A";
-            
-            const profileDept = document.getElementById('profileDept');
-            if (profileDept) profileDept.textContent = currentProfileData.department || "N/A";
-            
-            const profileDiv = document.getElementById('profileDiv');
-            if (profileDiv) profileDiv.textContent = currentProfileData.division || "N/A";
-            
-            const breadcrumbName = document.getElementById('breadcrumbName');
-            if (breadcrumbName) breadcrumbName.textContent = currentProfileData.name || "Developer";
-            
-            const accountTypeBadge = document.getElementById('accountTypeBadge');
-            if (accountTypeBadge && currentProfileData.account_type) accountTypeBadge.textContent = currentProfileData.account_type.toUpperCase();
-            
-            const followersCount = document.getElementById('followersCount');
-            if (followersCount) followersCount.textContent = currentProfileData.followers_count || "0";
-            
-            const followingCount = document.getElementById('followingCount');
-            if (followingCount) followingCount.textContent = currentProfileData.following_count || "0";
-            
-            // Currently DBUser doesn't return projects or github stats via this endpoint natively unless appended.
-            // But we will ensure the containers exist and handle them if data was there.
-            const projectList = document.getElementById('projectList');
-            if (projectList) {
-                if (!currentProfileData.projects || currentProfileData.projects.length === 0) {
-                    projectList.innerHTML = '<div class="col-span-full py-8 text-center text-on-surface-variant">No projects available.</div>';
-                }
-            }
-
-
-            if (currentProfileData.profile_pic) {
-                const displayAvatar = document.getElementById('displayAvatar');
-                if(displayAvatar) displayAvatar.src = currentProfileData.profile_pic;
-                
-                const avatarPreviewRender = document.getElementById('avatarPreviewRender');
-                if(isOwnProfile && avatarPreviewRender) avatarPreviewRender.src = currentProfileData.profile_pic;
-            }
-            
-            if (currentProfileData.banner_pic) {
-                const displayBanner = document.getElementById('displayBanner');
-                if(displayBanner) {
-                    if (displayBanner.tagName.toLowerCase() === 'img') {
-                        displayBanner.src = currentProfileData.banner_pic;
-                    } else {
-                        displayBanner.style.backgroundImage = `url('${currentProfileData.banner_pic}')`;
-                        displayBanner.style.backgroundSize = 'cover';
-                    }
-                }
-                
-                const bannerPreviewRender = document.getElementById('bannerPreviewRender');
-                if(isOwnProfile && bannerPreviewRender) {
-                    bannerPreviewRender.src = currentProfileData.banner_pic;
-                    bannerPreviewRender.style.display = 'block';
-                }
-            }
-
-            const skillsContainer = document.getElementById('profileSkills');
-            if(skillsContainer) {
-                skillsContainer.innerHTML = '';
-                const skillsArray = (currentProfileData.skills || "").split(',').map(s => s.trim()).filter(s => s !== "");
-                
-                if (skillsArray.length > 0) {
-                    skillsArray.forEach(skill => {
-                        // Re-create the Tailwind skill pills dynamically
-                        const pillDiv = document.createElement('div');
-                        pillDiv.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-skill-pill text-skill-pill';
-                        pillDiv.innerHTML = `<span>${escapeHtml(skill)}</span>`;
-                        skillsContainer.appendChild(pillDiv);
-                    });
-                } else {
-                    skillsContainer.innerHTML = '<span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-skill-pill text-skill-pill">No skills listed</span>';
-                }
-            }
-
-            if (isOwnProfile) {
-                const editName = document.getElementById('editName');
-                if(editName) editName.value = currentProfileData.name;
-                
-                const editCity = document.getElementById('editCity');
-                if(editCity) editCity.value = currentProfileData.city;
-                
-                const editDiv = document.getElementById('editDiv');
-                if(editDiv) editDiv.value = currentProfileData.division;
-                
-                const editSkills = document.getElementById('editSkills');
-                if(editSkills) editSkills.value = currentProfileData.skills;
-                
-                const editBio = document.getElementById('editBio');
-                if(editBio) editBio.value = currentProfileData.bio;
-                
-                if (collegeChoice && currentProfileData.college_name) {
-                    collegeChoice.setChoiceByValue(currentProfileData.college_name);
-                }
-                if (deptChoice && currentProfileData.department) {
-                    deptChoice.setChoiceByValue(currentProfileData.department);
-                }
-            }
-        }
-    } catch (error) { console.error('Error fetching profile:', error); }
-
-    // --- CROPPER.JS IMAGE UPLOAD LOGIC ---
-    if (isOwnProfile) {
-        let cropper = null;
-        let currentCropTarget = '';
-        let croppedAvatarBlob = null;
-        let croppedBannerBlob = null;
-
-        const cropModal = document.getElementById('cropModal');
-        const cropImageTarget = document.getElementById('cropImageTarget');
-        
-        const triggerAvatar = document.getElementById('triggerAvatarUpload');
-        if(triggerAvatar) triggerAvatar.addEventListener('click', () => document.getElementById('editAvatarFile').click());
-        
-        const triggerBanner = document.getElementById('triggerBannerUpload');
-        if(triggerBanner) triggerBanner.addEventListener('click', () => document.getElementById('editBannerFile').click());
-
-        const editAvatarFile = document.getElementById('editAvatarFile');
-        if(editAvatarFile) editAvatarFile.addEventListener('change', (e) => handleFileSelect(e, 'avatar'));
-        
-        const editBannerFile = document.getElementById('editBannerFile');
-        if(editBannerFile) editBannerFile.addEventListener('change', (e) => handleFileSelect(e, 'banner'));
-
-        function handleFileSelect(event, type) {
-            const file = event.target.files[0];
-            if (file) {
-                currentCropTarget = type;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    if(cropImageTarget) cropImageTarget.src = e.target.result;
-                    const title = document.getElementById('cropModalTitle');
-                    if(title) title.textContent = type === 'avatar' ? 'Crop Profile Picture' : 'Crop Banner Image';
-                    if(cropModal) cropModal.style.display = 'flex';
-                    
-                    if (cropper) cropper.destroy();
-                    
-                    if(cropImageTarget) {
-                        cropper = new Cropper(cropImageTarget, {
-                            aspectRatio: type === 'avatar' ? 1 : 16 / 5,
-                            viewMode: 1,
-                            autoCropArea: 1,
-                            background: false,
-                            zoomable: true
-                        });
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-            event.target.value = '';
-        }
-
-        const applyCropBtn = document.getElementById('applyCropBtn');
-        if(applyCropBtn) {
-            applyCropBtn.addEventListener('click', () => {
-                if (cropper) {
-                    cropper.getCroppedCanvas().toBlob((blob) => {
-                        const objectUrl = URL.createObjectURL(blob);
-                        
-                        if (currentCropTarget === 'avatar') {
-                            const render = document.getElementById('avatarPreviewRender');
-                            if(render) render.src = objectUrl;
-                            croppedAvatarBlob = blob;
-                        } else {
-                            const render = document.getElementById('bannerPreviewRender');
-                            if(render) {
-                                render.src = objectUrl;
-                                render.style.display = 'block';
-                            }
-                            croppedBannerBlob = blob;
-                        }
-                        
-                        if(cropModal) cropModal.style.display = 'none';
-                        cropper.destroy();
-                        cropper = null;
-                    });
-                }
-            });
-        }
-
-        const closeCropBtn = document.getElementById('closeCropBtn');
-        if(closeCropBtn) {
-            closeCropBtn.addEventListener('click', () => {
-                if(cropModal) cropModal.style.display = 'none';
-                if(cropper) { cropper.destroy(); cropper = null; }
-            });
-        }
-
-        // --- SUBMIT FINAL EDITED PROFILE ---
-        const editProfileForm = document.getElementById('editProfileForm');
-        if(editProfileForm) {
-            editProfileForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                if(submitBtn) submitBtn.textContent = "Saving...";
-
-                let avatarUrl = currentProfileData.profile_pic || "";
-                let bannerUrl = currentProfileData.banner_pic || "";
-
-                if (croppedAvatarBlob) {
-                    const fd = new FormData(); 
-                    fd.append("file", croppedAvatarBlob, "avatar.png");
-                    const res = await fetch(`${API_BASE}/api/upload/profile-pic`, { method: 'POST', body: fd, credentials: 'include' });
-                    if (res.ok) avatarUrl = (await res.json()).url;
-                }
-                
-                if (croppedBannerBlob) {
-                    const fd = new FormData(); 
-                    fd.append("file", croppedBannerBlob, "banner.png");
-                    const res = await fetch(`${API_BASE}/api/upload/banner-pic`, { method: 'POST', body: fd, credentials: 'include' });
-                    if (res.ok) bannerUrl = (await res.json()).url;
-                }
-
-                const updateRes = await fetch(`${API_BASE}/api/profiles/${profileId}`, {
-                    method: 'PUT',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: document.getElementById('editName') ? document.getElementById('editName').value : currentProfileData.name,
-                        college_name: document.getElementById('editCollege') ? document.getElementById('editCollege').value : currentProfileData.college_name,
-                        city: document.getElementById('editCity') ? document.getElementById('editCity').value : currentProfileData.city,
-                        department: document.getElementById('editDept') ? document.getElementById('editDept').value : currentProfileData.department,
-                        division: document.getElementById('editDiv') ? document.getElementById('editDiv').value : currentProfileData.division,
-                        skills: document.getElementById('editSkills') ? document.getElementById('editSkills').value : currentProfileData.skills,
-                        bio: document.getElementById('editBio') ? document.getElementById('editBio').value : currentProfileData.bio,
-                        profile_pic: avatarUrl,
-                        banner_pic: bannerUrl
-                    })
-                });
-                if (updateRes.ok) {
-                    window.location.reload();
-                } else {
-                    window.showSystemModal('Error', 'Failed to update profile. Please try again.', 'alert');
-                    if(submitBtn) submitBtn.textContent = "Save Changes";
-                }
-            });
-        }
+      await loadCropper();
+    } catch (err) {
+      return showToast(err.message);
     }
+    const target = el('cropImageTarget');
+    destroyCropper();
+    el('cropModalTitle').textContent = cropKind === 'profile' ? 'Crop Profile Picture' : 'Crop Banner';
+    el('cropModal').classList.add('active');
+    target.onload = () => {
+      destroyCropper();
+      cropper = new Cropper(target, {
+        aspectRatio: cropKind === 'profile' ? 1 : 16 / 5,
+        viewMode: 1,
+        autoCropArea: 1,
+        background: false
+      });
+    };
+    target.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
 
-    // --- HANDLE SENDING MESSAGES ---
-    const sendMessageForm = document.getElementById('sendMessageForm');
-    if(sendMessageForm) {
-        sendMessageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const dmContent = document.getElementById('dmContent').value;
-            const statusText = document.getElementById('dmStatus');
+function destroyCropper() {
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+}
 
-            const res = await fetch(`${API_BASE}/api/messages`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sender_id: parseInt(currentUserId),
-                    receiver_id: parseInt(profileId),
-                    content: dmContent
-                })
-            });
+function cancelCrop() {
+  el('cropModal').classList.remove('active');
+  destroyCropper();
+}
 
-            if (res.ok) {
-                try { await fetch(`${API_BASE}/api/history?action_type=Message Sent&detail=You started a conversation with developer %23${profileId}`, { method: 'POST', credentials: 'include' }); } catch(err){}
-                if(statusText) statusText.style.display = 'block';
-                setTimeout(() => { 
-                    const msgModal = document.getElementById('messageModal');
-                    if(msgModal) msgModal.style.display = 'none'; 
-                }, 1500);
-            }
-        });
+async function uploadPicture(path, blob, filename) {
+  const form = new FormData();
+  form.append('file', blob, filename);
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { method: 'POST', body: form, credentials: 'include' });
+  } catch (err) {
+    throw new Error('Could not reach the server.');
+  }
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* not JSON */ }
+  if (res.status === 401) { handleLoggedOut(); throw new Error('Please log in again.'); }
+  if (!res.ok) throw new Error(data && typeof data.detail === 'string' ? data.detail : 'Upload failed. Please try again.');
+  return data.url;
+}
+
+async function applyCrop() {
+  if (!cropper) return;
+  const kind = cropKind;
+  const button = el('applyCropBtn');
+  button.disabled = true;
+  button.textContent = 'Saving...';
+  try {
+    // Keep uploads small: these sizes are plenty for how the pictures are shown
+    const canvas = cropper.getCroppedCanvas(kind === 'profile' ? { width: 512, height: 512 } : { width: 1600, height: 500 });
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    if (!blob) throw new Error('That image could not be processed.');
+    const url = await uploadPicture(kind === 'profile' ? '/api/upload/profile-pic' : '/api/upload/banner-pic', blob, `${kind}.jpg`);
+    profile[kind === 'profile' ? 'profile_pic' : 'banner_pic'] = url;
+    profileChanged();
+    renderProfile();
+    if (el('editModal').classList.contains('active')) renderEditPreviews();
+    cancelCrop();
+    showToast(kind === 'profile' ? 'Profile picture updated.' : 'Banner updated.');
+  } catch (err) {
+    showToast(err.message);
+  }
+  button.disabled = false;
+  button.textContent = 'Save Picture';
+}
+
+// ==========================================
+// 6. PROJECTS
+// ==========================================
+function renderProjects() {
+  const list = el('projectList');
+  const projects = profile.projects || [];
+  if (projects.length === 0) {
+    list.innerHTML = `
+      <div class="col-span-full py-8 text-center text-on-surface-variant">
+        <span class="material-symbols-outlined text-[32px] text-outline">folder_open</span>
+        <p class="mt-1">${showsOwnerControls() ? 'No projects yet. Add one to show what you have built.' : 'No projects yet.'}</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = projects.map(p => {
+    const links = [
+      p.github_link ? `<a href="${escapeHtml(safeUrl(p.github_link))}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-primary font-label-md text-label-md font-semibold hover:underline"><span class="material-symbols-outlined text-[16px]">code</span>Code</a>` : '',
+      p.live_link ? `<a href="${escapeHtml(safeUrl(p.live_link))}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-primary font-label-md text-label-md font-semibold hover:underline"><span class="material-symbols-outlined text-[16px]">open_in_new</span>Live</a>` : ''
+    ].join('');
+    const ownerButtons = showsOwnerControls() ? `
+        <span class="ml-auto flex items-center gap-1">
+          <button type="button" onclick="openProjectModal(${p.id})" class="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-low" title="Edit project"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+          <button type="button" onclick="deleteProject(${p.id})" class="p-1 rounded text-on-surface-variant hover:text-error hover:bg-surface-container-low" title="Delete project"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+        </span>` : '';
+    return `
+      <article class="rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest flex flex-col" data-project-id="${p.id}">
+        ${p.image_url ? `<img src="${escapeHtml(p.image_url)}" alt="" loading="lazy" class="w-full h-36 object-cover bg-surface-container-low" onerror="this.remove()">` : ''}
+        <div class="p-space-md flex flex-col gap-2 flex-1">
+          <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface break-words">${escapeHtml(p.title)}</h3>
+          ${p.description ? `<p class="font-body-sm text-body-sm text-on-surface-variant whitespace-pre-line break-words line-clamp-3">${escapeHtml(p.description)}</p>` : ''}
+          <div class="flex flex-wrap gap-1.5">${splitList(p.tech_stack).map(t => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(t)}</span>`).join('')}</div>
+          <div class="flex items-center gap-3 mt-auto pt-2">${links}${ownerButtons}</div>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function setProjectImage(url) {
+  projectImageUrl = url || '';
+  el('projectImagePreview').innerHTML = projectImageUrl
+    ? `<img src="${escapeHtml(projectImageUrl)}" alt="" class="w-full h-full object-cover">`
+    : '<span class="material-symbols-outlined">image</span>';
+  el('projectImageRemove').classList.toggle('hidden', !projectImageUrl);
+}
+
+function openProjectModal(projectId) {
+  if (!isOwnProfile) return;
+  const existing = projectId ? (profile.projects || []).find(p => p.id === projectId) : null;
+  editingProjectId = existing ? existing.id : null;
+  el('projectModalTitle').textContent = existing ? 'Edit Project' : 'Add Project';
+  el('projectTitle').value = existing ? existing.title : '';
+  el('projectDescription').value = existing ? existing.description : '';
+  el('projectTech').value = existing ? existing.tech_stack : '';
+  el('projectGithub').value = existing ? existing.github_link : '';
+  el('projectLive').value = existing ? existing.live_link : '';
+  setProjectImage(existing ? existing.image_url : '');
+  showFormError('projectError', '');
+  el('projectModal').classList.add('active');
+  setTimeout(() => el('projectTitle').focus(), 50);
+}
+
+async function uploadProjectImage(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  showFormError('projectError', '');
+  el('projectImagePreview').innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span>';
+  try {
+    setProjectImage(await uploadPicture('/api/upload/project-pic', file, file.name));
+  } catch (err) {
+    setProjectImage(projectImageUrl);
+    showFormError('projectError', err.message);
+  }
+}
+
+async function saveProject(e) {
+  e.preventDefault();
+  const button = el('projectSaveBtn');
+  button.disabled = true;
+  button.textContent = 'Saving...';
+  showFormError('projectError', '');
+  const body = {
+    title: el('projectTitle').value,
+    description: el('projectDescription').value,
+    tech_stack: el('projectTech').value,
+    github_link: el('projectGithub').value,
+    live_link: el('projectLive').value,
+    image_url: projectImageUrl
+  };
+  try {
+    if (editingProjectId) {
+      const saved = await api(`/api/projects/${editingProjectId}`, { method: 'PUT', body });
+      profile.projects = profile.projects.map(p => p.id === saved.id ? saved : p);
+    } else {
+      const saved = await api('/api/projects', { method: 'POST', body });
+      profile.projects = [saved].concat(profile.projects || []);
     }
-});
+    profileChanged();
+    renderProjects();
+    el('projectModal').classList.remove('active');
+    showToast(editingProjectId ? 'Project updated.' : 'Project added.');
+  } catch (err) {
+    showFormError('projectError', err.message);
+  }
+  button.disabled = false;
+  button.textContent = 'Save Project';
+}
+
+function deleteProject(projectId) {
+  const project = (profile.projects || []).find(p => p.id === projectId);
+  if (!project) return;
+  window.showSystemModal('Delete Project', `Delete ${escapeHtml(project.title)} from your portfolio? This cannot be undone.`, 'confirm', async () => {
+    try {
+      await api(`/api/projects/${projectId}`, { method: 'DELETE' });
+      profile.projects = profile.projects.filter(p => p.id !== projectId);
+      profileChanged();
+      renderProjects();
+      showToast('Project deleted.');
+    } catch (err) {
+      showToast(err.message);
+    }
+  }, 'Delete');
+}
+
+// ==========================================
+// 7. GITHUB
+// ==========================================
+let githubState = 'idle';   // idle | loading | ready | error
+let githubErrorText = '';
+
+function renderGithub() {
+  const body = el('githubBody');
+  const action = el('githubHeaderAction');
+  const username = profile.github_username;
+
+  if (!username) {
+    action.innerHTML = '';
+    body.innerHTML = showsOwnerControls()
+      ? `<div class="py-6 text-center">
+           <p class="font-body-md text-body-md text-on-surface-variant mb-3">Connect your GitHub account to show your repositories and contribution chart.</p>
+           <button type="button" id="githubConnectBtn" onclick="openGithubModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg">Connect GitHub</button>
+         </div>`
+      : `<p class="py-4 font-body-md text-body-md text-on-surface-variant">${escapeHtml(profile.name || 'This person')} has not connected a GitHub account.</p>`;
+    return;
+  }
+
+  action.innerHTML = `
+    <span class="flex items-center gap-2">
+      <a href="https://github.com/${encodeURIComponent(username)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg"><span class="w-2 h-2 rounded-full bg-tertiary"></span>@${escapeHtml(username)}</a>
+      <button type="button" onclick="disconnectGithub()" class="own-only p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-surface-container-low" title="Disconnect GitHub"><span class="material-symbols-outlined text-[18px]">link_off</span></button>
+    </span>`;
+
+  if (githubState === 'loading' || githubState === 'idle') {
+    body.innerHTML = '<p class="py-6 text-center text-on-surface-variant">Loading GitHub activity...</p>';
+    return;
+  }
+  if (githubState === 'error') {
+    body.innerHTML = `<div class="py-6 text-center">
+        <p class="font-body-md text-body-md text-on-surface-variant mb-3">${escapeHtml(githubErrorText)}</p>
+        <button type="button" onclick="loadGithub(true)" class="px-4 py-2 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg">Try again</button>
+      </div>`;
+    return;
+  }
+
+  const g = githubStats;
+  const stat = (value, label) => `<div class="p-space-sm bg-surface-container-low rounded-lg text-center"><span class="font-headline-sm text-headline-sm text-on-surface font-bold block">${value}</span><span class="font-label-sm text-label-sm text-on-surface-variant">${label}</span></div>`;
+  const languages = Object.keys(g.languages || {});
+  body.innerHTML = `
+    <div class="grid grid-cols-3 gap-space-sm mb-space-md">
+      ${stat(g.public_repos, 'Repositories')}${stat(g.total_stars, 'Stars')}${stat(g.followers, 'Followers')}
+    </div>
+    ${languages.length ? `<div class="flex flex-wrap gap-1.5 mb-space-md">${languages.map(l => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(l)}</span>`).join('')}</div>` : ''}
+    <div class="overflow-x-auto mb-space-md"><img src="${escapeHtml(g.heatmap_url)}" alt="GitHub contribution chart for ${escapeHtml(g.username)}" class="max-w-none" style="min-width: 640px; width: 100%;" loading="lazy" onerror="this.parentNode.remove()"></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-space-sm">
+      ${(g.top_repos || []).map(r => `
+        <a href="${escapeHtml(safeUrl(r.html_url))}" target="_blank" rel="noopener" class="block p-space-sm rounded-lg border border-outline-variant/30 hover:border-primary/50 transition-colors">
+          <span class="flex items-center justify-between gap-2">
+            <span class="font-label-md text-label-md font-bold text-primary truncate">${escapeHtml(r.name)}</span>
+            <span class="flex items-center gap-0.5 font-label-sm text-label-sm text-on-surface-variant shrink-0"><span class="material-symbols-outlined text-[14px]">star</span>${r.stargazers_count}</span>
+          </span>
+          <span class="block font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mt-0.5">${escapeHtml(r.description)}</span>
+          <span class="block font-label-sm text-label-sm text-on-surface-variant mt-1">${escapeHtml(r.language)}</span>
+        </a>`).join('') || '<p class="text-on-surface-variant">No public repositories yet.</p>'}
+    </div>`;
+}
+
+// Loaded after the rest of the page so a slow GitHub never holds the profile up
+async function loadGithub(force) {
+  const username = profile && profile.github_username;
+  if (!username) {
+    githubState = 'idle';
+    githubStats = null;
+    return renderGithub();
+  }
+  if (!force && githubState === 'ready' && githubStats && githubStats.username.toLowerCase() === username.toLowerCase()) return renderGithub();
+
+  githubState = 'loading';
+  renderGithub();
+  try {
+    githubStats = await api(`/api/github/${encodeURIComponent(username)}`);
+    githubState = 'ready';
+  } catch (err) {
+    githubState = 'error';
+    githubErrorText = err.message;
+  }
+  if (profile.github_username === username) renderGithub();
+}
+
+function openGithubModal() {
+  el('githubUsernameInput').value = '';
+  showFormError('githubError', '');
+  el('githubModal').classList.add('active');
+  setTimeout(() => el('githubUsernameInput').focus(), 50);
+}
+
+async function connectGithub(e) {
+  e.preventDefault();
+  const username = el('githubUsernameInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '');
+  const button = el('githubSaveBtn');
+  button.disabled = true;
+  button.textContent = 'Checking...';
+  showFormError('githubError', '');
+  try {
+    // Make sure the account exists before saving it to the profile
+    const stats = await api(`/api/github/${encodeURIComponent(username)}`);
+    const saved = await api(`/api/user/github?github_username=${encodeURIComponent(stats.username || username)}`, { method: 'PUT' });
+    profile.github_username = saved.github_username;
+    githubStats = stats;
+    githubState = 'ready';
+    profileChanged();
+    renderGithub();
+    el('githubModal').classList.remove('active');
+    showToast('GitHub connected.');
+  } catch (err) {
+    showFormError('githubError', err.message);
+  }
+  button.disabled = false;
+  button.textContent = 'Connect';
+}
+
+function disconnectGithub() {
+  window.showSystemModal('Disconnect GitHub', 'Remove GitHub from your profile? You can connect it again at any time.', 'confirm', async () => {
+    try {
+      await api('/api/user/github?github_username=', { method: 'PUT' });
+      profile.github_username = '';
+      githubStats = null;
+      githubState = 'idle';
+      profileChanged();
+      renderGithub();
+      showToast('GitHub disconnected.');
+    } catch (err) {
+      showToast(err.message);
+    }
+  }, 'Disconnect');
+}
+
+// ===== INIT =====
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initProfile);
+} else {
+  initProfile();
+}

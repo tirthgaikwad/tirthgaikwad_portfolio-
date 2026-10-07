@@ -215,7 +215,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         const currentUserId = localStorage.getItem('currentUserId');
-        if (!currentUserId || !localStorage.getItem('authToken')) {
+        if (!currentUserId) {
             window.location.href = 'login.html';
             return;
         }

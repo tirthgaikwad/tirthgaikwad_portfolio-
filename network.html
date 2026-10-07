@@ -327,7 +327,7 @@
   let profileUrl = '';
 
   document.addEventListener('DOMContentLoaded', async () => {
-    if (!currentUserId || !localStorage.getItem('authToken')) {
+    if (!currentUserId) {
        window.location.href = 'login.html';
        return;
     }

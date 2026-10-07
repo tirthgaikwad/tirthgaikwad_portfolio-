@@ -47,3 +47,11 @@ Tables are created automatically on startup.
 - A workspace opens with one request (`GET /api/teams/{id}/bootstrap`) plus the first page of messages, and keeps one WebSocket open (`/api/ws/teams/{team_id}/{user_id}`) for everything live in that workspace.
 - Voice rooms connect every participant directly to every other one (a WebRTC mesh). That is comfortable for about six people; larger rooms would need a media server.
 - Roles: the creator and Admins can invite, change roles, remove members, and create, rename or delete channels. Only the creator can delete a workspace; everyone else can leave it.
+
+## Profile page
+
+`profile.html` loads `chat-common.js` and `profile.js`. One request (`GET /api/profiles/{id}/page`) returns the profile, follow counts, the viewer's relationship to it, and its projects. The site header on every page is filled from `GET /api/me`, cached in the browser.
+
+- Profile and banner pictures are cropped in the browser and uploaded; the cropping library is only downloaded when a picture is being changed.
+- GitHub is connected by username (no sign-in with GitHub). Results are cached on the server for 10 minutes; GitHub allows about 60 unauthenticated lookups per hour per server address.
+- "Export Resume" builds a print layout and opens the browser's print dialog, which can save as PDF.

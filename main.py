@@ -6,6 +6,7 @@ import uuid
 import hmac
 import asyncio
 import urllib.request
+import urllib.error
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -546,7 +547,8 @@ class ProfileDetailResponse(ProfileResponse):
     followers_count: int
     following_count: int
     is_following: bool
-    is_saved: bool   
+    is_saved: bool
+    account_status: Optional[str] = ""   
 
 class MessageCreate(BaseModel):
     sender_id: int
@@ -934,86 +936,164 @@ async def get_all_profiles(
     return result.scalars().all()
 
 
-@app.get("/api/profiles/{user_id}", response_model=ProfileDetailResponse)
-async def get_single_profile(
-    user_id: int, 
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
-):
-    result = await db.execute(select(DBUser).filter(DBUser.id == user_id))
-    user = result.scalars().first()
-    
-    if not user:
+PUBLIC_PROFILE_FIELDS = (
+    "id", "name", "college_name", "department", "city", "division", "roll_no", "skills", "bio",
+    "profile_pic", "banner_pic", "account_type", "github_username", "is_admin", "account_status"
+)
+
+def public_profile_columns():
+    return [getattr(DBUser, field) for field in PUBLIC_PROFILE_FIELDS]
+
+def public_profile(row) -> dict:
+    """The profile fields anyone logged in may see. Never includes the password hash, email or ID documents."""
+    profile = {field: getattr(row, field) for field in PUBLIC_PROFILE_FIELDS}
+    for field in PUBLIC_PROFILE_FIELDS:
+        if profile[field] is None:
+            profile[field] = 0 if field == "is_admin" else ""
+    return profile
+
+def serialize_project(project) -> dict:
+    return {
+        "id": project.id,
+        "user_id": project.user_id,
+        "title": project.title or "",
+        "description": project.description or "",
+        "tech_stack": project.tech_stack or "",
+        "github_link": project.github_link or "",
+        "live_link": project.live_link or "",
+        "image_url": project.image_url or ""
+    }
+
+# (viewer, profile) -> the day a "viewed your profile" notification was last sent, so reloads do not spam
+profile_view_notified: dict = {}
+
+async def notify_profile_view(viewer_id: int, profile_id: int):
+    today = datetime.now(timezone.utc).date().isoformat()
+    if profile_view_notified.get((viewer_id, profile_id)) == today:
+        return
+    if len(profile_view_notified) > 20000:
+        profile_view_notified.clear()
+    profile_view_notified[(viewer_id, profile_id)] = today
+    try:
+        rows = await fetch_one_off(select(DBUser.name).filter(DBUser.id == viewer_id))
+        if rows:
+            await create_notification(profile_id, "view", f"{rows[0][0]} viewed your profile!", utc_now_iso())
+    except Exception as e:
+        print("Error creating profile-view notification:", e)
+
+async def load_profile(user_id: int, viewer_id: int, with_projects: bool) -> dict:
+    """A profile with its follow counts and the viewer's relationship to it. The reads run side by side."""
+    relationship = select(
+        select(func.count()).select_from(DBFollow).where(DBFollow.followed_id == user_id).scalar_subquery(),
+        select(func.count()).select_from(DBFollow).where(DBFollow.follower_id == user_id).scalar_subquery(),
+        select(func.count()).select_from(DBFollow).where(DBFollow.follower_id == viewer_id, DBFollow.followed_id == user_id).scalar_subquery(),
+        select(func.count()).select_from(DBSavedProfile).where(DBSavedProfile.user_id == viewer_id, DBSavedProfile.saved_user_id == user_id).scalar_subquery(),
+    )
+    reads = [
+        fetch_one_off(select(*public_profile_columns()).filter(DBUser.id == user_id)),
+        fetch_one_off(relationship),
+    ]
+    if with_projects:
+        reads.append(fetch_one_off(select(DBProject).filter(DBProject.user_id == user_id).order_by(DBProject.id.desc())))
+    results = await asyncio.gather(*reads)
+
+    if not results[0]:
         raise HTTPException(status_code=404, detail="Developer not found.")
-    
-    f1 = await db.execute(select(func.count()).select_from(DBFollow).filter(DBFollow.followed_id == user_id))
-    followers_count = f1.scalar()
-    
-    f2 = await db.execute(select(func.count()).select_from(DBFollow).filter(DBFollow.follower_id == user_id))
-    following_count = f2.scalar()
-    
-    is_following = False
-    is_saved = False   
+    profile = public_profile(results[0][0])
+    followers, following, is_following, is_saved = results[1][0]
+    profile["followers_count"] = followers or 0
+    profile["following_count"] = following or 0
+    profile["is_following"] = bool(is_following)
+    profile["is_saved"] = bool(is_saved)
+    if with_projects:
+        profile["projects"] = [serialize_project(project) for (project,) in results[2]]
 
-    if current_user.id != user_id:
-        cf = await db.execute(select(DBFollow).filter(DBFollow.follower_id == current_user.id, DBFollow.followed_id == user_id))
-        is_following = bool(cf.scalars().first())
-        
-        cs = await db.execute(select(DBSavedProfile).filter(DBSavedProfile.user_id == current_user.id, DBSavedProfile.saved_user_id == user_id))
-        is_saved = bool(cs.scalars().first())
+    if viewer_id != user_id:
+        spawn_background(notify_profile_view(viewer_id, user_id))
+    return profile
 
-        notif = DBNotification(
-            user_id=user_id, 
-            type="view", 
-            content=f"{current_user.name} viewed your profile!", 
-            timestamp=utc_now_iso()
-        )
-        db.add(notif)
-        await db.commit()
-        await db.refresh(notif)
-        
-        await notification_manager.send_personal_message(json.dumps({
-            "id": notif.id, 
-            "type": notif.type, 
-            "content": notif.content, 
-            "timestamp": notif.timestamp
-        }), user_id)
-        
-    user_dict = {column.name: getattr(user, column.name) for column in user.__table__.columns}
-    user_dict["followers_count"] = followers_count
-    user_dict["following_count"] = following_count
-    user_dict["is_following"] = is_following
-    user_dict["is_saved"] = is_saved
 
-    return user_dict
+@app.get("/api/me")
+async def get_me(db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """The logged-in person's own card, for the site header. One small query."""
+    row = (await db.execute(select(*public_profile_columns()).filter(DBUser.id == current_user_id))).first()
+    if not row:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    return public_profile(row)
+
+
+@app.get("/api/profile-options")
+async def get_profile_options(current_user_id: int = Depends(get_current_user_id)):
+    """Colleges and departments already on the platform, as suggestions while editing a profile."""
+    colleges, departments = await asyncio.gather(
+        fetch_one_off(select(DBUser.college_name).where(DBUser.college_name != "").distinct().order_by(DBUser.college_name).limit(300)),
+        fetch_one_off(select(DBUser.department).where(DBUser.department != "").distinct().order_by(DBUser.department).limit(300)),
+    )
+    return {"colleges": [c for (c,) in colleges if c], "departments": [d for (d,) in departments if d]}
+
+
+@app.get("/api/profiles/{user_id}/page")
+async def get_profile_page(user_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Everything the profile page shows, in one request."""
+    return await load_profile(user_id, current_user_id, with_projects=True)
+
+
+@app.get("/api/profiles/{user_id}", response_model=ProfileDetailResponse)
+async def get_single_profile(user_id: int, current_user_id: int = Depends(get_current_user_id)):
+    return await load_profile(user_id, current_user_id, with_projects=False)
 
 
 # ==========================================
 # 5b. PROFILE UPDATE ENDPOINT
 # ==========================================
+PROFILE_FIELD_LIMITS = {"name": 80, "college_name": 150, "department": 120, "city": 80, "division": 40, "skills": 500, "bio": 500}
+
+def is_own_upload(url: str, user_id: int, kind: str) -> bool:
+    """True if the address points at a picture this person uploaded through our upload endpoints."""
+    return bool(re.search(rf"/static/uploads/user_{user_id}_{kind}[\w.]*\.[a-z0-9]+(\?v=\d+)?$", url or ""))
+
 @app.put("/api/profiles/{user_id}")
 async def update_profile(
     user_id: int,
     profile_data: ProfileUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    if current_user.id != user_id:
+    if current_user_id != user_id:
         raise HTTPException(status_code=403, detail="You can only edit your own profile.")
-    
-    update_fields = profile_data.dict(exclude_none=True)
-    
-    if not update_fields:
+
+    values = {}
+    for field, limit in PROFILE_FIELD_LIMITS.items():
+        value = getattr(profile_data, field)
+        if value is None:
+            continue
+        value = value.strip()
+        if len(value) > limit:
+            raise HTTPException(status_code=400, detail=f"{field.replace('_', ' ').capitalize()} is too long. The limit is {limit} characters.")
+        values[field] = value
+    if "name" in values and not values["name"]:
+        raise HTTPException(status_code=400, detail="Name cannot be empty.")
+    if "skills" in values:
+        values["skills"] = ", ".join(skill.strip() for skill in values["skills"].split(",") if skill.strip())
+
+    # Pictures are changed by uploading; this only accepts an address our own upload endpoints produced
+    for field, kind in (("profile_pic", "profile"), ("banner_pic", "banner")):
+        value = getattr(profile_data, field)
+        if value is None:
+            continue
+        if value != "" and not is_own_upload(value, user_id, kind):
+            raise HTTPException(status_code=400, detail="Pictures must be uploaded, not linked from another site.")
+        values[field] = value
+
+    if not values:
         raise HTTPException(status_code=400, detail="No fields to update.")
-    
-    for field, value in update_fields.items():
-        setattr(current_user, field, value)
-    
-    await log_user_activity(db, current_user.id, "Profile Updated", "You updated your profile information.")
-    await db.commit()
-    await db.refresh(current_user)
-    
-    return {"message": "Profile updated successfully.", "user_id": current_user.id}
+
+    result = await db.execute(update(DBUser).where(DBUser.id == user_id).values(**values).returning(*public_profile_columns()))
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Developer not found.")
+    spawn_background(log_activity_later(user_id, "Profile Updated", "You updated your profile information."))
+    return {"message": "Profile updated successfully.", "user_id": user_id, "profile": public_profile(row)}
 
 
 @app.get("/api/search", response_model=List[ProfileResponse])
@@ -1750,132 +1830,118 @@ async def get_chat_actions_state(db: AsyncSession = Depends(get_fast_db), curren
 # ==========================================
 # 7. FOLLOW, SAVED & NOTIFICATION ENDPOINTS
 # ==========================================
+async def get_two_names(db: AsyncSession, first_id: int, second_id: int):
+    """Names of two people in one query. Either can come back as None if the account does not exist."""
+    rows = (await db.execute(select(DBUser.id, DBUser.name).filter(DBUser.id.in_([first_id, second_id])))).all()
+    names = {user_id: name for user_id, name in rows}
+    return names.get(first_id), names.get(second_id)
+
+
 @app.post("/api/save/{user_id}")
 async def toggle_save_profile(
-    user_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    if current_user.id == user_id:
+    if current_user_id == user_id:
         raise HTTPException(status_code=400, detail="Cannot save your own profile.")
-        
-    result = await db.execute(select(DBSavedProfile).filter(
-        DBSavedProfile.user_id == current_user.id, 
-        DBSavedProfile.saved_user_id == user_id
-    ))
-    existing_save = result.scalars().first()
-    
-    t_result = await db.execute(select(DBUser).filter(DBUser.id == user_id))
-    target_user = t_result.scalars().first()
-    target_name = target_user.name if target_user else "a developer"
-    
-    if existing_save:
-        await db.delete(existing_save)
-        await log_user_activity(db, current_user.id, "Removed Bookmark", f"Unsaved {target_name}'s profile.")
-        await db.commit()
+
+    removed = await db.execute(
+        delete(DBSavedProfile)
+        .where(DBSavedProfile.user_id == current_user_id, DBSavedProfile.saved_user_id == user_id)
+        .returning(DBSavedProfile.id)
+    )
+    was_saved = removed.first() is not None
+    _, target_name = await get_two_names(db, current_user_id, user_id)
+    if not was_saved:
+        if target_name is None:
+            raise HTTPException(status_code=404, detail="Developer not found.")
+        db.add(DBSavedProfile(user_id=current_user_id, saved_user_id=user_id, timestamp=utc_now_iso()))
+        await db.flush()
+
+    target_name = target_name or "a developer"
+    if was_saved:
+        spawn_background(log_activity_later(current_user_id, "Removed Bookmark", f"Unsaved {target_name}'s profile."))
         return {"status": "unsaved"}
-    else:
-        new_save = DBSavedProfile(
-            user_id=current_user.id, 
-            saved_user_id=user_id, 
-            timestamp=utc_now_iso()
-        )
-        db.add(new_save)
-        await log_user_activity(db, current_user.id, "Profile Saved", f"Bookmarked {target_name}'s profile.")
-        await db.commit()
-        return {"status": "saved"}
+    spawn_background(log_activity_later(current_user_id, "Profile Saved", f"Bookmarked {target_name}'s profile."))
+    return {"status": "saved"}
 
 
 @app.get("/api/saved_profiles", response_model=List[ProfileResponse])
 async def get_saved_profiles(
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    result = await db.execute(select(DBSavedProfile.saved_user_id).filter(DBSavedProfile.user_id == current_user.id))
-    ids = [sid for sid in result.scalars().all()]
-    if not ids: return []
-    u_result = await db.execute(select(DBUser).filter(DBUser.id.in_(ids)))
-    return u_result.scalars().all()
+    saved_ids = select(DBSavedProfile.saved_user_id).where(DBSavedProfile.user_id == current_user_id)
+    result = await db.execute(select(*public_profile_columns()).filter(DBUser.id.in_(saved_ids)))
+    return [public_profile(row) for row in result.all()]
 
 
 @app.post("/api/follow/{user_id}")
 async def toggle_follow(
-    user_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    if current_user.id == user_id:
+    if current_user_id == user_id:
         raise HTTPException(status_code=400, detail="You cannot follow yourself.")
-        
-    result = await db.execute(select(DBFollow).filter(
-        DBFollow.follower_id == current_user.id, 
-        DBFollow.followed_id == user_id
-    ))
-    existing_follow = result.scalars().first()
-    
-    t_result = await db.execute(select(DBUser).filter(DBUser.id == user_id))
-    target_user = t_result.scalars().first()
-    target_name = target_user.name if target_user else "a developer"
-    
-    if existing_follow:
-        await db.delete(existing_follow)
-        await log_user_activity(db, current_user.id, "Unfollowed Connection", f"You stopped following {target_name}.")
-        await db.commit()
+
+    removed = await db.execute(
+        delete(DBFollow)
+        .where(DBFollow.follower_id == current_user_id, DBFollow.followed_id == user_id)
+        .returning(DBFollow.id)
+    )
+    was_following = removed.first() is not None
+    my_name, target_name = await get_two_names(db, current_user_id, user_id)
+
+    if was_following:
+        spawn_background(log_activity_later(current_user_id, "Unfollowed Connection", f"You stopped following {target_name or 'a developer'}."))
         return {"status": "unfollowed"}
-    else:
-        new_follow = DBFollow(
-            follower_id=current_user.id, 
-            followed_id=user_id, 
-            timestamp=utc_now_iso()
-        )
-        db.add(new_follow)
-        
-        await log_user_activity(db, current_user.id, "New Connection", f"You started following {target_name}.")
-        
-        notif = DBNotification(
-            user_id=user_id, 
-            type="follow", 
-            content=f"{current_user.name} started following you!", 
-            timestamp=utc_now_iso()
-        )
-        db.add(notif)
-        await db.commit()
-        await db.refresh(notif)
-        
-        await notification_manager.send_personal_message(json.dumps({
-            "id": notif.id, 
-            "type": notif.type, 
-            "content": notif.content, 
-            "timestamp": notif.timestamp
-        }), user_id)
 
-        return {"status": "followed"}
+    if target_name is None:
+        raise HTTPException(status_code=404, detail="Developer not found.")
+    now_iso = utc_now_iso()
+    db.add(DBFollow(follower_id=current_user_id, followed_id=user_id, timestamp=now_iso))
+    await db.flush()
+
+    spawn_background(log_activity_later(current_user_id, "New Connection", f"You started following {target_name}."))
+    spawn_background(create_notification(user_id, "follow", f"{my_name} started following you!", now_iso))
+    return {"status": "followed"}
 
 
-@app.get("/api/users/{user_id}/followers", response_model=List[ProfileResponse])
+async def list_connections(db: AsyncSession, id_query, viewer_id: int) -> list:
+    """Public profiles for a set of user ids, each with whether the viewer follows that person."""
+    viewer_follow = aliased(DBFollow)
+    result = await db.execute(
+        select(*public_profile_columns(), viewer_follow.id.label("viewer_follow_id"))
+        .outerjoin(viewer_follow, and_(viewer_follow.follower_id == viewer_id, viewer_follow.followed_id == DBUser.id))
+        .filter(DBUser.id.in_(id_query))
+        .order_by(DBUser.name)
+    )
+    people = []
+    for row in result.all():
+        person = public_profile(row)
+        person["is_following"] = row.viewer_follow_id is not None
+        people.append(person)
+    return people
+
+
+@app.get("/api/users/{user_id}/followers")
 async def get_followers(
-    user_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    result = await db.execute(select(DBFollow.follower_id).filter(DBFollow.followed_id == user_id))
-    ids = [fid for fid in result.scalars().all()]
-    if not ids: return []
-    u_result = await db.execute(select(DBUser).filter(DBUser.id.in_(ids)))
-    return u_result.scalars().all()
+    return await list_connections(db, select(DBFollow.follower_id).where(DBFollow.followed_id == user_id), current_user_id)
 
 
-@app.get("/api/users/{user_id}/following", response_model=List[ProfileResponse])
+@app.get("/api/users/{user_id}/following")
 async def get_following(
-    user_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    result = await db.execute(select(DBFollow.followed_id).filter(DBFollow.follower_id == user_id))
-    ids = [fid for fid in result.scalars().all()]
-    if not ids: return []
-    u_result = await db.execute(select(DBUser).filter(DBUser.id.in_(ids)))
-    return u_result.scalars().all()
+    return await list_connections(db, select(DBFollow.followed_id).where(DBFollow.follower_id == user_id), current_user_id)
 
 
 @app.websocket("/api/ws/notifications/{user_id}")
@@ -1957,52 +2023,46 @@ def upload_url(request: Request, file_location: str) -> str:
     return f"{str(request.base_url).rstrip('/')}/{file_location}"
 
 
+def versioned_upload_url(request: Request, file_location: str) -> str:
+    """Profile and banner pictures keep the same file name, so a version is added to get past the browser cache."""
+    return f"{upload_url(request, file_location)}?v={int(datetime.now(timezone.utc).timestamp())}"
+
+async def store_profile_picture(request: Request, file: UploadFile, user_id: int, kind: str, column: str, activity: str) -> str:
+    file_location = save_upload(file, "static/uploads", f"user_{user_id}_{kind}", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
+    image_url = versioned_upload_url(request, file_location)
+    await run_one_off(update(DBUser).where(DBUser.id == user_id).values(**{column: image_url}))
+    spawn_background(log_activity_later(user_id, "Profile Updated", activity))
+    return image_url
+
+
 @app.post("/api/upload/profile-pic")
 async def upload_profile_pic(
     request: Request,
-    file: UploadFile = File(...), 
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    file: UploadFile = File(...),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    file_location = save_upload(file, "static/uploads", f"user_{current_user.id}_profile", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
-        
-    image_url = upload_url(request, file_location)
-    current_user.profile_pic = image_url
-    
-    await log_user_activity(db, current_user.id, "Profile Updated", "You updated your profile picture.")
-    await db.commit()
-    await db.refresh(current_user)
-    
+    image_url = await store_profile_picture(request, file, current_user_id, "profile", "profile_pic", "You updated your profile picture.")
     return {"message": "Profile picture updated successfully!", "url": image_url}
 
 
 @app.post("/api/upload/banner-pic")
 async def upload_banner_pic(
     request: Request,
-    file: UploadFile = File(...), 
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    file: UploadFile = File(...),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    file_location = save_upload(file, "static/uploads", f"user_{current_user.id}_banner", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
-        
-    image_url = upload_url(request, file_location)
-    current_user.banner_pic = image_url
-    
-    await log_user_activity(db, current_user.id, "Profile Updated", "You updated your profile banner.")
-    await db.commit()
-    await db.refresh(current_user)
-    
+    image_url = await store_profile_picture(request, file, current_user_id, "banner", "banner_pic", "You updated your profile banner.")
     return {"message": "Banner picture updated successfully!", "url": image_url}
 
 
 @app.post("/api/upload/project-pic")
 async def upload_project_pic(
     request: Request,
-    file: UploadFile = File(...), 
-    current_user: DBUser = Depends(get_current_user)
+    file: UploadFile = File(...),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    file_location = save_upload(file, "static/uploads", f"user_{current_user.id}_proj_{uuid.uuid4().hex[:8]}", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
-        
+    file_location = save_upload(file, "static/uploads", f"user_{current_user_id}_proj_{uuid.uuid4().hex[:8]}", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
+
     return {"message": "Project image uploaded successfully!", "url": upload_url(request, file_location)}
 
 
@@ -2026,60 +2086,93 @@ async def upload_chat_file(
 # ==========================================
 # 9. PROJECT PORTFOLIO ENDPOINTS
 # ==========================================
+def clean_project(project: ProjectCreate, user_id: int) -> dict:
+    """Trimmed, checked project fields ready to store. Raises 400 with a readable reason."""
+    title = project.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Give the project a title.")
+    values = {
+        "title": title[:120],
+        "description": (project.description or "").strip()[:2000],
+        "tech_stack": ", ".join(t.strip() for t in (project.tech_stack or "").split(",") if t.strip())[:300],
+    }
+    for field, label in (("github_link", "GitHub link"), ("live_link", "Live link")):
+        link = (getattr(project, field) or "").strip()
+        if link and not re.match(r"^https?://\S+$", link):
+            raise HTTPException(status_code=400, detail=f"The {label} must start with http:// or https://")
+        values[field] = link[:500]
+    image_url = (project.image_url or "").strip()
+    if image_url and not is_own_upload(image_url, user_id, "proj"):
+        raise HTTPException(status_code=400, detail="Project pictures must be uploaded, not linked from another site.")
+    values["image_url"] = image_url
+    return values
+
+
 @app.post("/api/projects", response_model=ProjectResponse)
 async def create_project(
-    project: ProjectCreate, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    project: ProjectCreate,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    new_project = DBProject(
-        user_id=current_user.id,
-        title=project.title,
-        description=project.description,
-        tech_stack=project.tech_stack,
-        github_link=project.github_link,
-        live_link=project.live_link,
-        image_url=project.image_url
-    )
-    
+    new_project = DBProject(user_id=current_user_id, **clean_project(project, current_user_id))
     db.add(new_project)
-    await log_user_activity(db, current_user.id, "Portfolio Expanded", f"You added a new project: {project.title}.")
-    await db.commit()
-    await db.refresh(new_project)
-    
-    return new_project
+    await db.flush()
+    spawn_background(log_activity_later(current_user_id, "Portfolio Expanded", f"You added a new project: {new_project.title}."))
+    return serialize_project(new_project)
 
 
 @app.get("/api/projects/{user_id}", response_model=List[ProjectResponse])
 async def get_projects(
-    user_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    user_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    result = await db.execute(select(DBProject).filter(DBProject.user_id == user_id))
-    return result.scalars().all()
+    result = await db.execute(select(DBProject).filter(DBProject.user_id == user_id).order_by(DBProject.id.desc()))
+    return [serialize_project(project) for project in result.scalars().all()]
+
+
+async def explain_missing_project(db: AsyncSession, project_id: int):
+    """Called when an owner-only change matched nothing: say whether the project is missing or someone else's."""
+    exists = (await db.execute(select(DBProject.id).filter(DBProject.id == project_id))).first()
+    if exists:
+        raise HTTPException(status_code=403, detail="Not authorized to change this project.")
+    raise HTTPException(status_code=404, detail="Project not found.")
+
+
+@app.put("/api/projects/{project_id}", response_model=ProjectResponse)
+async def update_project(
+    project_id: int,
+    project: ProjectCreate,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    result = await db.execute(
+        update(DBProject)
+        .where(DBProject.id == project_id, DBProject.user_id == current_user_id)
+        .values(**clean_project(project, current_user_id))
+        .returning(DBProject)
+    )
+    updated = result.scalars().first()
+    if not updated:
+        await explain_missing_project(db, project_id)
+    return serialize_project(updated)
 
 
 @app.delete("/api/projects/{project_id}")
 async def delete_project(
-    project_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    project_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    result = await db.execute(select(DBProject).filter(DBProject.id == project_id))
-    project = result.scalars().first()
-    
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found.")
-        
-    if project.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this project.")
-        
-    title = project.title
-    await db.delete(project)
-    await log_user_activity(db, current_user.id, "Project Deleted", f"You removed the project: {title}.")
-    await db.commit()
-    
+    result = await db.execute(
+        delete(DBProject)
+        .where(DBProject.id == project_id, DBProject.user_id == current_user_id)
+        .returning(DBProject.title)
+    )
+    row = result.first()
+    if not row:
+        await explain_missing_project(db, project_id)
+    spawn_background(log_activity_later(current_user_id, "Project Deleted", f"You removed the project: {row[0]}."))
     return {"message": "Project deleted successfully."}
 
 # ==========================================
@@ -2159,63 +2252,94 @@ async def delete_board_post(
 # ==========================================
 # 11. GITHUB API INTEGRATION ENDPOINT
 # ==========================================
-@app.get("/api/github/{username}")
-async def get_github_stats(username: str):
-    if not username or username.strip() == "":
-        raise HTTPException(status_code=400, detail="GitHub username is required.")
-        
-    headers = {"User-Agent": "ProPartner-App"}
-    
-    try:
-        user_req = urllib.request.Request(f"https://api.github.com/users/{username}", headers=headers)
-        with urllib.request.urlopen(user_req) as response:
-            user_data = json.loads(response.read().decode())
-            
-        repos_req = urllib.request.Request(f"https://api.github.com/users/{username}/repos?sort=updated&per_page=10", headers=headers)
-        with urllib.request.urlopen(repos_req) as response:
-            repos_data = json.loads(response.read().decode())
-            
-        top_repos = []
-        languages = {}
-        
-        for repo in repos_data:
-            if not repo.get("fork"):
-                lang = repo.get("language")
-                if lang:
-                    languages[lang] = languages.get(lang, 0) + 1
-                top_repos.append({
-                    "name": repo.get("name"),
-                    "description": repo.get("description") or "No description provided.",
-                    "html_url": repo.get("html_url"),
-                    "stargazers_count": repo.get("stargazers_count", 0),
-                    "forks_count": repo.get("forks_count", 0),
-                    "language": lang or "Other"
-                })
+GITHUB_USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+GITHUB_CACHE_SECONDS = 600
+github_cache: dict = {}   # lower-case username -> (expires at, data)
 
-        return {
-            "username": user_data.get("login"),
-            "name": user_data.get("name"),
-            "avatar_url": user_data.get("avatar_url"),
-            "public_repos": user_data.get("public_repos", 0),
-            "followers": user_data.get("followers", 0),
-            "following": user_data.get("following", 0),
-            "languages": languages,
-            "top_repos": top_repos[:4],
-            "heatmap_url": f"https://ghchart.rshah.org/{username}"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="GitHub profile not found or limit exceeded.")
+def fetch_github_profile(username: str) -> dict:
+    """Blocking calls to GitHub's public API. Run this in a worker thread, never directly in a request."""
+    headers = {"User-Agent": "ProPartner-App", "Accept": "application/vnd.github+json"}
+
+    def get_json(url: str):
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10) as response:
+            return json.loads(response.read().decode())
+
+    user_data = get_json(f"https://api.github.com/users/{username}")
+    repos_data = get_json(f"https://api.github.com/users/{username}/repos?sort=updated&per_page=100")
+
+    top_repos = []
+    languages = {}
+    total_stars = 0
+    for repo in repos_data:
+        if repo.get("fork"):
+            continue
+        total_stars += repo.get("stargazers_count", 0)
+        lang = repo.get("language")
+        if lang:
+            languages[lang] = languages.get(lang, 0) + 1
+        top_repos.append({
+            "name": repo.get("name"),
+            "description": repo.get("description") or "No description provided.",
+            "html_url": repo.get("html_url"),
+            "stargazers_count": repo.get("stargazers_count", 0),
+            "forks_count": repo.get("forks_count", 0),
+            "language": lang or "Other"
+        })
+
+    return {
+        "username": user_data.get("login"),
+        "name": user_data.get("name"),
+        "avatar_url": user_data.get("avatar_url"),
+        "html_url": user_data.get("html_url"),
+        "public_repos": user_data.get("public_repos", 0),
+        "followers": user_data.get("followers", 0),
+        "following": user_data.get("following", 0),
+        "total_stars": total_stars,
+        "languages": dict(sorted(languages.items(), key=lambda item: -item[1])[:6]),
+        "top_repos": top_repos[:6],
+        "heatmap_url": f"https://ghchart.rshah.org/{user_data.get('login') or username}"
+    }
+
+
+@app.get("/api/github/{username}")
+async def get_github_stats(username: str, current_user_id: int = Depends(get_current_user_id)):
+    username = username.strip()
+    if not GITHUB_USERNAME_PATTERN.match(username):
+        raise HTTPException(status_code=400, detail="That is not a valid GitHub username.")
+
+    cached = github_cache.get(username.lower())
+    if cached and cached[0] > datetime.now(timezone.utc).timestamp():
+        return cached[1]
+
+    try:
+        data = await asyncio.to_thread(fetch_github_profile, username)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise HTTPException(status_code=404, detail="No GitHub account has that username.")
+        if e.code in (403, 429):
+            raise HTTPException(status_code=503, detail="GitHub is limiting requests right now. Please try again in a few minutes.")
+        raise HTTPException(status_code=502, detail="GitHub could not be reached.")
+    except Exception:
+        raise HTTPException(status_code=502, detail="GitHub could not be reached.")
+
+    if len(github_cache) > 2000:
+        github_cache.clear()
+    github_cache[username.lower()] = (datetime.now(timezone.utc).timestamp() + GITHUB_CACHE_SECONDS, data)
+    return data
 
 
 @app.put("/api/user/github")
 async def update_github_username(
-    github_username: str, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    github_username: str = "",
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    current_user.github_username = github_username.strip()
-    await db.commit()
-    return {"status": "success", "github_username": current_user.github_username}
+    """Connect a GitHub account by username. An empty value disconnects it."""
+    username = github_username.strip().lstrip("@")
+    if username and not GITHUB_USERNAME_PATTERN.match(username):
+        raise HTTPException(status_code=400, detail="That is not a valid GitHub username.")
+    await db.execute(update(DBUser).where(DBUser.id == current_user_id).values(github_username=username))
+    return {"status": "success", "github_username": username}
 
 
 # ==========================================

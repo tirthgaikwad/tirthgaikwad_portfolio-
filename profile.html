@@ -1,10 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<title>ProPartner | Profile</title>
+<script>
+// Ask for the profile right away, while styles and scripts are still downloading. profile.js picks up the result.
+(function () {
+  var me = localStorage.getItem('currentUserId');
+  if (!me) return;
+  var id = parseInt(new URLSearchParams(location.search).get('id')) || parseInt(me);
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__profilePrefetch = fetch(apiBase + '/api/profiles/' + id + '/page', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
 
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -27,6 +36,25 @@
 .btn-outline-modal:hover { background: #F1F5F9; }
 .btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
 .btn-primary-modal:hover { background: #2b1ea6; }
+/* Controls only the owner sees, and controls only visitors see */
+body:not(.is-own) .own-only { display: none !important; }
+body.is-own .visitor-only { display: none !important; }
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Resume: a clean sheet that only exists on paper */
+#resumeSheet { display: none; }
+@media print {
+  body > *:not(#resumeSheet) { display: none !important; }
+  #resumeSheet { display: block !important; font-family: 'Inter', Arial, sans-serif; color: #111; font-size: 11pt; line-height: 1.45; }
+  #resumeSheet h1 { font-size: 22pt; font-weight: 800; margin: 0; }
+  #resumeSheet h2 { font-size: 12pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #999; padding-bottom: 2px; margin: 16pt 0 6pt; }
+  #resumeSheet h3 { font-size: 11pt; font-weight: 700; margin: 8pt 0 0; }
+  #resumeSheet p { margin: 2pt 0; }
+  #resumeSheet .muted { color: #444; }
+  #resumeSheet .project { break-inside: avoid; }
+  @page { margin: 18mm; }
+}
 @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -113,404 +141,366 @@
 </header>
 <main class="w-full pt-16 bg-surface min-h-screen">
 <div class="flex flex-col w-full">
+
+<!-- Shown while you look at your own profile the way visitors see it -->
+<div id="previewBanner" class="hidden w-full bg-primary text-on-primary">
+  <div class="max-w-container-max mx-auto px-gutter-desktop py-2 flex items-center justify-between gap-3 font-label-md text-label-md">
+    <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">visibility</span>This is how other people see your profile.</span>
+    <button type="button" onclick="togglePublicView()" class="px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 font-semibold">Exit preview</button>
+  </div>
+</div>
+
 <!-- Profile Header Hero / Context Action Bar -->
 <section class="w-full bg-surface-container-lowest border-b border-outline-variant/30 py-space-md">
 <div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row md:items-center md:justify-between gap-space-sm">
-<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
-<a class="hover:text-primary transition-colors flex items-center gap-1" href="javascript:void(0)" onclick="window.showSystemModal('Academic Nexus', 'Routing to global academic feed...', 'alert')">
-<span class="material-symbols-outlined text-[16px]">school</span>
-          Academic Nexus
-        </a>
-<span class="text-outline-variant">/</span>
-<span class="hover:text-primary transition-colors cursor-pointer">My Profile</span>
-<span class="text-outline-variant">/</span>
-<span class="text-primary font-bold" id="breadcrumbName">Loading...</span>
-</div>
-<div class="flex items-center gap-space-xs flex-wrap">
-<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" id="copyProfileBtn" type="button">
-<span class="material-symbols-outlined text-[16px] text-secondary">share</span>
-<span>Share Profile</span>
-</button>
-<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="window.showSystemModal('Public View', 'Previewing how others see your profile.', 'alert')">
-<span class="material-symbols-outlined text-[16px] text-secondary">visibility</span>
-<span>Public View</span>
-</button>
-<button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-95 shadow-sm transition-all" type="button" onclick="window.showSystemModal('Export Resume', 'Compiling your skills and projects into a PDF resume...', 'alert')">
-<span class="material-symbols-outlined text-[16px]">download</span>
-<span>Export Resume</span>
-</button>
-</div>
+  <div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md min-w-0">
+    <a class="hover:text-primary transition-colors flex items-center gap-1 shrink-0" href="college.html">
+      <span class="material-symbols-outlined text-[16px]">school</span>
+      Campus Network
+    </a>
+    <span class="text-outline-variant">/</span>
+    <span id="breadcrumbKind" class="shrink-0">Profile</span>
+    <span class="text-outline-variant">/</span>
+    <span class="text-primary font-bold truncate" id="breadcrumbName">Loading...</span>
+  </div>
+  <div class="flex items-center gap-space-xs flex-wrap">
+    <button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" id="copyProfileBtn" type="button" onclick="shareProfile()">
+      <span class="material-symbols-outlined text-[16px] text-secondary">share</span>
+      <span>Share Profile</span>
+    </button>
+    <button class="own-only inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" id="publicViewBtn" type="button" onclick="togglePublicView()">
+      <span class="material-symbols-outlined text-[16px] text-secondary">visibility</span>
+      <span>Public View</span>
+    </button>
+    <button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-95 shadow-sm transition-all" type="button" id="exportResumeBtn" onclick="exportResume()">
+      <span class="material-symbols-outlined text-[16px]">download</span>
+      <span>Export Resume</span>
+    </button>
+  </div>
 </div>
 </section>
+
+<!-- Problem loading the profile -->
+<div id="profileProblem" class="hidden max-w-container-max mx-auto px-gutter-desktop py-16 w-full text-center">
+  <span class="material-symbols-outlined text-[48px] text-outline mb-3" id="profileProblemIcon">cloud_off</span>
+  <h2 class="font-headline-md text-headline-md font-bold text-on-surface" id="profileProblemTitle"></h2>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1" id="profileProblemText"></p>
+  <div class="mt-4 flex items-center justify-center gap-3" id="profileProblemActions"></div>
+</div>
+
 <!-- Main Profile Workspace Grid -->
-<div class="max-w-container-max mx-auto px-gutter-desktop py-space-xl w-full">
+<div class="max-w-container-max mx-auto px-gutter-desktop py-space-xl w-full" id="profileContent">
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+
 <!-- Left Column: Identity Card (Sticky on Desktop) -->
 <aside class="lg:col-span-4 w-full">
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden sticky top-20 transition-all">
-<!-- Banner Section with Edit Action -->
-<div class="relative h-36 w-full overflow-hidden group">
-<img id="displayBanner" class="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500" alt="Profile Banner" src=""/>
-<div id="bannerPlaceholder" class="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-tertiary/20"></div>
-<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-<!-- Edit Banner Trigger -->
-<button id="triggerBannerUpload" class="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-surface-container-lowest/90 hover:bg-surface-container-lowest text-on-surface font-label-sm text-label-sm px-2.5 py-1 rounded-md shadow-sm backdrop-blur-sm transition-colors" type="button">
-<span class="material-symbols-outlined text-[14px]">photo_camera</span>
-<span>Edit Banner</span>
-</button>
-<!-- Status Indicator Chip -->
-<span class="absolute bottom-2.5 left-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 text-on-primary font-label-sm text-label-sm backdrop-blur-md">
-<span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
-              Portfolio Active
-            </span>
-</div>
-<!-- Avatar & Primary Identity Cluster -->
-<div class="px-space-lg pb-space-lg pt-0 relative flex flex-col items-center text-center">
-<!-- Circular Avatar with Overlap and Edit Trigger -->
-<div class="relative -mt-14 mb-space-sm group">
-<div class="w-24 h-24 rounded-full p-1 bg-surface-container-lowest shadow-md">
-<div id="avatarPlaceholder" class="w-full h-full rounded-full bg-primary flex items-center justify-center ring-2 ring-primary-fixed"><span class="material-symbols-outlined text-on-primary text-[32px]">person</span></div>
-<img id="displayAvatar" class="w-full h-full rounded-full object-cover object-center ring-2 ring-primary-fixed hidden" alt="Profile Picture" src=""/>
-</div>
-<button id="triggerAvatarUpload" aria-label="Edit Profile Picture" class="absolute inset-1 rounded-full bg-black/40 text-on-primary opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-[2px]" type="button">
-<span class="material-symbols-outlined text-[20px]">photo_camera</span>
-<span class="font-label-sm text-[9px] uppercase tracking-wider font-semibold">Update</span>
-</button>
-<div class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shadow-sm" title="Institutional Verified Student">
-<span class="material-symbols-outlined text-[13px] font-bold">verified</span>
-</div>
-</div>
-<!-- Full Name & Badges -->
-<h1 id="profileName" class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
-              Loading...
-            </h1>
-<!-- Account Type Badge (dynamic) -->
-<div id="accountTypeBadge" class="mt-2 hidden"></div>
-<!-- Sub-Bio / Tagline -->
-<p id="profileBio" class="mt-space-xs font-body-md text-body-md font-semibold text-primary">
-              Loading profile...
-            </p>
-<!-- Follower & Connection Stats -->
-<div class="grid grid-cols-2 gap-space-sm w-full mt-space-md py-space-sm px-space-xs bg-surface-container-low rounded-xl">
-<div class="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity" onclick="window.showSystemModal('Followers', 'Fetching follower list...', 'alert')">
-<span id="followersCount" class="font-headline-md text-headline-md font-bold text-on-surface">—</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Followers</span>
-</div>
-<div class="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity" onclick="window.showSystemModal('Following', 'Fetching followed connections...', 'alert')">
-<span id="followingCount" class="font-headline-md text-headline-md font-bold text-on-surface">—</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Following</span>
-</div>
-</div>
-<!-- Roll Number & Identity Meta -->
-<div class="flex items-center justify-center gap-2 mt-space-sm text-on-surface-variant font-body-sm text-body-sm">
-<span class="material-symbols-outlined text-[16px] text-secondary">badge</span>
-<span class="font-medium text-on-surface">Roll no. <span id="profileRoll">—</span></span>
-</div>
-<!-- Primary Action CTAs -->
-<div class="w-full mt-space-md flex flex-col gap-space-xs" id="actionBtnsContainer">
-<!-- Injected by JS -->
-</div>
-<!-- Institutional Quick Verification Summary -->
-<div class="w-full mt-space-md pt-space-md border-t border-outline-variant/30 text-left flex flex-col gap-2">
-<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-tertiary">check_circle</span> Institutional Status</span>
-<span class="font-bold text-tertiary">Verified Active</span>
-</div>
-<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> Active Streak</span>
-<span class="font-semibold text-on-surface">14 Weeks</span>
-</div>
-</div>
-</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden lg:sticky lg:top-20 transition-all">
+  <!-- Banner -->
+  <div class="relative h-36 w-full overflow-hidden bg-gradient-to-r from-primary/30 via-primary/15 to-tertiary/30">
+    <img id="displayBanner" class="w-full h-full object-cover object-center hidden" alt="Profile banner" src=""/>
+    <button id="cardBannerBtn" class="own-only absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-surface-container-lowest/90 hover:bg-surface-container-lowest text-on-surface font-label-sm text-label-sm px-2.5 py-1 rounded-md shadow-sm transition-colors" type="button" onclick="choosePicture('banner')">
+      <span class="material-symbols-outlined text-[14px]">photo_camera</span>
+      <span>Edit Banner</span>
+    </button>
+  </div>
+  <!-- Avatar & identity -->
+  <div class="px-space-lg pb-space-lg pt-0 relative flex flex-col items-center text-center">
+    <div class="relative -mt-14 mb-space-sm group">
+      <div class="w-24 h-24 rounded-full p-1 bg-surface-container-lowest shadow-md">
+        <div id="avatarPlaceholder" class="w-full h-full rounded-full bg-primary flex items-center justify-center ring-2 ring-primary-fixed text-on-primary font-bold text-2xl"></div>
+        <img id="displayAvatar" class="w-full h-full rounded-full object-cover object-center ring-2 ring-primary-fixed hidden" alt="Profile picture" src=""/>
+      </div>
+      <button id="cardAvatarBtn" aria-label="Change profile picture" class="own-only absolute inset-1 rounded-full bg-black/40 text-on-primary opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex flex-col items-center justify-center" type="button" onclick="choosePicture('profile')">
+        <span class="material-symbols-outlined text-[20px]">photo_camera</span>
+        <span class="font-label-sm text-[9px] uppercase tracking-wider font-semibold">Update</span>
+      </button>
+      <div id="verifiedTick" class="hidden absolute bottom-1 right-1 w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shadow-sm" title="Verified student">
+        <span class="material-symbols-outlined text-[13px] font-bold">verified</span>
+      </div>
+    </div>
+    <h1 id="profileName" class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Loading...</h1>
+    <div class="mt-2 flex items-center justify-center gap-1.5 flex-wrap" id="profileBadges"></div>
+    <p id="profileBio" class="mt-space-xs font-body-md text-body-md text-on-surface-variant whitespace-pre-line break-words"></p>
+
+    <!-- Follower & following counts open the real lists -->
+    <div class="grid grid-cols-2 gap-space-sm w-full mt-space-md py-space-sm px-space-xs bg-surface-container-low rounded-xl">
+      <button type="button" class="flex flex-col items-center hover:opacity-80 transition-opacity" onclick="openConnections('followers')">
+        <span id="followersCount" class="font-headline-md text-headline-md font-bold text-on-surface">—</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Followers</span>
+      </button>
+      <button type="button" class="flex flex-col items-center hover:opacity-80 transition-opacity" onclick="openConnections('following')">
+        <span id="followingCount" class="font-headline-md text-headline-md font-bold text-on-surface">—</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Following</span>
+      </button>
+    </div>
+    <div class="flex items-center justify-center gap-2 mt-space-sm text-on-surface-variant font-body-sm text-body-sm">
+      <span class="material-symbols-outlined text-[16px] text-secondary">badge</span>
+      <span class="font-medium text-on-surface">Roll no. <span id="profileRoll">—</span></span>
+    </div>
+    <!-- Primary actions (filled in by profile.js) -->
+    <div class="w-full mt-space-md flex flex-col gap-space-xs" id="actionBtnsContainer"></div>
+  </div>
 </div>
 </aside>
-<!-- Right Column: Structured Academic & Technical Dossier -->
-<div class="lg:col-span-8 flex flex-col gap-space-lg">
-<!-- Section 1: Academic Profile Card -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[18px]">school</span>
-</div>
-<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Academic Profile</h2>
-</div>
-<button class="inline-flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="document.getElementById('editModal').style.display='flex'">
-<span class="material-symbols-outlined text-[15px]">edit</span>
-<span>Edit Info</span>
-</button>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-<!-- Institution (Full Width on desktop) -->
-<div class="md:col-span-2 p-space-sm bg-surface-container-low rounded-lg">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Institution</span>
-<p id="profileCollege" class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-primary">account_balance</span>
-                Loading...
-              </p>
-</div>
-<!-- Department -->
-<div class="p-space-sm bg-surface-container-low rounded-lg">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Department</span>
-<p id="profileDept" class="font-body-lg text-body-lg text-on-surface font-semibold">
-                Loading...
-              </p>
-</div>
-<!-- Division -->
-<div class="p-space-sm bg-surface-container-low rounded-lg">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Division</span>
-<p id="profileDiv" class="font-headline-sm text-headline-sm text-on-surface font-bold">
-                —
-              </p>
-</div>
-<!-- Base Location -->
-<div class="p-space-sm bg-surface-container-low rounded-lg">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Base Location</span>
-<p id="profileCity" class="font-body-md text-body-md text-on-surface font-semibold flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px] text-secondary">location_on</span>
-                Loading...
-              </p>
-</div>
-</div>
-</section>
-<!-- Section 2: Technical Skills -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[18px]">terminal</span>
-</div>
-<div>
-<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Technical Skills</h2>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Validated domain competencies &amp; toolchains</span>
-</div>
-</div>
-<button class="inline-flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="document.getElementById('editModal').style.display='flex'; setTimeout(() => document.getElementById('editSkills').focus(), 200);">
-<span class="material-symbols-outlined text-[15px]">edit</span>
-<span>Edit Skills</span>
-</button>
-</div>
-<!-- Featured Skill from Screenshot -->
-<div class="mb-space-sm">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-2">Primary Core Competency</span>
-<div class="flex items-center gap-2 flex-wrap" id="profileSkills">
-<!-- Injected by JS -->
-</div>
-</div>
-<!-- Skills are populated dynamically by JS -->
-</section>
-<!-- Section 3: GitHub Integration -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center font-bold">
-<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
-<path clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill-rule="evenodd"></path>
-</svg>
-</div>
-<div>
-<h2 class="font-headline-md text-headline-md text-on-surface font-bold">GitHub Integration</h2>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Real-time repository sync and public commit heatmap</span>
-</div>
-</div>
-<!-- Link/Connected Toggle Button -->
-<button id="githubConnectionBtn" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" type="button">
-<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
-<span>Not connected</span>
-</button>
-</div>
-<p class="font-body-md text-body-md text-on-surface-variant mb-space-md">
-            Link your GitHub account to show off your repositories and commit heatmap.
-          </p>
-<!-- GitHub Stats Container (populated by JS) -->
-<div id="githubStatsContainer" class="hidden">
-<div class="p-space-md bg-surface-container-low rounded-xl">
-<div class="flex items-center justify-between mb-space-sm flex-wrap gap-2">
-<div class="flex items-center gap-2">
-<span id="githubContribCount" class="font-label-md text-label-md text-on-surface font-bold"></span>
-</div>
-</div>
-<div class="grid grid-cols-3 gap-space-sm">
-<div class="p-space-sm bg-surface-container rounded-lg text-center">
-<span id="githubRepoCount" class="font-headline-sm text-headline-sm text-on-surface font-bold block">0</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">Repos</span>
-</div>
-<div class="p-space-sm bg-surface-container rounded-lg text-center">
-<span id="githubStarCount" class="font-headline-sm text-headline-sm text-on-surface font-bold block">0</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">Stars</span>
-</div>
-<div class="p-space-sm bg-surface-container rounded-lg text-center">
-<span id="githubFollowerCount" class="font-headline-sm text-headline-sm text-on-surface font-bold block">0</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">Followers</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Static visual simulation of heatmap -->
-<div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed-dim"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div><div class="w-3 h-3 rounded-xs bg-tertiary-fixed"></div><div class="w-3 h-3 rounded-xs bg-surface-variant"></div><div class="w-3 h-3 rounded-xs bg-tertiary"></div>
-</div>
-</div>
-</div>
-</section>
-<!-- Section 4: Project Portfolio -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
-<div class="flex items-center gap-2">
-<div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[18px]">folder_special</span>
-</div>
-<div>
-<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Project Portfolio</h2>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Student experiments, live prototypes, and hackathon entries</span>
-</div>
-</div>
-<!-- Add Project CTA Button (shown for own profile only) -->
-<button id="addProjectBtn" class="hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-95 shadow-xs transition-opacity" type="button" onclick="window.showSystemModal('Add Project', 'The Project Creation Wizard is launching...', 'alert')">
-<span class="material-symbols-outlined text-[16px]">add</span>
-<span>Add Project</span>
-</button>
-</div>
-<!-- Dynamic Project List -->
-<div id="projectList" class="flex flex-col gap-space-md">
-<div class="text-center py-8 text-on-surface-variant">
-<span class="material-symbols-outlined text-[32px] mb-2">sync</span>
-<p>Loading projects...</p>
-</div>
-</div>
-</div>
-</div>
-<!-- Toast Micro-interaction Component -->
-<div class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none" id="toastNotification">
-<div class="bg-inverse-surface text-inverse-on-surface px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 font-label-md text-label-md">
-<span class="material-symbols-outlined text-tertiary-fixed-dim text-[18px]">check_circle</span>
-<span id="toastMessage">Profile link copied to clipboard</span>
-</div>
-</div>
-<!-- Inline Micro-interaction Script -->
-<script>
-    (function () {
-      const shareBtn = document.getElementById('copyProfileBtn');
-      const toast = document.getElementById('toastNotification');
-      const toastMsg = document.getElementById('toastMessage');
 
-      function showToast(msg) {
-        if (!toast) return;
-        toastMsg.textContent = msg;
-        toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
-        toast.classList.add('translate-y-0', 'opacity-100');
-        setTimeout(() => {
-          toast.classList.remove('translate-y-0', 'opacity-100');
-          toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
-        }, 2800);
-      }
+<!-- Right Column -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg min-w-0">
 
-      if (shareBtn) {
-        shareBtn.addEventListener('click', function () {
-          navigator.clipboard?.writeText(window.location.href);
-          showToast('Profile link copied to clipboard!');
-        });
-      }
-    })();
-  </script>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
+<!-- Academic Profile -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">school</span>
+      </div>
+      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Academic Profile</h2>
+    </div>
+    <button class="own-only inline-flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="openEditModal('editCollege')">
+      <span class="material-symbols-outlined text-[15px]">edit</span>
+      <span>Edit Info</span>
+    </button>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+    <div class="md:col-span-2 p-space-sm bg-surface-container-low rounded-lg">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Institution</span>
+      <p class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-[18px] text-primary">account_balance</span>
+        <span id="profileCollege">—</span>
+      </p>
+    </div>
+    <div class="p-space-sm bg-surface-container-low rounded-lg">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Department</span>
+      <p id="profileDept" class="font-body-lg text-body-lg text-on-surface font-semibold">—</p>
+    </div>
+    <div class="p-space-sm bg-surface-container-low rounded-lg">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Division</span>
+      <p id="profileDiv" class="font-headline-sm text-headline-sm text-on-surface font-bold">—</p>
+    </div>
+    <div class="p-space-sm bg-surface-container-low rounded-lg">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Base Location</span>
+      <p class="font-body-md text-body-md text-on-surface font-semibold flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px] text-secondary">location_on</span>
+        <span id="profileCity">—</span>
+      </p>
+    </div>
+  </div>
+</section>
 
-<!-- HIDDEN MODALS FOR JAVASCRIPT LOGIC -->
+<!-- Technical Skills -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">terminal</span>
+      </div>
+      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Technical Skills</h2>
+    </div>
+    <button class="own-only inline-flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="openEditModal('editSkills')">
+      <span class="material-symbols-outlined text-[15px]">edit</span>
+      <span>Edit Skills</span>
+    </button>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap" id="profileSkills"></div>
+</section>
+
+<!-- GitHub -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md gap-2">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center font-bold">
+        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path clip-rule="evenodd" fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      </div>
+      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">GitHub</h2>
+    </div>
+    <div id="githubHeaderAction"></div>
+  </div>
+  <div id="githubBody"></div>
+</section>
+
+<!-- Project Portfolio -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md gap-2">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">folder_special</span>
+      </div>
+      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Project Portfolio</h2>
+    </div>
+    <button id="addProjectBtn" class="own-only inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-95 shadow-xs transition-opacity" type="button" onclick="openProjectModal()">
+      <span class="material-symbols-outlined text-[16px]">add</span>
+      <span>Add Project</span>
+    </button>
+  </div>
+  <div id="projectList" class="grid grid-cols-1 md:grid-cols-2 gap-space-md"></div>
+</section>
+
+</div>
+</div>
+</div>
+</div></main>
+<footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
+
+<!-- ==================== EDIT PROFILE ==================== -->
 <div class="modal-overlay" id="editModal">
-    <div class="custom-modal" style="max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto;">
-        <h3>Edit Your Profile</h3>
-        <p>Update your details, skills, and imagery.</p>
-        <form id="editProfileForm" class="flex flex-col gap-4">
-            <input type="file" id="editAvatarFile" accept="image/*" style="display: none;">
-            <input type="file" id="editBannerFile" accept="image/*" style="display: none;">
-            <div class="flex gap-4 mb-2">
-                <button type="button" id="triggerAvatarUpload" class="btn-outline-modal flex-1 flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">account_circle</span> Update Avatar
-                </button>
-                <button type="button" id="triggerBannerUpload" class="btn-outline-modal flex-1 flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">wallpaper</span> Update Banner
-                </button>
-            </div>
-            <div class="form-group">
-                <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Full Name</label>
-                <input type="text" id="editName" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" required>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="form-group">
-                    <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">College</label>
-                    <input type="text" id="editCollege" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
-                </div>
-                <div class="form-group">
-                    <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">City</label>
-                    <input type="text" id="editCity" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="form-group">
-                    <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Department</label>
-                    <input type="text" id="editDept" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
-                </div>
-                <div class="form-group">
-                    <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Division</label>
-                    <input type="text" id="editDiv" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Skills (Comma Separated)</label>
-                <input type="text" id="editSkills" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="Python, FastAPI, C++">
-            </div>
-            <div class="form-group">
-                <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Bio / Headline</label>
-                <textarea id="editBio" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface h-24 resize-none"></textarea>
-            </div>
-            <div class="modal-buttons mt-4">
-                <button type="button" class="btn-outline-modal" id="closeModalBtn">Cancel</button>
-                <button type="submit" class="btn-primary-modal">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal-overlay" id="messageModal">
-    <div class="custom-modal">
-        <h3>Message <span id="dmReceiverName" class="text-primary">Developer</span></h3>
-        <p>Start a collaboration or ask a technical question.</p>
-        <form id="sendMessageForm">
-            <textarea id="dmContent" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface h-32 resize-none mb-4" placeholder="Hi! I saw your hackathon project..." required></textarea>
-            <span id="dmStatus" style="display: none; color: #10B981; font-size: 0.85rem; font-weight: 600; margin-bottom: 16px;">Message Sent! ✓</span>
-            <div class="modal-buttons">
-                <button type="button" class="btn-outline-modal" id="closeMessageBtn">Cancel</button>
-                <button type="submit" class="btn-primary-modal">Send</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal-overlay" id="cropModal">
-    <div class="custom-modal" style="max-width: 500px;">
-        <h3 id="cropModalTitle">Crop Image</h3>
-        <p>Adjust the framing for your profile.</p>
-        <div style="width: 100%; max-height: 300px; background: #000; overflow: hidden; border-radius: 8px; margin-bottom: 20px;">
-            <img id="cropImageTarget" style="max-width: 100%; display: block;">
+  <div class="custom-modal" style="max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <h3>Edit Your Profile</h3>
+    <form id="editProfileForm" class="flex flex-col gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-full overflow-hidden bg-primary text-on-primary font-bold flex items-center justify-center shrink-0" id="editAvatarPreview"></div>
+        <div class="flex-1 h-16 rounded-lg overflow-hidden bg-gradient-to-r from-primary/30 via-primary/15 to-tertiary/30" id="editBannerPreview"></div>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" class="btn-outline-modal flex-1 flex items-center justify-center gap-2" onclick="choosePicture('profile')">
+          <span class="material-symbols-outlined text-[18px]">account_circle</span> Change Picture
+        </button>
+        <button type="button" class="btn-outline-modal flex-1 flex items-center justify-center gap-2" onclick="choosePicture('banner')">
+          <span class="material-symbols-outlined text-[18px]">wallpaper</span> Change Banner
+        </button>
+      </div>
+      <div>
+        <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editName">Full Name</label>
+        <input type="text" id="editName" maxlength="80" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" required>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editCollege">College</label>
+          <input type="text" id="editCollege" maxlength="150" list="collegeOptions" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
+          <datalist id="collegeOptions"></datalist>
         </div>
-        <div class="modal-buttons">
-            <button type="button" class="btn-outline-modal" id="closeCropBtn">Cancel</button>
-            <button type="button" class="btn-primary-modal" id="applyCropBtn">Apply Crop</button>
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editCity">City</label>
+          <input type="text" id="editCity" maxlength="80" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
         </div>
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editDept">Department</label>
+          <input type="text" id="editDept" maxlength="120" list="departmentOptions" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
+          <datalist id="departmentOptions"></datalist>
+        </div>
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editDiv">Division</label>
+          <input type="text" id="editDiv" maxlength="40" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
+        </div>
+      </div>
+      <div>
+        <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editSkills">Skills (comma separated)</label>
+        <input type="text" id="editSkills" maxlength="500" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="Python, FastAPI, C++" oninput="renderSkillPreview()">
+        <div class="flex flex-wrap gap-1.5 mt-2" id="editSkillsPreview"></div>
+      </div>
+      <div>
+        <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 flex items-center justify-between" for="editBio"><span>Bio / Headline</span><span id="editBioCount" class="normal-case tracking-normal">0 / 500</span></label>
+        <textarea id="editBio" maxlength="500" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface h-24 resize-none" oninput="updateBioCount()"></textarea>
+      </div>
+      <p id="editError" class="hidden text-sm font-semibold" style="color:#ba1a1a; margin:0;"></p>
+      <div class="modal-buttons">
+        <button type="button" class="btn-outline-modal" onclick="closeProfileModals()">Cancel</button>
+        <button type="submit" class="btn-primary-modal" id="editSaveBtn">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+<input type="file" id="pictureFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
+
+<!-- ==================== CROP ==================== -->
+<div class="modal-overlay" id="cropModal" style="z-index: 10000;">
+  <div class="custom-modal" style="max-width: 520px;">
+    <h3 id="cropModalTitle">Crop Image</h3>
+    <div style="width: 100%; max-height: 320px; background: #000; overflow: hidden; border-radius: 8px; margin-bottom: 20px;">
+      <img id="cropImageTarget" style="max-width: 100%; display: block;" alt="">
     </div>
+    <div class="modal-buttons">
+      <button type="button" class="btn-outline-modal" onclick="cancelCrop()">Cancel</button>
+      <button type="button" class="btn-primary-modal" id="applyCropBtn" onclick="applyCrop()">Save Picture</button>
+    </div>
+  </div>
 </div>
 
-<!-- CUSTOM SYSTEM ALERTS MODAL -->
-<div class="modal-overlay" id="systemModal">
-    <div class="custom-modal">
-        <h3 id="systemModalTitle">Notification</h3>
-        <p id="systemModalMessage">Message goes here.</p>
-        <div class="modal-buttons">
-            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
-            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
-        </div>
+<!-- ==================== FOLLOWERS / FOLLOWING ==================== -->
+<div class="modal-overlay" id="connectionsModal">
+  <div class="custom-modal" style="max-width: 460px; width: 95%; padding: 24px;">
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="connectionsTitle" style="margin: 0;">Followers</h3>
+      <button type="button" class="text-on-surface-variant hover:text-on-surface" onclick="closeProfileModals()" title="Close"><span class="material-symbols-outlined">close</span></button>
     </div>
+    <div id="connectionsList" class="flex flex-col gap-1" style="max-height: 60vh; overflow-y: auto;"></div>
+  </div>
 </div>
 
+<!-- ==================== ADD / EDIT PROJECT ==================== -->
+<div class="modal-overlay" id="projectModal">
+  <div class="custom-modal" style="max-width: 560px; width: 95%; max-height: 90vh; overflow-y: auto;">
+    <h3 id="projectModalTitle">Add Project</h3>
+    <form id="projectForm" class="flex flex-col gap-4">
+      <div>
+        <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="projectTitle">Title</label>
+        <input type="text" id="projectTitle" maxlength="120" required class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="e.g. Campus Ride Share">
+      </div>
+      <div>
+        <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="projectDescription">Description</label>
+        <textarea id="projectDescription" maxlength="2000" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface h-24 resize-none" placeholder="What does it do, and what was your part in it?"></textarea>
+      </div>
+      <div>
+        <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="projectTech">Tech stack (comma separated)</label>
+        <input type="text" id="projectTech" maxlength="300" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="React, FastAPI, PostgreSQL">
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="projectGithub">GitHub link</label>
+          <input type="url" id="projectGithub" maxlength="500" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="https://github.com/...">
+        </div>
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="projectLive">Live link</label>
+          <input type="url" id="projectLive" maxlength="500" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="https://...">
+        </div>
+      </div>
+      <div>
+        <span class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Picture</span>
+        <div class="flex items-center gap-3">
+          <div id="projectImagePreview" class="w-24 h-16 rounded-lg overflow-hidden bg-surface-container-low border border-outline-variant flex items-center justify-center text-outline"><span class="material-symbols-outlined">image</span></div>
+          <input type="file" id="projectImageInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="uploadProjectImage(event)">
+          <button type="button" class="btn-outline-modal" onclick="document.getElementById('projectImageInput').click()">Choose picture</button>
+          <button type="button" class="btn-outline-modal hidden" id="projectImageRemove" onclick="setProjectImage('')">Remove</button>
+        </div>
+      </div>
+      <p id="projectError" class="hidden text-sm font-semibold" style="color:#ba1a1a; margin:0;"></p>
+      <div class="modal-buttons">
+        <button type="button" class="btn-outline-modal" onclick="closeProfileModals()">Cancel</button>
+        <button type="submit" class="btn-primary-modal" id="projectSaveBtn">Save Project</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== CONNECT GITHUB ==================== -->
+<div class="modal-overlay" id="githubModal">
+  <div class="custom-modal">
+    <h3>Connect GitHub</h3>
+    <p style="margin-bottom: 12px;">Enter your GitHub username. Your public repositories and contribution chart will show on your profile.</p>
+    <form id="githubForm" class="flex flex-col gap-3">
+      <input type="text" id="githubUsernameInput" maxlength="39" required class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface" placeholder="e.g. octocat" autocomplete="off">
+      <p id="githubError" class="hidden text-sm font-semibold" style="color:#ba1a1a; margin:0;"></p>
+      <div class="modal-buttons">
+        <button type="button" class="btn-outline-modal" onclick="closeProfileModals()">Cancel</button>
+        <button type="submit" class="btn-primary-modal" id="githubSaveBtn">Connect</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CUSTOM SYSTEM ALERTS MODAL (used by shared.js) -->
+<div class="modal-overlay" id="systemModal" style="z-index: 10001;">
+  <div class="custom-modal">
+    <h3 id="systemModalTitle">Notification</h3>
+    <p id="systemModalMessage" style="white-space: pre-line; word-break: break-word;">Message goes here.</p>
+    <div class="modal-buttons">
+      <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+      <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Printed when exporting a resume; hidden on screen -->
+<div id="resumeSheet"></div>
+
+<script src="chat-common.js"></script>
 <script src="profile.js"></script>
-
 </body></html>

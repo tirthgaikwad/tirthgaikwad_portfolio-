@@ -132,6 +132,7 @@ window.logout = function() {
         try {
             await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
         } catch(e) { /* proceed anyway */ }
+        localStorage.removeItem(`c2m:${localStorage.getItem('currentUserId')}:me`);
         localStorage.removeItem('currentUserId');
         window.location.href = "login.html";
     }, "Log Out");
@@ -140,16 +141,66 @@ window.logout = function() {
 // ==========================================
 // 3. DYNAMIC HEADER — Profile Avatar & Notifications
 // ==========================================
+window.applyHeaderProfile = function(profile) {
+    // Store profile data globally for other scripts to use
+    window.currentUserProfile = profile;
+    const initials = profile.name ? profile.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
+
+    // --- Update ALL header avatars on the page ---
+    document.querySelectorAll('[data-header-avatar]').forEach(container => {
+        if (profile.profile_pic) {
+            container.innerHTML = `<img src="${escapeHtml(profile.profile_pic)}" alt="${escapeHtml(profile.name)}" class="w-8 h-8 rounded-full object-cover">`;
+        } else {
+            container.innerHTML = `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary text-xs font-bold">${escapeHtml(initials)}</span></div>`;
+        }
+    });
+
+    // --- Update sidebar profile if it exists ---
+    const sidebarName = document.getElementById('sidebarUserName');
+    if (sidebarName) sidebarName.textContent = profile.name || 'User';
+
+    const sidebarCollege = document.getElementById('sidebarUserCollege');
+    if (sidebarCollege) sidebarCollege.textContent = profile.college_name || '';
+
+    const sidebarDept = document.getElementById('sidebarUserDept');
+    if (sidebarDept) sidebarDept.textContent = profile.department || '';
+
+    const sidebarAvatar = document.getElementById('sidebarUserAvatar');
+    if (sidebarAvatar) {
+        if (profile.profile_pic) {
+            sidebarAvatar.innerHTML = `<img src="${escapeHtml(profile.profile_pic)}" alt="${escapeHtml(profile.name)}" class="w-full h-full rounded-full object-cover">`;
+        } else {
+            sidebarAvatar.innerHTML = `<div class="w-full h-full rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary font-bold">${escapeHtml(initials)}</span></div>`;
+        }
+    }
+
+    const sidebarSkills = document.getElementById('sidebarUserSkills');
+    if (sidebarSkills && profile.skills) {
+        const skills = profile.skills.split(',').map(s => s.trim()).filter(s => s);
+        sidebarSkills.innerHTML = skills.map(s =>
+            `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`
+        ).join('');
+    }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     const currentUserId = localStorage.getItem('currentUserId');
     if (!currentUserId) return; // Not logged in, leave header defaults
 
+    // Paint the header from the copy saved on the last visit, then refresh it in the background
+    const headerCacheKey = `c2m:${currentUserId}:me`;
     try {
-        const res = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, { credentials: 'include' });
-        
+        const cached = JSON.parse(localStorage.getItem(headerCacheKey));
+        if (cached && cached.id) window.applyHeaderProfile(cached);
+    } catch (e) { /* no usable cache */ }
+
+    try {
+        const res = await fetch(`${API_BASE}/api/me`, { credentials: 'include' });
+
         if (res.status === 401) {
             // Token expired or invalid — force re-login
             localStorage.removeItem('currentUserId');
+            localStorage.removeItem(headerCacheKey);
             // Only redirect if not already on login/join page
             const page = window.location.pathname.split('/').pop();
             if (page !== 'login.html' && page !== 'join.html' && page !== 'index.html' && page !== '') {
@@ -160,48 +211,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (res.ok) {
             const profile = await res.json();
-            
-            // Store profile data globally for other scripts to use
-            window.currentUserProfile = profile;
-
-            // --- Update ALL header avatars on the page ---
-            const headerAvatars = document.querySelectorAll('[data-header-avatar]');
-            headerAvatars.forEach(container => {
-                if (profile.profile_pic) {
-                    container.innerHTML = `<img src="${escapeHtml(profile.profile_pic)}" alt="${escapeHtml(profile.name)}" class="w-8 h-8 rounded-full object-cover">`;
-                } else {
-                    const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
-                    container.innerHTML = `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary text-xs font-bold">${escapeHtml(initials)}</span></div>`;
-                }
-            });
-
-            // --- Update sidebar profile if it exists ---
-            const sidebarName = document.getElementById('sidebarUserName');
-            if (sidebarName) sidebarName.textContent = profile.name || 'User';
-            
-            const sidebarCollege = document.getElementById('sidebarUserCollege');
-            if (sidebarCollege) sidebarCollege.textContent = profile.college_name || '';
-            
-            const sidebarDept = document.getElementById('sidebarUserDept');
-            if (sidebarDept) sidebarDept.textContent = profile.department || '';
-            
-            const sidebarAvatar = document.getElementById('sidebarUserAvatar');
-            if (sidebarAvatar) {
-                if (profile.profile_pic) {
-                    sidebarAvatar.innerHTML = `<img src="${escapeHtml(profile.profile_pic)}" alt="${escapeHtml(profile.name)}" class="w-full h-full rounded-full object-cover">`;
-                } else {
-                    const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
-                    sidebarAvatar.innerHTML = `<div class="w-full h-full rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary font-bold">${escapeHtml(initials)}</span></div>`;
-                }
-            }
-
-            const sidebarSkills = document.getElementById('sidebarUserSkills');
-            if (sidebarSkills && profile.skills) {
-                const skills = profile.skills.split(',').map(s => s.trim()).filter(s => s);
-                sidebarSkills.innerHTML = skills.map(s => 
-                    `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`
-                ).join('');
-            }
+            window.applyHeaderProfile(profile);
+            try { localStorage.setItem(headerCacheKey, JSON.stringify(profile)); } catch (e) { /* storage unavailable */ }
         }
     } catch (err) {
         console.error("Shared.js: Error fetching user profile for header:", err);
