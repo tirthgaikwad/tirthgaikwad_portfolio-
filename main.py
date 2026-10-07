@@ -193,6 +193,26 @@ class DBTeamMessage(Base):
     content = Column(String)
     timestamp = Column(String)
     is_system_message = Column(Integer, default=0)
+    is_pinned = Column(Integer, default=0)
+    pinned_by = Column(Integer, nullable=True)
+    reply_to_id = Column(Integer, nullable=True)
+
+class DBTeamMessageReaction(Base):
+    __tablename__ = "team_message_reactions"
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, index=True)
+    channel_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    emoji = Column(String)
+
+class DBTeamResource(Base):
+    __tablename__ = "team_resources"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    name = Column(String)
+    url = Column(String)
+    added_by = Column(Integer)
+    created_at = Column(String)
 
 class DBCommunity(Base):
     __tablename__ = "communities"
@@ -241,6 +261,11 @@ SCHEMA_UPGRADES = [
     "CREATE INDEX IF NOT EXISTS ix_messages_pair_reverse ON messages (receiver_id, sender_id, id)",
     "CREATE INDEX IF NOT EXISTS ix_messages_receiver_status ON messages (receiver_id, message_status)",
     "CREATE INDEX IF NOT EXISTS ix_team_messages_channel ON team_messages (channel_id, id)",
+    "ALTER TABLE team_messages ADD COLUMN IF NOT EXISTS is_pinned INTEGER DEFAULT 0",
+    "ALTER TABLE team_messages ADD COLUMN IF NOT EXISTS pinned_by INTEGER",
+    "ALTER TABLE team_messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_team_message_reactions ON team_message_reactions (message_id, user_id, emoji)",
+    "CREATE INDEX IF NOT EXISTS ix_team_members_user_team ON team_members (user_id, team_id)",
 ]
 
 async def backfill_cleared_chats():
@@ -333,9 +358,107 @@ class RoomConnectionManager:
             except Exception:
                 pass
 
+class TeamHub:
+    """Live connections of people who have a workspace open on the Teams page, and who is in which voice room.
+
+    A room is "voice:<channel id>" for a voice channel, or "call:<channel id>" for a call started in a text channel.
+    Audio and video never pass through here: the hub only relays the WebRTC set-up messages between room members.
+    """
+    def __init__(self):
+        self.teams: dict[int, dict] = {}        # team_id -> {websocket: user info}
+        self.rooms: dict[str, dict] = {}        # room -> {user_id: {"ws", "muted", "video", "sharing", name, pic}}
+        self.room_team: dict[str, int] = {}
+        self.room_started: dict[str, float] = {}
+
+    # ---- connections
+    def connect(self, team_id: int, websocket: WebSocket, user: dict):
+        self.teams.setdefault(team_id, {})[websocket] = user
+
+    def disconnect(self, team_id: int, websocket: WebSocket):
+        connections = self.teams.get(team_id)
+        if connections:
+            connections.pop(websocket, None)
+            if not connections:
+                del self.teams[team_id]
+
+    def has_user(self, user_id: int) -> bool:
+        return any(user["id"] == user_id for connections in self.teams.values() for user in connections.values())
+
+    def user_ids(self) -> set:
+        return {user["id"] for connections in self.teams.values() for user in connections.values()}
+
+    def sockets_of(self, team_id: int, user_id: int) -> list:
+        return [ws for ws, user in self.teams.get(team_id, {}).items() if user["id"] == user_id]
+
+    async def broadcast(self, team_id: int, payload, exclude: Optional[WebSocket] = None):
+        message = payload if isinstance(payload, str) else json.dumps(payload)
+        for websocket in list(self.teams.get(team_id, {})):
+            if websocket is exclude:
+                continue
+            try:
+                await websocket.send_text(message)
+            except Exception:
+                pass
+
+    async def broadcast_everywhere(self, message: str):
+        for team_id in list(self.teams):
+            await self.broadcast(team_id, message)
+
+    async def send_to_user(self, team_id: int, user_id: int, payload: dict):
+        message = json.dumps(payload)
+        for websocket in self.sockets_of(team_id, user_id):
+            try:
+                await websocket.send_text(message)
+            except Exception:
+                pass
+
+    # ---- voice rooms
+    def voice_state(self, team_id: int) -> dict:
+        state = {}
+        for room, members in self.rooms.items():
+            if self.room_team.get(room) == team_id and members:
+                state[room] = [
+                    {"user_id": uid, "name": m["name"], "profile_pic": m["profile_pic"],
+                     "muted": m["muted"], "video": m["video"], "sharing": m["sharing"]}
+                    for uid, m in members.items()
+                ]
+        return state
+
+    def room_of(self, websocket: WebSocket) -> Optional[str]:
+        for room, members in self.rooms.items():
+            if any(m["ws"] is websocket for m in members.values()):
+                return room
+        return None
+
+    def join_room(self, team_id: int, room: str, websocket: WebSocket, user: dict) -> bool:
+        """Returns True if this person is the first one in the room."""
+        members = self.rooms.setdefault(room, {})
+        first = not members
+        if first:
+            self.room_team[room] = team_id
+            self.room_started[room] = datetime.now(timezone.utc).timestamp()
+        members[user["id"]] = {"ws": websocket, "muted": False, "video": False, "sharing": False,
+                               "name": user["name"], "profile_pic": user["profile_pic"]}
+        return first
+
+    def leave_room(self, room: str, user_id: int):
+        """Returns the call length in seconds if the room is now empty, otherwise None."""
+        members = self.rooms.get(room)
+        if not members or user_id not in members:
+            return None
+        del members[user_id]
+        if members:
+            return None
+        del self.rooms[room]
+        self.room_team.pop(room, None)
+        started = self.room_started.pop(room, None)
+        return int(datetime.now(timezone.utc).timestamp() - started) if started else 0
+
+
 chat_manager = ConnectionManager()
 notification_manager = ConnectionManager()
 team_chat_manager = RoomConnectionManager()
+team_hub = TeamHub()
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -543,8 +666,26 @@ class ChannelResponse(BaseModel):
 
 class TeamMessageCreate(BaseModel):
     content: str
-    is_system_message: int = 0
+    is_system_message: int = 0   # accepted for older clients but ignored: only the server writes system messages
     temp_id: Optional[str] = None
+    reply_to_id: Optional[int] = None
+
+class TeamUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class ChannelRename(BaseModel):
+    name: str
+
+class MemberRoleUpdate(BaseModel):
+    role: str
+
+class ReactionToggle(BaseModel):
+    emoji: str
+
+class ResourceCreate(BaseModel):
+    name: str
+    url: str
 
 class TeamMessageResponse(BaseModel):
     id: int
@@ -556,6 +697,9 @@ class TeamMessageResponse(BaseModel):
     is_system_message: int
     sender_name: Optional[str] = ""
     sender_pic: Optional[str] = ""
+    is_pinned: int = 0
+    reactions: list = []
+    reply_to: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -1013,11 +1157,19 @@ def user_card(user: Optional[DBUser], user_id: int) -> dict:
         "skills": (user.skills if user else "") or ""
     }
 
+def is_user_online(user_id: int) -> bool:
+    """Online means connected on the Messages page or on the Teams page."""
+    return chat_manager.is_online(user_id) or team_hub.has_user(user_id)
+
+def all_online_user_ids() -> list:
+    return sorted(set(chat_manager.get_online_user_ids()) | team_hub.user_ids())
+
 async def broadcast_presence(user_id: int, online: bool):
     payload = json.dumps({"type": "presence", "user_id": user_id, "online": online})
     for other_id in chat_manager.get_online_user_ids():
         if other_id != user_id:
             await chat_manager.send_personal_message(payload, other_id)
+    await team_hub.broadcast_everywhere(payload)
 
 
 @app.websocket("/api/ws/{user_id}")
@@ -1025,7 +1177,7 @@ async def chat_websocket_endpoint(websocket: WebSocket, user_id: int):
     if get_websocket_user_id(websocket) != user_id:
         await websocket.close(code=1008)
         return
-    was_online = chat_manager.is_online(user_id)
+    was_online = is_user_online(user_id)
     await chat_manager.connect(websocket, user_id)
     spawn_background(_on_chat_connect(user_id, announce=not was_online))
     send_lock = asyncio.Lock()
@@ -1074,7 +1226,7 @@ async def chat_websocket_endpoint(websocket: WebSocket, user_id: int):
         pass
     finally:
         chat_manager.disconnect(websocket, user_id)
-        if not chat_manager.is_online(user_id):
+        if not is_user_online(user_id):
             await broadcast_presence(user_id, False)
 
 
@@ -1462,8 +1614,7 @@ async def get_messages(
 @app.get("/api/users/online")
 async def get_online_users(current_user_id: int = Depends(get_current_user_id)):
     """Return list of user IDs currently connected via WebSocket."""
-    online_ids = chat_manager.get_online_user_ids()
-    return {"online_user_ids": online_ids}
+    return {"online_user_ids": all_online_user_ids()}
 
 @app.get("/api/users/{user_id}/online")
 async def check_user_online(user_id: int, current_user_id: int = Depends(get_current_user_id)):
@@ -2070,32 +2221,48 @@ async def update_github_username(
 # ==========================================
 # 12. TEAMS & COMMUNITIES (DISCORD-STYLE)
 # ==========================================
+async def run_one_off(statement):
+    """Run one write on its own pooled connection, so several can run at the same time."""
+    async with AutocommitSession() as session:
+        await session.execute(statement)
+
+async def log_activity_later(user_id: int, action: str, detail: str):
+    """Activity-history entry written in the background, so it never slows the request down."""
+    try:
+        await run_one_off(DBHistory.__table__.insert().values(user_id=user_id, time=utc_now_iso(), action=action, detail=detail))
+    except Exception as e:
+        print("Error logging activity:", e)
+
+
 @app.post("/api/teams", response_model=TeamResponse)
 async def create_team(
     team_data: TeamCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
     name = team_data.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Team name is required.")
     now_iso = utc_now_iso()
     new_team = DBTeam(
-        name=name,
-        description=team_data.description,
-        created_by=current_user.id,
+        name=name[:80],
+        description=(team_data.description or "")[:300],
+        created_by=current_user_id,
         created_at=now_iso,
         avatar_url=team_data.avatar_url
     )
     db.add(new_team)
     await db.flush()
 
-    # Every team starts with its creator as Admin and a #general channel, so it is usable straight away
-    db.add(DBTeamMember(team_id=new_team.id, user_id=current_user.id, role="Admin", joined_at=now_iso))
-    db.add(DBChannel(team_id=new_team.id, name="general", channel_type="text", created_at=now_iso))
-    await db.commit()
-
-    await log_user_activity(db, current_user.id, "Team Created", f"You created the team {name}.")
+    # Every team starts with its creator as Admin, a #general channel and a voice room, so it is usable straight away
+    await asyncio.gather(
+        run_one_off(DBTeamMember.__table__.insert().values(team_id=new_team.id, user_id=current_user_id, role="Admin", joined_at=now_iso)),
+        run_one_off(DBChannel.__table__.insert().values([
+            {"team_id": new_team.id, "name": "general", "channel_type": "text", "created_at": now_iso},
+            {"team_id": new_team.id, "name": "voice-lounge", "channel_type": "voice", "created_at": now_iso},
+        ])),
+    )
+    spawn_background(log_activity_later(current_user_id, "Team Created", f"You created the team {name}."))
     return new_team
 
 
@@ -2110,6 +2277,138 @@ async def get_my_teams(db: AsyncSession = Depends(get_fast_db), current_user_id:
     return res.scalars().all()
 
 
+TEAM_ROLES = ("Admin", "Member")
+
+async def fetch_one_off(statement):
+    """Run one read on its own pooled connection, so several can run at the same time."""
+    async with AutocommitSession() as session:
+        return (await session.execute(statement)).all()
+
+def members_query(team_id: int):
+    return (
+        select(DBTeamMember, DBUser.name, DBUser.profile_pic)
+        .outerjoin(DBUser, DBTeamMember.user_id == DBUser.id)
+        .filter(DBTeamMember.team_id == team_id)
+        .order_by(DBTeamMember.id.asc())
+    )
+
+def serialize_members(rows) -> list:
+    return [{
+        "id": m.id,
+        "team_id": m.team_id,
+        "user_id": m.user_id,
+        "role": m.role,
+        "joined_at": m.joined_at,
+        "user_name": name or "Unknown",
+        "user_profile_pic": profile_pic or ""
+    } for m, name, profile_pic in rows]
+
+def serialize_channel(channel: DBChannel, last_message_id=None) -> dict:
+    return {"id": channel.id, "team_id": channel.team_id, "name": channel.name,
+            "channel_type": channel.channel_type, "created_at": channel.created_at,
+            "last_message_id": last_message_id or 0}
+
+def channels_query(team_id: int):
+    last_ids = (
+        select(DBTeamMessage.channel_id.label("channel_id"), func.max(DBTeamMessage.id).label("last_id"))
+        .where(DBTeamMessage.team_id == team_id)
+        .group_by(DBTeamMessage.channel_id)
+        .subquery()
+    )
+    return (
+        select(DBChannel, last_ids.c.last_id)
+        .outerjoin(last_ids, last_ids.c.channel_id == DBChannel.id)
+        .filter(DBChannel.team_id == team_id)
+        .order_by(DBChannel.id.asc())
+    )
+
+def serialize_resource(resource: DBTeamResource) -> dict:
+    return {"id": resource.id, "team_id": resource.team_id, "name": resource.name, "url": resource.url,
+            "added_by": resource.added_by, "created_at": resource.created_at}
+
+def resources_query(team_id: int):
+    return select(DBTeamResource).filter(DBTeamResource.team_id == team_id).order_by(DBTeamResource.id.asc())
+
+async def get_team_role(db: AsyncSession, team_id: int, user_id: int):
+    """Returns (team, role). Raises 404 if the team does not exist and 403 if the user is not in it."""
+    result = await db.execute(
+        select(DBTeam, DBTeamMember.role)
+        .outerjoin(DBTeamMember, and_(DBTeamMember.team_id == DBTeam.id, DBTeamMember.user_id == user_id))
+        .filter(DBTeam.id == team_id)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Team not found.")
+    if row[1] is None:
+        raise HTTPException(status_code=403, detail="You are not a member of this team.")
+    return row[0], row[1]
+
+async def require_team_admin(db: AsyncSession, team_id: int, user_id: int) -> DBTeam:
+    team, role = await get_team_role(db, team_id, user_id)
+    if role != "Admin":
+        raise HTTPException(status_code=403, detail="Only Admins can do this.")
+    return team
+
+async def broadcast_members(team_id: int):
+    rows = await fetch_one_off(members_query(team_id))
+    await team_hub.broadcast(team_id, {"type": "members", "members": serialize_members(rows)})
+
+async def broadcast_channels(team_id: int):
+    rows = await fetch_one_off(channels_query(team_id))
+    await team_hub.broadcast(team_id, {"type": "channels", "channels": [serialize_channel(c, last_id) for c, last_id in rows]})
+
+async def broadcast_resources(team_id: int):
+    rows = await fetch_one_off(resources_query(team_id))
+    await team_hub.broadcast(team_id, {"type": "resources", "resources": [serialize_resource(r) for (r,) in rows]})
+
+
+@app.get("/api/teams/{team_id}/bootstrap")
+async def get_team_bootstrap(team_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Everything the Teams page needs to open a workspace, fetched with the queries running side by side."""
+    team_rows, member_rows, channel_rows, resource_rows = await asyncio.gather(
+        fetch_one_off(select(DBTeam).filter(DBTeam.id == team_id)),
+        fetch_one_off(members_query(team_id)),
+        fetch_one_off(channels_query(team_id)),
+        fetch_one_off(resources_query(team_id)),
+    )
+    if not team_rows:
+        raise HTTPException(status_code=404, detail="Team not found.")
+    members = serialize_members(member_rows)
+    me = next((m for m in members if m["user_id"] == current_user_id), None)
+    if not me:
+        raise HTTPException(status_code=403, detail="You are not a member of this team.")
+    team = team_rows[0][0]
+    return {
+        "team": {"id": team.id, "name": team.name, "description": team.description or "", "created_by": team.created_by,
+                 "created_at": team.created_at, "avatar_url": team.avatar_url or ""},
+        "role": me["role"],
+        "members": members,
+        "channels": [serialize_channel(c, last_id) for c, last_id in channel_rows],
+        "resources": [serialize_resource(r) for (r,) in resource_rows],
+        "online_user_ids": all_online_user_ids(),
+        "voice": team_hub.voice_state(team_id)
+    }
+
+
+@app.patch("/api/teams/{team_id}")
+async def update_team(team_id: int, data: TeamUpdate, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    team = await require_team_admin(db, team_id, current_user_id)
+    values = {}
+    if data.name is not None:
+        name = data.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Team name is required.")
+        values["name"] = name[:80]
+    if data.description is not None:
+        values["description"] = data.description.strip()[:300]
+    if values:
+        await db.execute(update(DBTeam).where(DBTeam.id == team_id).values(**values))
+    payload = {"id": team.id, "name": values.get("name", team.name), "description": values.get("description", team.description or ""),
+               "created_by": team.created_by, "created_at": team.created_at, "avatar_url": team.avatar_url or ""}
+    await team_hub.broadcast(team_id, {"type": "team_updated", "team": payload})
+    return payload
+
+
 @app.post("/api/teams/{team_id}/members")
 async def add_team_member(
     team_id: int,
@@ -2117,6 +2416,8 @@ async def add_team_member(
     db: AsyncSession = Depends(get_fast_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
+    if member_data.role not in TEAM_ROLES:
+        raise HTTPException(status_code=400, detail="Role must be Admin or Member.")
     # One query: the team, the caller's role in it, whether the new person exists and is already a member
     caller = aliased(DBTeamMember)
     existing = aliased(DBTeamMember)
@@ -2146,7 +2447,52 @@ async def add_team_member(
         member_data.user_id, "team_invite",
         f"You were added to the team: {team_name} as {member_data.role}.", now_iso
     ))
+    spawn_background(broadcast_members(team_id))
     return {"message": "Member added successfully."}
+
+
+@app.patch("/api/teams/{team_id}/members/{user_id}")
+async def change_member_role(team_id: int, user_id: int, data: MemberRoleUpdate, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    if data.role not in TEAM_ROLES:
+        raise HTTPException(status_code=400, detail="Role must be Admin or Member.")
+    team = await require_team_admin(db, team_id, current_user_id)
+    if user_id == team.created_by:
+        raise HTTPException(status_code=400, detail="The creator of the team is always an Admin.")
+    result = await db.execute(
+        update(DBTeamMember).where(DBTeamMember.team_id == team_id, DBTeamMember.user_id == user_id)
+        .values(role=data.role).returning(DBTeamMember.id)
+    )
+    if not result.first():
+        raise HTTPException(status_code=404, detail="That person is not in this team.")
+    spawn_background(broadcast_members(team_id))
+    return {"status": "updated", "role": data.role}
+
+
+@app.delete("/api/teams/{team_id}/members/{user_id}")
+async def remove_team_member(team_id: int, user_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    team = await require_team_admin(db, team_id, current_user_id)
+    if user_id == team.created_by:
+        raise HTTPException(status_code=400, detail="The creator of the team cannot be removed.")
+    if user_id == current_user_id:
+        raise HTTPException(status_code=400, detail="Use Leave to remove yourself.")
+    result = await db.execute(
+        delete(DBTeamMember).where(DBTeamMember.team_id == team_id, DBTeamMember.user_id == user_id).returning(DBTeamMember.id)
+    )
+    if not result.first():
+        raise HTTPException(status_code=404, detail="That person is not in this team.")
+    await evict_from_team(team_id, user_id, "removed")
+    spawn_background(broadcast_members(team_id))
+    return {"status": "removed"}
+
+
+async def evict_from_team(team_id: int, user_id: int, reason: str):
+    """Tell a person's open Teams pages they are no longer in this team and close those connections."""
+    for websocket in team_hub.sockets_of(team_id, user_id):
+        try:
+            await websocket.send_text(json.dumps({"type": "evicted", "team_id": team_id, "reason": reason}))
+            await websocket.close(code=1000)
+        except Exception:
+            pass
 
 
 @app.get("/api/teams/{team_id}/members", response_model=List[TeamMemberResponse])
@@ -2156,25 +2502,10 @@ async def get_team_members(
     user_id: int = Depends(get_current_user_id)
 ):
     # Single JOIN; the membership check is done on the result instead of with a second query
-    query = (
-        select(DBTeamMember, DBUser.name, DBUser.profile_pic)
-        .outerjoin(DBUser, DBTeamMember.user_id == DBUser.id)
-        .filter(DBTeamMember.team_id == team_id)
-        .order_by(DBTeamMember.id.asc())
-    )
-    rows = (await db.execute(query)).all()
-    if not any(m.user_id == user_id for m, _, _ in rows):
+    members = serialize_members((await db.execute(members_query(team_id))).all())
+    if not any(m["user_id"] == user_id for m in members):
         raise HTTPException(status_code=403, detail="You are not a member of this team.")
-
-    return [{
-        "id": m.id,
-        "team_id": m.team_id,
-        "user_id": m.user_id,
-        "role": m.role,
-        "joined_at": m.joined_at,
-        "user_name": name or "Unknown",
-        "user_profile_pic": profile_pic or ""
-    } for m, name, profile_pic in rows]
+    return members
 
 
 @app.get("/api/teams/{team_id}/channels", response_model=List[ChannelResponse])
@@ -2195,31 +2526,69 @@ async def get_team_channels(
     return [channel for _, channel in rows if channel is not None]
 
 
+def clean_channel_name(raw: str) -> str:
+    name = re.sub(r"[^a-z0-9_-]+", "-", raw.strip().lower()).strip("-")[:40]
+    if not name:
+        raise HTTPException(status_code=400, detail="Channel name needs at least one letter or number.")
+    return name
+
+
 @app.post("/api/teams/{team_id}/channels", response_model=ChannelResponse)
 async def create_team_channel(
     team_id: int,
     channel_data: ChannelCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    admin_check_res = await db.execute(select(DBTeamMember).filter(
-        DBTeamMember.team_id == team_id,
-        DBTeamMember.user_id == current_user.id,
-        DBTeamMember.role == "Admin"
-    ))
-    if not admin_check_res.scalars().first():
-        raise HTTPException(status_code=403, detail="Only Admins can create channels.")
+    try:
+        await require_team_admin(db, team_id, current_user_id)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail="Only Admins can create channels." if e.status_code == 403 else e.detail)
+    if channel_data.channel_type not in ("text", "voice"):
+        raise HTTPException(status_code=400, detail="Channel type must be text or voice.")
 
     new_channel = DBChannel(
         team_id=team_id,
-        name=channel_data.name.lower().replace(" ", "-"),
+        name=clean_channel_name(channel_data.name),
         channel_type=channel_data.channel_type,
         created_at=utc_now_iso()
     )
     db.add(new_channel)
-    await db.commit()
-    await db.refresh(new_channel)
+    await db.flush()
+    spawn_background(broadcast_channels(team_id))
     return new_channel
+
+
+@app.patch("/api/channels/{channel_id}")
+async def rename_channel(channel_id: int, data: ChannelRename, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    channel, membership = await get_channel_for_member(db, channel_id, current_user_id)
+    if membership.role != "Admin":
+        raise HTTPException(status_code=403, detail="Only Admins can rename channels.")
+    name = clean_channel_name(data.name)
+    await db.execute(update(DBChannel).where(DBChannel.id == channel_id).values(name=name))
+    spawn_background(broadcast_channels(channel.team_id))
+    return {"id": channel_id, "name": name}
+
+
+@app.delete("/api/channels/{channel_id}")
+async def delete_channel(channel_id: int, db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    channel, membership = await get_channel_for_member(db, channel_id, current_user_id)
+    if membership.role != "Admin":
+        raise HTTPException(status_code=403, detail="Only Admins can delete channels.")
+    if channel.channel_type != "voice":
+        others = await db.execute(select(func.count()).select_from(DBChannel).filter(
+            DBChannel.team_id == channel.team_id, DBChannel.channel_type != "voice", DBChannel.id != channel_id
+        ))
+        if not others.scalar():
+            raise HTTPException(status_code=400, detail="A team needs at least one text channel.")
+
+    team_id = channel.team_id
+    await db.execute(delete(DBTeamMessageReaction).where(DBTeamMessageReaction.channel_id == channel_id))
+    await db.execute(delete(DBTeamMessage).where(DBTeamMessage.channel_id == channel_id))
+    await db.execute(delete(DBChannel).where(DBChannel.id == channel_id))
+    await db.commit()
+    spawn_background(broadcast_channels(team_id))
+    return {"status": "deleted"}
 
 
 def serialize_team_message(msg: DBTeamMessage, user: Optional[DBUser]) -> dict:
@@ -2230,10 +2599,30 @@ def serialize_team_message(msg: DBTeamMessage, user: Optional[DBUser]) -> dict:
         "sender_id": msg.sender_id,
         "content": msg.content,
         "timestamp": msg.timestamp,
-        "is_system_message": msg.is_system_message,
+        "is_system_message": msg.is_system_message or 0,
         "sender_name": user.name if user else "System",
-        "sender_pic": (user.profile_pic if user else "") or ""
+        "sender_pic": (user.profile_pic if user else "") or "",
+        "is_pinned": msg.is_pinned or 0,
+        "reactions": [],
+        "reply_to": None
     }
+
+def reply_preview(message_id, sender_name, content) -> Optional[dict]:
+    if message_id is None:
+        return None
+    return {"id": message_id, "sender_name": sender_name or "Unknown", "content": (content or "")[:200]}
+
+def group_reactions(rows) -> dict:
+    """rows of (message_id, emoji, user_id) -> {message_id: [{"emoji", "user_ids"}]} in first-used order."""
+    grouped: dict = {}
+    for message_id, emoji, user_id in rows:
+        entries = grouped.setdefault(message_id, [])
+        entry = next((e for e in entries if e["emoji"] == emoji), None)
+        if not entry:
+            entry = {"emoji": emoji, "user_ids": []}
+            entries.append(entry)
+        entry["user_ids"].append(user_id)
+    return grouped
 
 async def get_channel_for_member(db: AsyncSession, channel_id: int, user_id: int):
     """Returns (channel, membership) if the user belongs to the channel's team, otherwise raises 403."""
@@ -2246,6 +2635,41 @@ async def get_channel_for_member(db: AsyncSession, channel_id: int, user_id: int
     if not row:
         raise HTTPException(status_code=403, detail="Not a member of this team or channel not found.")
     return row[0], row[1]
+
+async def load_team_messages(conditions: list, limit: Optional[int], newest_first: bool = False) -> list:
+    """Messages with sender, reply preview and reactions. The reactions are read at the same time as the messages."""
+    parent = aliased(DBTeamMessage)
+    parent_user = aliased(DBUser)
+    query = (
+        select(DBTeamMessage, DBUser, parent.id, parent_user.name, parent.content)
+        .outerjoin(DBUser, DBTeamMessage.sender_id == DBUser.id)
+        .outerjoin(parent, parent.id == DBTeamMessage.reply_to_id)
+        .outerjoin(parent_user, parent_user.id == parent.sender_id)
+        .filter(*conditions)
+    )
+    ids = select(DBTeamMessage.id).filter(*conditions)
+    if limit:
+        query = query.order_by(DBTeamMessage.id.desc()).limit(limit)
+        ids = ids.order_by(DBTeamMessage.id.desc()).limit(limit)
+    else:
+        query = query.order_by(DBTeamMessage.id.asc())
+    reactions_query = (
+        select(DBTeamMessageReaction.message_id, DBTeamMessageReaction.emoji, DBTeamMessageReaction.user_id)
+        .filter(DBTeamMessageReaction.message_id.in_(ids))
+        .order_by(DBTeamMessageReaction.id.asc())
+    )
+    rows, reaction_rows = await asyncio.gather(fetch_one_off(query), fetch_one_off(reactions_query))
+    if limit and not newest_first:
+        rows = list(reversed(rows))
+
+    reactions = group_reactions(reaction_rows)
+    messages = []
+    for msg, user, parent_id, parent_sender, parent_content in rows:
+        item = serialize_team_message(msg, user)
+        item["reactions"] = reactions.get(msg.id, [])
+        item["reply_to"] = reply_preview(parent_id, parent_sender, parent_content) if msg.reply_to_id else None
+        messages.append(item)
+    return messages
 
 
 @app.get("/api/channels/{channel_id}/messages", response_model=List[TeamMessageResponse])
@@ -2263,24 +2687,57 @@ async def get_channel_messages(
         .where(DBChannel.id == channel_id, DBTeamMember.user_id == user_id)
         .exists()
     )
-    query = (
-        select(DBTeamMessage, DBUser)
-        .outerjoin(DBUser, DBTeamMessage.sender_id == DBUser.id)
-        .filter(DBTeamMessage.channel_id == channel_id, is_member)
-    )
+    conditions = [DBTeamMessage.channel_id == channel_id, is_member]
     if before_id:
-        query = query.filter(DBTeamMessage.id < before_id)
-    if limit:
-        query = query.order_by(DBTeamMessage.id.desc()).limit(max(1, min(limit, 100)))
-        rows = list(reversed((await db.execute(query)).all()))
-    else:
-        rows = (await db.execute(query.order_by(DBTeamMessage.id.asc()))).all()
+        conditions.append(DBTeamMessage.id < before_id)
+    messages = await load_team_messages(conditions, max(1, min(limit, 100)) if limit else None)
 
     # An empty result is either an empty channel or no access: only then pay for the explicit check
-    if not rows:
+    if not messages:
         await get_channel_for_member(db, channel_id, user_id)
+    return messages
 
-    return [serialize_team_message(msg, user) for msg, user in rows]
+
+@app.get("/api/channels/{channel_id}/pins", response_model=List[TeamMessageResponse])
+async def get_channel_pins(channel_id: int, db: AsyncSession = Depends(get_fast_db), user_id: int = Depends(get_current_user_id)):
+    await get_channel_for_member(db, channel_id, user_id)
+    return await load_team_messages([DBTeamMessage.channel_id == channel_id, DBTeamMessage.is_pinned == 1], None)
+
+
+@app.get("/api/channels/{channel_id}/search", response_model=List[TeamMessageResponse])
+async def search_channel_messages(channel_id: int, q: str = "", db: AsyncSession = Depends(get_fast_db), user_id: int = Depends(get_current_user_id)):
+    """Search the whole history of a channel by message text or sender name. Newest matches first."""
+    await get_channel_for_member(db, channel_id, user_id)
+    term = q.strip()
+    if not term:
+        return []
+    pattern = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    senders = select(DBUser.id).where(DBUser.name.ilike(pattern, escape="\\"))
+    return await load_team_messages([
+        DBTeamMessage.channel_id == channel_id,
+        or_(DBTeamMessage.is_system_message.is_(None), DBTeamMessage.is_system_message == 0),
+        or_(DBTeamMessage.content.ilike(pattern, escape="\\"), DBTeamMessage.sender_id.in_(senders))
+    ], 30, newest_first=True)
+
+
+async def publish_team_message(payload: dict, temp_id: Optional[str] = None):
+    """Send a new channel message to everyone who has the channel or its workspace open."""
+    event = {**payload, "temp_id": temp_id}
+    await team_chat_manager.broadcast_to_room(payload["channel_id"], json.dumps(event))
+    await team_hub.broadcast(payload["team_id"], {"type": "message", "message": event})
+
+
+async def post_system_message(team_id: int, channel_id: int, actor_id: int, text_content: str):
+    """A notice written by the server itself, such as a call starting or ending."""
+    try:
+        async with AutocommitSession() as db:
+            msg = DBTeamMessage(team_id=team_id, channel_id=channel_id, sender_id=actor_id, content=text_content,
+                                timestamp=utc_now_iso(), is_system_message=1)
+            db.add(msg)
+            await db.flush()
+        await publish_team_message(serialize_team_message(msg, None))
+    except Exception as e:
+        print("Error posting system message:", e)
 
 
 @app.post("/api/channels/{channel_id}/messages", response_model=TeamMessageResponse)
@@ -2296,33 +2753,40 @@ async def send_channel_message(
     if len(content) > MAX_MESSAGE_LENGTH:
         raise HTTPException(status_code=400, detail=f"Message is too long. The limit is {MAX_MESSAGE_LENGTH} characters.")
 
-    # Membership check and the sender's name and picture in a single query
+    # Membership check, the sender's name and picture, and the message being replied to, in a single query
+    parent = aliased(DBTeamMessage)
+    parent_user = aliased(DBUser)
     result = await db.execute(
-        select(DBChannel.team_id, DBUser.name, DBUser.profile_pic)
+        select(DBChannel.team_id, DBUser.name, DBUser.profile_pic, parent.id, parent_user.name, parent.content)
         .join(DBTeamMember, DBTeamMember.team_id == DBChannel.team_id)
         .join(DBUser, DBUser.id == DBTeamMember.user_id)
+        .outerjoin(parent, and_(parent.id == msg_data.reply_to_id, parent.channel_id == channel_id))
+        .outerjoin(parent_user, parent_user.id == parent.sender_id)
         .filter(DBChannel.id == channel_id, DBTeamMember.user_id == current_user_id)
     )
     row = result.first()
     if not row:
         raise HTTPException(status_code=403, detail="Not a member of this team or channel not found.")
+    team_id, sender_name, sender_pic, parent_id, parent_sender, parent_content = row
 
     new_msg = DBTeamMessage(
-        team_id=row.team_id,
+        team_id=team_id,
         channel_id=channel_id,
         sender_id=current_user_id,
         content=content,
         timestamp=utc_now_iso(),
-        is_system_message=msg_data.is_system_message
+        is_system_message=0,
+        reply_to_id=parent_id
     )
     db.add(new_msg)
     await db.flush()
 
     msg_payload = serialize_team_message(new_msg, None)
-    msg_payload["sender_name"] = row.name
-    msg_payload["sender_pic"] = row.profile_pic or ""
+    msg_payload["sender_name"] = sender_name
+    msg_payload["sender_pic"] = sender_pic or ""
+    msg_payload["reply_to"] = reply_preview(parent_id, parent_sender, parent_content)
     # temp_id lets the sender match this broadcast to the bubble it already drew
-    await team_chat_manager.broadcast_to_room(channel_id, json.dumps({**msg_payload, "temp_id": msg_data.temp_id}))
+    await publish_team_message(msg_payload, msg_data.temp_id)
     return msg_payload
 
 
@@ -2333,7 +2797,7 @@ async def delete_channel_message(
     db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
-    _, membership = await get_channel_for_member(db, channel_id, current_user_id)
+    channel, membership = await get_channel_for_member(db, channel_id, current_user_id)
     result = await db.execute(select(DBTeamMessage).filter(DBTeamMessage.id == msg_id, DBTeamMessage.channel_id == channel_id))
     msg = result.scalars().first()
     if not msg:
@@ -2341,9 +2805,94 @@ async def delete_channel_message(
     if msg.sender_id != current_user_id and membership.role != "Admin":
         raise HTTPException(status_code=403, detail="Only the sender or a team Admin can delete this message.")
 
+    await db.execute(delete(DBTeamMessageReaction).where(DBTeamMessageReaction.message_id == msg_id))
     await db.delete(msg)
     await db.commit()
-    await team_chat_manager.broadcast_to_room(channel_id, json.dumps({"type": "message_deleted", "id": msg_id, "channel_id": channel_id}))
+    event = {"type": "message_deleted", "id": msg_id, "channel_id": channel_id}
+    await team_chat_manager.broadcast_to_room(channel_id, json.dumps(event))
+    await team_hub.broadcast(channel.team_id, event)
+    return {"status": "deleted"}
+
+
+@app.post("/api/channels/{channel_id}/messages/{msg_id}/reactions")
+async def toggle_reaction(channel_id: int, msg_id: int, data: ReactionToggle, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """Add the emoji if this person has not used it on the message, otherwise take it off."""
+    emoji = data.emoji.strip()
+    # Reactions are emoji only: no letters, quotes or markup
+    if not emoji or len(emoji) > 16 or any(ord(ch) < 128 for ch in emoji):
+        raise HTTPException(status_code=400, detail="That is not a valid reaction.")
+    result = await db.execute(
+        select(DBChannel.team_id, DBTeamMessage.id)
+        .join(DBTeamMember, DBTeamMember.team_id == DBChannel.team_id)
+        .outerjoin(DBTeamMessage, and_(DBTeamMessage.id == msg_id, DBTeamMessage.channel_id == channel_id))
+        .filter(DBChannel.id == channel_id, DBTeamMember.user_id == current_user_id)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=403, detail="Not a member of this team or channel not found.")
+    if row[1] is None:
+        raise HTTPException(status_code=404, detail="Message not found.")
+
+    removed = await db.execute(
+        delete(DBTeamMessageReaction)
+        .where(DBTeamMessageReaction.message_id == msg_id, DBTeamMessageReaction.user_id == current_user_id, DBTeamMessageReaction.emoji == emoji)
+        .returning(DBTeamMessageReaction.id)
+    )
+    if not removed.first():
+        db.add(DBTeamMessageReaction(message_id=msg_id, channel_id=channel_id, user_id=current_user_id, emoji=emoji))
+        await db.flush()
+
+    rows = (await db.execute(
+        select(DBTeamMessageReaction.message_id, DBTeamMessageReaction.emoji, DBTeamMessageReaction.user_id)
+        .filter(DBTeamMessageReaction.message_id == msg_id).order_by(DBTeamMessageReaction.id.asc())
+    )).all()
+    reactions = group_reactions(rows).get(msg_id, [])
+    await team_hub.broadcast(row[0], {"type": "reactions", "channel_id": channel_id, "message_id": msg_id, "reactions": reactions})
+    return {"reactions": reactions}
+
+
+@app.post("/api/channels/{channel_id}/messages/{msg_id}/pin")
+async def toggle_pin(channel_id: int, msg_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    channel, _ = await get_channel_for_member(db, channel_id, current_user_id)
+    result = await db.execute(
+        update(DBTeamMessage)
+        .where(DBTeamMessage.id == msg_id, DBTeamMessage.channel_id == channel_id)
+        .values(is_pinned=case((func.coalesce(DBTeamMessage.is_pinned, 0) == 1, 0), else_=1), pinned_by=current_user_id)
+        .returning(DBTeamMessage.is_pinned)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Message not found.")
+    await team_hub.broadcast(channel.team_id, {"type": "pin", "channel_id": channel_id, "message_id": msg_id, "is_pinned": row[0]})
+    return {"is_pinned": row[0]}
+
+
+@app.post("/api/teams/{team_id}/resources")
+async def add_team_resource(team_id: int, data: ResourceCreate, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    await get_team_role(db, team_id, current_user_id)
+    name, url = data.name.strip()[:100], data.url.strip()[:500]
+    if not name:
+        raise HTTPException(status_code=400, detail="Give the resource a name.")
+    if not re.match(r"^https?://\S+$", url):
+        raise HTTPException(status_code=400, detail="The link must start with http:// or https://")
+    resource = DBTeamResource(team_id=team_id, name=name, url=url, added_by=current_user_id, created_at=utc_now_iso())
+    db.add(resource)
+    await db.flush()
+    spawn_background(broadcast_resources(team_id))
+    return serialize_resource(resource)
+
+
+@app.delete("/api/teams/{team_id}/resources/{resource_id}")
+async def delete_team_resource(team_id: int, resource_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    _, role = await get_team_role(db, team_id, current_user_id)
+    result = await db.execute(select(DBTeamResource).filter(DBTeamResource.id == resource_id, DBTeamResource.team_id == team_id))
+    resource = result.scalars().first()
+    if not resource:
+        return {"status": "deleted"}
+    if resource.added_by != current_user_id and role != "Admin":
+        raise HTTPException(status_code=403, detail="Only the person who added it or an Admin can remove this.")
+    await db.execute(delete(DBTeamResource).where(DBTeamResource.id == resource_id))
+    spawn_background(broadcast_resources(team_id))
     return {"status": "deleted"}
 
 
@@ -2371,6 +2920,120 @@ async def channel_websocket_endpoint(websocket: WebSocket, channel_id: int, user
         team_chat_manager.disconnect(websocket, channel_id)
 
 
+# ---- the Teams page socket: one connection per open workspace
+async def leave_voice_room(team_id: int, websocket: WebSocket, user: dict):
+    room = team_hub.room_of(websocket)
+    if not room:
+        return
+    call_seconds = team_hub.leave_room(room, user["id"])
+    await team_hub.broadcast(team_id, {"type": "voice_state", "voice": team_hub.voice_state(team_id)})
+    await team_hub.broadcast(team_id, {"type": "voice_left", "room": room, "user_id": user["id"]})
+    # A call started from a text channel leaves a note there when the last person hangs up
+    if call_seconds is not None and room.startswith("call:"):
+        minutes, seconds = divmod(call_seconds, 60)
+        spawn_background(post_system_message(team_id, int(room.split(":")[1]), user["id"], f"📞 Call ended · {minutes}:{seconds:02d}"))
+
+
+@app.websocket("/api/ws/teams/{team_id}/{user_id}")
+async def team_websocket_endpoint(websocket: WebSocket, team_id: int, user_id: int):
+    if get_websocket_user_id(websocket) != user_id:
+        await websocket.close(code=1008)
+        return
+    async with AutocommitSession() as db:
+        result = await db.execute(
+            select(DBUser.name, DBUser.profile_pic)
+            .join(DBTeamMember, DBTeamMember.user_id == DBUser.id)
+            .filter(DBTeamMember.team_id == team_id, DBUser.id == user_id)
+        )
+        row = result.first()
+        channel_rows = (await db.execute(select(DBChannel.id, DBChannel.channel_type).filter(DBChannel.team_id == team_id))).all() if row else []
+    if not row:
+        await websocket.close(code=1008)
+        return
+
+    user = {"id": user_id, "name": row[0], "profile_pic": row[1] or ""}
+    was_online = is_user_online(user_id)
+    await websocket.accept()
+    team_hub.connect(team_id, websocket, user)
+    await websocket.send_text(json.dumps({"type": "hello", "voice": team_hub.voice_state(team_id), "online_user_ids": all_online_user_ids()}))
+    if not was_online:
+        await broadcast_presence(user_id, True)
+
+    channel_types = {channel_id: channel_type for channel_id, channel_type in channel_rows}
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+                msg_type = msg.get("type")
+
+                if msg_type == "typing":
+                    await team_hub.broadcast(team_id, {
+                        "type": "typing", "channel_id": int(msg.get("channel_id")),
+                        "user_id": user_id, "name": user["name"], "typing": bool(msg.get("typing", True))
+                    }, exclude=websocket)
+
+                elif msg_type == "voice_join":
+                    channel_id = int(msg.get("channel_id"))
+                    if channel_id not in channel_types:
+                        # The channel may have been created after this connection opened
+                        async with AutocommitSession() as db:
+                            found = (await db.execute(select(DBChannel.channel_type).filter(DBChannel.id == channel_id, DBChannel.team_id == team_id))).first()
+                        if not found:
+                            continue
+                        channel_types[channel_id] = found[0]
+                    room = f"{'voice' if channel_types[channel_id] == 'voice' else 'call'}:{channel_id}"
+
+                    await leave_voice_room(team_id, websocket, user)
+                    # The same person joining from a second tab takes over from the first
+                    previous = team_hub.rooms.get(room, {}).get(user_id)
+                    if previous and previous["ws"] is not websocket:
+                        try:
+                            await previous["ws"].send_text(json.dumps({"type": "voice_replaced", "room": room}))
+                        except Exception:
+                            pass
+                    first = team_hub.join_room(team_id, room, websocket, user)
+                    others = [uid for uid in team_hub.rooms[room] if uid != user_id]
+                    await websocket.send_text(json.dumps({"type": "voice_joined", "room": room, "peers": others}))
+                    await team_hub.broadcast(team_id, {"type": "voice_state", "voice": team_hub.voice_state(team_id)})
+                    if first and room.startswith("call:"):
+                        spawn_background(post_system_message(team_id, channel_id, user_id, f"📞 {user['name']} started a call"))
+
+                elif msg_type == "voice_leave":
+                    await leave_voice_room(team_id, websocket, user)
+
+                elif msg_type == "voice_update":
+                    room = team_hub.room_of(websocket)
+                    if room:
+                        member = team_hub.rooms[room][user_id]
+                        for key in ("muted", "video", "sharing"):
+                            if key in msg:
+                                member[key] = bool(msg[key])
+                        await team_hub.broadcast(team_id, {"type": "voice_state", "voice": team_hub.voice_state(team_id)})
+
+                elif msg_type == "rtc":
+                    # WebRTC set-up messages go only to another person in the same room
+                    room = team_hub.room_of(websocket)
+                    target = team_hub.rooms.get(room, {}).get(int(msg.get("to"))) if room else None
+                    if target:
+                        try:
+                            await target["ws"].send_text(json.dumps({"type": "rtc", "room": room, "from": user_id, "data": msg.get("data")}))
+                        except Exception:
+                            pass
+
+            except (json.JSONDecodeError, ValueError, TypeError, AttributeError, KeyError):
+                pass
+    except WebSocketDisconnect:
+        pass
+    except RuntimeError:
+        pass   # closed from our side, for example when the person was removed from the team
+    finally:
+        await leave_voice_room(team_id, websocket, user)
+        team_hub.disconnect(team_id, websocket)
+        if not is_user_online(user_id):
+            await broadcast_presence(user_id, False)
+
+
 @app.post("/api/teams/{team_id}/leave")
 async def leave_team(team_id: int, db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
     team_res = await db.execute(select(DBTeam).filter(DBTeam.id == team_id))
@@ -2382,34 +3045,42 @@ async def leave_team(team_id: int, db: AsyncSession = Depends(get_db), current_u
 
     await db.execute(delete(DBTeamMember).where(DBTeamMember.team_id == team_id, DBTeamMember.user_id == current_user_id))
     await db.commit()
+    await evict_from_team(team_id, current_user_id, "left")
+    spawn_background(broadcast_members(team_id))
     return {"status": "left"}
 
 
 @app.delete("/api/teams/{team_id}")
 async def delete_team(
-    team_id: int, 
-    db: AsyncSession = Depends(get_db), 
-    current_user: DBUser = Depends(get_current_user)
+    team_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    team_res = await db.execute(select(DBTeam).filter(DBTeam.id == team_id))
-    team = team_res.scalars().first()
-    
+    team_res = await db.execute(select(DBTeam.name, DBTeam.created_by).filter(DBTeam.id == team_id))
+    team = team_res.first()
+
     if not team:
         raise HTTPException(status_code=404, detail="Team not found.")
-        
-    if team.created_by != current_user.id:
+
+    if team.created_by != current_user_id:
         raise HTTPException(status_code=403, detail="Only the workspace creator can delete this team.")
-        
-    await db.execute(delete(DBTeamMember).where(DBTeamMember.team_id == team_id))
-    await db.execute(delete(DBTeamMessage).where(DBTeamMessage.team_id == team_id))
-    await db.execute(delete(DBChannel).where(DBChannel.team_id == team_id))
-    
-    team_name = team.name
-    await db.delete(team)
-    
-    await log_user_activity(db, current_user.id, "Workspace Deleted", f"You permanently deleted the team: {team_name}.")
-    await db.commit()
-    
+
+    # Reactions are found through the team's channels, so they go first; the rest can go at the same time.
+    # Every statement is safe to repeat, so a delete that fails part-way can simply be run again.
+    await db.execute(delete(DBTeamMessageReaction).where(DBTeamMessageReaction.channel_id.in_(
+        select(DBChannel.id).where(DBChannel.team_id == team_id)
+    )))
+    await asyncio.gather(
+        run_one_off(delete(DBTeamResource).where(DBTeamResource.team_id == team_id)),
+        run_one_off(delete(DBTeamMember).where(DBTeamMember.team_id == team_id)),
+        run_one_off(delete(DBTeamMessage).where(DBTeamMessage.team_id == team_id)),
+        run_one_off(delete(DBChannel).where(DBChannel.team_id == team_id)),
+        run_one_off(delete(DBTeam).where(DBTeam.id == team_id)),
+    )
+
+    spawn_background(log_activity_later(current_user_id, "Workspace Deleted", f"You permanently deleted the team: {team.name}."))
+    await team_hub.broadcast(team_id, {"type": "team_deleted", "team_id": team_id})
+
     return {"message": "Team deleted successfully."}
 
 # ==========================================

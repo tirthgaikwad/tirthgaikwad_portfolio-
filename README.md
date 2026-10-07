@@ -39,3 +39,11 @@ Tables are created automatically on startup.
 - Calls use WebRTC with public STUN servers and no relay server, so a call can fail to connect between two very restrictive networks. Browsers only allow camera and microphone access on `localhost`/`127.0.0.1` or over HTTPS.
 - Images and recordings embedded in older messages are decoded once and kept in `media_cache/` (not public, not committed).
 - Every database query costs one network round trip to the database host. If the app feels slow, check how far the database region is from where the API runs.
+
+## Teams page
+
+`team.html` loads `chat-common.js` (helpers shared with the Messages page), `team.js` (workspaces, channels, messages, reactions, pins, resources, members) and `team-calls.js` (voice rooms and group calls).
+
+- A workspace opens with one request (`GET /api/teams/{id}/bootstrap`) plus the first page of messages, and keeps one WebSocket open (`/api/ws/teams/{team_id}/{user_id}`) for everything live in that workspace.
+- Voice rooms connect every participant directly to every other one (a WebRTC mesh). That is comfortable for about six people; larger rooms would need a media server.
+- Roles: the creator and Admins can invite, change roles, remove members, and create, rename or delete channels. Only the creator can delete a workspace; everyone else can leave it.
