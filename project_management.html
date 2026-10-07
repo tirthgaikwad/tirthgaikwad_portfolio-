@@ -1184,8 +1184,8 @@
         <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded ${tagColors[tag] || tagColors['FRONTEND']} tracking-wider uppercase">${tag}</span>
         <button class="material-symbols-outlined text-[16px] text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity card-menu-btn" onclick="event.stopPropagation(); openCardMenu(this)">more_horiz</button>
       </div>
-      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">${title}</h3>
-      ${desc ? `<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">${desc}</p>` : ''}
+      <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">${escapeHtml(title)}</h3>
+      ${desc ? `<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">${escapeHtml(desc)}</p>` : ''}
       <div class="pt-2 mt-1 border-t border-outline-variant/20 flex items-center justify-between">
         <div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">${priorityIcons[priority]}</div>
         <div class="w-6 h-6 rounded-full ${assigneeColors[assignee] || assigneeColors['OG']} flex items-center justify-center font-bold text-[10px]">${assignee}</div>
@@ -2131,24 +2131,15 @@
     document.addEventListener("DOMContentLoaded", () => {
       const todoColumn = document.getElementById('kanban-todo-column');
       
-      // In a real app we'd get the user ID from auth. Here we can fetch projects for a specific user, or try all if the API supports it.
-      // Wait, /api/projects/{user_id} requires a user ID. We can grab the logged in user from localStorage if it exists, otherwise default to 1.
-      const userStr = localStorage.getItem('user');
-      let userId = 1; // fallback
-      if (userStr) {
-          try {
-              const u = JSON.parse(userStr);
-              if (u.id) userId = u.id;
-          } catch(e) {}
-      }
+      const userId = localStorage.getItem('currentUserId');
       
       const loadingEl = document.createElement('div');
       loadingEl.className = 'text-center py-4 text-on-surface-variant';
       loadingEl.innerHTML = '<span class="material-symbols-outlined animate-spin text-[24px]">sync</span>';
       todoColumn.appendChild(loadingEl);
 
-      fetch(`/api/projects/${userId}`)
-        .then(res => res.json())
+      fetch(`${API_BASE}/api/projects/${userId}`, { credentials: 'include' })
+        .then(res => res.ok ? res.json() : [])
         .then(projects => {
           loadingEl.remove();
           
@@ -2166,11 +2157,11 @@
                 <div class="flex items-center justify-between">
                   <span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed-variant tracking-wider uppercase">PROJECT</span>
                 </div>
-                <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">${project.title}</h3>
-                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">${project.description || 'No description'}</p>
+                <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug">${escapeHtml(project.title)}</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">${escapeHtml(project.description || 'No description')}</p>
                 <div class="flex items-center justify-between mt-space-sm pt-space-xs border-t border-outline-variant/40">
                   <div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-[11px]">
-                    <span class="material-symbols-outlined text-[14px]">code</span> ${project.tech_stack || 'N/A'}
+                    <span class="material-symbols-outlined text-[14px]">code</span> ${escapeHtml(project.tech_stack || 'N/A')}
                   </div>
                 </div>
               </div>
@@ -2188,7 +2179,7 @@
         });
     });
     </script>
-    <script src="shared.js"></script>
+    
 </body>
     
 

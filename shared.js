@@ -5,6 +5,28 @@
 
 const API_BASE = `${window.location.protocol}//${window.location.hostname || '127.0.0.1'}:8000`;
 
+// Escape user-supplied text before placing it in innerHTML or an HTML attribute
+window.escapeHtml = function(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+// Only allow web, relative and inline-media URLs in href/src (blocks javascript: links)
+window.safeUrl = function(url) {
+    const value = String(url || '').trim();
+    return /^(https?:\/\/|\/|blob:|data:(image|audio|video)\/)/i.test(value) ? value : '#';
+};
+
+// Encode a value as an argument for an inline handler, e.g. onclick="fn(${escapeJsArg(name)})"
+window.escapeJsArg = function(value) {
+    return window.escapeHtml(JSON.stringify(String(value === null || value === undefined ? '' : value)));
+};
+
 // ==========================================
 // 1. GLOBAL MODAL SYSTEM (Shared across all pages)
 // ==========================================
@@ -62,7 +84,7 @@ window.openAddToTeamModal = async function(targetUserId) {
             <div class="mt-2 text-left">
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">Select a Team</label>
                 <select id="addTeamSelect" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary">
-                    ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                    ${teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}
                 </select>
                 <label class="block text-sm font-medium text-on-surface-variant mt-3 mb-1">Role</label>
                 <select id="addTeamRole" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary">
@@ -88,7 +110,7 @@ window.openAddToTeamModal = async function(targetUserId) {
                     window.showSystemModal("Success", "User successfully added to the team!", "alert");
                 } else {
                     const data = await addRes.json();
-                    window.showSystemModal("Failed", data.detail || "Failed to add user to team.", "alert");
+                    window.showSystemModal("Failed", escapeHtml(data.detail) || "Failed to add user to team.", "alert");
                 }
             } catch (err) {
                 console.error(err);
@@ -146,10 +168,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const headerAvatars = document.querySelectorAll('[data-header-avatar]');
             headerAvatars.forEach(container => {
                 if (profile.profile_pic) {
-                    container.innerHTML = `<img src="${profile.profile_pic}" alt="${profile.name}" class="w-8 h-8 rounded-full object-cover">`;
+                    container.innerHTML = `<img src="${escapeHtml(profile.profile_pic)}" alt="${escapeHtml(profile.name)}" class="w-8 h-8 rounded-full object-cover">`;
                 } else {
                     const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
-                    container.innerHTML = `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary text-xs font-bold">${initials}</span></div>`;
+                    container.innerHTML = `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary text-xs font-bold">${escapeHtml(initials)}</span></div>`;
                 }
             });
 
@@ -166,10 +188,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sidebarAvatar = document.getElementById('sidebarUserAvatar');
             if (sidebarAvatar) {
                 if (profile.profile_pic) {
-                    sidebarAvatar.innerHTML = `<img src="${profile.profile_pic}" alt="${profile.name}" class="w-full h-full rounded-full object-cover">`;
+                    sidebarAvatar.innerHTML = `<img src="${escapeHtml(profile.profile_pic)}" alt="${escapeHtml(profile.name)}" class="w-full h-full rounded-full object-cover">`;
                 } else {
                     const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
-                    sidebarAvatar.innerHTML = `<div class="w-full h-full rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary font-bold">${initials}</span></div>`;
+                    sidebarAvatar.innerHTML = `<div class="w-full h-full rounded-full bg-primary flex items-center justify-center"><span class="text-on-primary font-bold">${escapeHtml(initials)}</span></div>`;
                 }
             }
 
@@ -177,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sidebarSkills && profile.skills) {
                 const skills = profile.skills.split(',').map(s => s.trim()).filter(s => s);
                 sidebarSkills.innerHTML = skills.map(s => 
-                    `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`
+                    `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`
                 ).join('');
             }
         }
@@ -275,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (n.type === 'board_reply') { icon = 'forum'; iconColor = 'text-purple-600 bg-purple-100'; }
                             
                             const isUnread = n.is_read === 0;
-                            const timeString = n.timestamp ? new Date(n.timestamp + 'Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
+                            const timeString = n.timestamp ? new Date(n.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
 
                             notifHtml += `
                                 <div class="flex gap-3 p-3 rounded-xl transition-colors cursor-pointer ${isUnread ? 'bg-slate-50 hover:bg-slate-100' : 'hover:bg-slate-50'}" onclick="window.markReadAndGo(${n.id})">
@@ -283,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         <span class="material-symbols-outlined text-[20px]">${icon}</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-[13px] text-slate-900 ${isUnread ? 'font-semibold' : 'font-medium'} leading-snug">${n.content}</p>
+                                        <p class="text-[13px] text-slate-900 ${isUnread ? 'font-semibold' : 'font-medium'} leading-snug">${escapeHtml(n.content)}</p>
                                         <p class="text-[11px] text-slate-500 mt-1">${timeString}</p>
                                     </div>
                                     ${isUnread ? '<div class="w-2 h-2 rounded-full bg-primary mt-1 shrink-0"></div>' : ''}

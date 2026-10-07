@@ -485,23 +485,23 @@
             const code = document.getElementById('adminCodeInput').value.trim();
             
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/admin/login', {
+                const res = await fetch(`${API_BASE}/api/admin/login`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name, bypass_code: code })
                 });
                 if(res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('currentUserId', data.user_id);
+                    localStorage.setItem('userRole', data.role);
+                    localStorage.setItem('adminToken', data.token);
                     window.location.href = 'admin_dashboard.html';
                 } else {
                     alert("Unauthorized. Invalid Admin Name or Secure Code.");
                 }
             } catch(e) {
-                // Fallback for UI Testing if backend is offline
-                if(code === "140325" && name === "Gopale Omkar Ravindra") {
-                    window.location.href = "admin_dashboard.html";
-                } else {
-                    alert("Unauthorized access attempt.");
-                }
+                alert("Could not reach the server. Please try again.");
             }
         });
 
@@ -760,7 +760,7 @@
             };
             
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/register', {
+                const res = await fetch(`${API_BASE}/api/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -994,6 +994,6 @@
             animate();
         });
     </script>
-<script src="shared.js"></script>
+
 </body>
 </html>

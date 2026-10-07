@@ -741,7 +741,7 @@
       div.onclick = () => selectTeam(team.id);
       div.innerHTML = `
         <div class="absolute left-0 w-1 ${isActive ? 'h-8 bg-brand-600' : 'h-0 group-hover:h-4 bg-slate-400'} rounded-r-md transition-all"></div>
-        <button class="w-11 h-11 ${isActive ? 'rounded-2xl bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200'} font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm" title="${team.name}">
+        <button class="w-11 h-11 ${isActive ? 'rounded-2xl bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'rounded-3xl group-hover:rounded-2xl bg-white text-slate-700 hover:bg-brand-50 border border-slate-200'} font-bold text-sm flex items-center justify-center transition-all duration-200 shadow-sm" title="${escapeHtml(team.name)}">
           ${initial}
         </button>
       `;
@@ -819,17 +819,17 @@
       
       if (ch.channel_type === 'voice') {
         voiceList.insertAdjacentHTML('beforeend', `
-          <div data-channel-id="${ch.id}" onclick="joinVoiceChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-xs font-medium ${voiceConnected && voiceChannelId === ch.id ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'} transition-colors">
+          <div data-channel-id="${ch.id}" onclick="joinVoiceChannel(${ch.id}, ${escapeJsArg(ch.name)})" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer text-xs font-medium ${voiceConnected && voiceChannelId === ch.id ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'} transition-colors">
             <span class="material-symbols-outlined text-[16px] ${voiceConnected && voiceChannelId === ch.id ? 'text-emerald-600' : 'text-slate-400'}">volume_up</span>
-            <span class="truncate">${ch.name}</span>
+            <span class="truncate">${escapeHtml(ch.name)}</span>
             ${voiceConnected && voiceChannelId === ch.id ? '<span class="ml-auto px-1.5 py-0.5 text-[9px] bg-emerald-200/80 text-emerald-800 rounded font-mono font-bold">LIVE</span>' : ''}
           </div>
         `);
       } else {
         const html = `
-          <div data-channel-id="${ch.id}" onclick="selectChannel(${ch.id}, '${ch.name}')" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer mb-0.5 ${isActive ? 'bg-brand-100/70 text-brand-900 font-semibold border-l-2 border-brand-600' : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'} transition-colors text-xs">
+          <div data-channel-id="${ch.id}" onclick="selectChannel(${ch.id}, ${escapeJsArg(ch.name)})" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer mb-0.5 ${isActive ? 'bg-brand-100/70 text-brand-900 font-semibold border-l-2 border-brand-600' : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'} transition-colors text-xs">
             <span class="text-slate-400 font-mono text-sm">#</span>
-            <span class="truncate">${ch.name}</span>
+            <span class="truncate">${escapeHtml(ch.name)}</span>
           </div>
         `;
         textList.insertAdjacentHTML('beforeend', html);
@@ -928,7 +928,7 @@
     const color = colors[m.user_id % colors.length];
     
     const avatarHtml = m.user_profile_pic 
-      ? `<img src="${m.user_profile_pic}" class="w-8 h-8 rounded-full object-cover" alt="${m.user_name}">`
+      ? `<img src="${escapeHtml(m.user_profile_pic)}" class="w-8 h-8 rounded-full object-cover" alt="${escapeHtml(m.user_name)}">`
       : `<div class="w-8 h-8 rounded-full ${color} text-white font-bold text-xs flex items-center justify-center">${initials}</div>`;
     
     return `
@@ -938,8 +938,8 @@
           <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-bold text-slate-800 truncate">${m.user_name}${isCurrentUser ? ' (You)' : ''}</p>
-          <p class="text-[10px] text-slate-400 truncate">${m.role}</p>
+          <p class="text-xs font-bold text-slate-800 truncate">${escapeHtml(m.user_name)}${isCurrentUser ? ' (You)' : ''}</p>
+          <p class="text-[10px] text-slate-400 truncate">${escapeHtml(m.role)}</p>
         </div>
         ${isAdmin ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-brand-50 text-brand-700 border border-brand-200 rounded">Admin</span>` : ''}
         ${!isCurrentUser ? `
@@ -1007,7 +1007,7 @@
     const color = colors[(msg.sender_id || 0) % colors.length];
     
     const avatarHtml = msg.sender_pic 
-      ? `<img src="${msg.sender_pic}" class="w-9 h-9 rounded-full object-cover flex-none ring-2 ring-slate-100 mt-0.5" alt="">`
+      ? `<img src="${escapeHtml(msg.sender_pic)}" class="w-9 h-9 rounded-full object-cover flex-none ring-2 ring-slate-100 mt-0.5" alt="">`
       : `<div class="w-9 h-9 rounded-full ${color} text-white font-bold text-xs flex items-center justify-center flex-none ring-2 ring-slate-100 mt-0.5">${initials}</div>`;
     
     // Format text, code blocks, and attachments
@@ -1049,7 +1049,7 @@
               <button onclick="addReaction(${msgId}, '🔥')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs transition-colors">🔥</button>
               <button onclick="addReaction(${msgId}, '🚀')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs transition-colors">🚀</button>
               <button onclick="pinMessage(${msgId})" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Pin message">📌</button>
-              <button onclick="replyToMessage(${msgId}, '${escapeHtml(msg.sender_name || '')}')" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Reply">↩️</button>
+              <button onclick="replyToMessage(${msgId}, ${escapeJsArg(msg.sender_name || '')})" class="px-1.5 py-0.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-full text-xs text-slate-400 transition-colors" title="Reply">↩️</button>
             </div>
             <div class="flex items-center gap-1 mt-1 flex-wrap" id="reactions-${msgId}"></div>
           </div>
@@ -1064,7 +1064,8 @@
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
-    return div.innerHTML;
+    // Quotes too, so escaped text is safe inside attributes
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   
   function formatMessageContent(content) {
@@ -1073,14 +1074,17 @@
     
     // Process attachments
     html = html.replace(/\[IMAGE\|([^|]+)\|([^\]]+)\]/g, (match, url, name) => {
+      url = safeUrl(url);
       return `<div class="mt-2 mb-1"><a href="${url}" target="_blank"><img src="${url}" alt="${name}" class="max-w-[280px] max-h-[300px] rounded-lg object-cover border border-slate-200 shadow-sm hover:opacity-90 transition-opacity"></a></div>`;
     });
     
     html = html.replace(/\[VIDEO\|([^|]+)\|([^\]]+)\]/g, (match, url, name) => {
+      url = safeUrl(url);
       return `<div class="mt-2 mb-1"><video src="${url}" controls class="max-w-[280px] max-h-[300px] rounded-lg bg-black border border-slate-200 shadow-sm"></video></div>`;
     });
     
     html = html.replace(/\[FILE\|([^|]+)\|([^|]+)\|([^\]]+)\]/g, (match, url, name, size) => {
+      url = safeUrl(url);
       return `
         <div class="mt-2 mb-1">
           <a href="${url}" target="_blank" download class="inline-flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm w-64 max-w-full group">
@@ -1232,7 +1236,7 @@
         tempEl.insertAdjacentHTML('beforeend', `
           <div class="flex items-center gap-1.5 mt-1 ml-12">
             <span class="text-[10px] text-rose-500 font-semibold">Failed to send</span>
-            <button onclick="retryMessage('${escapeHtml(rawContent)}', '${tempId}')" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold underline">Retry</button>
+            <button onclick="retryMessage(${escapeJsArg(rawContent)}, '${tempId}')" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold underline">Retry</button>
           </div>
         `);
       }
@@ -1315,7 +1319,7 @@
       return;
     }
     
-    const text = pinned.map(m => `📌 ${m.sender_name}: ${m.content}`).join('\n\n');
+    const text = pinned.map(m => `📌 ${escapeHtml(m.sender_name)}: ${escapeHtml(m.content)}`).join('\n\n');
     window.showSystemModal(`Pinned Messages (${pinned.length})`, text);
   }
 
@@ -1337,7 +1341,7 @@
     preview.innerHTML = files.map((f, i) => `
       <div class="file-preview">
         <span class="material-symbols-outlined text-[16px] text-brand-600">${f.type.startsWith('image/') ? 'image' : 'description'}</span>
-        <span class="flex-1 truncate text-slate-700 font-medium">${f.name}</span>
+        <span class="flex-1 truncate text-slate-700 font-medium">${escapeHtml(f.name)}</span>
         <span class="text-slate-400">${(f.size / 1024).toFixed(1)} KB</span>
         <button onclick="removeFile(${i})" class="text-slate-400 hover:text-rose-500">
           <span class="material-symbols-outlined text-[14px]">close</span>
@@ -1780,13 +1784,13 @@
       const icon = domain.includes('github') ? 'code' : domain.includes('figma') ? 'design_services' : domain.includes('google') ? 'article' : 'link';
       
       return `
-        <a href="${r.url}" target="_blank" class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-sm">
+        <a href="${escapeHtml(safeUrl(r.url))}" target="_blank" rel="noopener" class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200 hover:border-brand-400 transition-all text-xs group shadow-sm">
           <div class="w-7 h-7 rounded bg-slate-100 text-slate-600 flex items-center justify-center flex-none">
             <span class="material-symbols-outlined text-[16px]">${icon}</span>
           </div>
           <div class="truncate min-w-0 flex-1">
             <p class="font-semibold text-slate-800 truncate group-hover:text-brand-600">${escapeHtml(r.name)}</p>
-            <p class="text-[10px] text-slate-400 truncate">${domain}</p>
+            <p class="text-[10px] text-slate-400 truncate">${escapeHtml(domain)}</p>
           </div>
         </a>
       `;
@@ -1855,7 +1859,7 @@
   }
   function openSettingsModal() {
     document.getElementById('team-menu').classList.add('hidden');
-    window.showSystemModal('Workspace Settings', `Workspace: ${currentTeamData?.name || 'N/A'}\nDescription: ${currentTeamData?.description || 'No description'}\nCreated: ${currentTeamData?.created_at ? new Date(currentTeamData.created_at).toLocaleDateString() : 'N/A'}\nMembers: ${membersData.length}\nChannels: ${channelsData.length}`);
+    window.showSystemModal('Workspace Settings', `Workspace: ${escapeHtml(currentTeamData?.name || 'N/A')}\nDescription: ${escapeHtml(currentTeamData?.description || 'No description')}\nCreated: ${currentTeamData?.created_at ? new Date(currentTeamData.created_at).toLocaleDateString() : 'N/A'}\nMembers: ${membersData.length}\nChannels: ${channelsData.length}`);
   }
   function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
@@ -1863,7 +1867,7 @@
     if (!currentTeamId) return;
     document.getElementById('team-menu').classList.add('hidden');
     
-    window.showSystemModal('Delete Workspace', `Are you sure you want to permanently delete "${currentTeamData?.name}"?\n\nThis will remove all channels, messages, and members. This action cannot be undone.`, 'confirm', async () => {
+    window.showSystemModal('Delete Workspace', `Are you sure you want to permanently delete "${escapeHtml(currentTeamData?.name)}"?\n\nThis will remove all channels, messages, and members. This action cannot be undone.`, 'confirm', async () => {
       try {
         const res = await fetch(`${API_BASE}/api/teams/${currentTeamId}`, {
           method: 'DELETE',

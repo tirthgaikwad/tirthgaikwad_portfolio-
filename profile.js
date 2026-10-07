@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 e.target.textContent = "Following...";
                 try {
-                    const res = await fetch(`http://127.0.0.1:8000/api/follow/${profileId}`, {
+                    const res = await fetch(`${API_BASE}/api/follow/${profileId}`, {
                         method: 'POST',
                         credentials: 'include'
                     });
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- FETCH PROFILE DATA ---
     let currentProfileData = {}; 
     try {
-        const response = await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`, { credentials: 'include' });
+        const response = await fetch(`${API_BASE}/api/profiles/${profileId}`, { credentials: 'include' });
         if (response.ok) {
             currentProfileData = await response.json();
             
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // Re-create the Tailwind skill pills dynamically
                         const pillDiv = document.createElement('div');
                         pillDiv.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-skill-pill text-skill-pill';
-                        pillDiv.innerHTML = `<span>${skill}</span>`;
+                        pillDiv.innerHTML = `<span>${escapeHtml(skill)}</span>`;
                         skillsContainer.appendChild(pillDiv);
                     });
                 } else {
@@ -391,18 +391,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (croppedAvatarBlob) {
                     const fd = new FormData(); 
                     fd.append("file", croppedAvatarBlob, "avatar.png");
-                    const res = await fetch('http://127.0.0.1:8000/api/upload/profile-pic', { method: 'POST', body: fd, credentials: 'include' });
+                    const res = await fetch(`${API_BASE}/api/upload/profile-pic`, { method: 'POST', body: fd, credentials: 'include' });
                     if (res.ok) avatarUrl = (await res.json()).url;
                 }
                 
                 if (croppedBannerBlob) {
                     const fd = new FormData(); 
                     fd.append("file", croppedBannerBlob, "banner.png");
-                    const res = await fetch('http://127.0.0.1:8000/api/upload/banner-pic', { method: 'POST', body: fd, credentials: 'include' });
+                    const res = await fetch(`${API_BASE}/api/upload/banner-pic`, { method: 'POST', body: fd, credentials: 'include' });
                     if (res.ok) bannerUrl = (await res.json()).url;
                 }
 
-                const updateRes = await fetch(`http://127.0.0.1:8000/api/profiles/${profileId}`, {
+                const updateRes = await fetch(`${API_BASE}/api/profiles/${profileId}`, {
                     method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dmContent = document.getElementById('dmContent').value;
             const statusText = document.getElementById('dmStatus');
 
-            const res = await fetch('http://127.0.0.1:8000/api/messages', {
+            const res = await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (res.ok) {
-                try { await fetch(`http://127.0.0.1:8000/api/history?action_type=Message Sent&detail=You started a conversation with developer %23${profileId}`, { method: 'POST', credentials: 'include' }); } catch(err){}
+                try { await fetch(`${API_BASE}/api/history?action_type=Message Sent&detail=You started a conversation with developer %23${profileId}`, { method: 'POST', credentials: 'include' }); } catch(err){}
                 if(statusText) statusText.style.display = 'block';
                 setTimeout(() => { 
                     const msgModal = document.getElementById('messageModal');

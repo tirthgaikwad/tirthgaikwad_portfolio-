@@ -965,11 +965,11 @@ window.logout = function() {
         profiles.forEach(profile => {
           const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
           const avatarHtml = profile.profile_pic 
-            ? `<img src="${profile.profile_pic}" class="w-full h-full object-cover">`
+            ? `<img src="${escapeHtml(profile.profile_pic)}" class="w-full h-full object-cover">`
             : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container-high">${initials}</div>`;
             
           const skillsHtml = (profile.skills ? profile.skills.split(',') : []).slice(0, 5).map(s => 
-            `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s.trim()}</span>`
+            `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s.trim())}</span>`
           ).join('');
             
           const cardHtml = `
@@ -989,10 +989,10 @@ window.logout = function() {
               </div>
               <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
                 <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                  ${profile.name}
+                  ${escapeHtml(profile.name)}
                 </h3>
                 <p class="font-label-sm text-label-sm text-primary font-semibold mt-1">
-                  ${profile.department || 'Department not listed'}
+                  ${escapeHtml(profile.department || 'Department not listed')}
                 </p>
               </div>
               <div class="mb-space-lg mt-space-sm">
@@ -1082,6 +1082,6 @@ window.logout = function() {
       }
     });
     </script>
-    <script src="shared.js"></script>
+    
 </body>
     </html>

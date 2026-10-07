@@ -317,7 +317,7 @@
 </div>
 </div>
 <!-- Include Shared Utilities for API_BASE and auth -->
-<script src="shared.js"></script>
+
 <script>
   const currentUserId = localStorage.getItem('currentUserId');
   let currentTab = 'followers';
@@ -336,7 +336,7 @@
         const userRes = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, { credentials: 'include' });
         if(userRes.ok) {
             const user = await userRes.json();
-            document.getElementById('collegeBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>${user.college_name || 'Campus Node'}`;
+            document.getElementById('collegeBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>${escapeHtml(user.college_name || 'Campus Node')}`;
             document.getElementById('userDept').innerText = user.department || 'Department';
             document.getElementById('userRoll').innerText = `Student ID: #${user.roll_no || 'Unknown'}`;
             document.getElementById('collegeHubText').innerText = `${user.college_name || 'Campus'} Peer Hub`;
@@ -504,7 +504,7 @@
 
   function createPeerCard(user) {
       const skillsList = user.skills ? user.skills.split(',').map(s => s.trim()).filter(s => s) : [];
-      const skillsHtml = skillsList.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill truncate max-w-[80px]">${s}</span>`).join('');
+      const skillsHtml = skillsList.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill truncate max-w-[80px]">${escapeHtml(s)}</span>`).join('');
       
       let initials = user.name ? user.name.substring(0,2).toUpperCase() : "U";
       
@@ -525,9 +525,9 @@
           </div>
           <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${user.id}'">
             <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">
-              ${user.name}
+              ${escapeHtml(user.name)}
             </h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant truncate">${user.department || 'Unknown Dept'} • ${user.college_name || ''}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant truncate">${escapeHtml(user.department || 'Unknown Dept')} • ${escapeHtml(user.college_name || '')}</p>
           </div>
           <div class="flex flex-wrap gap-1.5 mb-space-md">
             ${skillsHtml}

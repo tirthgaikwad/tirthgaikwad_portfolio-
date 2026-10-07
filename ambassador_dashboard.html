@@ -123,14 +123,9 @@
     </div>
 
     <script>
-        // In a real flow, this token would be securely fetched
-        const token = localStorage.getItem('authToken');
-
         async function fetchPendingUsers() {
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/ambassador/pending', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch(`${API_BASE}/api/ambassador/pending`, { credentials: 'include' });
                 
                 if (res.ok) {
                     const users = await res.json();
@@ -149,12 +144,12 @@
                         grid.innerHTML += `
                             <div class="card" id="card-${user.id}">
                                 <div class="card-header">
-                                    <h3>${user.name}</h3>
-                                    <span style="font-size: 0.8rem; background: #F1F5F9; padding: 4px 8px; border-radius: 4px;">${user.department}</span>
+                                    <h3>${escapeHtml(user.name)}</h3>
+                                    <span style="font-size: 0.8rem; background: #F1F5F9; padding: 4px 8px; border-radius: 4px;">${escapeHtml(user.department)}</span>
                                 </div>
                                 <div style="font-size: 0.85rem; color: #64748B; margin-bottom: 12px;">
-                                    <strong>Roll No:</strong> ${user.roll_no}<br>
-                                    <strong>Barcode Entry:</strong> ${user.id_barcode ? user.id_barcode : '<span style="color:#ef4444">None Provided</span>'}
+                                    <strong>Roll No:</strong> ${escapeHtml(user.roll_no)}<br>
+                                    <strong>Barcode Entry:</strong> ${user.id_barcode ? escapeHtml(user.id_barcode) : '<span style="color:#ef4444">None Provided</span>'}
                                 </div>
                                 <div class="id-image-placeholder">
                                     ${user.id_card_image ? "[ID Image Rendered Here]" : "User did not upload an image"}
@@ -176,9 +171,9 @@
             if(!confirm(`Are you sure you want to ${action} this student?`)) return;
             
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/ambassador/verify/${userId}/${action}`, {
+                const res = await fetch(`${API_BASE}/api/ambassador/verify/${userId}/${action}`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    credentials: 'include'
                 });
                 
                 if(res.ok) {
@@ -193,6 +188,6 @@
 
         fetchPendingUsers();
     </script>
-<script src="shared.js"></script>
+
 </body>
 </html>

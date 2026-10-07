@@ -727,7 +727,15 @@ async function initInbox() {
   setInterval(pollOnlineStatus, 15000);
 
   const msgInput = document.getElementById('message-input');
-  if (msgInput) msgInput.addEventListener('input', handleTypingInput);
+  if (msgInput) {
+    msgInput.addEventListener('input', handleTypingInput);
+    msgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('chat-composer-form').dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+  }
 
   // 3. PARALLEL BACKGROUND FETCH: Fetch all data sources concurrently with timeout protection
   try {
@@ -909,7 +917,7 @@ function showTypingIndicator(fromUserId) {
     const c = contacts[fromUserId];
     if (c) {
       avatar.innerHTML = c.profile_pic
-        ? `<img src="${c.profile_pic}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
+        ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
         : `<span class="text-[10px] font-bold">${getInitials(c.name)}</span>`;
       nameEl.textContent = `${c.name} is typing`;
     }
@@ -1003,7 +1011,7 @@ function renderGroups() {
   list.innerHTML = myTeams.map(t => {
     const isActive = activeTeamId === t.id;
     const avatarHtml = t.avatar_url
-      ? `<img src="${t.avatar_url}" alt="${escapeHtml(t.name)}" class="w-full h-full object-cover"/>`
+      ? `<img src="${escapeHtml(t.avatar_url)}" alt="${escapeHtml(t.name)}" class="w-full h-full object-cover"/>`
       : `<span class="font-bold text-sm">${getInitials(t.name)}</span>`;
       
     return `
@@ -1095,7 +1103,7 @@ function getInitials(name) {
 }
 
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  return String(str === null || str === undefined ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
 
 function formatTime(ts) {
@@ -1120,7 +1128,11 @@ function getTickHtml(msg) {
   
   const status = msg.message_status || 'sent';
   
-  if (status === 'read') {
+  if (status === 'sending') {
+    return `<span class="material-symbols-outlined text-[13px] text-outline opacity-60 animate-spin" title="Sending...">progress_activity</span>`;
+  } else if (status === 'failed') {
+    return `<span class="material-symbols-outlined text-[14px] text-error" title="Failed to send">error</span>`;
+  } else if (status === 'read') {
     // Blue double tick
     return `<span class="material-symbols-outlined text-[14px]" style="color: #3b82f6;">done_all</span>`;
   } else if (status === 'delivered') {
@@ -1154,7 +1166,7 @@ function renderContacts() {
     const isActive = activeContactId === c.id;
     const isOnline = onlineUserIds.has(c.id);
     const avatarHtml = c.profile_pic
-      ? `<img src="${c.profile_pic}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
+      ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
       : `<span class="font-bold text-sm">${getInitials(c.name)}</span>`;
 
     return `
@@ -1214,7 +1226,7 @@ function renderChat() {
   // Update header
   const avatarEl = document.getElementById('chat-header-avatar');
   if (c.profile_pic) {
-    avatarEl.innerHTML = `<img src="${c.profile_pic}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`;
+    avatarEl.innerHTML = `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`;
   } else {
     avatarEl.innerHTML = `<span class="text-on-primary font-bold">${getInitials(c.name)}</span>`;
   }
@@ -1280,7 +1292,7 @@ function renderChat() {
       const match = msg.content.match(/^\[📎 File:\s*([^\]]+)\]\(([^)]+)\)$/);
       if (match) {
         const fileName = escapeHtml(match[1]);
-        const fileUrl = encodeURI(match[2]);
+        const fileUrl = escapeHtml(safeUrl(match[2]));
         contentHtml = `<a href="${fileUrl}" target="_blank" download class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/10 hover:bg-black/20 transition-colors font-medium text-sm underline decoration-primary"><span class="material-symbols-outlined text-[18px]">attachment</span> ${fileName}</a>`;
       } else {
         contentHtml = escapeHtml(msg.content);
@@ -1289,14 +1301,21 @@ function renderChat() {
       const match = msg.content.match(/^\[🎤 Voice memo\s*([^\]]*)\]\(([^)]+)\)$/);
       if (match) {
         const duration = escapeHtml(match[1]);
-        const audioUrl = encodeURI(match[2]);
+        const audioUrl = escapeHtml(safeUrl(match[2]));
         contentHtml = `<div class="flex flex-col gap-1"><span class="text-xs opacity-75">🎤 Voice memo ${duration}</span><audio controls src="${audioUrl}" class="max-w-[220px] sm:max-w-[260px] h-8"></audio></div>`;
       } else {
         contentHtml = escapeHtml(msg.content);
       }
-    } else if (msg.content.startsWith('<img') || msg.content.startsWith('<audio') || msg.content.startsWith('<div class="audio')) {
-      // Direct media tags rendered smoothly
-      contentHtml = msg.content;
+    } else if (msg.content.startsWith('<img') || msg.content.startsWith('<audio')) {
+      // Legacy media messages: rebuild the tag from its src instead of trusting stored HTML
+      const legacySrc = (msg.content.match(/src="([^"]+)"/) || [])[1];
+      if (!legacySrc) {
+        contentHtml = escapeHtml(msg.content);
+      } else if (msg.content.startsWith('<img')) {
+        contentHtml = `<img src="${escapeHtml(safeUrl(legacySrc))}" class="max-w-[220px] sm:max-w-[260px] rounded-lg"/>`;
+      } else {
+        contentHtml = `<audio controls src="${escapeHtml(safeUrl(legacySrc))}" class="max-w-[220px] sm:max-w-[260px] h-8"></audio>`;
+      }
     } else {
       contentHtml = escapeHtml(msg.content);
     }
@@ -1315,7 +1334,7 @@ function renderChat() {
         </div>`;
     } else {
       const senderPic = c.profile_pic
-        ? `<img src="${c.profile_pic}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
+        ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
         : `<span class="text-[10px] font-bold">${getInitials(c.name)}</span>`;
 
       html += `
@@ -1348,7 +1367,7 @@ function renderTeamChat() {
   // Update header
   const avatarEl = document.getElementById('chat-header-avatar');
   if (team.avatar_url) {
-    avatarEl.innerHTML = `<img src="${team.avatar_url}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`;
+    avatarEl.innerHTML = `<img src="${escapeHtml(team.avatar_url)}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`;
   } else {
     avatarEl.innerHTML = `<span class="text-on-primary font-bold">${getInitials(team.name)}</span>`;
   }
@@ -1409,7 +1428,7 @@ function renderTeamChat() {
         </div>`;
     } else {
       const senderPic = msg.sender_pic
-        ? `<img src="${msg.sender_pic}" alt="${escapeHtml(msg.sender_name)}" class="w-full h-full object-cover"/>`
+        ? `<img src="${escapeHtml(msg.sender_pic)}" alt="${escapeHtml(msg.sender_name)}" class="w-full h-full object-cover"/>`
         : `<span class="text-[10px] font-bold">${getInitials(msg.sender_name || 'User')}</span>`;
 
       html += `
@@ -1439,7 +1458,7 @@ function updateTeamInfoPanel() {
   const panel = document.getElementById('info-panel-content');
   
   const avatarHtml = team.avatar_url
-    ? `<img src="${team.avatar_url}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`
+    ? `<img src="${escapeHtml(team.avatar_url)}" alt="${escapeHtml(team.name)}" class="w-full h-full object-cover"/>`
     : `<div class="w-full h-full rounded-2xl bg-primary-fixed flex items-center justify-center"><span class="text-2xl font-bold text-on-primary-fixed">${getInitials(team.name)}</span></div>`;
 
   const channels = teamChannels[activeTeamId] || [];
@@ -1480,10 +1499,10 @@ function updateTeamInfoPanel() {
           list.innerHTML = members.map(m => `
             <div class="flex items-center gap-2">
               <div class="w-6 h-6 rounded-full overflow-hidden bg-primary-fixed shrink-0 text-on-primary-fixed flex items-center justify-center font-bold text-[10px]">
-                ${m.user_profile_pic ? `<img src="${m.user_profile_pic}" class="w-full h-full object-cover"/>` : getInitials(m.user_name || 'U')}
+                ${m.user_profile_pic ? `<img src="${escapeHtml(m.user_profile_pic)}" class="w-full h-full object-cover"/>` : getInitials(m.user_name || 'U')}
               </div>
               <span class="font-body-sm text-body-sm text-on-surface truncate">${escapeHtml(m.user_name || 'Unknown')}</span>
-              <span class="ml-auto font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">${m.role}</span>
+              <span class="ml-auto font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">${escapeHtml(m.role)}</span>
             </div>
           `).join('');
         }
@@ -1501,7 +1520,7 @@ function updateInfoPanel() {
   const panel = document.getElementById('info-panel-content');
 
   const avatarHtml = c.profile_pic
-    ? `<img src="${c.profile_pic}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
+    ? `<img src="${escapeHtml(c.profile_pic)}" alt="${escapeHtml(c.name)}" class="w-full h-full object-cover"/>`
     : `<div class="w-full h-full rounded-2xl bg-primary-fixed flex items-center justify-center"><span class="text-2xl font-bold text-on-primary-fixed">${getInitials(c.name)}</span></div>`;
 
   const isOnline = onlineUserIds.has(c.id);
@@ -1551,32 +1570,129 @@ document.getElementById('chat-composer-form').addEventListener('submit', async (
   e.preventDefault();
   const input = document.getElementById('message-input');
   const content = input.value.trim();
+  if (!content) return;
   
+  // Close emoji picker if open
+  const emojiPicker = document.getElementById('emoji-picker');
+  if (emojiPicker) emojiPicker.classList.remove('active');
+
   if (currentTab === 'direct') {
-    if (!content || !activeContactId) return;
+    if (!activeContactId) return;
+    
+    // Clear input field immediately
     input.value = '';
-    // Close emoji picker if open
-    document.getElementById('emoji-picker').classList.remove('active');
-    try {
-      const res = await fetch(`${API_BASE}/api/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender_id: currentUserId, receiver_id: activeContactId, content: content })
-      });
-      if (res.ok) {
-        const newMsg = await res.json();
-        allMessages.push(newMsg);
-        contacts[activeContactId].lastMessage = `You: ${content}`;
-        contacts[activeContactId].timestamp = newMsg.timestamp;
-        renderContacts();
+    
+    // Clear typing state
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      isTyping = false;
+      clearTimeout(typingTimeout);
+      ws.send(JSON.stringify({ type: 'typing', to: activeContactId, typing: false }));
+    }
+
+    // 1. INSTANT OPTIMISTIC RENDERING (0ms)
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const nowIso = new Date().toISOString();
+    const optimisticMsg = {
+      id: tempId,
+      temp_id: tempId,
+      sender_id: currentUserId,
+      receiver_id: activeContactId,
+      content: content,
+      timestamp: nowIso,
+      message_status: 'sending'
+    };
+
+    allMessages.push(optimisticMsg);
+    
+    // Update contact preview immediately
+    const preview = getMessagePreview(content);
+    if (contacts[activeContactId]) {
+      contacts[activeContactId].lastMessage = `You: ${preview}`;
+      contacts[activeContactId].timestamp = nowIso;
+      renderContacts();
+    }
+    
+    // Render chat feed immediately
+    renderChat();
+    const scrollArea = document.getElementById('messages-scroll-area');
+    if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
+
+    // 2. SEND OVER WEBSOCKET OR FALLBACK TO HTTP
+    let sentViaWs = false;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({
+          type: 'chat_message',
+          to: activeContactId,
+          content: content,
+          temp_id: tempId
+        }));
+        sentViaWs = true;
+        // No acknowledgement from the server means the message did not go through
+        setTimeout(() => {
+          if (optimisticMsg.message_status === 'sending') {
+            optimisticMsg.message_status = 'failed';
+            renderChat();
+          }
+        }, 10000);
+      } catch (err) {
+        console.warn('WS send failed, falling back to HTTP:', err);
+      }
+    }
+
+    if (!sentViaWs) {
+      // Fallback: Send via HTTP POST
+      try {
+        const res = await fetch(`${API_BASE}/api/messages`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_id: currentUserId, receiver_id: activeContactId, content: content })
+        });
+        if (res.ok) {
+          const newMsg = await res.json();
+          optimisticMsg.id = newMsg.id;
+          optimisticMsg.message_status = newMsg.message_status || 'sent';
+          optimisticMsg.timestamp = newMsg.timestamp;
+          renderChat();
+          renderContacts();
+        } else {
+          optimisticMsg.message_status = 'failed';
+          renderChat();
+        }
+      } catch (err) {
+        console.error('Send failed:', err);
+        optimisticMsg.message_status = 'failed';
         renderChat();
       }
-    } catch (err) { console.error('Send failed:', err); }
+    }
   } else {
-    if (!content || !activeChannelId) return;
+    // Teams / Group Chat Tab
+    if (!activeChannelId) return;
     input.value = '';
-    document.getElementById('emoji-picker').classList.remove('active');
+    
+    const tempId = 'temp_' + Date.now();
+    const nowIso = new Date().toISOString();
+    const currentUserProfile = window.currentUserProfile || {};
+    
+    const optimisticTeamMsg = {
+      id: tempId,
+      team_id: activeTeamId,
+      channel_id: activeChannelId,
+      sender_id: currentUserId,
+      content: content,
+      timestamp: nowIso,
+      is_system_message: 0,
+      sender_name: currentUserProfile.name || 'You',
+      sender_pic: currentUserProfile.profile_pic || ''
+    };
+    
+    if (!allTeamMessages[activeChannelId]) allTeamMessages[activeChannelId] = [];
+    allTeamMessages[activeChannelId].push(optimisticTeamMsg);
+    renderTeamChat();
+    const scrollArea = document.getElementById('messages-scroll-area');
+    if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
+
     try {
       const res = await fetch(`${API_BASE}/api/channels/${activeChannelId}/messages`, {
         method: 'POST',
@@ -1584,7 +1700,14 @@ document.getElementById('chat-composer-form').addEventListener('submit', async (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: content, is_system_message: 0 })
       });
-    } catch (err) { console.error('Send group message failed:', err); }
+      if (res.ok) {
+        const newMsg = await res.json();
+        optimisticTeamMsg.id = newMsg.id;
+        renderTeamChat();
+      }
+    } catch (err) {
+      console.error('Send group message failed:', err);
+    }
   }
 });
 
@@ -1652,7 +1775,52 @@ function setupWebSocket() {
       return;
     }
     
-    // Normal message
+    // Handle ACK for our sent message
+    if (data.type === 'message_ack') {
+      const msg = allMessages.find(m => m.id === data.temp_id || m.temp_id === data.temp_id);
+      if (msg) {
+        msg.id = data.id;
+        msg.message_status = data.message_status || 'sent';
+        msg.timestamp = data.timestamp;
+        renderChat();
+      }
+      return;
+    }
+
+    // Server refused or could not save our message
+    if (data.type === 'message_failed') {
+      const msg = allMessages.find(m => m.temp_id === data.temp_id);
+      if (msg) {
+        msg.message_status = 'failed';
+        renderChat();
+      }
+      if (data.detail) window.showSystemModal('Message not sent', escapeHtml(data.detail), 'alert');
+      return;
+    }
+
+    // Handle ID update for incoming message
+    if (data.type === 'message_id_update') {
+      const msg = allMessages.find(m => m.temp_id === data.temp_id);
+      if (msg) {
+        msg.id = data.id;
+      }
+      return;
+    }
+
+    // Avoid duplicate if this is our own message we already optimistically added
+    if (data.sender_id === currentUserId) {
+      const existing = allMessages.find(m => (m.temp_id && m.temp_id === data.temp_id) || m.id === data.id);
+      if (existing) {
+        if (data.id) existing.id = data.id;
+        existing.message_status = data.message_status || 'sent';
+        renderChat();
+        return;
+      }
+    } else if (allMessages.some(m => m.id && m.id === data.id)) {
+      return;
+    }
+
+    // Normal message from another user
     const newMsg = data;
     allMessages.push(newMsg);
     const otherId = newMsg.sender_id === currentUserId ? newMsg.receiver_id : newMsg.sender_id;
@@ -1671,7 +1839,8 @@ function setupWebSocket() {
       };
     }
 
-    contacts[otherId].lastMessage = newMsg.sender_id === currentUserId ? `You: ${newMsg.content}` : newMsg.content;
+    const preview = getMessagePreview(newMsg.content);
+    contacts[otherId].lastMessage = newMsg.sender_id === currentUserId ? `You: ${preview}` : preview;
     contacts[otherId].timestamp = newMsg.timestamp;
     renderContacts();
     if (activeContactId === otherId && currentTab === 'direct') {
@@ -1969,7 +2138,7 @@ function initiateVoiceCall() {
   document.getElementById('voice-call-name').textContent = name || 'User';
   const avatarEl = document.getElementById('voice-call-avatar');
   avatarEl.innerHTML = pic
-    ? `<img src="${pic}" alt="${name}"/>`
+    ? `<img src="${escapeHtml(pic)}" alt="${escapeHtml(name)}"/>`
     : `<span class="material-symbols-outlined text-on-primary text-[32px]">person</span>`;
   
   document.getElementById('voice-call-status').innerHTML = '<span class="material-symbols-outlined text-[16px] ringing align-middle">call</span> Calling...';
@@ -1997,7 +2166,7 @@ function initiateVideoCall() {
   document.getElementById('video-call-name').textContent = name || 'User';
   const avatarEl = document.getElementById('video-call-avatar');
   avatarEl.innerHTML = pic
-    ? `<img src="${pic}" alt="${name}"/>`
+    ? `<img src="${escapeHtml(pic)}" alt="${escapeHtml(name)}"/>`
     : `<span class="material-symbols-outlined text-on-primary text-[28px]">person</span>`;
   
   document.getElementById('video-call-status').innerHTML = '<span class="material-symbols-outlined text-[14px] ringing align-middle">videocam</span> Connecting video...';
@@ -2170,7 +2339,7 @@ function searchNewChatUsers() {
 
   list.innerHTML = results.map(p => {
     const avatarHtml = p.profile_pic
-      ? `<img src="${p.profile_pic}" class="w-full h-full object-cover"/>`
+      ? `<img src="${escapeHtml(p.profile_pic)}" class="w-full h-full object-cover"/>`
       : `<span class="text-sm font-bold">${getInitials(p.name)}</span>`;
     const isOnline = onlineUserIds.has(p.id);
     return `
@@ -2181,7 +2350,7 @@ function searchNewChatUsers() {
         </div>
         <div class="flex-1 min-w-0">
           <p class="font-headline-sm text-headline-sm font-semibold text-on-surface truncate">${escapeHtml(p.name)}</p>
-          <p class="font-body-sm text-body-sm text-on-surface-variant truncate">${p.college_name || ''} ${p.department ? '• ' + p.department : ''}</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant truncate">${escapeHtml(p.college_name || '')} ${p.department ? '• ' + escapeHtml(p.department) : ''}</p>
         </div>
         ${isOnline ? '<span class="text-[11px] text-tertiary font-semibold">Online</span>' : ''}
       </div>`;

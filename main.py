@@ -1,7 +1,8 @@
 import os
-import shutil
 import json
 import uuid
+import hmac
+import asyncio
 import urllib.request
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
@@ -11,7 +12,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 import bcrypt
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # --- RATE LIMITING IMPORTS ---
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -22,7 +23,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import Column, Integer, String, func, delete
-from database import engine, Base, get_db
+from database import engine, Base, get_db, SessionLocal
 
 load_dotenv()
 
@@ -197,11 +198,21 @@ class DBCommunityMember(Base):
     user_id = Column(Integer, index=True)
     joined_at = Column(String)
 
+# --- TIME HELPERS ---
+def utc_now_iso() -> str:
+    """Current time as a UTC ISO-8601 string with offset."""
+    return datetime.now(timezone.utc).isoformat()
+
+def parse_timestamp(value: str) -> datetime:
+    """Parse a stored timestamp. Older rows have no offset and were written in server-local time."""
+    parsed = datetime.fromisoformat(value)
+    return parsed if parsed.tzinfo else parsed.astimezone()
+
 # --- ASYNC HELPER FUNCTION ---
 async def log_user_activity(db: AsyncSession, user_id: int, action: str, detail: str):
     new_log = DBHistory(
         user_id=user_id,
-        time=datetime.now().isoformat(),
+        time=utc_now_iso(),
         action=action,
         detail=detail
     )
@@ -292,7 +303,9 @@ app.add_middleware(
 os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key-for-dev")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set. Add it to your .env file.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 
 
@@ -510,6 +523,18 @@ class AdminRequestResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class PendingUserResponse(BaseModel):
+    id: int
+    name: str
+    college_name: Optional[str] = ""
+    department: Optional[str] = ""
+    roll_no: Optional[str] = ""
+    id_barcode: Optional[str] = None
+    id_card_image: Optional[str] = ""
+
+    class Config:
+        from_attributes = True
+
 class AdminStatsResponse(BaseModel):
     total_users: int
     total_projects: int
@@ -571,6 +596,17 @@ async def get_current_user_id(request: Request) -> int:
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication token.")
 
+
+def get_websocket_user_id(websocket: WebSocket) -> Optional[int]:
+    """Identify a WebSocket client from its authToken cookie. Returns None if not authenticated."""
+    token = websocket.cookies.get("authToken")
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return int(payload.get("sub"))
+    except (jwt.PyJWTError, TypeError, ValueError):
+        return None
 
 
 # ==========================================
@@ -735,7 +771,7 @@ async def get_single_profile(
             user_id=user_id, 
             type="view", 
             content=f"{current_user.name} viewed your profile!", 
-            timestamp=datetime.now().isoformat()
+            timestamp=utc_now_iso()
         )
         db.add(notif)
         await db.commit()
@@ -863,13 +899,17 @@ async def manual_log_history(
 # ==========================================
 @app.websocket("/api/ws/{user_id}")
 async def chat_websocket_endpoint(websocket: WebSocket, user_id: int):
+    if get_websocket_user_id(websocket) != user_id:
+        await websocket.close(code=1008)
+        return
     await chat_manager.connect(websocket, user_id)
+    send_lock = asyncio.Lock()
     try:
         while True:
             data = await websocket.receive_text()
-            # Handle typing indicator messages from client
             try:
                 msg = json.loads(data)
+                # Handle typing indicator
                 if msg.get("type") == "typing":
                     target_id = msg.get("to")
                     if target_id:
@@ -878,92 +918,174 @@ async def chat_websocket_endpoint(websocket: WebSocket, user_id: int):
                             "from": user_id,
                             "typing": msg.get("typing", False)
                         }), int(target_id))
-            except (json.JSONDecodeError, ValueError):
+                
+                # Handle instant direct chat message via WebSocket
+                elif msg.get("type") == "chat_message":
+                    target_id = int(msg.get("to"))
+                    content = (msg.get("content") or "").strip()
+                    temp_id = msg.get("temp_id")
+                    if not content or not target_id:
+                        continue
+
+                    # Deliver in the background so the WebSocket loop is never blocked.
+                    # The lock keeps this sender's messages in the order they were sent.
+                    task = asyncio.create_task(_deliver_chat_message(send_lock, user_id, target_id, content, temp_id))
+                    chat_delivery_tasks.add(task)
+                    task.add_done_callback(chat_delivery_tasks.discard)
+
+            except (json.JSONDecodeError, ValueError, TypeError, AttributeError):
                 pass
     except WebSocketDisconnect:
         chat_manager.disconnect(websocket, user_id)
+
+
+chat_delivery_tasks: set = set()
+
+
+async def get_messaging_rules(db: AsyncSession, sender_id: int, receiver_id: int):
+    """Returns (reason the message must be refused or None, whether the receiver has muted the sender)."""
+    b_result = await db.execute(select(DBBlockedUser).filter(
+        ((DBBlockedUser.user_id == receiver_id) & (DBBlockedUser.blocked_user_id == sender_id)) |
+        ((DBBlockedUser.user_id == sender_id) & (DBBlockedUser.blocked_user_id == receiver_id))
+    ))
+    blocks = b_result.scalars().all()
+    if any(b.user_id == receiver_id for b in blocks):
+        return "You are blocked by this user.", False
+    if any(b.user_id == sender_id for b in blocks):
+        return "You have blocked this user.", False
+
+    m_result = await db.execute(select(DBMutedUser).filter(
+        DBMutedUser.user_id == receiver_id,
+        DBMutedUser.muted_user_id == sender_id
+    ))
+    return None, m_result.scalars().first() is not None
+
+
+async def _deliver_chat_message(send_lock: asyncio.Lock, sender_id: int, receiver_id: int, content: str, temp_id: str):
+    """Check, persist and deliver a real-time WebSocket message, then acknowledge it to the sender."""
+    async with send_lock:
+        try:
+            async with SessionLocal() as db:
+                refusal, is_muted = await get_messaging_rules(db, sender_id, receiver_id)
+                if refusal:
+                    await chat_manager.send_personal_message(json.dumps({
+                        "type": "message_failed",
+                        "temp_id": temp_id,
+                        "detail": refusal
+                    }), sender_id)
+                    return
+
+                initial_status = "delivered" if chat_manager.is_online(receiver_id) else "sent"
+                timestamp = utc_now_iso()
+                new_msg = DBMessage(
+                    sender_id=sender_id,
+                    receiver_id=receiver_id,
+                    content=content,
+                    timestamp=timestamp,
+                    message_status=initial_status
+                )
+                db.add(new_msg)
+                notif = None
+                if not is_muted:
+                    notif = DBNotification(
+                        user_id=receiver_id,
+                        type="message",
+                        content="New message",
+                        timestamp=timestamp
+                    )
+                    db.add(notif)
+                await db.commit()
+        except Exception as e:
+            print("Error persisting websocket message:", e)
+            await chat_manager.send_personal_message(json.dumps({
+                "type": "message_failed",
+                "temp_id": temp_id,
+                "detail": "Message could not be saved."
+            }), sender_id)
+            return
+
+        # Only deliver once the message is safely stored
+        await chat_manager.send_personal_message(json.dumps({
+            "id": new_msg.id,
+            "temp_id": temp_id,
+            "sender_id": sender_id,
+            "receiver_id": receiver_id,
+            "content": content,
+            "timestamp": timestamp,
+            "message_status": initial_status
+        }), receiver_id)
+        if notif:
+            await notification_manager.send_personal_message(json.dumps({
+                "id": notif.id,
+                "type": notif.type,
+                "content": notif.content,
+                "timestamp": notif.timestamp
+            }), receiver_id)
+
+        await chat_manager.send_personal_message(json.dumps({
+            "type": "message_ack",
+            "temp_id": temp_id,
+            "id": new_msg.id,
+            "timestamp": timestamp,
+            "message_status": initial_status
+        }), sender_id)
 
 
 @app.post("/api/messages", response_model=MessageResponse)
 async def send_message(
     msg: MessageCreate, 
     db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    if current_user.id != msg.sender_id:
+    if current_user_id != msg.sender_id:
         raise HTTPException(status_code=403, detail="Not authorized to send as this user.")
         
-    # Check if sender is blocked by receiver
-    b_result = await db.execute(select(DBBlockedUser).filter(
-        DBBlockedUser.user_id == msg.receiver_id,
-        DBBlockedUser.blocked_user_id == current_user.id
-    ))
-    if b_result.scalars().first():
-        raise HTTPException(status_code=403, detail="You are blocked by this user.")
-        
-    # Check if sender blocked receiver
-    b2_result = await db.execute(select(DBBlockedUser).filter(
-        DBBlockedUser.user_id == current_user.id,
-        DBBlockedUser.blocked_user_id == msg.receiver_id
-    ))
-    if b2_result.scalars().first():
-        raise HTTPException(status_code=403, detail="You have blocked this user.")
-        
-    # Determine initial status: delivered if receiver is online, else sent
+    refusal, is_muted = await get_messaging_rules(db, current_user_id, msg.receiver_id)
+    if refusal:
+        raise HTTPException(status_code=403, detail=refusal)
+
     initial_status = "delivered" if chat_manager.is_online(msg.receiver_id) else "sent"
+    now_iso = utc_now_iso()
     
     new_msg = DBMessage(
         sender_id=msg.sender_id,
         receiver_id=msg.receiver_id,
         content=msg.content,
-        timestamp=datetime.now().isoformat(),
+        timestamp=now_iso,
         message_status=initial_status
     )
     db.add(new_msg)
     
-    # Check if muted
-    m_result = await db.execute(select(DBMutedUser).filter(
-        DBMutedUser.user_id == msg.receiver_id,
-        DBMutedUser.muted_user_id == current_user.id
-    ))
-    is_muted = m_result.scalars().first() is not None
-    
     notif = None
     if not is_muted:
         notif = DBNotification(
-            user_id=msg.receiver_id, 
-            type="message", 
-            content=f"New message from {current_user.name}", 
-            timestamp=datetime.now().isoformat()
+            user_id=msg.receiver_id,
+            type="message",
+            content="New message",
+            timestamp=now_iso
         )
         db.add(notif)
-    
+
     await db.commit()
-    await db.refresh(new_msg)
-    if notif:
-        await db.refresh(notif)
-
-    result = await db.execute(select(DBUser).filter(DBUser.id == msg.receiver_id))
-    receiver = result.scalars().first()
-    r_name = receiver.name if receiver else "a developer"
-    await log_user_activity(db, current_user.id, "Message Sent", f"You sent a message to {r_name}.")
-
+    
     msg_data = {
         "id": new_msg.id,
         "sender_id": new_msg.sender_id,
         "receiver_id": new_msg.receiver_id,
         "content": new_msg.content,
-        "timestamp": new_msg.timestamp.isoformat() if isinstance(new_msg.timestamp, datetime) else new_msg.timestamp,
+        "timestamp": new_msg.timestamp if isinstance(new_msg.timestamp, str) else new_msg.timestamp.isoformat(),
         "message_status": new_msg.message_status
     }
-    await chat_manager.send_personal_message(json.dumps(msg_data), msg.receiver_id)
     
-    await notification_manager.send_personal_message(json.dumps({
-        "id": notif.id, 
-        "type": notif.type, 
-        "content": notif.content, 
-        "timestamp": notif.timestamp
-    }), msg.receiver_id)
+    # Broadcast to receiver immediately
+    await chat_manager.send_personal_message(json.dumps(msg_data), msg.receiver_id)
+    if notif:
+        await notification_manager.send_personal_message(json.dumps({
+            "id": notif.id, 
+            "type": notif.type, 
+            "content": notif.content, 
+            "timestamp": notif.timestamp
+        }), msg.receiver_id)
 
     return new_msg
 
@@ -988,7 +1110,7 @@ async def get_messages(
         
     clear_res = await db.execute(select(DBClearedChat).filter(DBClearedChat.user_id == current_user_id))
     cleared_records = clear_res.scalars().all()
-    cleared_map = {rec.cleared_with_user_id: rec.cleared_at for rec in cleared_records}
+    cleared_map = {rec.cleared_with_user_id: parse_timestamp(rec.cleared_at) for rec in cleared_records}
         
     result = await db.execute(select(DBMessage).filter(
         (DBMessage.sender_id == user_id) | (DBMessage.receiver_id == user_id)
@@ -999,7 +1121,7 @@ async def get_messages(
     for msg in all_msgs:
         other_user = msg.sender_id if msg.receiver_id == user_id else msg.receiver_id
         if other_user in cleared_map:
-            if msg.timestamp < cleared_map[other_user]:
+            if parse_timestamp(msg.timestamp) < cleared_map[other_user]:
                 continue
         filtered_msgs.append(msg)
         
@@ -1083,7 +1205,7 @@ async def toggle_block(target_id: int, db: AsyncSession = Depends(get_db), curre
 async def clear_chat(target_id: int, db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
     res = await db.execute(select(DBClearedChat).filter(DBClearedChat.user_id == current_user.id, DBClearedChat.cleared_with_user_id == target_id))
     cleared = res.scalars().first()
-    now_iso = datetime.now().isoformat()
+    now_iso = utc_now_iso()
     if cleared:
         cleared.cleared_at = now_iso
     else:
@@ -1131,7 +1253,7 @@ async def toggle_save_profile(
         new_save = DBSavedProfile(
             user_id=current_user.id, 
             saved_user_id=user_id, 
-            timestamp=datetime.now().isoformat()
+            timestamp=utc_now_iso()
         )
         db.add(new_save)
         await log_user_activity(db, current_user.id, "Profile Saved", f"Bookmarked {target_name}'s profile.")
@@ -1179,7 +1301,7 @@ async def toggle_follow(
         new_follow = DBFollow(
             follower_id=current_user.id, 
             followed_id=user_id, 
-            timestamp=datetime.now().isoformat()
+            timestamp=utc_now_iso()
         )
         db.add(new_follow)
         
@@ -1189,7 +1311,7 @@ async def toggle_follow(
             user_id=user_id, 
             type="follow", 
             content=f"{current_user.name} started following you!", 
-            timestamp=datetime.now().isoformat()
+            timestamp=utc_now_iso()
         )
         db.add(notif)
         await db.commit()
@@ -1233,6 +1355,9 @@ async def get_following(
 
 @app.websocket("/api/ws/notifications/{user_id}")
 async def notification_websocket_endpoint(websocket: WebSocket, user_id: int):
+    if get_websocket_user_id(websocket) != user_id:
+        await websocket.close(code=1008)
+        return
     await notification_manager.connect(websocket, user_id)
     try:
         while True:
@@ -1271,23 +1396,52 @@ async def mark_notification_read(
 # ==========================================
 # 8. IMAGE & PROJECT UPLOADS
 # ==========================================
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_CHAT_FILE_BYTES = 25 * 1024 * 1024
+IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+CHAT_FILE_EXTENSIONS = IMAGE_EXTENSIONS | {
+    "mp4", "webm", "mov", "mp3", "wav", "ogg", "m4a",
+    "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "zip", "rar", "json",
+}
+# Source files are stored as .txt so the browser never executes them from our origin
+CODE_FILE_EXTENSIONS = {"html", "htm", "css", "js", "py"}
+
+def save_upload(file: UploadFile, directory: str, basename: str, allowed_extensions: set, max_bytes: int) -> str:
+    """Validate an upload by extension and size, write it to disk and return its path."""
+    extension = os.path.splitext(file.filename or "")[1].lower().lstrip(".")
+    if extension in CODE_FILE_EXTENSIONS and "txt" in allowed_extensions:
+        extension = f"{extension}.txt"
+    elif extension not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"File type '.{extension}' is not allowed.")
+
+    os.makedirs(directory, exist_ok=True)
+    file_location = f"{directory}/{basename}.{extension}"
+    size = 0
+    with open(file_location, "wb") as buffer:
+        while chunk := file.file.read(1024 * 1024):
+            size += len(chunk)
+            if size > max_bytes:
+                break
+            buffer.write(chunk)
+    if size > max_bytes:
+        os.remove(file_location)
+        raise HTTPException(status_code=413, detail=f"File is too large. The limit is {max_bytes // (1024 * 1024)} MB.")
+    return file_location
+
+def upload_url(request: Request, file_location: str) -> str:
+    return f"{str(request.base_url).rstrip('/')}/{file_location}"
+
+
 @app.post("/api/upload/profile-pic")
 async def upload_profile_pic(
+    request: Request,
     file: UploadFile = File(...), 
     db: AsyncSession = Depends(get_db),
     current_user: DBUser = Depends(get_current_user)
 ):
-    if not file.content_type.startswith("image/"): 
-        raise HTTPException(status_code=400, detail="Invalid file. Not an image.")
+    file_location = save_upload(file, "static/uploads", f"user_{current_user.id}_profile", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
         
-    file_extension = file.filename.split(".")[-1]
-    safe_filename = f"user_{current_user.id}_profile.{file_extension}"
-    file_location = f"static/uploads/{safe_filename}"
-    
-    with open(file_location, "wb") as buffer: 
-        shutil.copyfileobj(file.file, buffer)
-        
-    image_url = f"http://127.0.0.1:8000/{file_location}"
+    image_url = upload_url(request, file_location)
     current_user.profile_pic = image_url
     
     await log_user_activity(db, current_user.id, "Profile Updated", "You updated your profile picture.")
@@ -1299,21 +1453,14 @@ async def upload_profile_pic(
 
 @app.post("/api/upload/banner-pic")
 async def upload_banner_pic(
+    request: Request,
     file: UploadFile = File(...), 
     db: AsyncSession = Depends(get_db),
     current_user: DBUser = Depends(get_current_user)
 ):
-    if not file.content_type.startswith("image/"): 
-        raise HTTPException(status_code=400, detail="Invalid file. Not an image.")
+    file_location = save_upload(file, "static/uploads", f"user_{current_user.id}_banner", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
         
-    file_extension = file.filename.split(".")[-1]
-    safe_filename = f"user_{current_user.id}_banner.{file_extension}"
-    file_location = f"static/uploads/{safe_filename}"
-    
-    with open(file_location, "wb") as buffer: 
-        shutil.copyfileobj(file.file, buffer)
-        
-    image_url = f"http://127.0.0.1:8000/{file_location}"
+    image_url = upload_url(request, file_location)
     current_user.banner_pic = image_url
     
     await log_user_activity(db, current_user.id, "Profile Updated", "You updated your profile banner.")
@@ -1325,54 +1472,26 @@ async def upload_banner_pic(
 
 @app.post("/api/upload/project-pic")
 async def upload_project_pic(
+    request: Request,
     file: UploadFile = File(...), 
     current_user: DBUser = Depends(get_current_user)
 ):
-    if not file.content_type.startswith("image/"): 
-        raise HTTPException(status_code=400, detail="Invalid file. Not an image.")
+    file_location = save_upload(file, "static/uploads", f"user_{current_user.id}_proj_{uuid.uuid4().hex[:8]}", IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
         
-    file_extension = file.filename.split(".")[-1]
-    safe_filename = f"user_{current_user.id}_proj_{uuid.uuid4().hex[:8]}.{file_extension}"
-    file_location = f"static/uploads/{safe_filename}"
-    
-    with open(file_location, "wb") as buffer: 
-        shutil.copyfileobj(file.file, buffer)
-        
-    image_url = f"http://127.0.0.1:8000/{file_location}"
-    
-    return {"message": "Project image uploaded successfully!", "url": image_url}
+    return {"message": "Project image uploaded successfully!", "url": upload_url(request, file_location)}
 
 
 @app.post("/api/upload/chat-file")
 async def upload_chat_file(
+    request: Request,
     file: UploadFile = File(...),
     current_user: DBUser = Depends(get_current_user)
 ):
-    """Upload any file (image, video, pdf, doc) for chat messages."""
-    ALLOWED_TYPES = [
-        "image/", "video/", "audio/", "application/pdf",
-        "application/msword", "application/vnd.openxmlformats-officedocument",
-        "text/plain", "text/css", "text/html", "text/javascript",
-        "application/json", "application/zip", "application/x-rar",
-    ]
-    
-    allowed = any(file.content_type and file.content_type.startswith(t) for t in ALLOWED_TYPES)
-    if not allowed:
-        raise HTTPException(status_code=400, detail=f"File type '{file.content_type}' is not allowed.")
-    
-    os.makedirs("static/uploads/chat", exist_ok=True)
-    
-    file_extension = file.filename.split(".")[-1] if "." in file.filename else "bin"
-    safe_filename = f"chat_{current_user.id}_{uuid.uuid4().hex[:10]}.{file_extension}"
-    file_location = f"static/uploads/chat/{safe_filename}"
-    
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    file_url = f"http://127.0.0.1:8000/{file_location}"
+    """Upload a file (image, video, audio, document, source file) for chat messages."""
+    file_location = save_upload(file, "static/uploads/chat", f"chat_{current_user.id}_{uuid.uuid4().hex[:10]}", CHAT_FILE_EXTENSIONS, MAX_CHAT_FILE_BYTES)
     
     return {
-        "url": file_url,
+        "url": upload_url(request, file_location),
         "filename": file.filename,
         "content_type": file.content_type,
         "size": os.path.getsize(file_location)
@@ -1480,7 +1599,7 @@ async def create_board_post(
         description=post_data.description,
         skills_required=post_data.skills_required,
         author_id=current_user.id,
-        created_at=datetime.now().isoformat()
+        created_at=utc_now_iso()
     )
     
     db.add(new_post)
@@ -1587,7 +1706,7 @@ async def create_team(
         name=team_data.name,
         description=team_data.description,
         created_by=current_user.id,
-        created_at=datetime.now().isoformat(),
+        created_at=utc_now_iso(),
         avatar_url=team_data.avatar_url
     )
     db.add(new_team)
@@ -1598,7 +1717,7 @@ async def create_team(
         team_id=new_team.id,
         user_id=current_user.id,
         role="Admin",
-        joined_at=datetime.now().isoformat()
+        joined_at=utc_now_iso()
     )
     db.add(admin_member)
     await db.commit()
@@ -1646,7 +1765,7 @@ async def add_team_member(
         team_id=team_id,
         user_id=member_data.user_id,
         role=member_data.role,
-        joined_at=datetime.now().isoformat()
+        joined_at=utc_now_iso()
     )
     db.add(new_member)
     await db.commit()
@@ -1658,7 +1777,7 @@ async def add_team_member(
         user_id=member_data.user_id,
         type="team_invite",
         content=f"You were added to the team: {team.name} as {member_data.role}.",
-        timestamp=datetime.now().isoformat()
+        timestamp=utc_now_iso()
     )
     db.add(notif)
     await db.commit()
@@ -1733,7 +1852,7 @@ async def create_team_channel(
         team_id=team_id,
         name=channel_data.name.lower().replace(" ", "-"),
         channel_type=channel_data.channel_type,
-        created_at=datetime.now().isoformat()
+        created_at=utc_now_iso()
     )
     db.add(new_channel)
     await db.commit()
@@ -1804,7 +1923,7 @@ async def send_channel_message(
         channel_id=channel.id,
         sender_id=current_user.id,
         content=msg_data.content,
-        timestamp=datetime.now().isoformat(),
+        timestamp=utc_now_iso(),
         is_system_message=msg_data.is_system_message
     )
     db.add(new_msg)
@@ -1828,6 +1947,18 @@ async def send_channel_message(
 
 @app.websocket("/api/ws/channels/{channel_id}/{user_id}")
 async def channel_websocket_endpoint(websocket: WebSocket, channel_id: int, user_id: int):
+    if get_websocket_user_id(websocket) != user_id:
+        await websocket.close(code=1008)
+        return
+    async with SessionLocal() as db:
+        member_res = await db.execute(
+            select(DBChannel)
+            .join(DBTeamMember, DBTeamMember.team_id == DBChannel.team_id)
+            .filter(DBChannel.id == channel_id, DBTeamMember.user_id == user_id)
+        )
+        if not member_res.scalars().first():
+            await websocket.close(code=1008)
+            return
     await team_chat_manager.connect(websocket, channel_id, user_id)
     try:
         while True:
@@ -1865,7 +1996,7 @@ async def delete_team(
 # 13. ADMIN & VERIFICATION SYSTEM
 # ==========================================
 FOUNDER_NAME = "Gopale Omkar Ravindra"
-FOUNDER_CODE = os.getenv("FOUNDER_CODE", "140325")
+FOUNDER_CODE = os.getenv("FOUNDER_CODE")  # Founder login is disabled when unset
 
 @app.post("/api/admin/apply")
 async def apply_for_admin(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
@@ -1877,16 +2008,17 @@ async def apply_for_admin(db: AsyncSession = Depends(get_db), current_user: DBUs
         user_id=current_user.id,
         name=current_user.name,
         status="Pending",
-        requested_at=datetime.now().isoformat()
+        requested_at=utc_now_iso()
     )
     db.add(req)
     await db.commit()
     return {"message": "Admin request submitted successfully."}
 
 @app.post("/api/admin/login")
-async def admin_login(credentials: AdminLogin, response: Response, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def admin_login(request: Request, credentials: AdminLogin, response: Response, db: AsyncSession = Depends(get_db)):
     # --- FOUNDER GOD-MODE BYPASS ---
-    if credentials.bypass_code == FOUNDER_CODE and credentials.name == FOUNDER_NAME:
+    if FOUNDER_CODE and credentials.name == FOUNDER_NAME and hmac.compare_digest(credentials.bypass_code.encode(), FOUNDER_CODE.encode()):
         result = await db.execute(select(DBUser).filter(DBUser.name == FOUNDER_NAME))
         founder_user = result.scalars().first()
         
@@ -1907,10 +2039,13 @@ async def admin_login(credentials: AdminLogin, response: Response, db: AsyncSess
         # RETURN TOKEN DIRECTLY IN JSON FOR LOCALSTORAGE FALLBACK
         return {"message": "Founder Access Granted", "role": "founder", "user_id": founder_user.id, "token": admin_token}
     
-    # --- REGULAR ADMIN LOGIN ---
+    # --- REGULAR ADMIN LOGIN (the secure code is the admin's own account password) ---
     result = await db.execute(select(DBUser).filter(DBUser.name == credentials.name, DBUser.is_admin == 1))
-    admin_user = result.scalars().first()
-    
+    admin_user = next(
+        (u for u in result.scalars().all() if u.hashed_password and verify_password(credentials.bypass_code, u.hashed_password)),
+        None
+    )
+
     if not admin_user:
         raise HTTPException(status_code=403, detail="Unauthorized. Invalid name or bypass code.")
         
@@ -2001,7 +2136,7 @@ async def get_admin_stats(db: AsyncSession = Depends(get_db), admin_data: dict =
 # ==========================================
 # 14. DECENTRALIZED AMBASSADOR VERIFICATION ROUTES
 # ==========================================
-@app.get("/api/ambassador/pending")
+@app.get("/api/ambassador/pending", response_model=List[PendingUserResponse])
 async def get_pending_users(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
     if current_user.is_ambassador != 1:
         raise HTTPException(status_code=403, detail="Ambassador access required.")
@@ -2018,6 +2153,8 @@ async def get_pending_users(db: AsyncSession = Depends(get_db), current_user: DB
 async def ambassador_verify_action(target_id: int, action: str, db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
     if current_user.is_ambassador != 1:
         raise HTTPException(status_code=403, detail="Ambassador access required.")
+    if action not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Action must be 'approve' or 'reject'.")
         
     result = await db.execute(select(DBUser).filter(DBUser.id == target_id, DBUser.college_name == current_user.college_name))
     target_user = result.scalars().first()
@@ -2027,7 +2164,7 @@ async def ambassador_verify_action(target_id: int, action: str, db: AsyncSession
         
     if action == "approve":
         target_user.account_status = "verified"
-    elif action == "reject":
+    else:
         target_user.account_status = "rejected"
         
     await db.commit()

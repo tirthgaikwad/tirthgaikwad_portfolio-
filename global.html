@@ -315,7 +315,7 @@
       
       try {
         // Fetch real profiles from the backend
-        const response = await fetch('/api/profiles');
+        const response = await fetch(`${API_BASE}/api/profiles`, { credentials: 'include' });
         if (!response.ok) {
           throw new Error('Failed to load profiles');
         }
@@ -330,11 +330,11 @@
         profiles.forEach(profile => {
           // Generate a fallback avatar if none provided
           const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
-          const avatarHtml = profile.profile_pic_url 
-            ? `<img src="${profile.profile_pic_url}" class="w-full h-full object-cover">`
+          const avatarHtml = profile.profile_pic 
+            ? `<img src="${escapeHtml(profile.profile_pic)}" class="w-full h-full object-cover">`
             : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md">${initials}</div>`;
             
-          const skillsHtml = (profile.skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${s}</span>`).join('');
+          const skillsHtml = (profile.skills ? profile.skills.split(',').map(s => s.trim()).filter(Boolean) : []).map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`).join('');
             
           const cardHtml = `
             <div class="developer-card rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group">
@@ -351,9 +351,9 @@
                 </div>
                 <div class="mb-space-xs">
                   <div class="flex items-center gap-1.5">
-                    <h3 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">${profile.name}</h3>
+                    <h3 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">${escapeHtml(profile.name)}</h3>
                   </div>
-                  <p class="font-label-md text-label-md text-primary font-semibold">${profile.role || 'Developer'}</p>
+                  <p class="font-label-md text-label-md text-primary font-semibold">${escapeHtml(profile.department || 'Developer')}</p>
                 </div>
                 <div class="flex flex-wrap gap-1.5 mb-space-lg mt-space-sm">
                   ${skillsHtml}
@@ -382,5 +382,5 @@
       }
     });
   </script>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer><script src="shared.js"></script>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
 </body></html>
