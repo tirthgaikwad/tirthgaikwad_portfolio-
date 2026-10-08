@@ -1,12 +1,52 @@
 <!DOCTYPE html>
 
+<html lang="en"><head><meta charset="utf-8"/>
+<title>ProPartner | Saved Profiles</title>
+<script>
+// Ask for this page's data right away, while styles and scripts are still downloading. The page script picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__pagePrefetch = fetch(apiBase + '/api/saved', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+/* Custom Modal Styles */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #c7c4d8; animation: slideDown 0.3s ease; }
+.custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0b1c30;}
+.custom-modal p { color: #464555; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-outline-modal { padding: 10px 20px; border: 1px solid #c7c4d8; border-radius: 8px; background: transparent; color: #0b1c30; font-weight: 600; cursor: pointer; transition: 0.2s;}
+.btn-outline-modal:hover { background: #eff4ff; }
+.btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+.btn-primary-modal:hover { background: #2b1ea6; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+/* Hide Scrollbar for Horizontal Nav */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
-
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script>
-    <script src="shared.js"></script>
-</head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+/* Discover page */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.discover-select.is-set { border-color: #3525cd; background-color: #eff4ff; }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-toggle:hover { background: #eff4ff; }
+.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+/* Saved Profiles page */
+#savedTop { scroll-margin-top: 80px; }
+.undo-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 8px 8px 8px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; display: flex; align-items: center; gap: 12px; }
+.undo-toast button { background: rgba(255,255,255,0.14); color: #fff; font-weight: 700; padding: 6px 12px; border-radius: 8px; }
+.undo-toast button:hover { background: rgba(255,255,255,0.24); }
+</style><script src="https://cdn.tailwindcss.com"></script><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
 <div class="h-16 max-w-[1536px] mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
     <!-- Left: Logo + Navigation -->
     <div class="flex items-center gap-4 xl:gap-8">
@@ -17,19 +57,19 @@
       <nav class="hidden xl:flex items-center gap-0.5 h-16">
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="search.html">Discover Talent</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="board.html">Opportunities Board</a>
-        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="team.html">My Teams</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="team.html">My Teams</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="project_management.html">Project Hub</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="college.html">Campus Network</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="research.html">Research Collab</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="network.html">My Network</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="saved.html">Saved Profiles</a>
+        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="saved.html">Saved Profiles</a>
       </nav>
     </div>
 
     <!-- Right: Search + Utilities + Profile -->
     <div class="flex items-center gap-1.5 shrink-0">
       <!-- Search Bar -->
-      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="document.getElementById('search-modal') && document.getElementById('search-modal').classList.add('active')">
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="focusHeaderSearch()">
         <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
         <span class="text-[12px] text-slate-400 truncate">Search network...</span>
         <kbd class="ml-auto text-[10px] font-semibold text-slate-400 bg-white px-1 py-0.5 rounded border border-slate-200 shadow-sm">⌘K</kbd>
@@ -82,670 +122,76 @@
     </div>
   </div>
 </header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
-
-<!-- Active Context Sub-Bar -->
-
-<section class="w-full bg-surface-container-lowest border-b border-outline-variant/30 py-space-sm">
-
-<div class="max-w-container-max mx-auto px-gutter-desktop flex flex-wrap items-center justify-between gap-space-sm">
-
-<div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
-
-<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
-
-<span class="material-symbols-outlined text-[16px]">home</span>
-
-          Talent Hub
-
-        </a>
-
-<span>/</span>
-
-<span class="text-on-surface font-semibold flex items-center gap-1">
-
-<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
-
-          Saved Profiles
-
-        </span>
-
-<span class="ml-space-2xs px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">16 Candidates</span>
-
-</div>
-
-<div class="flex items-center gap-space-xs">
-
-<button class="inline-flex items-center gap-1 px-space-sm py-1.5 rounded-lg border border-outline-variant/50 hover:bg-surface-container-low font-label-md text-label-md text-on-surface transition-colors" type="button">
-
-<span class="material-symbols-outlined text-[18px] text-on-surface-variant">ios_share</span>
-
-          Export Shortlist (CSV)
-
-        </button>
-
-<button class="inline-flex items-center gap-1 px-space-sm py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors shadow-sm" type="button">
-
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-
-          Create Team from Selection
-
-        </button>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- Hero Header & Quick Stats Strip -->
-
-<section class="w-full bg-surface py-space-xl border-b border-outline-variant/20">
-
-<div class="max-w-container-max mx-auto px-gutter-desktop">
-
-<div class="flex flex-col items-center text-center max-w-2xl mx-auto mb-space-lg">
-
-<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold mb-space-xs">
-
-<span class="material-symbols-outlined text-[15px] text-primary" style="font-variation-settings: 'FILL' 1;">bookmarks</span>
-
-          Bookmarked Talent &amp; Potential Partners
-
-        </div>
-
-<h1 class="font-display-hero text-display-hero text-on-surface tracking-tight mb-space-xs">
-
-          Your Saved Profiles
-
-        </h1>
-
-<p class="font-body-lg text-body-lg text-on-surface-variant">
-
-          Quickly access verified student developers, research collaborators, and hackathon partners you've bookmarked for upcoming projects.
-
-        </p>
-
-</div>
-
-<!-- Quick Metrics Strip -->
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm max-w-4xl mx-auto">
-
-<div class="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant/40 flex items-center gap-space-sm shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-
-<div class="w-10 h-10 rounded-lg bg-primary-fixed text-primary flex items-center justify-center shrink-0">
-
-<span class="material-symbols-outlined text-[22px]">people</span>
-
-</div>
-
-<div>
-
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">16 Saved</div>
-
-<div class="font-body-sm text-body-sm text-on-surface-variant">Total Candidates</div>
-
-</div>
-
-</div>
-
-<div class="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant/40 flex items-center gap-space-sm shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-
-<div class="w-10 h-10 rounded-lg bg-tertiary-fixed text-tertiary flex items-center justify-center shrink-0">
-
-<span class="material-symbols-outlined text-[22px]">bolt</span>
-
-</div>
-
-<div>
-
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">6 Ready</div>
-
-<div class="font-body-sm text-body-sm text-on-surface-variant">Available Right Now</div>
-
-</div>
-
-</div>
-
-<div class="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant/40 flex items-center gap-space-sm shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-
-<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center shrink-0">
-
-<span class="material-symbols-outlined text-[22px]">emoji_events</span>
-
-</div>
-
-<div>
-
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">4 Finalists</div>
-
-<div class="font-body-sm text-body-sm text-on-surface-variant">SIH &amp; National Awards</div>
-
-</div>
-
-</div>
-
-<div class="bg-surface-container-lowest rounded-xl p-space-sm border border-outline-variant/40 flex items-center gap-space-sm shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-
-<div class="w-10 h-10 rounded-lg bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center shrink-0">
-
-<span class="material-symbols-outlined text-[22px]">school</span>
-
-</div>
-
-<div>
-
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">8 Campuses</div>
-
-<div class="font-body-sm text-body-sm text-on-surface-variant">Institutes Represented</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- Filter & Search Console -->
-
-<section class="w-full bg-surface-container-lowest py-space-md border-b border-outline-variant/30 sticky top-16 z-40 shadow-[0_2px_6px_rgba(0,0,0,0.02)]">
-
-<div class="max-w-container-max mx-auto px-gutter-desktop space-y-space-sm">
-
-<!-- Search Bar Capsule -->
-
-<div class="relative flex items-center">
-
-<span class="material-symbols-outlined absolute left-4 text-on-surface-variant text-[22px]">search</span>
-
-<input class="w-full pl-12 pr-28 py-3 bg-surface rounded-xl border border-outline-variant text-on-surface font-body-md text-body-md placeholder-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all" id="profileSearchInput" placeholder="Search saved profiles by name, skills, branch, or institute (e.g. Python, OpenCV, Amrutvahini, Cummins)..." type="text"/>
-
-<div class="absolute right-3 flex items-center gap-1.5">
-
-<kbd class="hidden md:inline-flex px-1.5 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-label-sm font-label-sm border border-outline-variant/40">⌘F</kbd>
-
-<button class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors" type="button">
-
-            Search
-
-          </button>
-
-</div>
-
-</div>
-
-<!-- Segmented Tags & Filter Row -->
-
-<div class="flex flex-wrap items-center justify-between gap-space-sm pt-1">
-
-<div class="flex flex-wrap items-center gap-space-xs" id="filterTagGroup">
-
-<button class="filter-chip px-3 py-1 rounded-full font-skill-pill text-skill-pill bg-primary text-on-primary transition-all" type="button">
-
-            All Saved (16)
-
-          </button>
-
-<button class="filter-chip px-3 py-1 rounded-full font-skill-pill text-skill-pill bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
-
-            SIH Ready (7)
-
-          </button>
-
-<button class="filter-chip px-3 py-1 rounded-full font-skill-pill text-skill-pill bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
-
-            AI &amp; Data Science (5)
-
-          </button>
-
-<button class="filter-chip px-3 py-1 rounded-full font-skill-pill text-skill-pill bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
-
-            Full-Stack Web (6)
-
-          </button>
-
-<button class="filter-chip px-3 py-1 rounded-full font-skill-pill text-skill-pill bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
-
-            Robotics &amp; Embedded (3)
-
-          </button>
-
-<button class="filter-chip px-3 py-1 rounded-full font-skill-pill text-skill-pill bg-surface-container-low text-primary border border-primary/20 hover:bg-surface-container transition-all flex items-center gap-1" type="button">
-
-<span class="material-symbols-outlined text-[14px]">folder</span>
-
-            Hackathon 2026 (4)
-
-          </button>
-
-</div>
-
-<!-- Sort Select & Display Switcher -->
-
-<div class="flex items-center gap-space-xs ml-auto">
-
-<span class="font-body-sm text-body-sm text-on-surface-variant">Sort by:</span>
-
-<div class="relative">
-
-<select class="appearance-none bg-surface-container-low pl-3 pr-8 py-1.5 rounded-lg border border-outline-variant/40 font-label-md text-label-md text-on-surface focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
-
-<option>Recently Bookmarked</option>
-
-<option>Highest CGPA</option>
-
-<option>Most Projects Completed</option>
-
-<option>Hackathon Wins</option>
-
-</select>
-
-<span class="material-symbols-outlined absolute right-2 top-2 text-on-surface-variant text-[16px] pointer-events-none">expand_more</span>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- Bulk Action Bar -->
-
-<div class="flex flex-wrap items-center justify-between gap-space-xs pt-2 border-t border-outline-variant/20 text-on-surface-variant font-body-sm text-body-sm">
-
-<div class="flex items-center gap-space-sm">
-
-<label class="flex items-center gap-2 cursor-pointer select-none">
-
-<input class="w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant" id="selectAllCheckbox" type="checkbox"/>
-
-<span>Select all (16)</span>
-
-</label>
-
-<span class="text-outline-variant">|</span>
-
-<span class="text-primary font-medium" id="selectedCountText">0 candidates selected</span>
-
-</div>
-
-<div class="flex items-center gap-2">
-
-<button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-label-sm text-label-sm inline-flex items-center gap-1" type="button">
-
-<span class="material-symbols-outlined text-[15px]">drive_file_move</span>
-
-            Move to Folder
-
-          </button>
-
-<button class="px-2.5 py-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors font-label-sm text-label-sm inline-flex items-center gap-1" type="button">
-
-<span class="material-symbols-outlined text-[15px]">mail</span>
-
-            Batch Message
-
-          </button>
-
-<button class="px-2.5 py-1 rounded text-error hover:bg-error-container/40 transition-colors font-label-sm text-label-sm inline-flex items-center gap-1" type="button">
-
-<span class="material-symbols-outlined text-[15px]">delete_sweep</span>
-
-            Remove from Saved
-
-          </button>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- Profiles 3-Column Roster Grid -->
-
-<section class="w-full py-space-xl">
-
-<div class="max-w-container-max mx-auto px-gutter-desktop">
-
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="profilesGrid">
-
-</div>
-
-<!-- Bottom Pagination Strip -->
-
-<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md border-t border-outline-variant/30 pt-space-lg">
-
-<div class="font-body-sm text-body-sm text-on-surface-variant">
-
-          Showing <span class="font-semibold text-on-surface">1 - 6</span> of <span class="font-semibold text-on-surface">16</span> saved developers
-
-        </div>
-
-<div class="flex items-center gap-1.5">
-
-<button class="p-2 rounded-lg border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-40" disabled="" type="button">
-
-<span class="material-symbols-outlined text-[18px]">chevron_left</span>
-
-</button>
-
-<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-sm" type="button">
-
-            1
-
-          </button>
-
-<button class="w-8 h-8 rounded-lg border border-outline-variant/40 hover:bg-surface-container-low text-on-surface font-label-md text-label-md flex items-center justify-center transition-colors" type="button">
-
-            2
-
-          </button>
-
-<button class="w-8 h-8 rounded-lg border border-outline-variant/40 hover:bg-surface-container-low text-on-surface font-label-md text-label-md flex items-center justify-center transition-colors" type="button">
-
-            3
-
-          </button>
-
-<button class="p-2 rounded-lg border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container-low transition-colors" type="button">
-
-<span class="material-symbols-outlined text-[18px]">chevron_right</span>
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- Collaborative Talent Folders Callout Section -->
-
-<section class="w-full pb-space-2xl">
-
-<div class="max-w-container-max mx-auto px-gutter-desktop">
-
-<div class="rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-secondary-container/40 p-space-xl border border-outline-variant/40 flex flex-col lg:flex-row items-center justify-between gap-space-lg">
-
+<div class="relative w-full overflow-hidden bg-surface pb-space-3xl">
+<div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-primary-fixed/40 via-surface-container/30 to-transparent blur-3xl pointer-events-none rounded-full"></div>
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop relative z-10 pt-space-xl">
+<!-- Section 1: Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
 <div class="space-y-space-xs max-w-2xl">
+<div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wider shadow-sm">
+<span class="material-symbols-outlined text-[14px]">bookmarks</span>
+<span>Saved Profiles</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">Your shortlist</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">People you bookmarked to come back to. Only you can see this list.</p>
+</div>
+<a class="inline-flex items-center gap-1.5 px-space-md py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-colors shrink-0 self-start md:self-auto" href="search.html">
+<span class="material-symbols-outlined text-[18px]">person_search</span>
+<span>Find more people</span>
+</a>
+</div>
+<!-- Section 2: Search and filters -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-space-md mb-space-md" id="savedTop">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-sm">
+<div class="relative md:col-span-5">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input autocomplete="off" class="w-full pl-11 pr-10 py-2.5 bg-surface-container-low rounded-xl border border-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:bg-white transition-colors" id="savedSearch" placeholder="Search your saved profiles..." type="text"/>
+<button aria-label="Clear search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-outline hover:text-on-surface hover:bg-surface-container transition-colors" id="savedSearchClear" type="button"><span class="material-symbols-outlined text-[18px] block">close</span></button>
+</div>
+<select aria-label="College" class="discover-select md:col-span-3" data-filter="college" id="savedCollege"><option value="">All colleges</option></select>
+<select aria-label="Department" class="discover-select md:col-span-2" data-filter="department" id="savedDepartment"><option value="">All departments</option></select>
+<select aria-label="Sort by" class="discover-select md:col-span-2" id="savedSort">
+<option value="recent">Sort: Recently saved</option>
+<option value="name">Sort: Name A-Z</option>
+<option value="followers">Sort: Most followed</option>
+</select>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm mt-space-sm">
+<label class="inline-flex items-center gap-2 font-label-md text-label-md text-on-surface-variant cursor-pointer select-none">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" id="savedSelectAll" type="checkbox"/>
+<span id="savedSelectedText">Select all</span>
+</label>
+<div class="hidden items-center gap-space-xs" id="savedBulkBar">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-colors" id="savedBulkTeam" type="button"><span class="material-symbols-outlined text-[16px]">group_add</span>Add to a team</button>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-error/40 text-error hover:bg-error-container/40 font-label-md text-label-md transition-colors" id="savedBulkRemove" type="button"><span class="material-symbols-outlined text-[16px]">bookmark_remove</span>Remove</button>
+</div>
+<div class="ml-auto flex items-center gap-space-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant" id="savedCount"></span>
+<button class="hidden font-label-md text-label-md text-primary hover:underline" id="savedClear" type="button">Clear all</button>
+</div>
+</div>
+</div>
+<!-- Section 3: People -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="savedGrid"></div>
+<!-- Section 4: Pagination -->
+<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-outline-variant/30" id="savedPagination"></div>
+</div>
+</div>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
 
-<div class="inline-flex items-center gap-1.5 text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
-
-<span class="material-symbols-outlined text-[18px]">folder_special</span>
-
-            Team Curation Feature
-
-          </div>
-
-<h3 class="font-headline-lg text-headline-lg text-on-surface font-bold">
-
-            Organize Your Candidates with Custom Project Folders
-
-          </h3>
-
-<p class="font-body-md text-body-md text-on-surface-variant">
-
-            Group your bookmarked developers into dedicated squads for Smart India Hackathon 2026, internal college capstone projects, or freelance client sprints with shared notes and task boards.
-
-          </p>
-
+<!-- CUSTOM SYSTEM ALERTS MODAL -->
+<div class="modal-overlay" id="systemModal">
+    <div class="custom-modal">
+        <h3 id="systemModalTitle">Notification</h3>
+        <p id="systemModalMessage">Message goes here.</p>
+        <div class="modal-buttons">
+            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
+        </div>
+    </div>
 </div>
 
-<div class="flex flex-wrap items-center gap-space-xs shrink-0">
-
-<button class="px-space-md py-2.5 rounded-xl border border-outline-variant/60 bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors shadow-sm flex items-center gap-1.5" type="button">
-
-<span class="material-symbols-outlined text-[18px] text-primary">compare_arrows</span>
-
-            Compare Shortlist
-
-          </button>
-
-<button class="px-space-md py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-colors shadow-sm flex items-center gap-1.5" type="button">
-
-<span class="material-symbols-outlined text-[18px]">create_new_folder</span>
-
-            Create New Talent Folder
-
-          </button>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-</div>
-
-
-<!-- Include Shared Utilities for API_BASE and auth -->
-
-
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const grid = document.getElementById('profilesGrid');
-    const searchInput = document.getElementById('profileSearchInput');
-    let allProfiles = [];
-
-    // Initialize team modal logic if it exists globally
-    // We will assume window.showTeamModal or similar doesn't exist, we'll make a generic alert
-
-    async function loadSavedProfiles() {
-      try {
-        const res = await fetch(`${API_BASE}/api/saved_profiles`, { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to fetch');
-        allProfiles = await res.json();
-        renderProfiles(allProfiles);
-      } catch (err) {
-        console.error(err);
-        grid.innerHTML = '<div class="col-span-full text-center py-10 text-on-surface-variant">Failed to load saved profiles.</div>';
-      }
-    }
-
-    function renderProfiles(profiles) {
-      grid.innerHTML = '';
-      if (profiles.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-10 text-on-surface-variant font-medium">No saved profiles found.</div>';
-        updateCount(0, 0);
-        return;
-      }
-      
-      profiles.forEach(p => {
-        const skillsList = p.skills ? p.skills.split(',').map(s => s.trim()).filter(s => s) : [];
-        const skillsHtml = skillsList.slice(0, 4).map(s => `<span class="px-2.5 py-0.5 rounded-md bg-surface-container-low text-on-surface font-skill-pill text-skill-pill border border-outline-variant/30">${escapeHtml(s)}</span>`).join('');
-        
-        // Use default images if null
-        const bannerImg = p.banner_pic || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBHptu7BEWRhV6skNtm_fg5EyqEVyaouXrMxQ1OYLnNuUPkCUzvOCU-suQqiztjwaySQ17qZp7mT8lUL7apOARuNYVz8-CYnXc8vxDF2lIwKF9fEEENmNYe4APlyF4bRoeEaSdzex3cUuKAVGBd2TntTVuSXs8Pw3hUTtdGy_HzB8hpG9uZsksWTxEaad_yghyaMREiSJlHnmj1qxdQv8kaUDtaVrk8-yrGJmxbz3tmlg8n9ai7pNZt';
-        const profileImg = p.profile_pic || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxP_X06Uai69kkypdqmsOGG78aOgE1CTy-AVljtmXilnkzCFCjRgoM1F7uhRl1gA1NJtVLp8IFgEBIlTPFfjrTzuPUM2RXJ2_xf0yNxCw5ZCAMqJnXFen9FIK9Fm3tUdExndNAAfJYLr3tq1B1eT1znWUHa9hlNtdoyqg-7h-h8Cr6Ulu57yMx7eiXHO2XlOGUfqLsuPT57eUIat8I8Wx9dk83kgCk5jZGbSIMc2lpcv9hDEhGXXJg';
-
-        const card = document.createElement('div');
-        card.className = 'candidate-card bg-surface-container-lowest rounded-2xl border border-outline-variant/50 overflow-hidden shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_25px_-5px_rgba(79,70,229,0.08)] transition-all flex flex-col justify-between group';
-        
-        // Set searchable text
-        card.dataset.search = `${p.name} ${p.department} ${p.college_name} ${p.skills}`.toLowerCase();
-        
-        card.innerHTML = `
-          <div>
-            <div class="relative h-24 w-full bg-cover bg-center overflow-hidden" style="background-image: url('${bannerImg}')">
-              <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-black/30"></div>
-              <div class="absolute top-2.5 left-3 flex items-center">
-                <input class="profile-select-box w-4 h-4 rounded text-primary focus:ring-primary border-surface-container-lowest bg-surface-container-lowest/90" type="checkbox"/>
-              </div>
-              <button aria-label="Remove Bookmark" class="bookmark-btn absolute top-2.5 right-3 w-8 h-8 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm flex items-center justify-center hover:scale-105 transition-transform shadow-sm text-primary" type="button" data-id="${p.id}">
-                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
-              </button>
-            </div>
-            
-            <div class="px-space-md -mt-10 flex flex-col items-center text-center">
-              <div class="relative mb-2">
-                <div class="w-16 h-16 rounded-full ring-4 ring-surface-container-lowest overflow-hidden bg-surface-container shadow-md">
-                  <img class="w-full h-full object-cover" src="${profileImg}"/>
-                </div>
-              </div>
-              <div class="flex items-center gap-1.5 mb-0.5">
-                <h2 class="font-headline-md text-headline-md text-on-surface font-bold">${escapeHtml(p.name)}</h2>
-              </div>
-              <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center justify-center gap-1 line-clamp-1 max-w-full">
-                <span class="material-symbols-outlined text-[15px] shrink-0 text-primary">school</span>
-                ${escapeHtml(p.college_name)}
-              </p>
-              <p class="font-label-sm text-label-sm font-semibold text-primary mt-0.5">
-                ${escapeHtml(p.department)}
-              </p>
-              
-              <div class="flex flex-wrap items-center justify-center gap-1.5 mt-3">
-                ${skillsHtml}
-              </div>
-            </div>
-          </div>
-          
-          <div class="p-space-md pt-3 mt-3 border-t border-outline-variant/20 flex items-center gap-2">
-            <button class="view-btn flex-1 py-2 rounded-lg border border-outline-variant/50 hover:bg-surface-container-low text-on-surface font-label-md text-label-md text-center transition-colors" type="button" data-id="${p.id}">
-              View Profile
-            </button>
-            <button aria-label="Send direct message" class="msg-btn w-9 h-9 rounded-lg border border-outline-variant/50 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors shrink-0" type="button" data-id="${p.id}">
-              <span class="material-symbols-outlined text-[18px]">chat</span>
-            </button>
-            <button class="team-btn flex-1 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md text-center transition-colors shadow-sm flex items-center justify-center gap-1" type="button" data-id="${p.id}">
-              <span class="material-symbols-outlined text-[16px]">add</span>
-              Add to Team
-            </button>
-          </div>
-        `;
-        
-        grid.appendChild(card);
-      });
-      
-      updateCount(profiles.length, profiles.length);
-      attachListeners();
-    }
-    
-    function updateCount(showing, total) {
-      const countEl = document.querySelector('.font-semibold.text-on-surface');
-      if (countEl && countEl.parentElement && countEl.parentElement.innerHTML.includes('Showing')) {
-        countEl.parentElement.innerHTML = `Showing <span class="font-semibold text-on-surface">1 - ${showing}</span> of <span class="font-semibold text-on-surface">${total}</span> saved developers`;
-      }
-      
-      // Update filter tags
-      const allSavedBtn = document.querySelector('#filterTagGroup button:first-child');
-      if(allSavedBtn) allSavedBtn.innerText = `All Saved (${total})`;
-    }
-    
-    function attachListeners() {
-      // Remove Bookmark
-      document.querySelectorAll('.bookmark-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const userId = btn.dataset.id;
-          try {
-             // In backend, following/saving a profile might be via /api/save/{user_id}
-             // Wait, looking at the main.py snippet: @app.post("/api/follow/{user_id}") has save logic? No, wait... 
-             // "Target name ... unsaved" it was under /api/save/{user_id}?
-             const res = await fetch(`${API_BASE}/api/save/${userId}`, { method: 'POST', credentials: 'include' });
-             if (res.ok) {
-                 btn.closest('.candidate-card').remove();
-                 allProfiles = allProfiles.filter(p => p.id != userId);
-                 updateCount(allProfiles.length, allProfiles.length);
-             }
-          } catch(err) { console.error(err); }
-        });
-      });
-      
-      // View Profile
-      document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          window.location.href = `/profile.html?id=${btn.dataset.id}`;
-        });
-      });
-      
-      // Direct Message
-      document.querySelectorAll('.msg-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          window.location.href = `/inbox.html?user=${btn.dataset.id}`;
-        });
-      });
-      
-      // Add to Team
-      document.querySelectorAll('.team-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (window.openAddToTeamModal) {
-            window.openAddToTeamModal(btn.dataset.id);
-          } else {
-            alert("Add to team functionality not loaded.");
-          }
-        });
-      });
-      
-      // Checkbox Logic
-      const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-      const cardCheckboxes = document.querySelectorAll('.profile-select-box');
-      const countDisplay = document.getElementById('selectedCountText');
-
-      function updateSelectedCount() {
-        const checked = document.querySelectorAll('.profile-select-box:checked').length;
-        if (countDisplay) {
-          countDisplay.textContent = checked + ' candidate' + (checked === 1 ? '' : 's') + ' selected';
-        }
-        if (selectAllCheckbox) {
-          selectAllCheckbox.checked = (checked > 0 && checked === cardCheckboxes.length);
-          selectAllCheckbox.indeterminate = (checked > 0 && checked < cardCheckboxes.length);
-        }
-      }
-
-      if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-          document.querySelectorAll('.profile-select-box').forEach(cb => cb.checked = selectAllCheckbox.checked);
-          updateSelectedCount();
-        });
-      }
-
-      document.querySelectorAll('.profile-select-box').forEach(cb => {
-        cb.addEventListener('change', updateSelectedCount);
-      });
-    }
-    
-    // Search input
-    if (searchInput) {
-      searchInput.addEventListener('input', function(e) {
-        const query = e.target.value.toLowerCase().trim();
-        const cards = document.querySelectorAll('.candidate-card');
-        let showing = 0;
-        cards.forEach(card => {
-          if (!query || card.dataset.search.includes(query)) {
-            card.style.display = 'flex';
-            showing++;
-          } else {
-            card.style.display = 'none';
-          }
-        });
-        updateCount(showing, allProfiles.length);
-      });
-    }
-
-    // Filter chip toggle
-    const filterChips = document.querySelectorAll('#filterTagGroup .filter-chip');
-    filterChips.forEach(chip => {
-      chip.addEventListener('click', function() {
-        filterChips.forEach(c => {
-          c.classList.remove('bg-primary', 'text-on-primary');
-          c.classList.add('bg-surface-container', 'text-on-surface-variant');
-        });
-        chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
-        chip.classList.add('bg-primary', 'text-on-primary');
-        // Custom filter logic could go here
-      });
-    });
-
-    loadSavedProfiles();
-  });
-</script>
-
-</main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer></body></html>
+<script src="chat-common.js"></script>
+<script src="saved.js"></script>
+</body>
+</html>

@@ -76,6 +76,41 @@ Tables are created automatically on startup.
 - `board.html?new=1` opens the post form directly. The view (`q`, `category`, `sort`, `mine`, `applied`, `page`) is kept in the address bar.
 - The board loads the 500 newest posts.
 
+## Campus Network, My Network and Saved Profiles
+
+`college.html` (`campus.js`), `network.html` (`network.js`) and `saved.html` (`saved.js`) follow the Discover pattern: one request each (`GET /api/campus`, `/api/network`, `/api/saved`), the list kept in the browser for the next visit, searching and sorting in the browser, and live updates over `/api/ws/notifications/{user_id}`. They share the person card, pagination and follow/save code in `chat-common.js`, and the same server query (`person_cards_query` in `main.py`) as Discover.
+
+- Campus Network lists everyone whose college matches yours (ignoring case and spaces), with department tabs. The numbers at the top are counted from that list. With no college on your profile the page asks you to add one.
+- My Network has Followers, Following and Mutual tabs (`?tab=`). Suggestions are ranked on the server: people who follow you, people followed by those you follow, shared skills, then your college. It considers the 400 newest accounts you do not follow.
+- Saved Profiles supports ticking several people to remove them or add them to a team. Removing shows an Undo for 7 seconds.
+
+## Activity History
+
+`history.html` loads `history.js`. `GET /api/history` returns the 100 newest entries plus how many entries each category holds; "Load older activity" pages further back with `?before=<id>`. Categories are worked out on the server from the action name (`HISTORY_CATEGORIES` in `main.py`).
+
+- Search and the time range only look through the entries that are loaded.
+- "Export CSV" writes what is on screen. "Clear history" (`DELETE /api/history`) removes everything except the "Account Created" entry, which the admin growth chart is built from.
+
+## Notifications
+
+The header bell on every page is in `shared.js`. `GET /api/notifications` returns the 50 newest and the unread count; `POST /api/notifications/read` takes `{"ids": [...]}` or `{"all": true}`; `DELETE /api/notifications/{id}` removes one. A notification can carry a `link` (one of our own pages) that opens when it is clicked. Pages that do not open the notifications socket themselves get one from `shared.js`, so the badge is live everywhere.
+
+## Research Collab
+
+`research.html` loads `research.js`. A search asks Wikipedia (background and main sections), OpenAlex and Crossref (papers) directly from the browser, side by side; a source that fails is marked and the report is built from the rest. No AI model is called and nothing is checked: the page says so and links every source.
+
+- Reports can be saved (`/api/research`, up to 50 per person, private), copied as text, printed to PDF, or shared as a short summary to a team's first text channel.
+- arXiv is not used because its API does not allow requests from a web page.
+
+## Admin dashboard
+
+`admin_dashboard.html` loads `admin.js`. The server decides who gets in: every `/api/admin/*` request needs the admin token set by the admin form on the login page.
+
+- `GET /api/admin/overview` returns the totals, accounts by status, admin applications and sign-ups per week for the last 12 weeks. Sign-up dates come from each account's "Account Created" history entry; accounts without one are counted in the starting figure.
+- Accounts can be searched and marked verified or rejected (`POST /api/admin/users/{id}/status`); the person is notified. The founder's account cannot be changed.
+- "Announcement" (`POST /api/admin/announce`, 5 per minute) writes one bell notification for every account.
+- Approving or denying admin applications is for the founder.
+
 ## Project Hub
 
 `project_management.html` loads `chat-common.js` and `project-hub.js`. Every Teams workspace has one board: a kanban board, a planning canvas and two linked tools. One request (`GET /api/teams/{id}/board`) returns the board, its tasks, the canvas and the members, and the page listens on the workspace's WebSocket so teammates see changes as they happen.

@@ -199,17 +199,6 @@ function renderBoard() {
   if (detailPostId !== null) renderPostDetails();
 }
 
-function timeAgo(timestamp) {
-  const then = Date.parse(timestamp);
-  if (!then) return 'recently';
-  const minutes = Math.floor((Date.now() - then) / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (minutes < 60 * 24) return `${Math.floor(minutes / 60)}h ago`;
-  if (minutes < 60 * 24 * 30) return `${Math.floor(minutes / (60 * 24))}d ago`;
-  return new Date(then).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
 function smallAvatarHtml(picture, name, sizeClass) {
   const initials = escapeHtml(getInitials(name || '?'));
   const url = safeUrl(picture);

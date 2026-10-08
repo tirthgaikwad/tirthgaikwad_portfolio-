@@ -110,8 +110,17 @@ class DBNotification(Base):
     user_id = Column(Integer, index=True)
     type = Column(String) 
     content = Column(String)
-    is_read = Column(Integer, default=0) 
+    is_read = Column(Integer, default=0)
     timestamp = Column(String)
+    link = Column(String, default="")              # page to open when the notification is clicked
+
+class DBResearchReport(Base):
+    __tablename__ = "research_reports"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    topic = Column(String)
+    content = Column(String)                       # the report as JSON
+    created_at = Column(String)
 
 class DBFollow(Base):
     __tablename__ = "follows"
@@ -309,6 +318,11 @@ SCHEMA_UPGRADES = [
     "CREATE INDEX IF NOT EXISTS ix_team_tasks_board ON team_tasks (team_id, status, position)",
     "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS is_urgent INTEGER DEFAULT 0",
     "CREATE UNIQUE INDEX IF NOT EXISTS ux_board_applications ON board_applications (post_id, user_id)",
+    "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link VARCHAR DEFAULT ''",
+    "CREATE INDEX IF NOT EXISTS ix_notifications_user_read ON notifications (user_id, is_read, id)",
+    "CREATE INDEX IF NOT EXISTS ix_history_user_id ON history (user_id, id)",
+    "CREATE INDEX IF NOT EXISTS ix_follows_followed_follower ON follows (followed_id, follower_id)",
+    "CREATE INDEX IF NOT EXISTS ix_saved_profiles_pair ON saved_profiles (user_id, saved_user_id)",
 ]
 
 async def backfill_cleared_chats():
@@ -1032,7 +1046,7 @@ async def notify_profile_view(viewer_id: int, profile_id: int):
     try:
         rows = await fetch_one_off(select(DBUser.name).filter(DBUser.id == viewer_id))
         if rows:
-            await create_notification(profile_id, "view", f"{rows[0][0]} viewed your profile!", utc_now_iso())
+            await create_notification(profile_id, "view", f"{rows[0][0]} viewed your profile!", utc_now_iso(), f"profile.html?id={viewer_id}")
     except Exception as e:
         print("Error creating profile-view notification:", e)
 
@@ -1108,30 +1122,44 @@ async def broadcast_directory(payload: dict):
     await notification_manager.broadcast(json.dumps(payload))
 
 
-@app.get("/api/discover")
-async def get_discover_directory(current_user_id: int = Depends(get_current_user_id)):
-    """Everything the Discover Talent page shows, in one request. Searching and filtering happen in the browser."""
+def person_cards_query(viewer_id: int, *conditions, extra_columns=()):
+    """People as directory cards with the viewer's relationship to each. Never lists the viewer,
+    rejected accounts or people the viewer blocked. Shared by every page that shows people."""
     # A few old accounts may hold a whole picture as text; those are left out of the listing
     picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("profile_pic")
     columns = [picture if field == "profile_pic" else getattr(DBUser, field) for field in DIRECTORY_FIELDS]
-    people_query = (
+    return (
         select(
             *columns,
             func.left(DBUser.bio, DIRECTORY_BIO_LENGTH).label("bio"),
             select(func.count()).select_from(DBFollow).where(DBFollow.followed_id == DBUser.id).scalar_subquery().label("followers_count"),
-            exists().where(DBFollow.follower_id == current_user_id, DBFollow.followed_id == DBUser.id).label("is_following"),
-            exists().where(DBSavedProfile.user_id == current_user_id, DBSavedProfile.saved_user_id == DBUser.id).label("is_saved"),
+            exists().where(DBFollow.follower_id == viewer_id, DBFollow.followed_id == DBUser.id).label("is_following"),
+            exists().where(DBSavedProfile.user_id == viewer_id, DBSavedProfile.saved_user_id == DBUser.id).label("is_saved"),
+            exists().where(DBFollow.follower_id == DBUser.id, DBFollow.followed_id == viewer_id).label("follows_me"),
+            *extra_columns,
         )
         .where(
-            DBUser.id != current_user_id,
+            DBUser.id != viewer_id,
             or_(DBUser.account_status.is_(None), DBUser.account_status != "rejected"),
-            ~exists().where(DBBlockedUser.user_id == current_user_id, DBBlockedUser.blocked_user_id == DBUser.id),
+            ~exists().where(DBBlockedUser.user_id == viewer_id, DBBlockedUser.blocked_user_id == DBUser.id),
+            *conditions,
         )
-        .order_by(DBUser.id.desc())
-        .limit(DIRECTORY_LIMIT)
     )
+
+def person_card(row) -> dict:
+    card = directory_card(row)
+    card["followers_count"] = row.followers_count or 0
+    card["is_following"] = bool(row.is_following)
+    card["is_saved"] = bool(row.is_saved)
+    card["follows_me"] = bool(row.follows_me)
+    return card
+
+
+@app.get("/api/discover")
+async def get_discover_directory(current_user_id: int = Depends(get_current_user_id)):
+    """Everything the Discover Talent page shows, in one request. Searching and filtering happen in the browser."""
     people_rows, project_rows = await asyncio.gather(
-        fetch_one_off(people_query),
+        fetch_one_off(person_cards_query(current_user_id).order_by(DBUser.id.desc()).limit(DIRECTORY_LIMIT)),
         fetch_one_off(select(DBProject.user_id, DBProject.title, DBProject.tech_stack)),
     )
 
@@ -1141,13 +1169,146 @@ async def get_discover_directory(current_user_id: int = Depends(get_current_user
 
     people = []
     for row in people_rows:
-        card = directory_card(row)
-        card["followers_count"] = row.followers_count or 0
-        card["is_following"] = bool(row.is_following)
-        card["is_saved"] = bool(row.is_saved)
+        card = person_card(row)
         card["projects_text"] = " ".join(project_words.get(row.id, []))[:400]
         people.append(card)
     return {"people": people, "online_user_ids": all_online_user_ids(), "total": len(people)}
+
+
+# ==========================================
+# 5a-2. CAMPUS NETWORK, MY NETWORK AND SAVED PROFILES
+# ==========================================
+def skill_keys(skills: Optional[str]) -> set:
+    return {skill.strip().lower() for skill in (skills or "").split(",") if skill.strip()}
+
+
+@app.get("/api/campus")
+async def get_campus_network(current_user_id: int = Depends(get_current_user_id)):
+    """Everyone from the viewer's own college, in one request."""
+    my_college = select(func.lower(func.trim(DBUser.college_name))).where(DBUser.id == current_user_id).scalar_subquery()
+    people_query = person_cards_query(
+        current_user_id,
+        func.trim(func.coalesce(DBUser.college_name, "")) != "",
+        func.lower(func.trim(DBUser.college_name)) == my_college,
+    ).order_by(DBUser.name).limit(DIRECTORY_LIMIT)
+    people_rows, me_rows = await asyncio.gather(
+        fetch_one_off(people_query),
+        fetch_one_off(select(DBUser.college_name, DBUser.department, DBUser.account_status).where(DBUser.id == current_user_id)),
+    )
+    if not me_rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    return {
+        "college": (me_rows[0].college_name or "").strip(),
+        "department": (me_rows[0].department or "").strip(),
+        "my_status": me_rows[0].account_status or "",
+        "people": [person_card(row) for row in people_rows],
+        "online_user_ids": all_online_user_ids(),
+    }
+
+
+NETWORK_SUGGESTIONS = 12
+NETWORK_CANDIDATES = 400
+
+@app.get("/api/network")
+async def get_my_network(current_user_id: int = Depends(get_current_user_id)):
+    """Followers, following and suggested people for the My Network page, in one request."""
+    i_follow = select(DBFollow.followed_id).where(DBFollow.follower_id == current_user_id)
+    follow_me = select(DBFollow.follower_id).where(DBFollow.followed_id == current_user_id)
+    followed_me_at = (select(func.max(DBFollow.timestamp))
+                      .where(DBFollow.follower_id == DBUser.id, DBFollow.followed_id == current_user_id).scalar_subquery().label("since"))
+    i_followed_at = (select(func.max(DBFollow.timestamp))
+                     .where(DBFollow.follower_id == current_user_id, DBFollow.followed_id == DBUser.id).scalar_subquery().label("since"))
+    # How many of the people I follow also follow this person
+    via = aliased(DBFollow)
+    shared_follows = (select(func.count()).select_from(via)
+                      .where(via.followed_id == DBUser.id, via.follower_id.in_(i_follow)).scalar_subquery().label("shared_follows"))
+
+    followers, following, candidates, me_rows = await asyncio.gather(
+        fetch_one_off(person_cards_query(current_user_id, DBUser.id.in_(follow_me), extra_columns=(followed_me_at,)).limit(DIRECTORY_LIMIT)),
+        fetch_one_off(person_cards_query(current_user_id, DBUser.id.in_(i_follow), extra_columns=(i_followed_at,)).limit(DIRECTORY_LIMIT)),
+        fetch_one_off(person_cards_query(current_user_id, DBUser.id.not_in(i_follow), extra_columns=(shared_follows,))
+                      .order_by(DBUser.id.desc()).limit(NETWORK_CANDIDATES)),
+        fetch_one_off(select(DBUser.college_name, DBUser.skills).where(DBUser.id == current_user_id)),
+    )
+
+    my_college = (me_rows[0].college_name or "").strip().lower() if me_rows else ""
+    my_skills = skill_keys(me_rows[0].skills) if me_rows else set()
+
+    def with_since(row) -> dict:
+        card = person_card(row)
+        card["since"] = row.since or ""
+        return card
+
+    suggestions = []
+    for row in candidates:
+        shared_skills = len(skill_keys(row.skills) & my_skills)
+        same_college = bool(my_college) and (row.college_name or "").strip().lower() == my_college
+        score = shared_skills * 2 + (row.shared_follows or 0) * 2 + (3 if same_college else 0) + (4 if row.follows_me else 0)
+        if row.follows_me:
+            reason = "Follows you"
+        elif row.shared_follows:
+            reason = f"Followed by {row.shared_follows} {'person' if row.shared_follows == 1 else 'people'} you follow"
+        elif shared_skills:
+            reason = f"{shared_skills} shared {'skill' if shared_skills == 1 else 'skills'}"
+        elif same_college:
+            reason = "From your college"
+        else:
+            reason = "New on ProPartner"
+        card = person_card(row)
+        card["reason"] = reason
+        suggestions.append((score, row.followers_count or 0, row.id, card))
+    suggestions.sort(key=lambda item: item[:3], reverse=True)
+
+    return {
+        "followers": sorted((with_since(row) for row in followers), key=lambda card: card["since"], reverse=True),
+        "following": sorted((with_since(row) for row in following), key=lambda card: card["since"], reverse=True),
+        "suggestions": [card for _, _, _, card in suggestions[:NETWORK_SUGGESTIONS]],
+        "online_user_ids": all_online_user_ids(),
+    }
+
+
+@app.get("/api/saved")
+async def get_saved_people(current_user_id: int = Depends(get_current_user_id)):
+    """The viewer's saved profiles as cards, most recently saved first."""
+    saved_ids = select(DBSavedProfile.saved_user_id).where(DBSavedProfile.user_id == current_user_id)
+    saved_row = (select(func.max(DBSavedProfile.id))
+                 .where(DBSavedProfile.user_id == current_user_id, DBSavedProfile.saved_user_id == DBUser.id).scalar_subquery().label("saved_row"))
+    saved_at = (select(func.max(DBSavedProfile.timestamp))
+                .where(DBSavedProfile.user_id == current_user_id, DBSavedProfile.saved_user_id == DBUser.id).scalar_subquery().label("saved_at"))
+    rows = await fetch_one_off(
+        person_cards_query(current_user_id, DBUser.id.in_(saved_ids), extra_columns=(saved_row, saved_at)).limit(DIRECTORY_LIMIT)
+    )
+    people = []
+    for row in sorted(rows, key=lambda r: r.saved_row or 0, reverse=True):
+        card = person_card(row)
+        card["saved_at"] = row.saved_at or ""
+        people.append(card)
+    return {"people": people, "online_user_ids": all_online_user_ids()}
+
+
+class SavedRemoval(BaseModel):
+    ids: List[int]
+
+@app.post("/api/saved/remove")
+async def remove_saved_people(
+    removal: SavedRemoval,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    """Unsave several profiles in one statement."""
+    ids = list(dict.fromkeys(removal.ids))[:500]
+    if not ids:
+        raise HTTPException(status_code=400, detail="Pick at least one profile to remove.")
+    removed = await db.execute(
+        delete(DBSavedProfile)
+        .where(DBSavedProfile.user_id == current_user_id, DBSavedProfile.saved_user_id.in_(ids))
+        .returning(DBSavedProfile.saved_user_id)
+    )
+    removed_ids = sorted({row[0] for row in removed.all()})
+    if removed_ids:
+        count = len(removed_ids)
+        spawn_background(log_activity_later(current_user_id, "Removed Bookmark", f"Unsaved {count} {'profile' if count == 1 else 'profiles'}."))
+    return {"removed": removed_ids}
 
 
 @app.get("/api/profiles/{user_id}/page")
@@ -1270,11 +1431,62 @@ async def get_tags(q: str = "", db: AsyncSession = Depends(get_db)):
     matched = [skill for skill in all_skills if q.lower() in skill.lower()]
     return sorted(matched)
 
-@app.get("/api/history", response_model=List[dict])
-async def get_history(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
-    result = await db.execute(select(DBHistory).filter(DBHistory.user_id == current_user.id).order_by(DBHistory.id.desc()))
-    logs = result.scalars().all()
-    return [{"id": l.id, "time": l.time, "action": l.action, "detail": l.detail} for l in logs]
+# The first group whose words appear in an action's name is its category
+HISTORY_CATEGORIES = (
+    ("Network", ("follow", "connection", "bookmark", "saved")),
+    ("Messages", ("message", "chat")),
+    ("Board", ("opportunit", "post", "applied")),
+    ("Teams", ("team", "workspace", "channel", "member", "task")),
+    ("Profile", ("profile", "project", "portfolio", "github")),
+    ("Account", ("account", "session", "admin", "appeal", "announcement")),
+)
+HISTORY_PAGE = 100
+
+def history_category(action: Optional[str]) -> str:
+    lowered = (action or "").lower()
+    for name, words in HISTORY_CATEGORIES:
+        if any(word in lowered for word in words):
+            return name
+    return "Other"
+
+
+@app.get("/api/history")
+async def get_history(
+    before: Optional[int] = None,
+    limit: int = HISTORY_PAGE,
+    current_user_id: int = Depends(get_current_user_id)
+):
+    """One page of the viewer's activity log, newest first, with how many entries each category holds."""
+    limit = max(1, min(limit, 500))
+    page_query = select(DBHistory.id, DBHistory.time, DBHistory.action, DBHistory.detail).where(DBHistory.user_id == current_user_id)
+    if before:
+        page_query = page_query.where(DBHistory.id < before)
+    rows, action_counts = await asyncio.gather(
+        fetch_one_off(page_query.order_by(DBHistory.id.desc()).limit(limit + 1)),
+        fetch_one_off(select(DBHistory.action, func.count()).where(DBHistory.user_id == current_user_id).group_by(DBHistory.action)),
+    )
+    counts: dict = {}
+    for action, count in action_counts:
+        category = history_category(action)
+        counts[category] = counts.get(category, 0) + count
+    return {
+        "items": [
+            {"id": row.id, "time": row.time or "", "action": row.action or "", "detail": row.detail or "", "category": history_category(row.action)}
+            for row in rows[:limit]
+        ],
+        "has_more": len(rows) > limit,
+        "counts": counts,
+        "total": sum(counts.values()),
+    }
+
+
+@app.delete("/api/history")
+async def clear_history(db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """Clear the viewer's activity log. The sign-up entry stays: the admin growth chart is built from it."""
+    removed = await db.execute(
+        delete(DBHistory).where(DBHistory.user_id == current_user_id, DBHistory.action != "Account Created").returning(DBHistory.id)
+    )
+    return {"removed": len(removed.all())}
 
 
 @app.post("/api/history")
@@ -1538,26 +1750,29 @@ async def store_message(sender_id: int, receiver_id: int, content: str):
         return serialize_message(new_msg), is_muted
 
 
-async def create_notification(user_id: int, notif_type: str, content: str, timestamp: str):
-    """Save a bell notification and push it to the user if they are online. Meant to run in the background."""
+async def create_notification(user_id: int, notif_type: str, content: str, timestamp: str, link: str = ""):
+    """Save a bell notification and push it to the user if they are online. Meant to run in the background.
+    link is the page the notification opens when clicked."""
     try:
         async with AutocommitSession() as db:
-            notif = DBNotification(user_id=user_id, type=notif_type, content=content, timestamp=timestamp)
+            notif = DBNotification(user_id=user_id, type=notif_type, content=content, timestamp=timestamp, link=link, is_read=0)
             db.add(notif)
             await db.flush()
         await notification_manager.send_personal_message(json.dumps({
             "id": notif.id,
             "type": notif.type,
             "content": notif.content,
-            "timestamp": notif.timestamp
+            "timestamp": notif.timestamp,
+            "link": link,
+            "is_read": 0
         }), user_id)
     except Exception as e:
         print("Error creating notification:", e)
 
 
-async def notify_new_message(receiver_id: int, timestamp: str):
+async def notify_new_message(receiver_id: int, timestamp: str, sender_id: int):
     """Bell notification for a new message. Runs after delivery so it never delays the message itself."""
-    await create_notification(receiver_id, "message", "New message", timestamp)
+    await create_notification(receiver_id, "message", "New message", timestamp, f"inbox.html?user={sender_id}")
 
 
 async def _deliver_chat_message(send_lock: asyncio.Lock, sender_id: int, receiver_id: int, content: str, temp_id: str):
@@ -1592,7 +1807,7 @@ async def _deliver_chat_message(send_lock: asyncio.Lock, sender_id: int, receive
             "message_status": message["message_status"]
         }), sender_id)
         if not is_muted:
-            spawn_background(notify_new_message(receiver_id, message["timestamp"]))
+            spawn_background(notify_new_message(receiver_id, message["timestamp"], sender_id))
 
 
 @app.post("/api/messages", response_model=MessageResponse)
@@ -1611,7 +1826,7 @@ async def send_message(msg: MessageCreate, current_user_id: int = Depends(get_cu
     # Broadcast to receiver immediately
     await chat_manager.send_personal_message(json.dumps({**message, "temp_id": msg.temp_id, "muted": is_muted}), msg.receiver_id)
     if not is_muted:
-        spawn_background(notify_new_message(msg.receiver_id, message["timestamp"]))
+        spawn_background(notify_new_message(msg.receiver_id, message["timestamp"], current_user_id))
     return message
 
 @app.delete("/api/messages/{msg_id}")
@@ -2026,7 +2241,7 @@ async def toggle_follow(
     await db.flush()
 
     spawn_background(log_activity_later(current_user_id, "New Connection", f"You started following {target_name}."))
-    spawn_background(create_notification(user_id, "follow", f"{my_name} started following you!", now_iso))
+    spawn_background(create_notification(user_id, "follow", f"{my_name} started following you!", now_iso, f"profile.html?id={current_user_id}"))
     spawn_background(broadcast_directory({"type": "follow_changed", "follower_id": current_user_id, "followed_id": user_id, "following": True}))
     return {"status": "followed"}
 
@@ -2077,6 +2292,65 @@ async def notification_websocket_endpoint(websocket: WebSocket, user_id: int):
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         notification_manager.disconnect(websocket, user_id)
+
+
+NOTIFICATIONS_SHOWN = 50
+
+@app.get("/api/notifications")
+async def get_my_notifications(current_user_id: int = Depends(get_current_user_id)):
+    """The newest bell notifications and how many are unread, for the header panel on every page."""
+    rows, unread = await asyncio.gather(
+        fetch_one_off(
+            select(DBNotification.id, DBNotification.type, DBNotification.content, DBNotification.is_read,
+                   DBNotification.timestamp, DBNotification.link)
+            .where(DBNotification.user_id == current_user_id)
+            .order_by(DBNotification.id.desc())
+            .limit(NOTIFICATIONS_SHOWN)
+        ),
+        fetch_one_off(
+            select(func.count()).select_from(DBNotification)
+            .where(DBNotification.user_id == current_user_id, func.coalesce(DBNotification.is_read, 0) == 0)
+        ),
+    )
+    return {
+        "items": [
+            {"id": row.id, "type": row.type or "", "content": row.content or "", "is_read": 1 if row.is_read else 0,
+             "timestamp": row.timestamp or "", "link": row.link or ""}
+            for row in rows
+        ],
+        "unread_count": unread[0][0] or 0,
+    }
+
+
+class NotificationsRead(BaseModel):
+    ids: Optional[List[int]] = None
+    all: bool = False
+
+@app.post("/api/notifications/read")
+async def mark_notifications_read(
+    marked: NotificationsRead,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    """Mark some or all of the viewer's notifications as read, in one statement."""
+    statement = update(DBNotification).where(DBNotification.user_id == current_user_id, func.coalesce(DBNotification.is_read, 0) == 0)
+    if not marked.all:
+        ids = (marked.ids or [])[:500]
+        if not ids:
+            raise HTTPException(status_code=400, detail="Nothing to mark as read.")
+        statement = statement.where(DBNotification.id.in_(ids))
+    result = await db.execute(statement.values(is_read=1).returning(DBNotification.id))
+    return {"marked": len(result.all())}
+
+
+@app.delete("/api/notifications/{notif_id}")
+async def delete_notification(
+    notif_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    await db.execute(delete(DBNotification).where(DBNotification.id == notif_id, DBNotification.user_id == current_user_id))
+    return {"status": "deleted"}
 
 
 @app.get("/api/notifications/{user_id}", response_model=List[NotificationResponse])
@@ -2501,7 +2775,7 @@ async def apply_to_board_post(
         .returning(DBBoardApplication.id)
     )
     if inserted.first():
-        spawn_background(create_notification(post[0], "board_reply", f"{post[2] or 'Someone'} applied to your post: {post[1]}", now_iso))
+        spawn_background(create_notification(post[0], "board_reply", f"{post[2] or 'Someone'} applied to your post: {post[1]}", now_iso, "board.html?mine=1"))
         spawn_background(log_activity_later(current_user_id, "Applied to Opportunity", f"You applied to: {post[1]}."))
         spawn_background(broadcast_applicant_count(post_id))
     return {"status": "applied"}
@@ -2863,7 +3137,7 @@ async def add_team_member(
 
     spawn_background(create_notification(
         member_data.user_id, "team_invite",
-        f"You were added to the team: {team_name} as {member_data.role}.", now_iso
+        f"You were added to the team: {team_name} as {member_data.role}.", now_iso, "team.html"
     ))
     spawn_background(broadcast_members(team_id))
     return {"message": "Member added successfully."}
@@ -3990,6 +4264,255 @@ async def get_admin_stats(db: AsyncSession = Depends(get_db), admin_data: dict =
         "total_admins": admins.scalar() or 0,
         "pending_requests": pending.scalar() or 0
     }
+
+GROWTH_WEEKS = 12
+ADMIN_USERS_PAGE = 25
+ACCOUNT_STATUSES = ("pending", "verified", "rejected", "appealed", "active")
+
+@app.get("/api/admin/overview")
+async def get_admin_overview(admin_data: dict = Depends(get_current_admin)):
+    """Everything the admin dashboard shows on load, in one request."""
+    def count_of(model, *conditions):
+        query = select(func.count()).select_from(model)
+        return (query.where(*conditions) if conditions else query).scalar_subquery()
+
+    totals_rows, status_rows, signup_rows, request_rows = await asyncio.gather(
+        fetch_one_off(select(
+            count_of(DBUser), count_of(DBProject), count_of(DBTeam), count_of(DBUser, DBUser.is_admin == 1),
+            count_of(DBAdminRequest, DBAdminRequest.status == "Pending"), count_of(DBBoardPost),
+        )),
+        fetch_one_off(select(DBUser.account_status, func.count()).group_by(DBUser.account_status)),
+        fetch_one_off(select(DBHistory.time).where(DBHistory.action == "Account Created")),
+        fetch_one_off(select(DBAdminRequest.id, DBAdminRequest.user_id, DBAdminRequest.name, DBAdminRequest.status, DBAdminRequest.requested_at)
+                      .order_by(DBAdminRequest.id.desc()).limit(200)),
+    )
+    total_users, total_projects, total_teams, total_admins, pending_requests, total_posts = totals_rows[0]
+
+    # Sign-ups per week, from each account's "Account Created" log entry. Accounts older than the log
+    # (or whose entry was removed) are counted in the starting figure.
+    today = datetime.now(timezone.utc).date()
+    this_week = today - timedelta(days=today.weekday())
+    week_starts = [this_week - timedelta(weeks=offset) for offset in range(GROWTH_WEEKS - 1, -1, -1)]
+    signups = {start: 0 for start in week_starts}
+    dated = 0
+    for (stamp,) in signup_rows:
+        try:
+            day = parse_timestamp(stamp).astimezone(timezone.utc).date()
+        except (TypeError, ValueError):
+            continue
+        dated += 1
+        start = day - timedelta(days=day.weekday())
+        if start in signups:
+            signups[start] += 1
+    running = max(0, (total_users or 0) - sum(signups.values()))
+    growth = []
+    for start in week_starts:
+        running += signups[start]
+        growth.append({"week": start.isoformat(), "signups": signups[start], "total": running})
+
+    statuses: dict = {}
+    for account_status, count in status_rows:
+        statuses[account_status or "pending"] = statuses.get(account_status or "pending", 0) + count
+
+    return {
+        "role": admin_data.get("role"),
+        "totals": {
+            "users": total_users or 0, "projects": total_projects or 0, "teams": total_teams or 0,
+            "admins": total_admins or 0, "pending_requests": pending_requests or 0, "posts": total_posts or 0,
+        },
+        "statuses": statuses,
+        "growth": growth,
+        "undated_accounts": max(0, (total_users or 0) - dated),
+        "online": len(all_online_user_ids()),
+        "requests": [
+            {"id": row.id, "user_id": row.user_id, "name": row.name or "", "status": row.status or "Pending", "requested_at": row.requested_at or ""}
+            for row in request_rows
+        ],
+    }
+
+
+@app.get("/api/admin/users")
+async def get_admin_users(
+    q: str = "",
+    status: str = "",
+    page: int = 1,
+    admin_data: dict = Depends(get_current_admin)
+):
+    """Accounts for the admin dashboard, searchable and paged. Never returns password hashes."""
+    conditions = []
+    term = q.strip()
+    if term:
+        like = f"%{term}%"
+        conditions.append(or_(DBUser.name.ilike(like), DBUser.email.ilike(like), DBUser.roll_no.ilike(like), DBUser.college_name.ilike(like)))
+    if status in ACCOUNT_STATUSES:
+        conditions.append(func.coalesce(DBUser.account_status, "pending") == status)
+    page = max(1, page)
+
+    rows, total = await asyncio.gather(
+        fetch_one_off(
+            select(DBUser.id, DBUser.name, DBUser.email, DBUser.roll_no, DBUser.college_name, DBUser.department,
+                   DBUser.account_status, DBUser.account_type, DBUser.is_admin, DBUser.is_founder, DBUser.is_ambassador,
+                   (func.length(func.coalesce(DBUser.id_card_image, "")) > 0).label("has_id_card"))
+            .where(*conditions).order_by(DBUser.id.desc())
+            .limit(ADMIN_USERS_PAGE).offset((page - 1) * ADMIN_USERS_PAGE)
+        ),
+        fetch_one_off(select(func.count()).select_from(DBUser).where(*conditions)),
+    )
+    return {
+        "users": [
+            {"id": row.id, "name": row.name or "", "email": row.email or "", "roll_no": row.roll_no or "",
+             "college_name": row.college_name or "", "department": row.department or "",
+             "account_status": row.account_status or "pending", "account_type": row.account_type or "standard",
+             "is_admin": bool(row.is_admin), "is_founder": bool(row.is_founder), "is_ambassador": bool(row.is_ambassador),
+             "has_id_card": bool(row.has_id_card)}
+            for row in rows
+        ],
+        "total": total[0][0] or 0,
+        "page": page,
+        "page_size": ADMIN_USERS_PAGE,
+    }
+
+
+@app.get("/api/admin/users/{user_id}/id-card")
+async def get_admin_user_id_card(user_id: int, admin_data: dict = Depends(get_current_admin)):
+    """The ID document a person uploaded at sign-up, for checking an account by hand."""
+    rows = await fetch_one_off(select(DBUser.id_card_image).where(DBUser.id == user_id))
+    if not rows or not rows[0][0]:
+        raise HTTPException(status_code=404, detail="This account has no ID document.")
+    return {"image": rows[0][0]}
+
+
+class AccountStatusChange(BaseModel):
+    status: str
+
+@app.post("/api/admin/users/{user_id}/status")
+async def set_account_status(
+    user_id: int,
+    change: AccountStatusChange,
+    db: AsyncSession = Depends(get_fast_db),
+    admin_data: dict = Depends(get_current_admin)
+):
+    """Verify or reject an account. This is where pending and appealed accounts are settled."""
+    if change.status not in ("verified", "rejected", "pending"):
+        raise HTTPException(status_code=400, detail="Status must be verified, rejected or pending.")
+    result = await db.execute(
+        update(DBUser).where(DBUser.id == user_id, func.coalesce(DBUser.is_founder, 0) == 0)
+        .values(account_status=change.status).returning(*[getattr(DBUser, field) for field in DIRECTORY_FIELDS], DBUser.bio)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Account not found, or it belongs to the founder.")
+
+    now_iso = utc_now_iso()
+    messages = {
+        "verified": "Your account was verified by an admin.",
+        "rejected": "Your account was rejected by an admin. You can appeal from your profile.",
+        "pending": "Your account is under review again.",
+    }
+    spawn_background(create_notification(user_id, "account", messages[change.status], now_iso, "profile.html"))
+    spawn_background(broadcast_directory({"type": "profile_updated", "profile": directory_card(row)}))
+    spawn_background(log_activity_later(int(admin_data["sub"]), "Admin Action", f"Set {row.name or 'an account'}'s status to {change.status}."))
+    return {"id": user_id, "account_status": change.status}
+
+
+class Announcement(BaseModel):
+    message: str
+
+@app.post("/api/admin/announce")
+@limiter.limit("5/minute")
+async def send_announcement(
+    request: Request,
+    announcement: Announcement,
+    db: AsyncSession = Depends(get_fast_db),
+    admin_data: dict = Depends(get_current_admin)
+):
+    """Send one bell notification to every account, and show it at once to everyone who is online."""
+    message = announcement.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Write the announcement first.")
+    if len(message) > 300:
+        raise HTTPException(status_code=400, detail="Announcements are limited to 300 characters.")
+
+    now_iso = utc_now_iso()
+    content = f"Announcement: {message}"
+    result = await db.execute(
+        DBNotification.__table__.insert().from_select(
+            ["user_id", "type", "content", "is_read", "timestamp", "link"],
+            select(DBUser.id, literal("announcement"), literal(content), literal(0), literal(now_iso), literal(""))
+        )
+    )
+    await notification_manager.broadcast(json.dumps({"type": "announcement", "content": content, "timestamp": now_iso, "link": "", "is_read": 0}))
+    spawn_background(log_activity_later(int(admin_data["sub"]), "Announcement Sent", message))
+    return {"sent_to": result.rowcount or 0}
+
+
+# ==========================================
+# 13b. RESEARCH REPORTS
+# ==========================================
+RESEARCH_REPORT_LIMIT = 50
+RESEARCH_CONTENT_LIMIT = 200_000
+
+class ResearchReportCreate(BaseModel):
+    topic: str
+    content: dict
+
+@app.get("/api/research")
+async def list_research_reports(current_user_id: int = Depends(get_current_user_id)):
+    """The viewer's saved research reports, newest first, without their contents."""
+    rows = await fetch_one_off(
+        select(DBResearchReport.id, DBResearchReport.topic, DBResearchReport.created_at)
+        .where(DBResearchReport.user_id == current_user_id).order_by(DBResearchReport.id.desc()).limit(RESEARCH_REPORT_LIMIT)
+    )
+    return {"reports": [{"id": row.id, "topic": row.topic or "", "created_at": row.created_at or ""} for row in rows]}
+
+
+@app.get("/api/research/{report_id}")
+async def get_research_report(report_id: int, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(
+        select(DBResearchReport.id, DBResearchReport.topic, DBResearchReport.content, DBResearchReport.created_at)
+        .where(DBResearchReport.id == report_id, DBResearchReport.user_id == current_user_id)
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Report not found.")
+    try:
+        content = json.loads(rows[0].content or "{}")
+    except ValueError:
+        content = {}
+    return {"id": rows[0].id, "topic": rows[0].topic or "", "created_at": rows[0].created_at or "", "content": content}
+
+
+@app.post("/api/research")
+async def save_research_report(
+    report: ResearchReportCreate,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    topic = report.topic.strip()[:200]
+    if not topic:
+        raise HTTPException(status_code=400, detail="The report needs a topic.")
+    content = json.dumps(report.content)
+    if len(content) > RESEARCH_CONTENT_LIMIT:
+        raise HTTPException(status_code=400, detail="This report is too large to save.")
+    saved = (await db.execute(select(func.count()).select_from(DBResearchReport).where(DBResearchReport.user_id == current_user_id))).scalar() or 0
+    if saved >= RESEARCH_REPORT_LIMIT:
+        raise HTTPException(status_code=400, detail=f"You can keep {RESEARCH_REPORT_LIMIT} reports. Delete one to save another.")
+
+    new_report = DBResearchReport(user_id=current_user_id, topic=topic, content=content, created_at=utc_now_iso())
+    db.add(new_report)
+    await db.flush()
+    spawn_background(log_activity_later(current_user_id, "Research Saved", f"Saved a research report on: {topic}."))
+    return {"id": new_report.id, "topic": topic, "created_at": new_report.created_at}
+
+
+@app.delete("/api/research/{report_id}")
+async def delete_research_report(
+    report_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    await db.execute(delete(DBResearchReport).where(DBResearchReport.id == report_id, DBResearchReport.user_id == current_user_id))
+    return {"status": "deleted"}
+
 
 # ==========================================
 # 14. DECENTRALIZED AMBASSADOR VERIFICATION ROUTES

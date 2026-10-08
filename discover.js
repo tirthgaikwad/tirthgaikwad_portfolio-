@@ -1,11 +1,10 @@
 // ==========================================
 // DISCOVER.JS — The Discover Talent page: search, filters, follow/save/add-to-team, live updates
-// Loaded after shared.js and chat-common.js (api, caches, toast, el, getInitials, onlineUserIds).
+// Loaded after shared.js and chat-common.js (api, caches, toast, el, onlineUserIds, the people-card helpers).
 // ==========================================
 
 const CARDS_PER_PAGE = 9;
 const REFRESH_AFTER_MS = 60000;
-const MAX_SKILLS_ON_CARD = 5;
 const TRENDING_COUNT = 8;
 
 let directory = [];               // everyone on the platform except us, as returned by /api/discover
@@ -25,8 +24,6 @@ const FILTER_LABELS = { online: 'Online now', verified: 'Verified', following: '
 const pendingActions = new Set(); // "follow:12" while that request is in flight
 let searchTimer = null;
 let renderQueued = false;
-
-const norm = (value) => String(value || '').trim().toLowerCase();
 
 // ==========================================
 // 1. LOADING
@@ -88,23 +85,8 @@ function setDirectory(people, onlineIds) {
   render();
 }
 
-// Search text and lookup keys are worked out once per person, not on every keystroke
-function indexPerson(person) {
-  const skills = String(person.skills || '').split(',').map(s => s.trim()).filter(Boolean);
-  person.x = {
-    skills,
-    skillKeys: skills.map(norm),
-    name: norm(person.name),
-    college: norm(person.college_name),
-    department: norm(person.department),
-    city: norm(person.city),
-    text: norm([person.name, person.college_name, person.department, person.city, person.skills, person.bio, person.projects_text, person.github_username].join(' '))
-  };
-  return person;
-}
-
 function saveDirectory() {
-  cacheSet('discover', { people: directory.map(({ x, ...person }) => person) });
+  cacheSet('discover', { people: directory.map(plainPerson) });
 }
 
 // Our own skills and college decide what "Best match" means when nothing is typed
@@ -229,143 +211,31 @@ function render() {
   renderTrending();
 }
 
-function avatarMarkup(person) {
-  const initials = `<span class="text-primary font-bold text-headline-md">${escapeHtml(getInitials(person.name || '?'))}</span>`;
-  const picture = safeUrl(person.profile_pic);
-  if (!person.profile_pic || picture === '#') return initials;
-  return `<img src="${escapeHtml(picture)}" alt="" loading="lazy" decoding="async" data-initials="${escapeHtml(getInitials(person.name || '?'))}" class="w-full h-full object-cover"/>`;
-}
-
 function cardHtml(person) {
-  const profileLink = `profile.html?id=${person.id}`;
-  const online = onlineUserIds.has(person.id);
-  const place = [person.department, person.city].filter(Boolean).join(' · ');
-  const shown = person.x.skills.slice(0, MAX_SKILLS_ON_CARD);
-  const extra = person.x.skills.length - shown.length;
-  const skillsHtml = shown.map(skill => {
-    const shared = mySkills.has(norm(skill));
-    return `<button type="button" data-skill="${escapeHtml(skill)}" title="${shared ? 'You both list this skill. ' : ''}Search ${escapeHtml(skill)}" class="px-2 py-0.5 rounded font-skill-pill text-skill-pill transition-colors ${shared ? 'bg-primary-fixed text-on-primary-fixed-variant hover:bg-primary-fixed-dim' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'}">${escapeHtml(skill)}</button>`;
-  }).join('') + (extra > 0 ? `<span class="px-2 py-0.5 rounded text-outline font-skill-pill text-skill-pill">+${extra}</span>` : '');
-  const followBusy = pendingActions.has(`follow:${person.id}`) ? 'disabled' : '';
-  const saveBusy = pendingActions.has(`save:${person.id}`) ? 'disabled' : '';
-
-  return `
-    <article class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative" data-id="${person.id}">
-      <div class="flex items-start justify-between gap-space-sm mb-space-md">
-        <a class="relative block shrink-0" href="${profileLink}" aria-label="${escapeHtml(person.name)}'s profile">
-          <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container bg-surface-container flex items-center justify-center">${avatarMarkup(person)}</div>
-          <span data-online-dot class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white ${online ? '' : 'hidden'}" title="Online now"></span>
-        </a>
-        <div class="flex items-center gap-1">
-          <button type="button" data-action="save" ${saveBusy} aria-pressed="${person.is_saved}" title="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" class="p-2 rounded-lg transition-colors ${person.is_saved ? 'text-primary bg-primary-fixed/60 hover:bg-primary-fixed' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'}">
-            <span class="material-symbols-outlined text-[20px] block">${person.is_saved ? 'bookmark_added' : 'bookmark_add'}</span>
-          </button>
-          <button type="button" data-action="team" title="Add to one of your teams" class="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors">
-            <span class="material-symbols-outlined text-[20px] block">group_add</span>
-          </button>
-        </div>
-      </div>
-      <a class="block mb-space-sm" href="${profileLink}">
-        <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-          <span class="truncate">${escapeHtml(person.name || 'Unnamed')}</span>
-          ${person.account_status === 'verified' ? '<span class="material-symbols-outlined text-[18px] text-primary shrink-0" title="Verified account">verified</span>' : ''}
-          ${person.account_type === 'professional' ? '<span class="shrink-0 px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-semibold uppercase tracking-wide">Pro</span>' : ''}
-        </h3>
-        <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
-          <span class="material-symbols-outlined text-[15px] shrink-0">school</span>
-          <span class="truncate">${escapeHtml(person.college_name || 'No college listed')}</span>
-        </p>
-        ${place ? `<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">${escapeHtml(place)}</p>` : ''}
-      </a>
-      ${person.bio ? `<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-space-sm">${escapeHtml(person.bio)}</p>` : ''}
-      <div class="mb-space-md">
-        <div class="flex flex-wrap gap-1.5">${skillsHtml || '<span class="font-body-sm text-body-sm text-outline">No skills listed yet</span>'}</div>
-      </div>
-      <div class="mt-auto pt-space-sm border-t border-outline-variant/30">
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-xs flex items-center gap-1">
-          <span class="material-symbols-outlined text-[15px]">group</span>
-          <span>${person.followers_count} ${person.followers_count === 1 ? 'follower' : 'followers'}</span>
-          ${person.is_following ? '<span class="text-outline">· you follow</span>' : ''}
-        </p>
-        <div class="flex items-center gap-2">
-          <a class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" href="${profileLink}">View Profile</a>
-          <button type="button" data-action="follow" ${followBusy} aria-pressed="${person.is_following}" class="py-2 px-3 rounded-lg font-label-md text-label-md flex items-center gap-1 transition-colors ${person.is_following ? 'border border-outline-variant/60 text-on-surface-variant hover:text-error hover:border-error/40' : 'bg-primary hover:bg-primary-container text-on-primary'}">
-            <span class="material-symbols-outlined text-[16px]">${person.is_following ? 'check' : 'person_add'}</span>
-            <span>${person.is_following ? 'Following' : 'Follow'}</span>
-          </button>
-          <a class="py-2 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Message" aria-label="Message ${escapeHtml(person.name)}" href="inbox.html?user=${person.id}">
-            <span class="material-symbols-outlined text-[20px] block">chat</span>
-          </a>
-        </div>
-      </div>
-    </article>`;
-}
-
-function stateBlock(icon, title, text, buttonHtml) {
-  return `
-    <div class="col-span-full flex flex-col items-center text-center py-space-2xl">
-      <span class="material-symbols-outlined text-[44px] text-outline-variant mb-space-xs">${icon}</span>
-      <h3 class="font-headline-md text-headline-md text-on-surface">${escapeHtml(title)}</h3>
-      <p class="font-body-md text-body-md text-on-surface-variant mt-1 max-w-md">${escapeHtml(text)}</p>
-      ${buttonHtml ? `<div class="mt-space-md">${buttonHtml}</div>` : ''}
-    </div>`;
+  return personCardHtml(person, { mySkills, pending: pendingActions });
 }
 
 function emptyHtml() {
   if (directory.length === 0) {
-    return stateBlock('group_off', 'No one else is here yet', 'When more people join ProPartner they will show up on this page.', '');
+    return peopleStateBlock('group_off', 'No one else is here yet', 'When more people join ProPartner they will show up on this page.', '');
   }
-  return stateBlock('search_off', 'No one matches that', 'Try a different skill or name, or remove some filters.',
+  return peopleStateBlock('search_off', 'No one matches that', 'Try a different skill or name, or remove some filters.',
     '<button type="button" data-action="clear" class="btn-primary-modal">Clear search and filters</button>');
 }
 
 function renderProblem(message) {
-  el('search-results-grid').innerHTML = stateBlock('cloud_off', 'Could not load people', message,
+  el('search-results-grid').innerHTML = peopleStateBlock('cloud_off', 'Could not load people', message,
     '<button type="button" data-action="retry" class="btn-primary-modal">Try again</button>');
   el('discoverPagination').innerHTML = '';
   el('resultCount').textContent = '';
 }
 
 function renderSkeleton() {
-  const card = `
-    <div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
-      <div class="skeleton w-16 h-16 mb-space-md" style="border-radius:9999px;"></div>
-      <div class="skeleton h-5 w-2/3 mb-2"></div>
-      <div class="skeleton h-3.5 w-1/2 mb-space-md"></div>
-      <div class="skeleton h-3.5 w-full mb-2"></div>
-      <div class="skeleton h-3.5 w-4/5 mb-space-md"></div>
-      <div class="skeleton h-9 w-full"></div>
-    </div>`;
-  el('search-results-grid').innerHTML = card.repeat(6);
+  el('search-results-grid').innerHTML = peopleSkeletonHtml(6);
 }
 
 function renderPagination(total, start, shownCount, totalPages) {
-  const container = el('discoverPagination');
-  if (total === 0) { container.innerHTML = ''; return; }
-
-  const pageButton = (page) => page === view.page
-    ? `<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold shadow-sm" type="button" aria-current="page">${page}</button>`
-    : `<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" data-page="${page}">${page}</button>`;
-  let pages = '';
-  for (let page = 1; page <= totalPages; page++) {
-    if (page === 1 || page === totalPages || Math.abs(page - view.page) <= 1) pages += pageButton(page);
-    else if (Math.abs(page - view.page) === 2) pages += '<span class="px-1 text-outline font-label-md">...</span>';
-  }
-  const stepClass = 'px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors';
-
-  container.innerHTML = `
-    <div class="font-body-sm text-body-sm text-on-surface-variant">
-      Showing <span class="font-medium text-on-surface">${start + 1} - ${start + shownCount}</span> of <span class="font-medium text-on-surface">${total}</span> ${total === 1 ? 'person' : 'people'}
-    </div>
-    <div class="flex items-center gap-1 ${totalPages === 1 ? 'hidden' : ''}">
-      <button class="${stepClass}" type="button" data-page="${view.page - 1}" ${view.page === 1 ? 'disabled' : ''}>
-        <span class="material-symbols-outlined text-[16px]">chevron_left</span> Previous
-      </button>
-      ${pages}
-      <button class="${stepClass}" type="button" data-page="${view.page + 1}" ${view.page === totalPages ? 'disabled' : ''}>
-        Next <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-      </button>
-    </div>`;
+  el('discoverPagination').innerHTML = peoplePaginationHtml(view.page, total, start, shownCount, totalPages);
 }
 
 // The skills most people list, with real counts
@@ -471,14 +341,7 @@ function bindControls() {
 
   const grid = el('search-results-grid');
   grid.addEventListener('click', onGridClick);
-  // A picture that fails to load is swapped for the person's initials
-  grid.addEventListener('error', (e) => {
-    if (e.target.tagName !== 'IMG') return;
-    const initials = document.createElement('span');
-    initials.className = 'text-primary font-bold text-headline-md';
-    initials.textContent = e.target.dataset.initials || '?';
-    e.target.replaceWith(initials);
-  }, true);
+  bindAvatarFallback(grid);
 
   el('discoverPagination').addEventListener('click', (e) => {
     const button = e.target.closest('[data-page]');
@@ -559,37 +422,14 @@ function refreshCard(personId) {
   if (person && card) card.outerHTML = cardHtml(person);
 }
 
-// The card changes at once; the server's answer then confirms it or puts it back
 async function toggleRelation(kind, personId) {
   const person = directoryById.get(personId);
-  const key = `${kind}:${personId}`;
-  if (!person || pendingActions.has(key)) return;
-  pendingActions.add(key);
-
-  const field = kind === 'follow' ? 'is_following' : 'is_saved';
-  const before = person[field];
-  const followersBefore = person.followers_count;
-  const apply = (value) => {
-    person[field] = value;
-    if (kind === 'follow') person.followers_count = Math.max(0, followersBefore + (value === before ? 0 : (value ? 1 : -1)));
-  };
-
-  apply(!before);
-  refreshCard(personId);
-  try {
-    const result = await api(`/api/${kind}/${personId}`, { method: 'POST' });
-    apply(result.status === (kind === 'follow' ? 'followed' : 'saved'));
-    if (kind === 'follow') showToast(person.is_following ? `You are now following ${person.name}.` : `You unfollowed ${person.name}.`);
-    else showToast(person.is_saved ? 'Saved. Find it under Saved Profiles.' : 'Removed from Saved Profiles.');
-  } catch (err) {
-    apply(before);
-    showToast(err.message);
-  }
-  pendingActions.delete(key);
+  if (!person) return;
+  const done = await togglePersonRelation(kind, person, pendingActions, () => refreshCard(personId));
+  if (!done) return;
   saveDirectory();
   // With the Following or Saved filter on, this person may no longer belong in the list
   if (view[kind === 'follow' ? 'following' : 'saved'] || view.sort === 'followers') render();
-  else refreshCard(personId);
 }
 
 // ==========================================

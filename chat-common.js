@@ -114,12 +114,13 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 4000);
 }
 
-// Live updates for pages that have no chat socket of their own (Discover, Opportunities Board).
-// onEvent gets every page event; bell notifications are shown here. onReconnect runs after a dropped
-// connection comes back, because anything sent in between was missed.
+// Live updates for pages that have no chat socket of their own (Discover, the Opportunities Board, the people pages).
+// onEvent gets every page event; bell notifications go to the header bell in shared.js. onReconnect runs
+// after a dropped connection comes back, because anything sent in between was missed.
 let notificationSocket = null;
 
 function connectNotifications(onEvent, onReconnect) {
+  window.__bellSocketOwned = true;   // tells shared.js not to open a second socket for the bell
   let retries = 0;
   const open = () => {
     let socket;
@@ -129,24 +130,18 @@ function connectNotifications(onEvent, onReconnect) {
     notificationSocket = socket;
 
     socket.onopen = () => {
-      if (retries > 0 && onReconnect) onReconnect();
+      if (retries > 0) {
+        if (onReconnect) onReconnect();
+        loadBell();
+      }
       retries = 0;
     };
     socket.onmessage = (event) => {
       let data;
       try { data = JSON.parse(event.data); } catch (e) { return; }
       if (!data) return;
-      if (data.content) {
-        // A bell notification for us
-        document.querySelectorAll('[data-notif-badge]').forEach(badge => {
-          const count = (parseInt(badge.textContent) || 0) + 1;
-          badge.textContent = count > 99 ? '99+' : count;
-          badge.style.display = 'flex';
-        });
-        showToast(data.content);
-      } else {
-        onEvent(data);
-      }
+      if (data.content) window.onBellNotification(data);   // a bell notification for us
+      else onEvent(data);
     };
     socket.onclose = () => {
       if (notificationSocket !== socket) return;
@@ -490,6 +485,270 @@ function searchUsers(rawQuery, listEl, describeAction) {
 }
 
 const userSearchResults = {};
+
+// ==========================================
+// 6. PEOPLE CARDS (Discover, Campus Network, My Network, Saved Profiles)
+// ==========================================
+const MAX_SKILLS_ON_CARD = 5;
+const norm = (value) => String(value || '').trim().toLowerCase();
+
+// Search text and lookup keys are worked out once per person, not on every keystroke
+function indexPerson(person) {
+  const skills = String(person.skills || '').split(',').map(s => s.trim()).filter(Boolean);
+  person.x = {
+    skills,
+    skillKeys: skills.map(norm),
+    name: norm(person.name),
+    college: norm(person.college_name),
+    department: norm(person.department),
+    city: norm(person.city),
+    text: norm([person.name, person.college_name, person.department, person.city, person.skills, person.bio, person.projects_text, person.github_username].join(' '))
+  };
+  return person;
+}
+
+// A person as stored in the page cache: without the search index
+function plainPerson({ x, ...person }) {
+  return person;
+}
+
+function personAvatarHtml(person) {
+  const initials = `<span class="text-primary font-bold text-headline-md">${escapeHtml(getInitials(person.name || '?'))}</span>`;
+  const picture = safeUrl(person.profile_pic);
+  if (!person.profile_pic || picture === '#') return initials;
+  return `<img src="${escapeHtml(picture)}" alt="" loading="lazy" decoding="async" data-initials="${escapeHtml(getInitials(person.name || '?'))}" class="w-full h-full object-cover"/>`;
+}
+
+// One person's card. options: mySkills (Set of our own skills, highlighted), pending (Set of "follow:12" keys
+// with a request in flight), note (extra HTML for the line under the skills), selected (true/false shows a checkbox).
+function personCardHtml(person, options = {}) {
+  const mySkills = options.mySkills || new Set();
+  const pending = options.pending || new Set();
+  const profileLink = `profile.html?id=${person.id}`;
+  const online = onlineUserIds.has(person.id);
+  const place = [person.department, person.city].filter(Boolean).join(' · ');
+  const shown = person.x.skills.slice(0, MAX_SKILLS_ON_CARD);
+  const extra = person.x.skills.length - shown.length;
+  const skillsHtml = shown.map(skill => {
+    const shared = mySkills.has(norm(skill));
+    return `<button type="button" data-skill="${escapeHtml(skill)}" title="${shared ? 'You both list this skill. ' : ''}Search ${escapeHtml(skill)}" class="px-2 py-0.5 rounded font-skill-pill text-skill-pill transition-colors ${shared ? 'bg-primary-fixed text-on-primary-fixed-variant hover:bg-primary-fixed-dim' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'}">${escapeHtml(skill)}</button>`;
+  }).join('') + (extra > 0 ? `<span class="px-2 py-0.5 rounded text-outline font-skill-pill text-skill-pill">+${extra}</span>` : '');
+  const followBusy = pending.has(`follow:${person.id}`) ? 'disabled' : '';
+  const saveBusy = pending.has(`save:${person.id}`) ? 'disabled' : '';
+  const followLabel = person.is_following ? 'Following' : (person.follows_me ? 'Follow back' : 'Follow');
+  const relation = person.is_following && person.follows_me ? 'you follow each other' : (person.is_following ? 'you follow' : (person.follows_me ? 'follows you' : ''));
+  const checkbox = typeof options.selected === 'boolean'
+    ? `<input type="checkbox" data-select aria-label="Select ${escapeHtml(person.name)}" ${options.selected ? 'checked' : ''} class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"/>`
+    : '';
+
+  return `
+    <article class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative ${options.selected ? 'ring-2 ring-primary' : ''}" data-id="${person.id}">
+      <div class="flex items-start justify-between gap-space-sm mb-space-md">
+        <a class="relative block shrink-0" href="${profileLink}" aria-label="${escapeHtml(person.name)}'s profile">
+          <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container bg-surface-container flex items-center justify-center">${personAvatarHtml(person)}</div>
+          <span data-online-dot class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white ${online ? '' : 'hidden'}" title="Online now"></span>
+        </a>
+        <div class="flex items-center gap-1">
+          ${checkbox}
+          <button type="button" data-action="save" ${saveBusy} aria-pressed="${person.is_saved}" title="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" class="p-2 rounded-lg transition-colors ${person.is_saved ? 'text-primary bg-primary-fixed/60 hover:bg-primary-fixed' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'}">
+            <span class="material-symbols-outlined text-[20px] block">${person.is_saved ? 'bookmark_added' : 'bookmark_add'}</span>
+          </button>
+          <button type="button" data-action="team" title="Add to one of your teams" class="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-[20px] block">group_add</span>
+          </button>
+        </div>
+      </div>
+      <a class="block mb-space-sm" href="${profileLink}">
+        <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
+          <span class="truncate">${escapeHtml(person.name || 'Unnamed')}</span>
+          ${person.account_status === 'verified' ? '<span class="material-symbols-outlined text-[18px] text-primary shrink-0" title="Verified account">verified</span>' : ''}
+          ${person.account_type === 'professional' ? '<span class="shrink-0 px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-semibold uppercase tracking-wide">Pro</span>' : ''}
+        </h3>
+        <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
+          <span class="material-symbols-outlined text-[15px] shrink-0">school</span>
+          <span class="truncate">${escapeHtml(person.college_name || 'No college listed')}</span>
+        </p>
+        ${place ? `<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">${escapeHtml(place)}</p>` : ''}
+      </a>
+      ${person.bio ? `<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mb-space-sm">${escapeHtml(person.bio)}</p>` : ''}
+      <div class="mb-space-md">
+        <div class="flex flex-wrap gap-1.5">${skillsHtml || '<span class="font-body-sm text-body-sm text-outline">No skills listed yet</span>'}</div>
+      </div>
+      <div class="mt-auto pt-space-sm border-t border-outline-variant/30">
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-xs flex items-center gap-1 flex-wrap">
+          <span class="material-symbols-outlined text-[15px]">group</span>
+          <span>${person.followers_count} ${person.followers_count === 1 ? 'follower' : 'followers'}</span>
+          ${relation ? `<span class="text-outline">· ${relation}</span>` : ''}
+          ${options.note ? `<span class="text-outline">· ${options.note}</span>` : ''}
+        </p>
+        <div class="flex items-center gap-2">
+          <a class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" href="${profileLink}">View Profile</a>
+          <button type="button" data-action="follow" ${followBusy} aria-pressed="${person.is_following}" class="py-2 px-3 rounded-lg font-label-md text-label-md flex items-center gap-1 transition-colors ${person.is_following ? 'border border-outline-variant/60 text-on-surface-variant hover:text-error hover:border-error/40' : 'bg-primary hover:bg-primary-container text-on-primary'}">
+            <span class="material-symbols-outlined text-[16px]">${person.is_following ? 'check' : 'person_add'}</span>
+            <span>${followLabel}</span>
+          </button>
+          <a class="py-2 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Message" aria-label="Message ${escapeHtml(person.name)}" href="inbox.html?user=${person.id}">
+            <span class="material-symbols-outlined text-[20px] block">chat</span>
+          </a>
+        </div>
+      </div>
+    </article>`;
+}
+
+function peopleStateBlock(icon, title, text, buttonHtml) {
+  return `
+    <div class="col-span-full flex flex-col items-center text-center py-space-2xl">
+      <span class="material-symbols-outlined text-[44px] text-outline-variant mb-space-xs">${icon}</span>
+      <h3 class="font-headline-md text-headline-md text-on-surface">${escapeHtml(title)}</h3>
+      <p class="font-body-md text-body-md text-on-surface-variant mt-1 max-w-md">${escapeHtml(text)}</p>
+      ${buttonHtml ? `<div class="mt-space-md">${buttonHtml}</div>` : ''}
+    </div>`;
+}
+
+function peopleSkeletonHtml(count) {
+  const card = `
+    <div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+      <div class="skeleton w-16 h-16 mb-space-md" style="border-radius:9999px;"></div>
+      <div class="skeleton h-5 w-2/3 mb-2"></div>
+      <div class="skeleton h-3.5 w-1/2 mb-space-md"></div>
+      <div class="skeleton h-3.5 w-full mb-2"></div>
+      <div class="skeleton h-3.5 w-4/5 mb-space-md"></div>
+      <div class="skeleton h-9 w-full"></div>
+    </div>`;
+  return card.repeat(count);
+}
+
+// "Showing 1 - 9 of 40 people" with Previous / page numbers / Next. Buttons carry data-page.
+function peoplePaginationHtml(currentPage, total, start, shownCount, totalPages, nouns = ['person', 'people']) {
+  if (total === 0) return '';
+  const pageButton = (page) => page === currentPage
+    ? `<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold shadow-sm" type="button" aria-current="page">${page}</button>`
+    : `<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" data-page="${page}">${page}</button>`;
+  let pages = '';
+  for (let page = 1; page <= totalPages; page++) {
+    if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) pages += pageButton(page);
+    else if (Math.abs(page - currentPage) === 2) pages += '<span class="px-1 text-outline font-label-md">...</span>';
+  }
+  const stepClass = 'px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors';
+
+  return `
+    <div class="font-body-sm text-body-sm text-on-surface-variant">
+      Showing <span class="font-medium text-on-surface">${start + 1} - ${start + shownCount}</span> of <span class="font-medium text-on-surface">${total}</span> ${total === 1 ? nouns[0] : nouns[1]}
+    </div>
+    <div class="flex items-center gap-1 ${totalPages === 1 ? 'hidden' : ''}">
+      <button class="${stepClass}" type="button" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+        <span class="material-symbols-outlined text-[16px]">chevron_left</span> Previous
+      </button>
+      ${pages}
+      <button class="${stepClass}" type="button" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+        Next <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+      </button>
+    </div>`;
+}
+
+// A picture that fails to load is swapped for the person's initials
+function bindAvatarFallback(container) {
+  container.addEventListener('error', (e) => {
+    if (e.target.tagName !== 'IMG') return;
+    const initials = document.createElement('span');
+    initials.className = 'text-primary font-bold text-headline-md';
+    initials.textContent = e.target.dataset.initials || '?';
+    e.target.replaceWith(initials);
+  }, true);
+}
+
+// Follow or save a person. The card changes at once (redraw is called); the server's answer then
+// confirms it or puts it back. Resolves to false if a request for this person was already running.
+async function togglePersonRelation(kind, person, pending, redraw) {
+  const key = `${kind}:${person.id}`;
+  if (pending.has(key)) return false;
+  pending.add(key);
+
+  const field = kind === 'follow' ? 'is_following' : 'is_saved';
+  const before = person[field];
+  const followersBefore = person.followers_count;
+  const apply = (value) => {
+    person[field] = value;
+    if (kind === 'follow') person.followers_count = Math.max(0, followersBefore + (value === before ? 0 : (value ? 1 : -1)));
+  };
+
+  apply(!before);
+  redraw();
+  try {
+    const result = await api(`/api/${kind}/${person.id}`, { method: 'POST' });
+    apply(result.status === (kind === 'follow' ? 'followed' : 'saved'));
+    if (kind === 'follow') showToast(person.is_following ? `You are now following ${person.name}.` : `You unfollowed ${person.name}.`);
+    else showToast(person.is_saved ? 'Saved. Find it under Saved Profiles.' : 'Removed from Saved Profiles.');
+  } catch (err) {
+    apply(before);
+    showToast(err.message);
+  }
+  pending.delete(key);
+  redraw();
+  return true;
+}
+
+// The page head may already have asked for the page's data (window.__pagePrefetch); that answer is used once.
+async function fetchPageData(path) {
+  const prefetched = window.__pagePrefetch ? await window.__pagePrefetch : null;
+  window.__pagePrefetch = null;
+  if (prefetched && prefetched.status === 200) return prefetched.data;
+  if (prefetched && prefetched.status === 401) { handleLoggedOut(); throw new ApiError(401, 'Please log in again.'); }
+  return api(path);
+}
+
+// Applies a live event to the people a page holds (a Map by id). Returns 'presence' when only an online dot
+// changed, 'changed' when a card's contents changed, and '' when the event is not about these people.
+function applyPeopleEvent(data, peopleById, pending) {
+  if (data.type === 'presence') {
+    if (data.online) onlineUserIds.add(data.user_id); else onlineUserIds.delete(data.user_id);
+    return peopleById.has(data.user_id) ? 'presence' : '';
+  }
+  if (data.type === 'profile_updated') {
+    const person = data.profile && peopleById.get(data.profile.id);
+    if (!person) return '';
+    Object.assign(person, data.profile);
+    indexPerson(person);
+    return 'changed';
+  }
+  if (data.type === 'follow_changed') {
+    let changed = '';
+    const followed = peopleById.get(data.followed_id);
+    if (followed) {
+      const mine = data.follower_id === currentUserId;
+      // Our own follow, made here or in another tab. The button already shows it if it was made here.
+      const alreadyShown = mine && (followed.is_following === data.following || pending.has(`follow:${followed.id}`));
+      if (!alreadyShown) {
+        if (mine) followed.is_following = data.following;
+        followed.followers_count = Math.max(0, followed.followers_count + (data.following ? 1 : -1));
+        changed = 'changed';
+      }
+    }
+    const follower = data.followed_id === currentUserId ? peopleById.get(data.follower_id) : null;
+    if (follower && follower.follows_me !== data.following) {
+      follower.follows_me = data.following;
+      changed = 'changed';
+    }
+    return changed;
+  }
+  return '';
+}
+
+// Our own skills, lower-cased, from the header profile (or its cached copy)
+function ownSkillSet() {
+  const me = window.currentUserProfile || cacheGet('me') || {};
+  return new Set(String(me.skills || '').split(',').map(norm).filter(Boolean));
+}
+
+// Copies text and says so. Falls back to showing the text when the clipboard is not available.
+async function copyText(text, doneMessage) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(doneMessage || 'Copied.');
+  } catch (e) {
+    window.showSystemModal('Copy this link', escapeHtml(text), 'alert');
+  }
+}
 
 // ==========================================
 // 17. EMOJI PICKER

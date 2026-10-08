@@ -1,7 +1,19 @@
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+<html lang="en"><head><meta charset="utf-8"/>
+<title>ProPartner | Campus Network</title>
+<script>
+// Ask for this page's data right away, while styles and scripts are still downloading. The page script picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__pagePrefetch = fetch(apiBase + '/api/campus', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
 /* Custom Modal Styles */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
 .modal-overlay.active { display: flex; }
@@ -17,9 +29,26 @@
 /* Hide Scrollbar for Horizontal Nav */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script>
-    <script src="shared.js"></script>
-</head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+
+/* Discover page */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.discover-select.is-set { border-color: #3525cd; background-color: #eff4ff; }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-toggle:hover { background: #eff4ff; }
+.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+/* Campus Network page */
+#campusTop { scroll-margin-top: 80px; }
+.dept-tab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; font-size: 13px; font-weight: 600; white-space: nowrap; background: #eff4ff; color: #464555; transition: background 0.15s, color 0.15s; }
+.dept-tab:hover { background: #e5eeff; color: #0b1c30; }
+.dept-tab[aria-pressed="true"] { background: #3525cd; color: #fff; }
+.dept-tab span { font-size: 10px; padding: 1px 6px; border-radius: 9999px; background: rgba(255,255,255,0.7); color: #0b1c30; }
+.dept-tab[aria-pressed="true"] span { background: rgba(255,255,255,0.2); color: #fff; }
+</style><script src="https://cdn.tailwindcss.com"></script><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
 <div class="h-16 max-w-[1536px] mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
     <!-- Left: Logo + Navigation -->
     <div class="flex items-center gap-4 xl:gap-8">
@@ -30,9 +59,9 @@
       <nav class="hidden xl:flex items-center gap-0.5 h-16">
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="search.html">Discover Talent</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="board.html">Opportunities Board</a>
-        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="team.html">My Teams</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="team.html">My Teams</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="project_management.html">Project Hub</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="college.html">Campus Network</a>
+        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="college.html">Campus Network</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="research.html">Research Collab</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="network.html">My Network</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="saved.html">Saved Profiles</a>
@@ -42,7 +71,7 @@
     <!-- Right: Search + Utilities + Profile -->
     <div class="flex items-center gap-1.5 shrink-0">
       <!-- Search Bar -->
-      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="document.getElementById('search-modal') && document.getElementById('search-modal').classList.add('active')">
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="focusHeaderSearch()">
         <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
         <span class="text-[12px] text-slate-400 truncate">Search network...</span>
         <kbd class="ml-auto text-[10px] font-semibold text-slate-400 bg-white px-1 py-0.5 rounded border border-slate-200 shadow-sm">⌘K</kbd>
@@ -95,773 +124,84 @@
     </div>
   </div>
 </header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
-<!-- Top Collegiate Header & Sub-Nav Bar -->
-<div class="w-full bg-surface-container-lowest shadow-sm">
-<div class="max-w-container-max mx-auto px-gutter-desktop">
-<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-md pb-space-sm">
-<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
-<span class="material-symbols-outlined text-[18px] text-primary">school</span>
-<span class="font-medium text-on-surface">Institutions</span>
-<span class="text-outline-variant">/</span>
-<span class="text-on-surface font-semibold" id="header-college-name">Your College</span>
-<span class="text-outline-variant">/</span>
-<span class="text-primary font-semibold">Engineers Directory</span>
-</div>
-<div class="flex items-center gap-space-xs">
-<span class="inline-flex items-center gap-1.5 px-space-xs py-1 rounded-full bg-tertiary-container/10 text-tertiary font-label-sm text-label-sm font-semibold">
-<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-          SPPU Affiliated NAAC 'A' Grade
-          </span>
-<span class="text-outline-variant hidden sm:inline">•</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant hidden sm:inline">District: Ahmednagar, MH</span>
-</div>
-</div>
-<!-- Collegiate Sub Navigation -->
-<div class="flex items-center gap-space-md overflow-x-auto scrollbar-none border-b-0">
-<button class="flex items-center gap-2 py-space-sm px-1 text-primary border-b-2 border-primary font-label-md text-label-md transition-colors shrink-0">
-<span class="material-symbols-outlined text-[20px]">groups</span>
-          My College Developers
-          <span class="ml-1 px-1.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-[11px]">486</span>
-</button>
-<button class="flex items-center gap-2 py-space-sm px-1 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors shrink-0">
-<span class="material-symbols-outlined text-[20px]">military_tech</span>
-          Hackathon Squads
-          <span class="ml-1 px-1.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[11px]">34</span>
-</button>
-<button class="flex items-center gap-2 py-space-sm px-1 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors shrink-0">
-<span class="material-symbols-outlined text-[20px]">hub</span>
-          Lab &amp; Research Projects
-        </button>
-<button class="flex items-center gap-2 py-space-sm px-1 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors shrink-0">
-<span class="material-symbols-outlined text-[20px]">auto_stories</span>
-          Alumni Mentors
-        </button>
-</div>
-</div>
-</div>
-<!-- Hero Header Panel -->
-<div class="w-full bg-gradient-to-b from-surface-container-low via-surface to-surface pt-space-xl pb-space-lg">
-<div class="max-w-container-max mx-auto px-gutter-desktop">
-<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg">
-<div class="max-w-3xl space-y-space-xs">
-<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-fixed/60 text-on-primary-fixed font-label-sm text-label-sm uppercase tracking-wider">
-<span class="material-symbols-outlined text-[16px] text-primary">verified</span>
-            Official Campus Roster 2025–2026
-          </div>
-<h1 class="font-headline-lg text-headline-lg lg:text-[34px] lg:leading-[42px] font-extrabold text-on-surface tracking-tight" id="hero-college-name">
-            Developers at Your College
-          </h1>
-<p class="font-body-lg text-body-lg text-on-surface-variant">
-            Connect, recruit, and collaborate with verified student engineers, open-source contributors, and research scholars across departments at AVCOE.
-          </p>
-</div>
-<!-- Campus CTA Widget -->
-<div class="flex items-center gap-space-xs shrink-0">
-<button class="inline-flex items-center gap-2 px-space-md py-space-xs rounded-xl bg-surface-container-lowest text-on-surface font-label-md text-label-md shadow-sm hover:bg-surface-container transition-all">
-<span class="material-symbols-outlined text-[20px] text-primary">share</span>
-            Share Roster
-          </button>
-<button class="inline-flex items-center gap-2 px-space-md py-space-xs rounded-xl bg-primary text-on-primary font-label-md text-label-md shadow-md shadow-primary/20 hover:opacity-95 transition-all">
-<span class="material-symbols-outlined text-[20px]">add_circle</span>
-            Register Developer Profile
-          </button>
-</div>
-</div>
-<!-- College Quick Metrics Dashboard Band -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md mt-space-xl">
-<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex items-center gap-space-sm">
-<div class="w-12 h-12 rounded-xl bg-primary-fixed/50 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-primary text-[26px]">terminal</span>
-</div>
-<div class="min-w-0">
-<div class="font-headline-md text-headline-md font-extrabold text-on-surface tracking-tight leading-none">486</div>
-<div class="font-body-sm text-body-sm text-on-surface-variant truncate mt-1">Verified Engineers</div>
-</div>
-</div>
-<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex items-center gap-space-sm">
-<div class="w-12 h-12 rounded-xl bg-tertiary-fixed/50 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-tertiary text-[26px]">rocket_launch</span>
-</div>
-<div class="min-w-0">
-<div class="font-headline-md text-headline-md font-extrabold text-on-surface tracking-tight leading-none">34</div>
-<div class="font-body-sm text-body-sm text-on-surface-variant truncate mt-1">Active Hackathon Squads</div>
-</div>
-</div>
-<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex items-center gap-space-sm">
-<div class="w-12 h-12 rounded-xl bg-secondary-fixed/60 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-secondary text-[26px]">work</span>
-</div>
-<div class="min-w-0">
-<div class="font-headline-md text-headline-md font-extrabold text-on-surface tracking-tight leading-none">18</div>
-<div class="font-body-sm text-body-sm text-on-surface-variant truncate mt-1">Open Project Roles</div>
-</div>
-</div>
-<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex items-center gap-space-sm">
-<div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-primary text-[26px]">workspace_premium</span>
-</div>
-<div class="min-w-0">
-<div class="font-headline-md text-headline-md font-extrabold text-primary tracking-tight leading-none">#1 Rank</div>
-<div class="font-body-sm text-body-sm text-on-surface-variant truncate mt-1">SPPU Hackathons 2024-25</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Search & Structured Filter Bar -->
-<div class="w-full max-w-container-max mx-auto px-gutter-desktop mt-space-lg">
-<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm space-y-space-md">
-<!-- Search input row -->
-<div class="flex flex-col md:flex-row items-stretch gap-space-sm">
-<div class="flex-1 flex items-center gap-space-sm px-space-md py- space-xs bg-surface-container-low rounded-xl focus-within:ring-2 focus-within:ring-primary/40 transition-all">
-<span class="material-symbols-outlined text-on-surface-variant text-[22px]">search</span>
-<input id="search-input" class="w-full bg-transparent outline-none font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 py-2.5" placeholder="Search college developers by name or tech stack..." type="text"/>
-<button class="hidden sm:inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded">
-<span>Clear</span>
-</button>
-</div>
-<div class="flex items-center gap-space-xs">
-<button class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-space-md py-3 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors">
-<span class="material-symbols-outlined text-[20px]">filter_list</span>
-<span>Filters</span>
-<span class="w-5 h-5 rounded-full bg-primary text-on-primary text-[10px] flex items-center justify-center font-bold">3</span>
-</button>
-<button class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-space-lg py-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container shadow-md shadow-primary/20 transition-all">
-<span class="material-symbols-outlined text-[20px]">bolt</span>
-<span>Search Network</span>
-</button>
-</div>
-</div>
-<!-- Department Tabs -->
-<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="dept-filters">
-<span class="font-label-sm text-label-sm uppercase text-on-surface-variant font-bold shrink-0 mr-1">Dept:</span>
-<button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm shrink-0 transition-all">
-          All Departments (486)
-        </button>
-<button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container shrink-0 transition-colors">
-          Artificial Intelligence &amp; Data Science (AI&amp;DS)
-        </button>
-<button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container shrink-0 transition-colors">
-          Computer Engineering
-        </button>
-<button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container shrink-0 transition-colors">
-          Information Technology
-        </button>
-<button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container shrink-0 transition-colors">
-          Mechanical Engineering
-        </button>
-<button class="px-3 py-1.5 rounded-full font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container shrink-0 transition-colors">
-          Electronics &amp; Telecomm
-        </button>
-</div>
-<!-- Year & Availability secondary filters -->
-<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs border-t-0 text-on-surface-variant font-body-sm text-body-sm">
-<div class="flex flex-wrap items-center gap-space-xs">
-<span class="font-label-sm text-label-sm uppercase text-on-surface-variant font-bold mr-1">Year:</span>
-<span class="px-2.5 py-1 rounded-lg bg-surface-container font-medium text-on-surface cursor-pointer">All Years</span>
-<span class="px-2.5 py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant cursor-pointer transition-colors">FE (1st)</span>
-<span class="px-2.5 py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant cursor-pointer transition-colors">SE (2nd)</span>
-<span class="px-2.5 py-1 rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold cursor-pointer">TE (3rd)</span>
-<span class="px-2.5 py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant cursor-pointer transition-colors">BE (Final)</span>
-<div class="h-4 w-px bg-outline-variant/60 mx-1 hidden sm:block"></div>
-<label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-on-surface">
-<input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
-<span class="font-label-sm text-label-sm">Smart India Hackathon (SIH) Ready</span>
-</label>
-<label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-on-surface ml-2">
-<input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
-<span class="font-label-sm text-label-sm">Open for Peer Collaboration</span>
-</label>
-</div>
-<div class="text-on-surface-variant font-body-sm text-body-sm flex items-center gap-1 ml-auto">
-<span>Showing:</span>
-<span class="font-semibold text-on-surface">6 of 486 Developers</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Main Roster Section with Elevating Campus Developer Cards (3-Column Layout) -->
-<section class="w-full max-w-container-max mx-auto px-gutter-desktop mt-space-lg mb-space-2xl">
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="college-results-grid">
-<!-- Student Card 1: OG 2 (Omkar Gopale) -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
-<!-- Banner with gradient & tag -->
-<div class="h-28 w-full bg-gradient-to-r from-primary via-primary-container to-surface-tint relative p-space-sm flex items-start justify-between">
-<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-bold tracking-wide">
-            SIH 2026 Team Lead
-          </span>
-<div class="flex items-center gap-1 bg-surface-container-lowest/20 backdrop-blur-sm px-2 py-0.5 rounded text-surface-bright font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">star</span>
-            Top 5% Coder
-          </div>
-</div>
-<!-- Identity & Body -->
-<div class="px-space-md pb-space-md flex-1 flex flex-col">
-<!-- Floating Avatar -->
-<div class="flex justify-between items-end -mt-10 mb-space-xs">
-<div class="relative">
-<div class="w-20 h-20 rounded-full bg-surface-container-high ring-4 ring-surface-container-lowest overflow-hidden shadow-md flex items-center justify-center font-headline-md text-headline-md font-bold text-primary">
-                OG
-              </div>
-<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-<span class="material-symbols-outlined text-[14px]">check</span>
-</span>
-</div>
-<div class="text-right">
-<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                Available for Projects
-              </span>
-</div>
-</div>
-<!-- Name & Dept Lockup -->
-<div class="space-y-1">
-<div class="flex items-center gap-2">
-<h3 class="font-headline-md text-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">
-                OG 2 <span class="font-normal text-on-surface-variant text-body-md font-body-md">(Omkar Gopale)</span>
-</h3>
-</div>
-<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-1">
-<span class="material-symbols-outlined text-[16px] text-primary shrink-0">school</span>
-              Amrutvahini College of Engineering (AVCOE), Sangamner
-            </p>
-<p class="font-label-sm text-label-sm text-primary font-semibold">
-              Artificial Intelligence &amp; Data Science (AI&amp;DS) • TE
-            </p>
-</div>
-<!-- Metrics Band -->
-<div class="grid grid-cols-3 gap-2 py-space-xs my-space-xs bg-surface-container-low rounded-xl text-center">
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">12</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Projects</div>
-</div>
-<div class="border-x-0">
-<div class="font-headline-sm text-headline-sm font-bold text-primary">6</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Hackathons</div>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-tertiary">9.1</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">CGPA</div>
-</div>
-</div>
-<!-- Tech Stack Pill Wrap -->
-<div class="space-y-1.5 my-space-xs">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Core Tech Stack:</span>
-<div class="flex flex-wrap gap-1.5">
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">C++</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Python</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">FastAPI</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Docker</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">OpenCV</span>
-</div>
-</div>
-<!-- Actions Footer -->
-<div class="mt-auto pt-space-sm flex items-center gap-space-xs">
-<button class="flex-1 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
-              View Profile
-            </button>
-<button class="py-2 px-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat</span>
-</button>
-<button class="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-              Add to Team
-            </button>
-</div>
-</div>
-</div>
-<!-- Student Card 2: OG 3 (Mechanical / Robotics) -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
-<!-- Banner with technical pattern styling -->
-<div class="h-28 w-full bg-gradient-to-r from-secondary via-on-surface-variant to-secondary-container relative p-space-sm flex items-start justify-between">
-<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-secondary font-label-sm text-label-sm font-bold tracking-wide">
-            RoboCon 2024 Finalist
-          </span>
-<div class="flex items-center gap-1 bg-surface-container-lowest/20 backdrop-blur-sm px-2 py-0.5 rounded text-surface-bright font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">precision_manufacturing</span>
-            Hardware &amp; Embedded
-          </div>
-</div>
-<div class="px-space-md pb-space-md flex-1 flex flex-col">
-<div class="flex justify-between items-end -mt-10 mb-space-xs">
-<div class="relative">
-<div class="w-20 h-20 rounded-full bg-secondary-fixed ring-4 ring-surface-container-lowest overflow-hidden shadow-md flex items-center justify-center font-headline-md text-headline-md font-bold text-on-secondary-fixed">
-                OG
-              </div>
-<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-<span class="material-symbols-outlined text-[14px]">check</span>
-</span>
-</div>
-<div class="text-right">
-<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold">
-                Robotics Lead
-              </span>
-</div>
-</div>
-<div class="space-y-1">
-<h3 class="font-headline-md text-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">
-              OG 3 <span class="font-normal text-on-surface-variant text-body-md font-body-md">(Omkar G.)</span>
-</h3>
-<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-1">
-<span class="material-symbols-outlined text-[16px] text-primary shrink-0">school</span>
-              Amrutvahini College of Engineering (AVCOE), Sangamner
-            </p>
-<p class="font-label-sm text-label-sm text-secondary font-semibold">
-              Mechanical Engineering (Robotics &amp; Automation) • BE
-            </p>
-</div>
-<div class="grid grid-cols-3 gap-2 py-space-xs my-space-xs bg-surface-container-low rounded-xl text-center">
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">8</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Projects</div>
-</div>
-<div class="border-x-0">
-<div class="font-headline-sm text-headline-sm font-bold text-primary">3</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Robo Events</div>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-tertiary">8.7</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">CGPA</div>
-</div>
-</div>
-<div class="space-y-1.5 my-space-xs">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Core Tech Stack:</span>
-<div class="flex flex-wrap gap-1.5">
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">ROS2</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Python</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">SolidWorks</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Arduino</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">MATLAB</span>
-</div>
-</div>
-<div class="mt-auto pt-space-sm flex items-center gap-space-xs">
-<button class="flex-1 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
-              View Profile
-            </button>
-<button class="py-2 px-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat</span>
-</button>
-<button class="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-              Add to Team
-            </button>
-</div>
-</div>
-</div>
-<!-- Student Card 3: DON SHRI (From Screenshot Image 2) -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
-<!-- Banner matching "HELLO WORLD / Tech & Data" aesthetic from screenshot -->
-<div class="h-28 w-full bg-gradient-to-r from-on-background via-inverse-surface to-primary relative p-space-sm flex items-start justify-between">
-<div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-on-surface font-label-sm text-label-sm font-bold">
-<span class="w-2 h-2 rounded-full bg-tertiary"></span>
-            HELLO WORLD / Tech &amp; Data
-          </div>
-<span class="bg-primary px-2 py-0.5 rounded text-on-primary font-label-sm text-label-sm font-semibold">
-            Backend Arch
-          </span>
-</div>
-<div class="px-space-md pb-space-md flex-1 flex flex-col">
-<div class="flex justify-between items-end -mt-10 mb-space-xs">
-<div class="relative">
-<div class="w-20 h-20 rounded-full bg-surface-container-highest ring-4 ring-surface-container-lowest overflow-hidden shadow-md flex items-center justify-center font-headline-md text-headline-md font-extrabold text-on-surface">
-                DS
-              </div>
-<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-<span class="material-symbols-outlined text-[14px]">check</span>
-</span>
-</div>
-<div class="text-right">
-<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                Available
-              </span>
-</div>
-</div>
-<div class="space-y-1">
-<h3 class="font-headline-md text-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">
-              DON SHRI <span class="font-normal text-on-surface-variant text-body-md font-body-md">(Shrikant D.)</span>
-</h3>
-<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-1">
-<span class="material-symbols-outlined text-[16px] text-primary shrink-0">school</span>
-              Amrutvahini College of Engineering (AVCOE), Sangamner
-            </p>
-<p class="font-label-sm text-label-sm text-primary font-semibold">
-              Artificial Intelligence &amp; Data Science • TE
-            </p>
-</div>
-<div class="grid grid-cols-3 gap-2 py-space-xs my-space-xs bg-surface-container-low rounded-xl text-center">
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">15</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Projects</div>
-</div>
-<div class="border-x-0">
-<div class="font-headline-sm text-headline-sm font-bold text-primary">4</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Hackathons</div>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-tertiary">9.4</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">CGPA</div>
-</div>
-</div>
-<div class="space-y-1.5 my-space-xs">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Core Tech Stack:</span>
-<div class="flex flex-wrap gap-1.5">
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">ADVANCE PYTHON</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">CPP</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">JAVA</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">JSON</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Docker</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container-high text-primary font-semibold">+8 more</span>
-</div>
-</div>
-<div class="mt-auto pt-space-sm flex items-center gap-space-xs">
-<button class="flex-1 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
-              View Profile
-            </button>
-<button class="py-2 px-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat</span>
-</button>
-<button class="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-              Add to Team
-            </button>
-</div>
-</div>
-</div>
-<!-- Student Card 4: Priya Patil (Computer Engineering) -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
-<div class="h-28 w-full bg-gradient-to-r from-primary-container via-surface-tint to-secondary-container relative p-space-sm flex items-start justify-between">
-<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-bold tracking-wide">
-            Design Lead • UI/UX
-          </span>
-<div class="flex items-center gap-1 bg-surface-container-lowest/20 backdrop-blur-sm px-2 py-0.5 rounded text-surface-bright font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">palette</span>
-            Design Systems
-          </div>
-</div>
-<div class="px-space-md pb-space-md flex-1 flex flex-col">
-<div class="flex justify-between items-end -mt-10 mb-space-xs">
-<div class="relative">
-<div class="w-20 h-20 rounded-full bg-surface-container-low ring-4 ring-surface-container-lowest overflow-hidden shadow-md flex items-center justify-center font-headline-md text-headline-md font-bold text-primary">
-                PP
-              </div>
-<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-<span class="material-symbols-outlined text-[14px]">check</span>
-</span>
-</div>
-<div class="text-right">
-<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                Available
-              </span>
-</div>
-</div>
-<div class="space-y-1">
-<h3 class="font-headline-md text-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">
-              Priya Patil
-            </h3>
-<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-1">
-<span class="material-symbols-outlined text-[16px] text-primary shrink-0">school</span>
-              Amrutvahini College of Engineering (AVCOE), Sangamner
-            </p>
-<p class="font-label-sm text-label-sm text-primary font-semibold">
-              Computer Engineering • TE
-            </p>
-</div>
-<div class="grid grid-cols-3 gap-2 py-space-xs my-space-xs bg-surface-container-low rounded-xl text-center">
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">14</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Web Kits</div>
-</div>
-<div class="border-x-0">
-<div class="font-headline-sm text-headline-sm font-bold text-primary">5</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Hackathons</div>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-tertiary">9.2</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">CGPA</div>
-</div>
-</div>
-<div class="space-y-1.5 my-space-xs">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Core Tech Stack:</span>
-<div class="flex flex-wrap gap-1.5">
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">React</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Tailwind CSS</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Next.js</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Figma</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">TypeScript</span>
-</div>
-</div>
-<div class="mt-auto pt-space-sm flex items-center gap-space-xs">
-<button class="flex-1 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
-              View Profile
-            </button>
-<button class="py-2 px-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat</span>
-</button>
-<button class="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-              Add to Team
-            </button>
-</div>
-</div>
-</div>
-<!-- Student Card 5: Aditya Deshmukh (IT / Cloud & DevOps) -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
-<div class="h-28 w-full bg-gradient-to-r from-tertiary via-tertiary-container to-surface-tint relative p-space-sm flex items-start justify-between">
-<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-tertiary font-label-sm text-label-sm font-bold tracking-wide">
-            Cloud &amp; DevOps Fellow
-          </span>
-<div class="flex items-center gap-1 bg-surface-container-lowest/20 backdrop-blur-sm px-2 py-0.5 rounded text-surface-bright font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">cloud_done</span>
-            AWS Certified
-          </div>
-</div>
-<div class="px-space-md pb-space-md flex-1 flex flex-col">
-<div class="flex justify-between items-end -mt-10 mb-space-xs">
-<div class="relative">
-<div class="w-20 h-20 rounded-full bg-tertiary-fixed-dim/40 ring-4 ring-surface-container-lowest overflow-hidden shadow-md flex items-center justify-center font-headline-md text-headline-md font-bold text-tertiary">
-                AD
-              </div>
-<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-<span class="material-symbols-outlined text-[14px]">check</span>
-</span>
-</div>
-<div class="text-right">
-<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                Available
-              </span>
-</div>
-</div>
-<div class="space-y-1">
-<h3 class="font-headline-md text-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">
-              Aditya Deshmukh
-            </h3>
-<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-1">
-<span class="material-symbols-outlined text-[16px] text-primary shrink-0">school</span>
-              Amrutvahini College of Engineering (AVCOE), Sangamner
-            </p>
-<p class="font-label-sm text-label-sm text-primary font-semibold">
-              Information Technology • BE
-            </p>
-</div>
-<div class="grid grid-cols-3 gap-2 py-space-xs my-space-xs bg-surface-container-low rounded-xl text-center">
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">11</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Projects</div>
-</div>
-<div class="border-x-0">
-<div class="font-headline-sm text-headline-sm font-bold text-primary">7</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Hackathons</div>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-tertiary">8.9</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">CGPA</div>
-</div>
-</div>
-<div class="space-y-1.5 my-space-xs">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Core Tech Stack:</span>
-<div class="flex flex-wrap gap-1.5">
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Kubernetes</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Go</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Linux</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Terraform</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">GitHub Actions</span>
-</div>
-</div>
-<div class="mt-auto pt-space-sm flex items-center gap-space-xs">
-<button class="flex-1 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
-              View Profile
-            </button>
-<button class="py-2 px-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat</span>
-</button>
-<button class="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-              Add to Team
-            </button>
-</div>
-</div>
-</div>
-<!-- Student Card 6: Neha Joshi (AI&DS / ML Research) -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group">
-<div class="h-28 w-full bg-gradient-to-r from-primary via-inverse-surface to-secondary relative p-space-sm flex items-start justify-between">
-<span class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm font-bold tracking-wide">
-            ML Research Intern
-          </span>
-<div class="flex items-center gap-1 bg-surface-container-lowest/20 backdrop-blur-sm px-2 py-0.5 rounded text-surface-bright font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]">psychology</span>
-            IEEE Published
-          </div>
-</div>
-<div class="px-space-md pb-space-md flex-1 flex flex-col">
-<div class="flex justify-between items-end -mt-10 mb-space-xs">
-<div class="relative">
-<div class="w-20 h-20 rounded-full bg-secondary-container ring-4 ring-surface-container-lowest overflow-hidden shadow-md flex items-center justify-center font-headline-md text-headline-md font-bold text-on-secondary-container">
-                NJ
-              </div>
-<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-<span class="material-symbols-outlined text-[14px]">check</span>
-</span>
-</div>
-<div class="text-right">
-<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                Open for Collab
-              </span>
-</div>
-</div>
-<div class="space-y-1">
-<h3 class="font-headline-md text-headline-md font-bold text-on-surface group-hover:text-primary transition-colors">
-              Neha Joshi
-            </h3>
-<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-1">
-<span class="material-symbols-outlined text-[16px] text-primary shrink-0">school</span>
-              Amrutvahini College of Engineering (AVCOE), Sangamner
-            </p>
-<p class="font-label-sm text-label-sm text-primary font-semibold">
-              Artificial Intelligence &amp; Data Science • BE
-            </p>
-</div>
-<div class="grid grid-cols-3 gap-2 py-space-xs my-space-xs bg-surface-container-low rounded-xl text-center">
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-on-surface">9</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Research Papers</div>
-</div>
-<div class="border-x-0">
-<div class="font-headline-sm text-headline-sm font-bold text-primary">3</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Hackathons</div>
-</div>
-<div>
-<div class="font-headline-sm text-headline-sm font-bold text-tertiary">9.6</div>
-<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">CGPA</div>
-</div>
-</div>
-<div class="space-y-1.5 my-space-xs">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Core Tech Stack:</span>
-<div class="flex flex-wrap gap-1.5">
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">PyTorch</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">NLP</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Scikit-Learn</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Pandas</span>
-<span class="font-skill-pill text-skill-pill px-2.5 py-1 rounded bg-surface-container text-on-surface font-medium">Python</span>
-</div>
-</div>
-<div class="mt-auto pt-space-sm flex items-center gap-space-xs">
-<button class="flex-1 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors text-center">
-              View Profile
-            </button>
-<button class="py-2 px-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html'">
-<span class="material-symbols-outlined text-[20px]">chat</span>
-</button>
-<button class="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
-<span class="material-symbols-outlined text-[18px]">group_add</span>
-              Add to Team
-            </button>
-</div>
-</div>
-</div>
-</div>
-<!-- Interactive Reference to Original Platform Screen (Screenshot Showcase Bar) -->
-<div class="mt-space-xl bg-surface-container-low rounded-2xl p-space-md shadow-sm flex flex-col md:flex-row items-center justify-between gap-space-md">
-<div class="flex items-center gap-space-sm">
-<div class="w-12 h-12 rounded-xl bg-primary-fixed/50 flex items-center justify-center text-primary shrink-0">
-<span class="material-symbols-outlined text-[28px]">verified_user</span>
-</div>
-<div>
-<h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">Amrutvahini College Engineering Network Integration</h4>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Live synchronized with AVCOE Student Portal &amp; SPPU Academic Verification Registry.</p>
-</div>
+<div class="relative w-full overflow-hidden bg-surface pb-space-3xl">
+<div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-primary-fixed/40 via-surface-container/30 to-transparent blur-3xl pointer-events-none rounded-full"></div>
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop relative z-10 pt-space-xl">
+<!-- Section 1: College header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+<div class="space-y-space-xs max-w-2xl">
+<div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wider shadow-sm">
+<span class="material-symbols-outlined text-[14px]">school</span>
+<span>Campus Network</span>
+</div>
+<h1 class="font-display-hero text-display-hero-mobile md:text-display-hero font-extrabold text-on-surface tracking-tight leading-tight" id="campusName">Your campus</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant" id="campusSub">Everyone from your college who is on ProPartner.</p>
 </div>
 <div class="flex items-center gap-space-xs shrink-0">
-<button class="px-space-md py-2.5 rounded-xl bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container shadow-sm transition-colors flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px] text-primary">download</span>
-          Export Roster CSV
-        </button>
-<button class="px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container shadow-sm transition-colors flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px]">campaign</span>
-          Broadcast Hackathon Call
-        </button>
-</div>
-</div>
-<!-- Visual College Benchmark & SIH Team Callout Banner -->
-<div class="mt-space-lg rounded-3xl bg-gradient-to-br from-primary via-primary-container to-surface-tint text-on-primary p-space-xl shadow-xl relative overflow-hidden">
-<div class="relative z-10 max-w-2xl space-y-space-xs">
-<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md text-surface-bright font-label-sm text-label-sm font-semibold">
-<span class="material-symbols-outlined text-[16px]">emoji_events</span>
-          National SIH 2026 Campus Registration Open
-        </div>
-<h2 class="font-headline-lg text-headline-lg font-extrabold tracking-tight text-on-primary">
-          Form your Smart India Hackathon Squad with AVCOE's Top Engineers
-        </h2>
-<p class="font-body-md text-body-md text-on-primary/80">
-          Combine Artificial Intelligence, Mechanical Robotics, and Cloud DevOps talent from your campus. Teams formed through ProPartner have an 82% shortlist rate in zonal rounds.
-        </p>
-<div class="pt-space-sm flex flex-wrap gap-space-xs">
-<button class="px-space-lg py-3 rounded-xl bg-surface-container-lowest text-primary font-label-md text-label-md font-bold shadow-md hover:bg-surface-container-low transition-all">
-            Build Hackathon Squad
-          </button>
-<button class="px-space-md py-3 rounded-xl bg-surface-container-lowest/15 hover:bg-surface-container-lowest/25 text-on-primary font-label-md text-label-md font-semibold backdrop-blur-sm transition-colors">
-            View Past Winning Projects
-          </button>
-</div>
-</div>
-<!-- Background SVG tech rings -->
-<div class="absolute right-0 -bottom-10 opacity-10 pointer-events-none transform scale-150">
-<svg fill="none" height="400" stroke="currentColor" viewbox="0 0 200 200" width="400">
-<circle cx="100" cy="100" r="80" stroke-dasharray="6 6" stroke-width="2"></circle>
-<circle cx="100" cy="100" r="60" stroke-width="3"></circle>
-<circle cx="100" cy="100" r="40" stroke-dasharray="4 4" stroke-width="1.5"></circle>
-<circle cx="100" cy="100" r="20" stroke-width="2"></circle>
-</svg>
-</div>
-</div>
-<!-- Clean Pagination Bar -->
-<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t-0">
-<div class="font-body-sm text-body-sm text-on-surface-variant">
-        Showing <span class="font-semibold text-on-surface">1 - 6</span> of <span class="font-semibold text-on-surface">486</span> student developers from AVCOE
-      </div>
-<div class="flex items-center gap-1">
-<button class="w-9 h-9 rounded-lg bg-surface-container-lowest shadow-sm flex items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 transition-colors" disabled="">
-<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+<button class="inline-flex items-center gap-1.5 px-space-md py-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-md text-label-md border border-outline-variant/50 shadow-sm transition-colors" id="inviteBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">link</span>
+<span>Invite classmates</span>
 </button>
-<button class="w-9 h-9 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-bold shadow-sm flex items-center justify-center">
-          1
-        </button>
-<button class="w-9 h-9 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container font-label-md text-label-md text-on-surface flex items-center justify-center transition-colors">
-          2
-        </button>
-<button class="w-9 h-9 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container font-label-md text-label-md text-on-surface flex items-center justify-center transition-colors">
-          3
-        </button>
-<span class="px-1 text-on-surface-variant font-label-md">...</span>
-<button class="w-9 h-9 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container font-label-md text-label-md text-on-surface flex items-center justify-center transition-colors">
-          12
-        </button>
-<button class="w-9 h-9 rounded-lg bg-surface-container-lowest shadow-sm flex items-center justify-center text-on-surface hover:text-primary transition-colors">
-<span class="material-symbols-outlined text-[18px]">chevron_right</span>
-</button>
+<a class="inline-flex items-center gap-1.5 px-space-md py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-colors" href="search.html">
+<span class="material-symbols-outlined text-[18px]">travel_explore</span>
+<span>All colleges</span>
+</a>
 </div>
 </div>
-</section>
-<!-- Interactive toast micro-interaction logic -->
-<div class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none" id="action-toast">
-<div class="bg-inverse-surface text-inverse-on-surface px-space-md py-space-sm rounded-xl shadow-2xl flex items-center gap-space-xs font-body-sm text-body-sm">
-<span class="material-symbols-outlined text-tertiary-fixed text-[20px]">check_circle</span>
-<span id="toast-message">Student developer added to your squad shortlist!</span>
+<!-- Section 2: Real numbers for this college -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md mb-space-lg">
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between">
+<div><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Members</span><span class="font-headline-lg text-headline-lg text-on-surface block mt-0.5" id="mMembers">-</span></div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[22px]">groups</span></div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between">
+<div><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Departments</span><span class="font-headline-lg text-headline-lg text-on-surface block mt-0.5" id="mDepartments">-</span></div>
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-fixed"><span class="material-symbols-outlined text-[22px]">account_tree</span></div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between">
+<div><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Verified</span><span class="font-headline-lg text-headline-lg text-on-surface block mt-0.5" id="mVerified">-</span></div>
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed"><span class="material-symbols-outlined text-[22px]">verified</span></div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between">
+<div><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Online now</span><span class="font-headline-lg text-headline-lg text-on-surface block mt-0.5" id="mOnline">-</span></div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-emerald-600"><span class="material-symbols-outlined text-[22px]">sensors</span></div>
 </div>
 </div>
-<script>
-    document.querySelectorAll('button').forEach(btn => {
-      if (btn.innerText.includes('Add to Team')) {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (window.openAddToTeamModal) {
-            window.openAddToTeamModal(btn.dataset.id || 1);
-          } else {
-            alert('Add to team functionality not loaded.');
-          }
-        });
-      }
-    });
-  </script>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2025 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors" href="#">Institutional Privacy</a><a class="hover:text-primary transition-colors" href="#">Academic Terms</a><a class="hover:text-primary transition-colors" href="#">Student Honor Code</a><a class="hover:text-primary transition-colors" href="#">Support Desk</a></div></div></footer>
+<!-- Section 3: Search and filters -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-space-md mb-space-md" id="campusTop">
+<div class="flex flex-col md:flex-row gap-space-sm">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input autocomplete="off" class="w-full pl-11 pr-10 py-2.5 bg-surface-container-low rounded-xl border border-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:bg-white transition-colors" id="campusSearch" placeholder="Search classmates by name, skill or department..." type="text"/>
+<button aria-label="Clear search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-outline hover:text-on-surface hover:bg-surface-container transition-colors" id="campusSearchClear" type="button"><span class="material-symbols-outlined text-[18px] block">close</span></button>
+</div>
+<select aria-label="Sort by" class="discover-select md:w-56" id="campusSort">
+<option value="match">Sort: Best match</option>
+<option value="name">Sort: Name A-Z</option>
+<option value="followers">Sort: Most followed</option>
+<option value="newest">Sort: Newest members</option>
+</select>
+</div>
+<div class="flex items-center gap-space-xs overflow-x-auto hide-scrollbar mt-space-sm pb-0.5" id="deptTabs"></div>
+<div class="flex flex-wrap items-center gap-space-xs mt-space-sm">
+<button aria-pressed="false" class="filter-toggle" data-toggle="online" type="button"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Online now</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="verified" type="button"><span class="material-symbols-outlined text-[15px]">verified</span>Verified</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="following" type="button"><span class="material-symbols-outlined text-[15px]">group</span>Following</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="saved" type="button"><span class="material-symbols-outlined text-[15px]">bookmark</span>Saved</button>
+<div class="ml-auto flex items-center gap-space-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant" id="campusCount"></span>
+<button class="hidden font-label-md text-label-md text-primary hover:underline" id="campusClear" type="button">Clear all</button>
+</div>
+</div>
+</div>
+<!-- Section 4: People -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="campusGrid"></div>
+<!-- Section 5: Pagination -->
+<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-outline-variant/30" id="campusPagination"></div>
+</div>
+</div>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
+
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">
     <div class="custom-modal">
@@ -874,214 +214,7 @@
     </div>
 </div>
 
-<script>
-// ==========================================
-// GLOBAL MODAL SYSTEM
-// ==========================================
-window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
-    const modal = document.getElementById('systemModal');
-    const titleEl = document.getElementById('systemModalTitle');
-    const msgEl = document.getElementById('systemModalMessage');
-    const cancelBtn = document.getElementById('systemModalCancel');
-    const confirmBtn = document.getElementById('systemModalConfirm');
-
-    if (!modal) return console.error("System modal HTML is missing!");
-
-    titleEl.textContent = title;
-    msgEl.textContent = message;
-    confirmBtn.textContent = confirmText;
-
-    if (type === 'confirm') {
-        cancelBtn.style.display = 'block';
-        cancelBtn.onclick = () => window.closeSystemModal();
-        confirmBtn.onclick = () => {
-            window.closeSystemModal();
-            if (onConfirm) onConfirm();
-        };
-    } else {
-        cancelBtn.style.display = 'none';
-        confirmBtn.onclick = () => {
-            window.closeSystemModal();
-            if (onConfirm) onConfirm();
-        };
-    }
-
-    modal.classList.add('active');
-};
-
-window.closeSystemModal = function() {
-    const modal = document.getElementById('systemModal');
-    if (modal) modal.classList.remove('active');
-};
-
-window.logout = function() {
-    window.showSystemModal("Log Out", "Are you sure you want to securely log out of ProPartner?", "confirm", () => {
-        localStorage.removeItem('currentUserId');
-        window.location.href = "login.html";
-    }, "Log Out");
-};
-</script>
-
-    <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      const grid = document.getElementById('college-results-grid');
-      const headerName = document.getElementById('header-college-name');
-      const heroName = document.getElementById('hero-college-name');
-      const searchInput = document.getElementById('search-input');
-      const deptFilters = document.getElementById('dept-filters');
-      
-      const currentUserId = localStorage.getItem('currentUserId');
-      if (!currentUserId) {
-        window.location.href = 'login.html';
-        return;
-      }
-      
-      let currentUser = null;
-      let allProfiles = [];
-      let activeDept = 'All Departments';
-
-      // 1. Fetch current user
-      try {
-        const userRes = await fetch(`${API_BASE}/api/profiles/${currentUserId}`, { credentials: 'include' });
-        if (!userRes.ok) throw new Error("Auth failed");
-        currentUser = await userRes.json();
-      } catch (err) {
-        window.location.href = 'login.html';
-        return;
-      }
-
-      // Update UI with college name
-      const collegeName = currentUser.college_name || 'Your College';
-      headerName.textContent = collegeName;
-      heroName.textContent = `Developers at ${collegeName}`;
-
-      async function renderProfiles(profiles) {
-        grid.innerHTML = '';
-        if (profiles.length === 0) {
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant font-medium">No developers found matching your criteria.</div>';
-          return;
-        }
-
-        profiles.forEach(profile => {
-          const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
-          const avatarHtml = profile.profile_pic 
-            ? `<img src="${escapeHtml(profile.profile_pic)}" class="w-full h-full object-cover">`
-            : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container-high">${initials}</div>`;
-            
-          const skillsHtml = (profile.skills ? profile.skills.split(',') : []).slice(0, 5).map(s => 
-            `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s.trim())}</span>`
-          ).join('');
-            
-          const cardHtml = `
-            <div class="developer-card group bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30">
-              <div class="flex items-start justify-between gap-space-sm mb-space-md">
-                <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                  <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
-                    ${avatarHtml}
-                  </div>
-                  <span class="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-tertiary ring-2 ring-surface-container-lowest flex items-center justify-center text-on-tertiary" title="Verified Campus Engineer">
-                    <span class="material-symbols-outlined text-[12px]">check</span>
-                  </span>
-                </div>
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
-                  Verified
-                </span>
-              </div>
-              <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                  ${escapeHtml(profile.name)}
-                </h3>
-                <p class="font-label-sm text-label-sm text-primary font-semibold mt-1">
-                  ${escapeHtml(profile.department || 'Department not listed')}
-                </p>
-              </div>
-              <div class="mb-space-lg mt-space-sm">
-                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Tech Stack:</span>
-                <div class="flex flex-wrap gap-1.5">
-                  ${skillsHtml}
-                </div>
-              </div>
-              <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
-                <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
-                  View Profile
-                </button>
-                <button class="py-2 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html?user=${profile.id}'">
-                  <span class="material-symbols-outlined text-[20px]">chat</span>
-                </button>
-              </div>
-            </div>
-          `;
-          grid.innerHTML += cardHtml;
-        });
-      }
-
-      function updateFiltersUI() {
-        const uniqueDepts = Array.from(new Set(allProfiles.map(p => p.department).filter(d => d)));
-        
-        let html = `<span class="font-label-sm text-label-sm uppercase text-on-surface-variant font-bold shrink-0 mr-1">Dept:</span>`;
-        
-        html += `<button class="px-3 py-1.5 rounded-full font-label-md text-label-md shrink-0 transition-all ${activeDept === 'All Departments' ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container'}" data-dept="All Departments">All Departments (${allProfiles.length})</button>`;
-        
-        uniqueDepts.forEach(d => {
-          const count = allProfiles.filter(p => p.department === d).length;
-          const isActive = activeDept === d;
-          const classes = isActive 
-            ? 'bg-primary text-on-primary shadow-sm' 
-            : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container';
-          html += `<button class="px-3 py-1.5 rounded-full font-label-md text-label-md shrink-0 transition-all ${classes}" data-dept="${d}">${d} (${count})</button>`;
-        });
-        
-        deptFilters.innerHTML = html;
-        
-        // Add click listeners to buttons
-        deptFilters.querySelectorAll('button').forEach(btn => {
-          btn.addEventListener('click', () => {
-            activeDept = btn.getAttribute('data-dept');
-            updateFiltersUI();
-            applyFilters();
-          });
-        });
-      }
-
-      function applyFilters() {
-        let filtered = allProfiles;
-        
-        if (activeDept !== 'All Departments') {
-          filtered = filtered.filter(p => p.department === activeDept);
-        }
-        
-        const q = searchInput.value.toLowerCase().trim();
-        if (q) {
-          filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(q) || 
-            (p.skills && p.skills.toLowerCase().includes(q)) || 
-            (p.department && p.department.toLowerCase().includes(q))
-          );
-        }
-        
-        renderProfiles(filtered);
-      }
-
-      searchInput.addEventListener('input', applyFilters);
-
-      // 2. Fetch profiles
-      try {
-        grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading college profiles...</p></div>';
-        
-        const res = await fetch(`${API_BASE}/api/profiles?college=${encodeURIComponent(collegeName)}`, { credentials: 'include' });
-        if(res.ok) {
-          allProfiles = await res.json();
-          updateFiltersUI();
-          renderProfiles(allProfiles);
-        } else {
-          throw new Error("Could not fetch network");
-        }
-      } catch (err) {
-        console.error(err);
-        grid.innerHTML = '<div class="col-span-full text-center py-8 text-error font-medium">Failed to load campus network.</div>';
-      }
-    });
-    </script>
-    
+<script src="chat-common.js"></script>
+<script src="campus.js"></script>
 </body>
-    </html>
+</html>
