@@ -55,3 +55,12 @@ Tables are created automatically on startup.
 - Profile and banner pictures are cropped in the browser and uploaded; the cropping library is only downloaded when a picture is being changed.
 - GitHub is connected by username (no sign-in with GitHub). Results are cached on the server for 10 minutes; GitHub allows about 60 unauthenticated lookups per hour per server address.
 - "Export Resume" builds a print layout and opens the browser's print dialog, which can save as PDF.
+
+## Project Hub
+
+`project_management.html` loads `chat-common.js` and `project-hub.js`. Every Teams workspace has one board: a kanban board, a planning canvas and two linked tools. One request (`GET /api/teams/{id}/board`) returns the board, its tasks, the canvas and the members, and the page listens on the workspace's WebSocket so teammates see changes as they happen.
+
+- Any member can add, edit and move tasks and draw on the canvas. Deleting a task is for its creator, its assignee or an Admin. Board name, sprint label and linked tools are changed by Admins.
+- The canvas is saved as a whole a moment after each change, so if two people draw at the same instant the later save wins.
+- GitHub shows a public repository's recent commits, open pull requests and open issues (read-only, cached for 10 minutes, same lookup limit as the profile page). Figma shows a file that is shared as "anyone with the link can view".
+- Export: tasks as CSV or JSON, the canvas as a PNG, and "PDF" through the browser's print dialog.

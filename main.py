@@ -4,9 +4,11 @@ import json
 import base64
 import uuid
 import hmac
+import math
 import asyncio
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +29,8 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import aliased
-from sqlalchemy import Column, Integer, String, func, delete, update, text, and_, or_, case, literal
+from sqlalchemy import Column, Integer, String, Float, func, delete, update, text, and_, or_, case, literal
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from database import engine, Base, get_db, get_fast_db, SessionLocal, AutocommitSession
 
 load_dotenv()
@@ -215,6 +218,33 @@ class DBTeamResource(Base):
     added_by = Column(Integer)
     created_at = Column(String)
 
+class DBTeamTask(Base):
+    __tablename__ = "team_tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    title = Column(String)
+    description = Column(String, default="")
+    status = Column(String, default="todo")        # the board column: todo, inprogress, review, done
+    position = Column(Float, default=0)            # order within the column; fractional so a move touches one row
+    tag = Column(String, default="")
+    priority = Column(String, default="medium")
+    assignee_id = Column(Integer, nullable=True)
+    due_date = Column(String, default="")          # YYYY-MM-DD or empty
+    created_by = Column(Integer)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+class DBTeamBoard(Base):
+    __tablename__ = "team_boards"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, unique=True, index=True)
+    name = Column(String, default="")
+    sprint_label = Column(String, default="")
+    canvas = Column(String, default="[]")          # planning-canvas shapes as JSON
+    github_repo = Column(String, default="")       # owner/repo
+    figma_url = Column(String, default="")
+    updated_at = Column(String)
+
 class DBCommunity(Base):
     __tablename__ = "communities"
     id = Column(Integer, primary_key=True, index=True)
@@ -267,6 +297,7 @@ SCHEMA_UPGRADES = [
     "ALTER TABLE team_messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER",
     "CREATE UNIQUE INDEX IF NOT EXISTS ux_team_message_reactions ON team_message_reactions (message_id, user_id, emoji)",
     "CREATE INDEX IF NOT EXISTS ix_team_members_user_team ON team_members (user_id, team_id)",
+    "CREATE INDEX IF NOT EXISTS ix_team_tasks_board ON team_tasks (team_id, status, position)",
 ]
 
 async def backfill_cleared_chats():
@@ -3174,6 +3205,353 @@ async def leave_team(team_id: int, db: AsyncSession = Depends(get_db), current_u
     return {"status": "left"}
 
 
+# ==========================================
+# 12b. PROJECT HUB: TASK BOARD, PLANNING CANVAS, LINKED REPO AND DESIGN FILE (one per team)
+# ==========================================
+TASK_COLUMNS = ("todo", "inprogress", "review", "done")
+TASK_PRIORITIES = ("low", "medium", "high")
+CANVAS_SHAPE_TYPES = ("rectangle", "circle", "database", "sticky", "text", "arrow", "line")
+CANVAS_COLORS = ("indigo", "green", "amber", "rose", "slate")
+MAX_CANVAS_SHAPES = 500
+GITHUB_REPO_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$")
+FIGMA_URL_PATTERN = re.compile(r"^https://(?:www\.)?figma\.com/(?:file|design|proto|board)/[A-Za-z0-9]+(?:/[^\s]*)?$")
+
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    column: Optional[str] = "todo"
+    tag: Optional[str] = ""
+    priority: Optional[str] = "medium"
+    assignee_id: Optional[int] = None
+    due_date: Optional[str] = ""
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    column: Optional[str] = None
+    position: Optional[float] = None
+    tag: Optional[str] = None
+    priority: Optional[str] = None
+    assignee_id: Optional[int] = None
+    clear_assignee: Optional[bool] = False
+    due_date: Optional[str] = None
+
+class BoardUpdate(BaseModel):
+    name: Optional[str] = None
+    sprint_label: Optional[str] = None
+    github_repo: Optional[str] = None
+    figma_url: Optional[str] = None
+
+class CanvasSave(BaseModel):
+    shapes: list
+    client_id: Optional[str] = None
+
+
+def serialize_task(task) -> dict:
+    return {
+        "id": task.id,
+        "team_id": task.team_id,
+        "title": task.title or "",
+        "description": task.description or "",
+        "column": task.status or "todo",
+        "position": task.position or 0,
+        "tag": task.tag or "",
+        "priority": task.priority or "medium",
+        "assignee_id": task.assignee_id,
+        "due_date": task.due_date or "",
+        "created_by": task.created_by,
+        "created_at": task.created_at,
+        "updated_at": task.updated_at
+    }
+
+def serialize_board(board, team_name: str) -> dict:
+    return {
+        "name": (board.name if board else "") or team_name,
+        "sprint_label": (board.sprint_label if board else "") or "",
+        "github_repo": (board.github_repo if board else "") or "",
+        "figma_url": (board.figma_url if board else "") or "",
+        "updated_at": (board.updated_at if board else None)
+    }
+
+def clean_task_fields(data, partial: bool) -> dict:
+    """Checked task fields ready to store. With partial=True only the fields that were sent are returned."""
+    values = {}
+    if data.title is not None:
+        title = data.title.strip()
+        if not title:
+            raise HTTPException(status_code=400, detail="Give the task a title.")
+        values["title"] = title[:160]
+    elif not partial:
+        raise HTTPException(status_code=400, detail="Give the task a title.")
+    if data.description is not None:
+        values["description"] = data.description.strip()[:2000]
+    if data.column is not None:
+        if data.column not in TASK_COLUMNS:
+            raise HTTPException(status_code=400, detail="That is not a column on the board.")
+        values["status"] = data.column
+    if data.tag is not None:
+        values["tag"] = data.tag.strip()[:30]
+    if data.priority is not None:
+        if data.priority not in TASK_PRIORITIES:
+            raise HTTPException(status_code=400, detail="Priority must be low, medium or high.")
+        values["priority"] = data.priority
+    if data.due_date is not None:
+        due = data.due_date.strip()
+        if due:
+            try:
+                datetime.strptime(due, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="The due date must look like 2026-12-31.")
+        values["due_date"] = due
+    return values
+
+async def check_assignee(db: AsyncSession, team_id: int, assignee_id: Optional[int]):
+    if assignee_id is None:
+        return
+    found = await db.execute(select(DBTeamMember.id).filter(DBTeamMember.team_id == team_id, DBTeamMember.user_id == assignee_id))
+    if not found.first():
+        raise HTTPException(status_code=400, detail="Tasks can only be assigned to members of this workspace.")
+
+async def touch_board(team_id: int, **values):
+    """Create the team's board row if needed and update the given fields."""
+    values["updated_at"] = utc_now_iso()
+    statement = pg_insert(DBTeamBoard).values(team_id=team_id, **values)
+    await run_one_off(statement.on_conflict_do_update(index_elements=[DBTeamBoard.team_id], set_=values))
+
+
+@app.get("/api/teams/{team_id}/board")
+async def get_team_board(team_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Everything Project Hub needs for one workspace, with the reads running side by side."""
+    team_rows, member_rows, task_rows, board_rows = await asyncio.gather(
+        fetch_one_off(select(DBTeam.id, DBTeam.name, DBTeam.description, DBTeam.created_by).filter(DBTeam.id == team_id)),
+        fetch_one_off(members_query(team_id)),
+        fetch_one_off(select(DBTeamTask).filter(DBTeamTask.team_id == team_id).order_by(DBTeamTask.position.asc(), DBTeamTask.id.asc())),
+        fetch_one_off(select(DBTeamBoard).filter(DBTeamBoard.team_id == team_id)),
+    )
+    if not team_rows:
+        raise HTTPException(status_code=404, detail="Team not found.")
+    members = serialize_members(member_rows)
+    me = next((m for m in members if m["user_id"] == current_user_id), None)
+    if not me:
+        raise HTTPException(status_code=403, detail="You are not a member of this team.")
+    team = team_rows[0]
+    board = board_rows[0][0] if board_rows else None
+    try:
+        canvas = json.loads(board.canvas) if board and board.canvas else []
+    except ValueError:
+        canvas = []
+    return {
+        "team": {"id": team.id, "name": team.name, "description": team.description or "", "created_by": team.created_by},
+        "role": me["role"],
+        "members": members,
+        "board": serialize_board(board, team.name),
+        "tasks": [serialize_task(task) for (task,) in task_rows],
+        "canvas": canvas
+    }
+
+
+@app.patch("/api/teams/{team_id}/board")
+async def update_team_board(team_id: int, data: BoardUpdate, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    team = await require_team_admin(db, team_id, current_user_id)
+    values = {}
+    if data.name is not None:
+        if not data.name.strip():
+            raise HTTPException(status_code=400, detail="The board needs a name.")
+        values["name"] = data.name.strip()[:80]
+    if data.sprint_label is not None:
+        values["sprint_label"] = data.sprint_label.strip()[:60]
+    if data.github_repo is not None:
+        repo = re.sub(r"^https?://(?:www\.)?github\.com/", "", data.github_repo.strip()).removesuffix(".git").strip("/")
+        if repo and not GITHUB_REPO_PATTERN.match(repo):
+            raise HTTPException(status_code=400, detail="Enter the repository as owner/name, for example fastapi/fastapi.")
+        values["github_repo"] = repo
+    if data.figma_url is not None:
+        figma = data.figma_url.strip()
+        if figma and not FIGMA_URL_PATTERN.match(figma):
+            raise HTTPException(status_code=400, detail="Paste a link to a Figma file, starting with https://www.figma.com/")
+        values["figma_url"] = figma[:500]
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+
+    await touch_board(team_id, **values)
+    board = (await db.execute(select(DBTeamBoard).filter(DBTeamBoard.team_id == team_id))).scalars().first()
+    payload = serialize_board(board, team.name)
+    await team_hub.broadcast(team_id, {"type": "board_updated", "board": payload})
+    return payload
+
+
+@app.post("/api/teams/{team_id}/tasks")
+async def create_task(team_id: int, data: TaskCreate, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    await get_team_role(db, team_id, current_user_id)
+    values = clean_task_fields(data, partial=False)
+    values.setdefault("status", "todo")
+    await check_assignee(db, team_id, data.assignee_id)
+
+    now_iso = utc_now_iso()
+    # New tasks go to the bottom of their column
+    next_position = (
+        select(func.coalesce(func.max(DBTeamTask.position), 0) + 1)
+        .where(DBTeamTask.team_id == team_id, DBTeamTask.status == values["status"])
+        .scalar_subquery()
+    )
+    result = await db.execute(
+        DBTeamTask.__table__.insert()
+        .values(team_id=team_id, position=next_position, assignee_id=data.assignee_id,
+                created_by=current_user_id, created_at=now_iso, updated_at=now_iso, **values)
+        .returning(*DBTeamTask.__table__.c)
+    )
+    task = serialize_task(result.first())
+    await team_hub.broadcast(team_id, {"type": "task_created", "task": task, "by": current_user_id})
+    spawn_background(touch_board(team_id))
+    return task
+
+
+async def get_task_for_member(db: AsyncSession, task_id: int, user_id: int):
+    """Returns (task, the caller's role in the task's team). 404 if missing, 403 if the caller is not in that team."""
+    result = await db.execute(
+        select(DBTeamTask, DBTeamMember.role)
+        .outerjoin(DBTeamMember, and_(DBTeamMember.team_id == DBTeamTask.team_id, DBTeamMember.user_id == user_id))
+        .filter(DBTeamTask.id == task_id)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    if row[1] is None:
+        raise HTTPException(status_code=403, detail="You are not a member of this team.")
+    return row[0], row[1]
+
+
+@app.patch("/api/tasks/{task_id}")
+async def update_task(task_id: int, data: TaskUpdate, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """Edit a task, or move it by sending a column and a position."""
+    task, _ = await get_task_for_member(db, task_id, current_user_id)
+    values = clean_task_fields(data, partial=True)
+    if data.position is not None:
+        if not math.isfinite(data.position):
+            raise HTTPException(status_code=400, detail="That is not a valid position.")
+        values["position"] = data.position
+    if data.clear_assignee:
+        values["assignee_id"] = None
+    elif data.assignee_id is not None:
+        await check_assignee(db, task.team_id, data.assignee_id)
+        values["assignee_id"] = data.assignee_id
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+
+    values["updated_at"] = utc_now_iso()
+    result = await db.execute(update(DBTeamTask).where(DBTeamTask.id == task_id).values(**values).returning(*DBTeamTask.__table__.c))
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    updated = serialize_task(row)
+    await team_hub.broadcast(task.team_id, {"type": "task_updated", "task": updated, "by": current_user_id})
+    spawn_background(touch_board(task.team_id))
+    return updated
+
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task(task_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    task, role = await get_task_for_member(db, task_id, current_user_id)
+    if role != "Admin" and current_user_id not in (task.created_by, task.assignee_id):
+        raise HTTPException(status_code=403, detail="Only the person who created it, the assignee or an Admin can delete this task.")
+    await db.execute(delete(DBTeamTask).where(DBTeamTask.id == task_id))
+    await team_hub.broadcast(task.team_id, {"type": "task_deleted", "id": task_id, "by": current_user_id})
+    spawn_background(touch_board(task.team_id))
+    return {"status": "deleted"}
+
+
+def clean_canvas_shapes(shapes: list) -> list:
+    """Keep only well-formed shapes of known types. Text is stored as plain text and escaped when drawn."""
+    if len(shapes) > MAX_CANVAS_SHAPES:
+        raise HTTPException(status_code=400, detail=f"A canvas can hold up to {MAX_CANVAS_SHAPES} shapes.")
+    cleaned = []
+    for shape in shapes:
+        if not isinstance(shape, dict) or shape.get("type") not in CANVAS_SHAPE_TYPES:
+            raise HTTPException(status_code=400, detail="The canvas contains a shape this board does not support.")
+        item = {"id": str(shape.get("id") or uuid.uuid4().hex[:12])[:40], "type": shape["type"]}
+        for key in ("x", "y", "w", "h", "x2", "y2"):
+            value = shape.get(key, 0)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise HTTPException(status_code=400, detail="The canvas contains a shape with an invalid position.")
+            item[key] = round(max(-20000, min(20000, value)), 1)
+        item["text"] = str(shape.get("text") or "")[:500]
+        item["color"] = shape.get("color") if shape.get("color") in CANVAS_COLORS else "indigo"
+        cleaned.append(item)
+    return cleaned
+
+
+@app.put("/api/teams/{team_id}/canvas")
+async def save_team_canvas(team_id: int, data: CanvasSave, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    await get_team_role(db, team_id, current_user_id)
+    shapes = clean_canvas_shapes(data.shapes)
+    await touch_board(team_id, canvas=json.dumps(shapes, separators=(",", ":")))
+    # client_id lets the page that saved recognise its own change coming back
+    await team_hub.broadcast(team_id, {"type": "canvas_updated", "shapes": shapes, "by": current_user_id, "client_id": data.client_id})
+    return {"status": "saved", "count": len(shapes)}
+
+
+def fetch_github_repo(repo: str) -> dict:
+    """Blocking calls to GitHub's public API for one repository. Run in a worker thread."""
+    headers = {"User-Agent": "ProPartner-App", "Accept": "application/vnd.github+json"}
+
+    def get_json(url: str):
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10) as response:
+            return json.loads(response.read().decode())
+
+    # The four lookups run side by side, so the wait is the slowest one rather than the sum
+    base = f"https://api.github.com/repos/{repo}"
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        info, commits, pulls, issues = pool.map(get_json, [base, base + "/commits?per_page=5", base + "/pulls?state=open&per_page=5", base + "/issues?state=open&per_page=15"])
+    return {
+        "full_name": info.get("full_name"),
+        "description": info.get("description") or "",
+        "html_url": info.get("html_url"),
+        "default_branch": info.get("default_branch"),
+        "stars": info.get("stargazers_count", 0),
+        "forks": info.get("forks_count", 0),
+        "open_issues_and_pulls": info.get("open_issues_count", 0),
+        "pushed_at": info.get("pushed_at"),
+        "commits": [{
+            "sha": (c.get("sha") or "")[:7],
+            "message": ((c.get("commit") or {}).get("message") or "").split("\n")[0][:140],
+            "author": ((c.get("commit") or {}).get("author") or {}).get("name") or "",
+            "date": ((c.get("commit") or {}).get("author") or {}).get("date"),
+            "url": c.get("html_url")
+        } for c in commits if isinstance(c, dict)],
+        "pulls": [{"number": pr.get("number"), "title": (pr.get("title") or "")[:140], "author": (pr.get("user") or {}).get("login") or "", "url": pr.get("html_url")} for pr in pulls],
+        # GitHub lists pull requests among issues; keep the real issues only
+        "issues": [{"number": i.get("number"), "title": (i.get("title") or "")[:140], "author": (i.get("user") or {}).get("login") or "", "url": i.get("html_url")} for i in issues if "pull_request" not in i][:5]
+    }
+
+
+@app.get("/api/github/repos/{owner}/{repo}")
+async def get_github_repo(owner: str, repo: str, current_user_id: int = Depends(get_current_user_id)):
+    full_name = f"{owner}/{repo}"
+    if not GITHUB_REPO_PATTERN.match(full_name):
+        raise HTTPException(status_code=400, detail="That is not a valid repository name.")
+
+    cache_key = "repo:" + full_name.lower()
+    cached = github_cache.get(cache_key)
+    if cached and cached[0] > datetime.now(timezone.utc).timestamp():
+        return cached[1]
+
+    try:
+        data = await asyncio.to_thread(fetch_github_repo, full_name)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise HTTPException(status_code=404, detail="No public repository has that name. Private repositories cannot be linked.")
+        if e.code in (403, 429):
+            raise HTTPException(status_code=503, detail="GitHub is limiting requests right now. Please try again in a few minutes.")
+        raise HTTPException(status_code=502, detail="GitHub could not be reached.")
+    except Exception:
+        raise HTTPException(status_code=502, detail="GitHub could not be reached.")
+
+    if len(github_cache) > 2000:
+        github_cache.clear()
+    github_cache[cache_key] = (datetime.now(timezone.utc).timestamp() + GITHUB_CACHE_SECONDS, data)
+    return data
+
+
 @app.delete("/api/teams/{team_id}")
 async def delete_team(
     team_id: int,
@@ -3199,6 +3577,8 @@ async def delete_team(
         run_one_off(delete(DBTeamMember).where(DBTeamMember.team_id == team_id)),
         run_one_off(delete(DBTeamMessage).where(DBTeamMessage.team_id == team_id)),
         run_one_off(delete(DBChannel).where(DBChannel.team_id == team_id)),
+        run_one_off(delete(DBTeamTask).where(DBTeamTask.team_id == team_id)),
+        run_one_off(delete(DBTeamBoard).where(DBTeamBoard.team_id == team_id)),
         run_one_off(delete(DBTeam).where(DBTeam.id == team_id)),
     )
 
