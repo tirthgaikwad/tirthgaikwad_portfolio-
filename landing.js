@@ -1,6 +1,6 @@
 // ==========================================
 // LANDING.JS — The landing page (index.html): header, scroll effects, the product preview and the 3D wave
-// Loaded after three.js and shared.js. Nothing here talks to the server.
+// Loaded after three.js. Nothing here talks to the server.
 // ==========================================
 (function () {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

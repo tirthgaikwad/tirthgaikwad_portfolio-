@@ -11,9 +11,7 @@
     <meta name="theme-color" content="#3525cd">
 
     <script>
-        // Known before the first paint, so the header never flashes the wrong buttons
         document.documentElement.classList.add('js');
-        if (localStorage.getItem('currentUserId')) document.documentElement.classList.add('authed');
     </script>
 
     <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -59,7 +57,6 @@
 
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
         .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-        html:not(.authed) .only-authed, html.authed .only-guest { display: none !important; }
 
         /* Buttons */
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 10px; font-size: 15px; font-weight: 600; white-space: nowrap; transition: transform 0.2s var(--ease), box-shadow 0.2s, background 0.2s, border-color 0.2s, color 0.2s; }
@@ -103,8 +100,6 @@
         .header-links a { padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--ink-2); transition: color 0.2s, background 0.2s; }
         .header-links a:hover { color: var(--ink); background: rgba(11, 28, 48, 0.05); }
         .header-actions { display: flex; align-items: center; gap: 8px; }
-        .header-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-        .header-avatar img, .header-avatar div { width: 100%; height: 100%; object-fit: cover; display: flex; align-items: center; justify-content: center; }
         .menu-btn { display: none; width: 40px; height: 40px; border-radius: 8px; align-items: center; justify-content: center; }
         .menu-btn:hover { background: rgba(11, 28, 48, 0.05); }
         .mobile-menu { display: none; }
@@ -385,7 +380,6 @@
     </style>
 
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script defer src="shared.js"></script>
     <script defer src="landing.js"></script>
 </head>
 <body>
@@ -419,7 +413,6 @@
                 <img alt="" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD">
                 <span>ProPartner</span>
             </a>
-            <!-- Not a <nav> element: shared.js restyles every "nav a" for the app header -->
             <div class="header-links" role="navigation" aria-label="Sections">
                 <a href="#product">Product</a>
                 <a href="#how">How it works</a>
@@ -427,10 +420,8 @@
                 <a href="#faq">FAQ</a>
             </div>
             <div class="header-actions">
-                <a class="btn btn-quiet btn-small only-guest hide-small" href="login.html">Log in</a>
-                <a class="btn btn-primary btn-small only-guest hide-small" href="register.html">Get started</a>
-                <a class="btn btn-primary btn-small only-authed hide-small" href="search.html">Open ProPartner <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
-                <a class="header-avatar only-authed" href="profile.html" aria-label="Your profile" data-header-avatar></a>
+                <a class="btn btn-quiet btn-small hide-small" href="login.html">Log in</a>
+                <a class="btn btn-primary btn-small hide-small" href="register.html">Sign up</a>
                 <button class="menu-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenu"><svg class="icon"><use href="#i-menu"/></svg></button>
             </div>
         </div>
@@ -439,9 +430,8 @@
             <a class="link" href="#how">How it works</a>
             <a class="link" href="#story">Our story</a>
             <a class="link" href="#faq">FAQ</a>
-            <a class="btn btn-ghost only-guest" href="login.html">Log in</a>
-            <a class="btn btn-primary only-guest" href="register.html">Get started</a>
-            <a class="btn btn-primary only-authed" href="search.html">Open ProPartner</a>
+            <a class="btn btn-ghost" href="login.html">Log in</a>
+            <a class="btn btn-primary" href="register.html">Sign up</a>
         </div>
     </header>
 
@@ -455,9 +445,8 @@
                     <h1 class="reveal" style="--d:1">Find the teammate your project is <span class="gradient-text">missing.</span></h1>
                     <p class="hero-sub reveal" style="--d:2">Search people by the skills they really have, post the role you need filled, and build together with chat, calls and a shared task board. All in one place.</p>
                     <div class="hero-cta reveal" style="--d:3">
-                        <a class="btn btn-primary only-guest" href="register.html">Get started <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
-                        <a class="btn btn-primary only-authed" href="search.html">Open ProPartner <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
-                        <a class="btn btn-ghost" href="#how">See how it works</a>
+                        <a class="btn btn-primary" href="register.html">Sign up <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                        <a class="btn btn-ghost" href="login.html">Log in</a>
                     </div>
                     <ul class="hero-points reveal" style="--d:4">
                         <li><svg class="icon"><use href="#i-check"/></svg>Search by skill, college and city</li>
@@ -758,10 +747,8 @@
                     <h2>Your next teammate is already here.</h2>
                     <p>Create your profile, say what you can do, and find the people who can do the rest.</p>
                     <div class="cta-buttons">
-                        <a class="btn btn-light only-guest" href="register.html">Get started <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
-                        <a class="btn btn-outline-light only-guest" href="login.html">I already have an account</a>
-                        <a class="btn btn-light only-authed" href="search.html">Open ProPartner <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
-                        <a class="btn btn-outline-light only-authed" href="board.html">Post an open role</a>
+                        <a class="btn btn-light" href="register.html">Sign up <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                        <a class="btn btn-outline-light" href="login.html">I already have an account</a>
                     </div>
                 </div>
             </div>
@@ -789,10 +776,8 @@
                 </div>
                 <div class="footer-col">
                     <h4>Account</h4>
-                    <a class="only-guest" href="register.html">Create account</a>
-                    <a class="only-guest" href="login.html">Log in</a>
-                    <a class="only-authed" href="profile.html">Your profile</a>
-                    <a class="only-authed" href="inbox.html">Messages</a>
+                    <a href="register.html">Sign up</a>
+                    <a href="login.html">Log in</a>
                 </div>
             </div>
             <div class="footer-bottom">
