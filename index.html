@@ -3,772 +3,803 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPartner | Find Your Teammate</title>
-    
-    <!-- Premium Font Stack -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>ProPartner | Find the teammate your project is missing</title>
+    <meta name="description" content="ProPartner helps students and professionals find teammates by skill, post open roles, and build together with chat, calls and a shared task board.">
+    <meta property="og:title" content="ProPartner | Find the teammate your project is missing">
+    <meta property="og:description" content="Find teammates by skill, post open roles, and build together with chat, calls and a shared task board.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#3525cd">
 
     <script>
-        // Default to LIGHT mode on first visit
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
+        // Known before the first paint, so the header never flashes the wrong buttons
+        document.documentElement.classList.add('js');
+        if (localStorage.getItem('currentUserId')) document.documentElement.classList.add('authed');
     </script>
+
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
     <style>
         /* ==========================================
-           TECH GIANT DESIGN SYSTEM (CLEAN & SIMPLE)
+           TOKENS (the same palette as the rest of the site)
            ========================================== */
-        :root, [data-theme="light"] { 
-            --bg: #ffffff; 
-            --surface: rgba(255, 255, 255, 0.7); 
-            --panel-bg: rgba(255, 255, 255, 0.6);
-            --border: rgba(0, 0, 0, 0.1); 
-            --border-hover: rgba(0, 0, 0, 0.3);
-            --primary: #2563eb; 
-            --secondary: #0ea5e9; 
-            --text: #0f172a; 
-            --text-dim: #475569; 
-            --header-bg: rgba(255, 255, 255, 0.7);
-            
-            /* Buttons */
-            --btn-bg: #0f172a;
-            --btn-text: #ffffff;
-            --btn-hover: #1e293b;
-
-            /* Effects */
-            --shadow-glow: rgba(255, 255, 255, 1);
-            --vignette-color: #ffffff;
-            
-            /* 3D Wave Colors */
-            --wave-color-high: 37, 99, 235;  
-            --wave-color-low: 139, 92, 246;  
+        :root {
+            --primary: #3525cd;
+            --primary-bright: #4f46e5;
+            --primary-soft: #e2dfff;
+            --primary-tint: #eff4ff;
+            --surface: #f8f9ff;
+            --white: #ffffff;
+            --ink: #0b1c30;
+            --ink-2: #464555;
+            --ink-3: #777587;
+            --line: #e2e8f0;
+            --line-strong: #c7c4d8;
+            --emerald: #006e4c;
+            --emerald-soft: #d1fae5;
+            --navy: #0b1c30;
+            --radius: 16px;
+            --shadow-card: 0 1px 2px rgba(11, 28, 48, 0.04), 0 8px 24px rgba(11, 28, 48, 0.06);
+            --shadow-float: 0 2px 6px rgba(11, 28, 48, 0.06), 0 24px 60px rgba(53, 37, 205, 0.16);
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
         }
 
-        [data-theme="dark"] {
-            --bg: #050505; 
-            --surface: rgba(20, 20, 20, 0.5); 
-            --panel-bg: rgba(15, 15, 15, 0.5);
-            --border: rgba(255, 255, 255, 0.15); 
-            --border-hover: rgba(255, 255, 255, 0.4);
-            --primary: #3b82f6; 
-            --secondary: #38bdf8; 
-            --text: #f8fafc; 
-            --text-dim: #94a3b8;
-            --header-bg: rgba(5, 5, 5, 0.7);
-            
-            /* Buttons */
-            --btn-bg: #ffffff;
-            --btn-text: #000000;
-            --btn-hover: #e2e8f0;
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+        body { margin: 0; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.6; color: var(--ink); background: var(--white); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        h1, h2, h3, p, ul, figure, blockquote { margin: 0; }
+        ul { padding: 0; list-style: none; }
+        a { color: inherit; text-decoration: none; }
+        button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+        img, svg { display: block; }
+        ::selection { background: var(--primary-soft); }
+        :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 6px; }
 
-            /* Effects */
-            --shadow-glow: rgba(0, 0, 0, 0.9);
-            --vignette-color: #050505;
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+        html:not(.authed) .only-authed, html.authed .only-guest { display: none !important; }
 
-            /* 3D Wave Colors */
-            --wave-color-high: 59, 130, 246; 
-            --wave-color-low: 147, 51, 234;  
-        }
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 10px; font-size: 15px; font-weight: 600; white-space: nowrap; transition: transform 0.2s var(--ease), box-shadow 0.2s, background 0.2s, border-color 0.2s, color 0.2s; }
+        .btn .icon { width: 18px; height: 18px; transition: transform 0.2s var(--ease); }
+        .btn:hover .icon-arrow { transform: translateX(3px); }
+        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 2px rgba(53, 37, 205, 0.3), 0 8px 20px rgba(53, 37, 205, 0.22); }
+        .btn-primary:hover { background: var(--primary-bright); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(53, 37, 205, 0.3), 0 12px 28px rgba(53, 37, 205, 0.3); }
+        .btn-ghost { background: var(--white); color: var(--ink); border: 1px solid var(--line-strong); }
+        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-quiet { height: 40px; padding: 0 14px; color: var(--ink-2); }
+        .btn-quiet:hover { color: var(--ink); background: rgba(11, 28, 48, 0.05); }
+        .btn-small { height: 40px; padding: 0 16px; font-size: 14px; }
+        .btn-light { background: #fff; color: var(--primary); }
+        .btn-light:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25); }
+        .btn-outline-light { color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); }
+        .btn-outline-light:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.6); }
 
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-        }
+        /* Section scaffolding */
+        .section { padding: 112px 0; }
+        .section-tint { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); margin-bottom: 14px; }
+        .section-title { font-family: var(--display); font-size: clamp(1.9rem, 3.6vw, 2.75rem); line-height: 1.12; font-weight: 800; letter-spacing: -0.025em; }
+        .section-lead { font-size: 18px; line-height: 1.6; color: var(--ink-2); margin-top: 16px; max-width: 620px; }
+        .section-head { margin-bottom: 56px; }
+        .section-head.center { text-align: center; }
+        .section-head.center .section-lead { margin-left: auto; margin-right: auto; }
 
-        body { 
-            background-color: var(--bg); 
-            color: var(--text); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            overflow-x: hidden; 
-            transition: background-color 0.5s ease, color 0.5s ease; 
-            -webkit-font-smoothing: antialiased;
-        }
-
-        ::selection { background: rgba(37, 99, 235, 0.3); color: inherit; }
-
-        /* ==========================================
-           CINEMATIC EFFECTS & PERFECT READABILITY
-           ========================================== */
-        
-        .shadow-text {
-            text-shadow: 0 4px 30px var(--shadow-glow), 0 1px 4px var(--shadow-glow), 0 0 10px var(--shadow-glow);
-        }
-
-        .base-bg {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: var(--bg); z-index: -10; transition: background-color 0.5s ease;
-        }
-        
-        #parallax-canvas-container {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            z-index: -5; pointer-events: none;
-        }
-
-        .vignette {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, transparent 30%, var(--vignette-color) 140%);
-            z-index: -4; pointer-events: none; transition: background 0.5s ease;
-        }
+        /* Scroll reveal (only when scripts run, so nothing stays hidden without them) */
+        .js .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); transition-delay: calc(var(--d, 0) * 90ms); }
+        .js .reveal.in { opacity: 1; transform: none; }
 
         /* ==========================================
            HEADER
            ========================================== */
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 16px 5%; background: var(--header-bg); 
-            backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); 
-            z-index: 100; position: fixed; width: 100%; top: 0;
-            transition: all 0.4s ease;
-        }
-        
-        header h2 { 
-            font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; color: var(--text);
-            display: flex; align-items: center; gap: 8px;
-        }
-
-        .logo-dot { width: 12px; height: 12px; background: var(--primary); border-radius: 50%; display: inline-block;}
-
-        nav { display: flex; gap: 16px; align-items: center; }
-
-        .theme-toggle { 
-            cursor: pointer; color: var(--text-dim); transition: 0.3s; display: flex; 
-            align-items: center; justify-content: center; padding: 8px; border-radius: 50%; 
-        }
-        .theme-toggle:hover { color: var(--text); }
-        .theme-toggle svg { width: 20px; height: 20px; }
-
-        .btn-nav { 
-            color: var(--text-dim); text-decoration: none; font-weight: 500; transition: 0.3s; 
-            font-size: 0.95rem; cursor: pointer; padding: 8px 16px; border-radius: 8px;
-        }
-        .btn-nav:hover { color: var(--text); }
-
-        .btn-primary { 
-            background: var(--btn-bg); color: var(--btn-text) !important; padding: 10px 24px; border-radius: 8px; 
-            font-weight: 600; text-decoration: none; font-size: 0.95rem;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; border: 1px solid transparent;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); background: var(--btn-hover); }
-
-        /* ==========================================
-           ANIMATIONS
-           ========================================== */
-        .reveal-up { opacity: 0; transform: translateY(40px); transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
-        .reveal-up.active { opacity: 1; transform: translateY(0); }
-        .delay-100 { transition-delay: 100ms; }
-        .delay-200 { transition-delay: 200ms; }
-        .delay-300 { transition-delay: 300ms; }
-
-        /* ==========================================
-           LAYOUT & TYPOGRAPHY
-           ========================================== */
-        main { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 80px;}
-        
-        section { 
-            width: 100%; max-width: 1200px; padding: 100px 5%; display: flex; flex-direction: column; 
-            position: relative; z-index: 2; align-items: flex-start; text-align: left;
-        }
-
-        .badge {
-            background: transparent; color: var(--text-dim); padding: 0;
-            font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em;
-            margin-bottom: 24px; border: none;
-        }
-
-        /* ==========================================
-           HERO SECTION (LEFT ALIGNED)
-           ========================================== */
-        .hero-section { min-height: 85vh; justify-content: center; }
-        
-        .hero-content { display: flex; flex-direction: column; align-items: flex-start; max-width: 900px; z-index: 10; width: 100%; }
-        
-        .hero-title { 
-            font-size: clamp(3.5rem, 7vw, 6rem); font-weight: 800; letter-spacing: -0.04em; margin-bottom: 24px; line-height: 1.05; color: var(--text);
-        }
-
-        .hero-subtitle { font-size: clamp(1.2rem, 2vw, 1.4rem); max-width: 700px; margin-bottom: 48px; color: var(--text-dim); line-height: 1.6;}
-
-        .hero-buttons { display: flex; gap: 16px; justify-content: flex-start; align-items: center; width: 100%; }
-
-        .btn-secondary {
-            background: transparent; color: var(--text) !important; padding: 12px 32px; border-radius: 8px;
-            font-weight: 600; text-decoration: none; transition: all 0.3s ease;
-            border: 1px solid var(--border-hover); font-size: 1.05rem; backdrop-filter: blur(12px);
-        }
-        .btn-secondary:hover { border-color: var(--text); transform: translateY(-2px); background: var(--surface); }
-        .hero-btn-primary { padding: 12px 36px; font-size: 1.05rem; }
-
-        /* ==========================================
-           THE ORIGIN (STICKY SPLIT LAYOUT)
-           ========================================== */
-        .split-section { display: flex; gap: 80px; width: 100%; align-items: flex-start; margin-bottom: 60px;}
-        
-        .split-left { flex: 1; position: sticky; top: 120px; max-width: 400px; }
-        .split-left h2 { font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 800; color: var(--text); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 20px;}
-
-        .split-right { flex: 1.2; display: flex; flex-direction: column; gap: 32px; }
-        
-        .text-block { background: var(--panel-bg); border: 1px solid var(--border); padding: 40px; border-radius: 24px; backdrop-filter: blur(20px); transition: 0.3s; }
-        .text-block:hover { border-color: var(--border-hover); transform: translateX(5px); }
-
-        .text-block h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
-        .text-block p { font-size: 1.1rem; line-height: 1.7; color: var(--text-dim); font-weight: 400; }
-        
-        .founder-tag { display: inline-block; margin-top: 20px; font-size: 0.9rem; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
+        .site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; border-bottom: 1px solid transparent; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+        .site-header.is-solid { background: rgba(255, 255, 255, 0.85); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); border-bottom-color: var(--line); box-shadow: 0 1px 8px rgba(11, 28, 48, 0.04); }
+        .header-inner { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+        .brand img { height: 30px; width: auto; }
+        .header-links { display: flex; align-items: center; gap: 4px; }
+        .header-links a { padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--ink-2); transition: color 0.2s, background 0.2s; }
+        .header-links a:hover { color: var(--ink); background: rgba(11, 28, 48, 0.05); }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        .header-avatar img, .header-avatar div { width: 100%; height: 100%; object-fit: cover; display: flex; align-items: center; justify-content: center; }
+        .menu-btn { display: none; width: 40px; height: 40px; border-radius: 8px; align-items: center; justify-content: center; }
+        .menu-btn:hover { background: rgba(11, 28, 48, 0.05); }
+        .mobile-menu { display: none; }
 
         @media (max-width: 900px) {
-            .split-section { flex-direction: column; gap: 40px; }
-            .split-left { position: relative; top: 0; max-width: 100%; }
+            .header-links, .header-actions .hide-small { display: none; }
+            .menu-btn { display: inline-flex; }
+            .mobile-menu { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 16px 32px rgba(11, 28, 48, 0.08); padding: 8px 24px 20px; }
+            .mobile-menu.open { display: block; }
+            .mobile-menu a.link { display: block; padding: 12px 0; font-weight: 500; color: var(--ink); border-bottom: 1px solid var(--line); }
+            .mobile-menu .btn { width: 100%; margin-top: 12px; }
         }
 
         /* ==========================================
-           THE VALUE (ZIG-ZAG ASYMMETRY)
+           HERO
            ========================================== */
-        .zigzag-container { display: flex; flex-direction: column; gap: 60px; width: 100%; margin-top: 40px;}
-        
-        .zig-row { display: flex; align-items: center; gap: 80px; width: 100%; }
-        .zig-row.reverse { flex-direction: row-reverse; }
+        .hero { position: relative; padding: 148px 0 96px; overflow: hidden; background:
+            radial-gradient(900px 480px at 85% 0%, rgba(79, 70, 229, 0.14), transparent 60%),
+            radial-gradient(700px 420px at 0% 20%, rgba(226, 223, 255, 0.7), transparent 60%),
+            linear-gradient(180deg, var(--surface) 0%, #ffffff 100%); }
+        /* The wave fades out at the top and bottom edges and stays faint behind the text column */
+        .hero-wave { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
+            -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 72%, transparent 100%), linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.16) 40%, #000 70%);
+            mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 72%, transparent 100%), linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.16) 40%, #000 70%);
+            -webkit-mask-composite: source-in; mask-composite: intersect; }
+        .hero-wave.ready { opacity: 1; }
+        .hero-wave canvas { width: 100%; height: 100%; }
+        .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+        .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px 0 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.8); border: 1px solid var(--primary-soft); font-size: 13px; font-weight: 500; color: var(--ink-2); box-shadow: 0 1px 2px rgba(11, 28, 48, 0.04); }
+        .pill-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18); }
+        .pill b { color: var(--primary); font-weight: 600; display: inline-block; transition: opacity 0.3s, transform 0.3s var(--ease); }
+        .pill b.swap { opacity: 0; transform: translateY(6px); }
+        .hero h1 { font-family: var(--display); font-size: clamp(2.4rem, 4.6vw, 3.7rem); line-height: 1.06; font-weight: 800; letter-spacing: -0.035em; margin: 22px 0 22px; }
+        .gradient-text { background: linear-gradient(100deg, var(--primary) 0%, #6d5efc 55%, #38bdf8 110%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .hero-sub { font-size: clamp(1.05rem, 1.5vw, 1.2rem); line-height: 1.65; color: var(--ink-2); max-width: 540px; }
+        .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+        .hero-cta .btn { height: 50px; padding: 0 24px; font-size: 16px; }
+        .hero-points { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 30px; font-size: 14px; color: var(--ink-2); }
+        .hero-points li { display: flex; align-items: center; gap: 8px; }
+        .hero-points .icon { width: 16px; height: 16px; color: var(--emerald); stroke-width: 2.4; }
 
-        .zig-text { flex: 1; }
-        .zig-text h3 { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.02em; }
-        .zig-text p { font-size: 1.15rem; color: var(--text-dim); line-height: 1.7;}
+        /* Product preview */
+        .preview-wrap { position: relative; perspective: 1400px; }
+        .preview { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-float); overflow: hidden; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.4s var(--ease); will-change: transform; }
+        .preview-bar { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--line); }
+        .preview-dots { display: flex; gap: 6px; }
+        .preview-dots i { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+        .preview-url { flex: 1; height: 24px; max-width: 260px; margin: 0 auto; border-radius: 6px; background: #fff; border: 1px solid var(--line); font-size: 11px; color: var(--ink-3); display: flex; align-items: center; justify-content: center; }
+        .preview-body { padding: 18px; }
+        .preview-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-size: 14px; color: var(--ink); }
+        .preview-search .icon { width: 17px; height: 17px; color: var(--ink-3); }
+        .preview-search .typed:empty::before { content: "Search by skill, name or college"; color: #94a3b8; }
+        .caret { width: 1.5px; height: 17px; background: var(--primary); animation: blink 1s steps(1) infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .preview-meta { display: flex; justify-content: space-between; margin: 14px 2px 8px; font-size: 12px; color: var(--ink-3); }
+        .preview-list { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 318px; }
+        .p-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); transition: opacity 0.35s, max-height 0.45s var(--ease), padding 0.45s var(--ease), border-color 0.35s; max-height: 80px; }
+        .p-row:first-child { border-top: 0; }
+        .p-row.out { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; border-top-color: transparent; }
+        .p-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; position: relative; }
+        .p-avatar.online::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%; background: #10b981; border: 2px solid #fff; }
+        .tone-a { background: #e2dfff; color: #3525cd; } .tone-b { background: #d1fae5; color: #006e4c; } .tone-c { background: #dbeafe; color: #1d4ed8; } .tone-d { background: #ffe4e6; color: #be123c; }
+        .p-main { min-width: 0; flex: 1; }
+        .p-name { font-size: 14px; font-weight: 600; line-height: 1.3; display: flex; align-items: center; gap: 5px; }
+        .p-name .icon { width: 14px; height: 14px; color: var(--primary); stroke-width: 2.2; }
+        .p-meta { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p-skills { display: flex; gap: 5px; margin-top: 5px; }
+        .chip { padding: 1px 7px; border-radius: 4px; background: #f1f5f9; color: #334155; font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap; transition: background 0.3s, color 0.3s; }
+        .chip.hit { background: var(--primary-soft); color: var(--primary); }
+        .p-follow { height: 28px; padding: 0 12px; border-radius: 6px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; flex-shrink: 0; }
+        .p-follow.done { background: #fff; color: var(--ink-2); border: 1px solid var(--line-strong); }
+        .preview-note { margin-top: 28px; text-align: center; font-size: 12px; color: var(--ink-3); }
+        .float-card { position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-card); font-size: 13px; font-weight: 500; white-space: nowrap; animation: bob 6s ease-in-out infinite; }
+        .float-card small { display: block; font-size: 11px; font-weight: 400; color: var(--ink-3); }
+        .float-card .badge { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .float-card .badge .icon { width: 16px; height: 16px; }
+        .float-1 { left: -36px; bottom: 30px; }
+        .float-2 { right: -26px; top: -22px; animation-delay: -3s; }
+        @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        .zig-glass {
-            flex: 1; min-height: 300px; background: var(--panel-bg); border: 1px solid var(--border);
-            border-radius: 24px; backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center;
-            transition: 0.4s ease;
+        @media (max-width: 1020px) {
+            .hero { padding: 124px 0 72px; }
+            .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+            .float-1 { left: -8px; } .float-2 { right: -8px; }
+            /* One column: the text is on top, so the wave shows only behind the preview below it */
+            .hero-wave { -webkit-mask-image: linear-gradient(180deg, transparent 45%, #000 68%, #000 86%, transparent 100%); mask-image: linear-gradient(180deg, transparent 45%, #000 68%, #000 86%, transparent 100%); }
         }
-        .zig-row:hover .zig-glass { border-color: var(--border-hover); transform: scale(1.02); }
-
-        .zig-icon { width: 64px; height: 64px; color: var(--text); opacity: 0.8; }
-        .zig-row:hover .zig-icon { color: var(--primary); opacity: 1; }
-
-        @media (max-width: 768px) {
-            .zig-row, .zig-row.reverse { flex-direction: column; gap: 30px; }
-            .zig-glass { width: 100%; min-height: 200px; }
+        @media (max-width: 560px) {
+            .float-card { display: none; }
+            .hero-cta .btn { width: 100%; }
+            .p-follow { display: none; }
         }
 
         /* ==========================================
-           HOW IT WORKS (LEFT ALIGNED LIST)
+           USE-CASE STRIP
            ========================================== */
-        .step-list { display: flex; flex-direction: column; width: 100%; gap: 0; margin-top: 40px; border-top: 1px solid var(--border); }
+        .strip { padding: 22px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; background: #fff; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+        .strip-track { display: flex; width: max-content; animation: marquee 38s linear infinite; }
+        .strip:hover .strip-track { animation-play-state: paused; }
+        .strip-track ul { display: flex; align-items: center; }
+        .strip-track li { display: flex; align-items: center; gap: 10px; padding: 0 28px; font-family: var(--display); font-size: 15px; font-weight: 700; color: var(--ink-3); white-space: nowrap; }
+        .strip-track .icon { width: 18px; height: 18px; color: var(--primary); }
+        @keyframes marquee { to { transform: translateX(-50%); } }
 
-        .step-item {
-            display: flex; gap: 40px; padding: 60px 0; border-bottom: 1px solid var(--border);
-            transition: 0.3s ease; align-items: flex-start;
+        /* ==========================================
+           PRODUCT (BENTO)
+           ========================================== */
+        .bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 20px; }
+        .card { position: relative; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s var(--ease); }
+        .card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(79, 70, 229, 0.09), transparent 60%); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .card:hover { border-color: #c3c0ff; box-shadow: var(--shadow-card); transform: translateY(-2px); }
+        .card:hover::before { opacity: 1; }
+        .card > * { position: relative; }
+        .span-4 { grid-column: span 4; } .span-3 { grid-column: span 3; } .span-2 { grid-column: span 2; }
+        .card-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--primary-tint); color: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+        .card h3 { font-family: var(--display); font-size: 20px; line-height: 1.3; font-weight: 700; letter-spacing: -0.01em; }
+        .card p { font-size: 15px; line-height: 1.6; color: var(--ink-2); margin-top: 8px; }
+        .card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 14px; font-weight: 600; color: var(--primary); }
+        .card-link .icon { width: 16px; height: 16px; transition: transform 0.2s var(--ease); }
+        .card:hover .card-link .icon { transform: translateX(4px); }
+        .card-link::after { content: ""; position: absolute; inset: 0; }
+        .card-art { margin-top: 26px; flex: 1; display: flex; align-items: flex-end; }
+        .art { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 12px; }
+        .card.wide { flex-direction: row; gap: 28px; align-items: center; }
+        .card.wide .card-text { flex: 1; min-width: 0; }
+        .card.wide .card-art { flex: 1.1; margin-top: 0; align-items: center; min-width: 0; }
+
+        /* Small illustrations inside the cards */
+        .art-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .art-filter { padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line-strong); background: #fff; color: var(--ink-2); font-weight: 500; }
+        .art-filter.on { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+        .art-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+        .art-row + .art-row { margin-top: 6px; }
+        .art-row .p-avatar { width: 28px; height: 28px; font-size: 10px; }
+        .bar { height: 7px; border-radius: 4px; background: #e2e8f0; }
+        .bar.dark { background: #cbd5e1; }
+        .art-post { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+        .art-post strong { display: block; font-size: 13px; font-weight: 600; }
+        .art-post > span { color: var(--ink-3); }
+        .art-post-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+        .art-tag { padding: 2px 8px; border-radius: 999px; background: var(--emerald-soft); color: var(--emerald); font-weight: 600; font-size: 11px; }
+        .art-apply { padding: 4px 12px; border-radius: 6px; background: var(--primary); color: #fff; font-weight: 600; font-size: 11px; }
+        .bubble { max-width: 78%; padding: 7px 11px; border-radius: 12px 12px 12px 3px; background: #fff; border: 1px solid var(--line); color: var(--ink-2); }
+        .bubble.me { margin-left: auto; border-radius: 12px 12px 3px 12px; background: var(--primary); border-color: var(--primary); color: #fff; }
+        .bubble + .bubble { margin-top: 6px; }
+        .art-call { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 7px 10px; border-radius: 999px; background: var(--navy); color: #fff; font-weight: 500; }
+        .art-call .icon { width: 14px; height: 14px; }
+        .art-call .live { width: 7px; height: 7px; border-radius: 50%; background: #34d399; animation: pulse 1.6s ease-in-out infinite; }
+        .art-call span:last-child { margin-left: auto; opacity: 0.7; font-variant-numeric: tabular-nums; }
+        @keyframes pulse { 50% { opacity: 0.35; } }
+        .kanban { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .kanban-col { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+        .kanban-col h4 { margin: 0 0 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; gap: 5px; }
+        .kanban-col h4 i { width: 6px; height: 6px; border-radius: 50%; }
+        .task { padding: 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+        .task + .task { margin-top: 6px; }
+        .task .bar + .bar { margin-top: 5px; }
+        .orbit { position: relative; height: 150px; }
+        .orbit-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 8px 14px; border-radius: 999px; background: var(--primary); color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 0 8px rgba(53, 37, 205, 0.08), 0 0 0 20px rgba(53, 37, 205, 0.04); }
+        .orbit-core .icon { width: 15px; height: 15px; }
+        .orbit .p-avatar { position: absolute; width: 34px; height: 34px; font-size: 11px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(11, 28, 48, 0.12); animation: bob 5s ease-in-out infinite; }
+        .source { display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+        .source + .source { margin-top: 6px; }
+        .source b { width: 74px; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--primary); }
+        .source div { flex: 1; }
+        .source .bar + .bar { margin-top: 5px; }
+
+        @media (max-width: 960px) {
+            .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .span-4, .span-3, .span-2 { grid-column: span 1; }
+            .card.wide { flex-direction: column; align-items: stretch; gap: 0; }
+            .card.wide .card-art { margin-top: 26px; }
         }
-        
-        .step-item:hover { padding-left: 20px; border-bottom-color: var(--border-hover);}
-
-        .step-number { font-family: monospace; font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-top: 5px; }
-        
-        .step-content { flex: 1; }
-        .step-content h3 { font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.02em; }
-        .step-content p { font-size: 1.15rem; color: var(--text-dim); line-height: 1.6; max-width: 700px; }
-
-        @media (max-width: 600px) {
-            .step-item { flex-direction: column; gap: 16px; padding: 40px 0; }
-            .step-item:hover { padding-left: 0; }
+        @media (max-width: 640px) {
+            .section { padding: 80px 0; }
+            .section-head { margin-bottom: 40px; }
+            .bento { grid-template-columns: minmax(0, 1fr); }
+            .card { padding: 22px; }
         }
 
         /* ==========================================
-           FOOTER
+           HOW IT WORKS
            ========================================== */
-        footer { 
-            padding: 60px 5%; text-align: left; color: var(--text-dim); 
-            font-size: 0.95rem; margin-top: auto; backdrop-filter: blur(10px);
-            display: flex; justify-content: space-between; border-top: 1px solid var(--border);
+        .how { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 72px; align-items: start; }
+        .how-head { position: sticky; top: 120px; }
+        .steps { position: relative; }
+        .steps-line { position: absolute; left: 21px; top: 22px; bottom: 22px; width: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+        .steps-line i { display: block; width: 100%; height: 100%; background: linear-gradient(180deg, var(--primary), #6d5efc); transform-origin: top; transform: scaleY(var(--progress, 0)); }
+        .step { position: relative; display: flex; gap: 24px; padding-bottom: 44px; }
+        .step:last-child { padding-bottom: 0; }
+        .step-num { position: relative; z-index: 1; width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 2px solid var(--line); color: var(--ink-3); font-family: var(--display); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.4s, border-color 0.4s, color 0.4s, box-shadow 0.4s; }
+        .step.on .step-num { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 0 0 6px rgba(53, 37, 205, 0.12); }
+        .step-body { flex: 1; min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; transition: border-color 0.4s, box-shadow 0.4s; }
+        .step.on .step-body { border-color: #c3c0ff; box-shadow: var(--shadow-card); }
+        .step h3 { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+        .step p { font-size: 15px; color: var(--ink-2); margin-top: 8px; }
+        .step-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+        .step-tags span { padding: 4px 10px; border-radius: 6px; background: var(--primary-tint); color: var(--primary); font-size: 12px; font-weight: 600; }
+
+        @media (max-width: 900px) {
+            .how { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+            .how-head { position: static; }
         }
-        @media (max-width: 600px) {
-            footer { flex-direction: column; gap: 20px; }
+        @media (max-width: 560px) {
+            .step { gap: 14px; }
+            .step-num { width: 36px; height: 36px; font-size: 13px; }
+            .steps-line { left: 17px; }
+            .step-body { padding: 18px; }
+        }
+
+        /* ==========================================
+           STORY
+           ========================================== */
+        .story { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 72px; align-items: center; }
+        .story-quote { position: relative; background: linear-gradient(160deg, var(--primary-tint), #fff 70%); border: 1px solid var(--primary-soft); border-radius: 24px; padding: 44px; }
+        .story-quote .mark { font-family: var(--display); font-size: 84px; line-height: 0.6; font-weight: 800; color: var(--primary-soft); margin-bottom: 20px; }
+        .story-quote blockquote { font-family: var(--display); font-size: clamp(1.2rem, 2vw, 1.5rem); line-height: 1.45; font-weight: 600; letter-spacing: -0.01em; }
+        .story-by { display: flex; align-items: center; gap: 12px; margin-top: 28px; }
+        .story-by .p-avatar { width: 44px; height: 44px; font-size: 14px; }
+        .story-by strong { display: block; font-size: 15px; font-weight: 600; }
+        .story-by span { font-size: 13px; color: var(--ink-3); }
+        .story-points { margin-top: 28px; display: grid; gap: 22px; }
+        .story-points h3 { font-family: var(--display); font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+        .story-points p { font-size: 15px; color: var(--ink-2); }
+        @media (max-width: 900px) {
+            .story { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+            .story-quote { padding: 30px; }
+        }
+
+        /* ==========================================
+           FAQ
+           ========================================== */
+        .faq { max-width: 800px; margin: 0 auto; border-top: 1px solid var(--line); }
+        .faq-item { border-bottom: 1px solid var(--line); }
+        .faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 4px; text-align: left; font-family: var(--display); font-size: 17px; font-weight: 700; transition: color 0.2s; }
+        .faq-q:hover { color: var(--primary); }
+        .faq-q .icon { transition: transform 0.3s var(--ease); color: var(--ink-3); }
+        .faq-q[aria-expanded="true"] .icon { transform: rotate(45deg); color: var(--primary); }
+        .faq-a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.35s var(--ease); }
+        .faq-a.open { grid-template-rows: 1fr; }
+        .faq-a > div { overflow: hidden; }
+        .faq-a p { padding: 0 44px 24px 4px; font-size: 15.5px; color: var(--ink-2); }
+
+        /* ==========================================
+           CALL TO ACTION AND FOOTER
+           ========================================== */
+        .cta-wrap { padding: 112px 0; }
+        .cta { position: relative; overflow: hidden; border-radius: 28px; padding: 72px 32px; text-align: center; color: #fff; background:
+            radial-gradient(600px 300px at 50% 0%, rgba(109, 94, 252, 0.55), transparent 70%),
+            radial-gradient(500px 300px at 100% 100%, rgba(56, 189, 248, 0.2), transparent 70%),
+            var(--navy); }
+        .cta h2 { font-family: var(--display); font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.1; font-weight: 800; letter-spacing: -0.03em; max-width: 720px; margin: 0 auto; }
+        .cta p { font-size: 18px; color: rgba(255, 255, 255, 0.72); margin: 16px auto 0; max-width: 520px; }
+        .cta-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 34px; }
+        .cta-buttons .btn { height: 50px; padding: 0 26px; font-size: 16px; }
+
+        .site-footer { background: var(--surface); border-top: 1px solid var(--line); padding: 64px 0 32px; }
+        .footer-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 40px; }
+        .footer-about p { font-size: 14px; color: var(--ink-2); margin-top: 14px; max-width: 300px; }
+        .footer-col h4 { margin: 0 0 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+        .footer-col a { display: block; padding: 5px 0; font-size: 14.5px; color: var(--ink-2); transition: color 0.2s; }
+        .footer-col a:hover { color: var(--primary); }
+        .footer-bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 13.5px; color: var(--ink-3); }
+        @media (max-width: 800px) {
+            .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .footer-about { grid-column: 1 / -1; }
+            .cta { padding: 52px 22px; border-radius: 20px; }
+            .cta-wrap { padding: 80px 0; }
+            .cta-buttons .btn { width: 100%; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .js .reveal { opacity: 1; transform: none; }
+            .preview { transform: none; }
         }
     </style>
-    
-    <!-- Three.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-    <script src="shared.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="shared.js"></script>
+    <script defer src="landing.js"></script>
 </head>
 <body>
 
-    <div class="base-bg"></div>
-    <div class="vignette"></div>
-    
-    <!-- 3D Fluid Data Wave Container (Untouched) -->
-    <div id="parallax-canvas-container"></div>
+    <!-- Icons used on this page, drawn once and referenced by id -->
+    <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+        <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+        <symbol id="i-verified" viewBox="0 0 24 24"><path d="M12 3l2.4 1.8 3 .1 1 2.8 2.4 1.8-.9 2.8.9 2.9-2.4 1.8-1 2.8-3 .1L12 21.5l-2.4-1.8-3-.1-1-2.8L3.200 15l.9-2.800L3.200 9.400l2.400-1.800 1-2.800 3-.1z"/><path d="M8.800 12.200l2.200 2.200 4.200-4.400"/></symbol>
+        <symbol id="i-board" viewBox="0 0 24 24"><rect x="3.500" y="4" width="17" height="16" rx="2.500"/><path d="M8 9h8M8 13h5"/></symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12a7.500 7.500 0 01-11 6.600L4 20l1.400-4.600A7.500 7.500 0 1120 12z"/></symbol>
+        <symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3.500" y="4" width="5" height="16" rx="1.500"/><rect x="10" y="4" width="5" height="10" rx="1.500"/><rect x="16.500" y="4" width="4" height="13" rx="1.500"/></symbol>
+        <symbol id="i-campus" viewBox="0 0 24 24"><path d="M2.500 9.500L12 4.500l9.500 5-9.500 5z"/><path d="M6.500 12v4.500c1.500 1.300 3.300 2 5.500 2s4-.7 5.500-2V12M21.500 9.500V15"/></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.500C10.300 5.200 8 4.500 4 4.500v13c4 0 6.300.7 8 2 1.700-1.300 4-2 8-2v-13c-4 0-6.300.7-8 2zM12 6.500v13"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.500" width="6" height="11" rx="3"/><path d="M5.500 11.500a6.500 6.500 0 0013 0M12 18v2.500"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.500" r="3.500"/><path d="M2.500 19.500c.6-3.200 3.200-5 6.500-5s5.900 1.800 6.500 5M16 5.300a3.500 3.500 0 010 6.400M18.500 14.900c1.700.8 2.700 2.400 3 4.600"/></symbol>
+        <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.500h6L10.500 21 19 10h-6z"/></symbol>
+        <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9.500 3.500h5M10.500 3.500v6L5 18.500a1.500 1.500 0 001.300 2.200h11.400a1.500 1.500 0 001.300-2.200l-5.500-9v-6M7.800 14.500h8.400"/></symbol>
+        <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.200 1-1.700 3.200-1.800 5 1.800-.1 4-.6 5-1.800M9 15l-1.500-3.500c1.200-4.400 4.700-7.700 12-8-.3 7.300-3.600 10.800-8 12L9 15zM14.500 9.500h.01"/></symbol>
+        <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4.500h8v5a4 4 0 01-8 0zM8 6.500H4.500c0 2.500 1.300 4 3.700 4.300M16 6.500h3.500c0 2.500-1.300 4-3.700 4.300M12 13.500v3.500M8.500 20h7M10 17h4v3h-4z"/></symbol>
+        <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.500 7.500L4 12l4.500 4.500M15.500 7.500L20 12l-4.500 4.500M13.500 5l-3 14"/></symbol>
+        <symbol id="i-cap" viewBox="0 0 24 24"><path d="M4 6.500A2.500 2.500 0 016.500 4H20v13.500H6.500A2.500 2.500 0 004 20zM4 20a2.500 2.500 0 002.500 2.500H20v-5"/></symbol>
+    </svg>
 
-    <header>
-<div class="h-16 max-w-[1536px] mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
-    <!-- Left: Logo + Navigation -->
-    <div class="flex items-center gap-4 xl:gap-8">
-      <div class="flex items-center gap-2 shrink-0 cursor-pointer" onclick="window.location.href='index.html'">
-        <img alt="ProPartner" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/>
-        <span class="text-xl font-bold tracking-tight text-slate-900">ProPartner</span>
-      </div>
-      <nav class="hidden xl:flex items-center gap-0.5 h-16">
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="search.html">Discover Talent</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="board.html">Opportunities Board</a>
-        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="team.html">My Teams</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="project_management.html">Project Hub</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="college.html">Campus Network</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="research.html">Research Collab</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="network.html">My Network</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="saved.html">Saved Profiles</a>
-      </nav>
-    </div>
-
-    <!-- Right: Search + Utilities + Profile -->
-    <div class="flex items-center gap-1.5 shrink-0">
-      <!-- Search Bar -->
-      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="document.getElementById('search-modal') && document.getElementById('search-modal').classList.add('active')">
-        <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
-        <span class="text-[12px] text-slate-400 truncate">Search network...</span>
-        <kbd class="ml-auto text-[10px] font-semibold text-slate-400 bg-white px-1 py-0.5 rounded border border-slate-200 shadow-sm">⌘K</kbd>
-      </div>
-
-      <!-- Divider -->
-      <div class="h-5 w-px bg-slate-200 hidden md:block mx-0.5"></div>
-
-      <!-- Admin Link -->
-      <a class="hidden lg:flex items-center gap-1 text-slate-500 hover:text-primary transition-colors text-[13px] font-semibold px-2 py-1.5 rounded-lg hover:bg-slate-50 whitespace-nowrap" href="admin_dashboard.html">
-        <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-        Admin
-      </a>
-
-      <!-- Notifications -->
-      <button aria-label="Notifications" class="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button" data-notif-btn>
-        <span class="material-symbols-outlined text-[20px]">notifications</span>
-        <span data-notif-badge class="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white" style="display:none;"></span>
-      </button>
-
-      <!-- Direct Messages -->
-      <button aria-label="Direct Messages" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button" onclick="window.location.href='inbox.html'">
-        <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
-      </button>
-
-      <!-- Menu Dropdown -->
-      <div class="relative group inline-block">
-        <button aria-label="More Options" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" type="button">
-          <span class="material-symbols-outlined text-[20px]">menu</span>
-        </button>
-        <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-          <a href="history.html" class="flex items-center gap-2 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors text-[13px] font-medium">
-            <span class="material-symbols-outlined text-[18px]">history</span>
-            Activity History
-          </a>
-          <button onclick="window.logout()" class="w-full flex items-center gap-2 px-4 py-3 text-rose-600 hover:bg-rose-50 transition-colors text-[13px] font-medium">
-            <span class="material-symbols-outlined text-[18px]">logout</span>
-            Log Out
-          </button>
+    <header class="site-header" id="siteHeader">
+        <div class="container header-inner">
+            <a class="brand" href="index.html" aria-label="ProPartner home">
+                <img alt="" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD">
+                <span>ProPartner</span>
+            </a>
+            <!-- Not a <nav> element: shared.js restyles every "nav a" for the app header -->
+            <div class="header-links" role="navigation" aria-label="Sections">
+                <a href="#product">Product</a>
+                <a href="#how">How it works</a>
+                <a href="#story">Our story</a>
+                <a href="#faq">FAQ</a>
+            </div>
+            <div class="header-actions">
+                <a class="btn btn-quiet btn-small only-guest hide-small" href="login.html">Log in</a>
+                <a class="btn btn-primary btn-small only-guest hide-small" href="register.html">Get started</a>
+                <a class="btn btn-primary btn-small only-authed hide-small" href="search.html">Open ProPartner <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                <a class="header-avatar only-authed" href="profile.html" aria-label="Your profile" data-header-avatar></a>
+                <button class="menu-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenu"><svg class="icon"><use href="#i-menu"/></svg></button>
+            </div>
         </div>
-      </div>
-
-      <!-- Profile Avatar -->
-      <div class="relative cursor-pointer pl-0.5" onclick="window.location.href='profile.html'">
-        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden" data-header-avatar>
-          <span class="material-symbols-outlined text-white text-[18px]">person</span>
+        <div class="mobile-menu" id="mobileMenu">
+            <a class="link" href="#product">Product</a>
+            <a class="link" href="#how">How it works</a>
+            <a class="link" href="#story">Our story</a>
+            <a class="link" href="#faq">FAQ</a>
+            <a class="btn btn-ghost only-guest" href="login.html">Log in</a>
+            <a class="btn btn-primary only-guest" href="register.html">Get started</a>
+            <a class="btn btn-primary only-authed" href="search.html">Open ProPartner</a>
         </div>
-        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="Active Now"></span>
-      </div>
-    </div>
-  </div>
-</header>
+    </header>
 
     <main>
-        <!-- HERO SECTION (LEFT ALIGNED) -->
-        <section class="hero-section">
-            <div class="hero-content">
-                <div class="badge shadow-text reveal-up">The Collaborative Network</div>
-                <h1 class="hero-title shadow-text reveal-up delay-100">Find your perfect project partner.</h1>
-                <p class="hero-subtitle shadow-text reveal-up delay-200">
-                    Whether you are building a startup, joining a hackathon, or working on an assignment, ProPartner makes it effortless to find teammates with the exact skills you need.
-                </p>
-                <div class="hero-buttons reveal-up delay-300">
-                    <a href="register.html" class="btn-primary hero-btn-primary">Start Building</a>
-                    <a href="#genesis" class="btn-secondary shadow-text">See How It Works</a>
+        <!-- 1. HERO -->
+        <section class="hero" id="hero">
+            <div class="hero-wave" id="heroWave" aria-hidden="true"></div>
+            <div class="container hero-grid">
+                <div>
+                    <div class="pill reveal"><span class="pill-dot"></span>Teammates for your next <b id="rotatingWord">hackathon</b></div>
+                    <h1 class="reveal" style="--d:1">Find the teammate your project is <span class="gradient-text">missing.</span></h1>
+                    <p class="hero-sub reveal" style="--d:2">Search people by the skills they really have, post the role you need filled, and build together with chat, calls and a shared task board. All in one place.</p>
+                    <div class="hero-cta reveal" style="--d:3">
+                        <a class="btn btn-primary only-guest" href="register.html">Get started <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                        <a class="btn btn-primary only-authed" href="search.html">Open ProPartner <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                        <a class="btn btn-ghost" href="#how">See how it works</a>
+                    </div>
+                    <ul class="hero-points reveal" style="--d:4">
+                        <li><svg class="icon"><use href="#i-check"/></svg>Search by skill, college and city</li>
+                        <li><svg class="icon"><use href="#i-check"/></svg>College ID checks for students</li>
+                        <li><svg class="icon"><use href="#i-check"/></svg>Nothing to install</li>
+                    </ul>
+                </div>
+
+                <!-- A picture of the Discover page, built from markup. The people are samples. -->
+                <div class="preview-wrap reveal" style="--d:2" id="previewWrap" aria-hidden="true">
+                    <div class="preview" id="preview">
+                        <div class="preview-bar">
+                            <div class="preview-dots"><i></i><i></i><i></i></div>
+                            <div class="preview-url">ProPartner · Discover Talent</div>
+                        </div>
+                        <div class="preview-body">
+                            <div class="preview-search"><svg class="icon"><use href="#i-search"/></svg><span class="typed" id="previewTyped"></span><span class="caret"></span></div>
+                            <div class="preview-meta"><span id="previewCount">4 people</span><span>Sort: Best match</span></div>
+                            <div class="preview-list" id="previewList">
+                                <div class="p-row" data-skills="react node.js typescript">
+                                    <div class="p-avatar tone-a online">AS</div>
+                                    <div class="p-main">
+                                        <div class="p-name">Aarav S. <svg class="icon"><use href="#i-verified"/></svg></div>
+                                        <div class="p-meta">Computer Engineering · Pune</div>
+                                        <div class="p-skills"><span class="chip">React</span><span class="chip">Node.js</span><span class="chip">TypeScript</span></div>
+                                    </div>
+                                    <div class="p-follow">Follow</div>
+                                </div>
+                                <div class="p-row" data-skills="python pytorch sql">
+                                    <div class="p-avatar tone-b">MK</div>
+                                    <div class="p-main">
+                                        <div class="p-name">Meera K. <svg class="icon"><use href="#i-verified"/></svg></div>
+                                        <div class="p-meta">AI and Data Science · Nashik</div>
+                                        <div class="p-skills"><span class="chip">Python</span><span class="chip">PyTorch</span><span class="chip">SQL</span></div>
+                                    </div>
+                                    <div class="p-follow done">Following</div>
+                                </div>
+                                <div class="p-row" data-skills="embedded c python iot">
+                                    <div class="p-avatar tone-c online">RP</div>
+                                    <div class="p-main">
+                                        <div class="p-name">Rohan P.</div>
+                                        <div class="p-meta">Electronics · Mumbai</div>
+                                        <div class="p-skills"><span class="chip">Embedded C</span><span class="chip">Python</span><span class="chip">IoT</span></div>
+                                    </div>
+                                    <div class="p-follow">Follow</div>
+                                </div>
+                                <div class="p-row" data-skills="figma ui/ux react">
+                                    <div class="p-avatar tone-d">SD</div>
+                                    <div class="p-main">
+                                        <div class="p-name">Sara D.</div>
+                                        <div class="p-meta">Design · Pune</div>
+                                        <div class="p-skills"><span class="chip">Figma</span><span class="chip">UI/UX</span><span class="chip">React</span></div>
+                                    </div>
+                                    <div class="p-follow">Follow</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="float-card float-1">
+                        <span class="badge tone-b"><svg class="icon"><use href="#i-users"/></svg></span>
+                        <span>Joined your team<small>Backend role filled</small></span>
+                    </div>
+                    <div class="float-card float-2">
+                        <span class="badge tone-a"><svg class="icon"><use href="#i-bolt"/></svg></span>
+                        <span>3 skills in common<small>Highlighted in search</small></span>
+                    </div>
+                    <p class="preview-note">Preview of the Discover page with sample profiles</p>
                 </div>
             </div>
         </section>
 
-        <!-- THE STORY (WHY IT WAS MADE) -->
-        <section id="genesis">
-            <div class="split-section">
-                <div class="split-left reveal-up">
-                    <div class="badge shadow-text">The Origin Story</div>
-                    <h2 class="shadow-text">Built from real frustration.</h2>
+        <!-- 2. WHAT PEOPLE BUILD HERE (the list is repeated once so the loop has no seam) -->
+        <div class="strip" aria-label="What people build on ProPartner">
+            <div class="strip-track" id="stripTrack">
+                <ul>
+                    <li><svg class="icon"><use href="#i-bolt"/></svg>Hackathons</li>
+                    <li><svg class="icon"><use href="#i-cap"/></svg>Capstone projects</li>
+                    <li><svg class="icon"><use href="#i-flask"/></svg>Research papers</li>
+                    <li><svg class="icon"><use href="#i-rocket"/></svg>Startups</li>
+                    <li><svg class="icon"><use href="#i-trophy"/></svg>Competitions</li>
+                    <li><svg class="icon"><use href="#i-code"/></svg>Open source</li>
+                    <li><svg class="icon"><use href="#i-book"/></svg>Assignments</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 3. PRODUCT -->
+        <section class="section" id="product">
+            <div class="container">
+                <div class="section-head center">
+                    <span class="eyebrow reveal">The product</span>
+                    <h2 class="section-title reveal" style="--d:1">From "who can build this?" to a working team</h2>
+                    <p class="section-lead reveal" style="--d:2">Six tools that share one account. Find people, agree on the work, and get it done without switching apps.</p>
                 </div>
-                
-                <div class="split-right reveal-up delay-100">
-                    <div class="text-block">
-                        <h3 class="shadow-text">The Problem</h3>
-                        <p class="shadow-text">
-                            Finding a reliable teammate for a project shouldn't rely on luck. Our founder, Omkar Gopale, realized that brilliant people were missing out on great ideas simply because they couldn't find the right people to build them with. Asking around in noisy group chats or messy forums just wasn't working.
-                        </p>
+
+                <div class="bento">
+                    <article class="card wide span-4 reveal">
+                        <div class="card-text">
+                            <div class="card-icon"><svg class="icon"><use href="#i-search"/></svg></div>
+                            <h3>Discover Talent</h3>
+                            <p>Type a skill, a name or a project. Narrow by college, department and city. Skills you share with someone are highlighted on their row.</p>
+                            <a class="card-link" href="search.html">Open Discover <svg class="icon"><use href="#i-arrow"/></svg></a>
+                        </div>
+                        <div class="card-art" aria-hidden="true">
+                            <div class="art">
+                                <div class="art-filters"><span class="art-filter on">Python</span><span class="art-filter">Pune</span><span class="art-filter">Online now</span><span class="art-filter">Verified</span></div>
+                                <div class="art-row"><div class="p-avatar tone-b">MK</div><div style="flex:1"><div class="bar dark" style="width:46%"></div><div class="bar" style="width:72%;margin-top:6px"></div></div><span class="chip hit">Python</span></div>
+                                <div class="art-row"><div class="p-avatar tone-c">RP</div><div style="flex:1"><div class="bar dark" style="width:38%"></div><div class="bar" style="width:60%;margin-top:6px"></div></div><span class="chip hit">Python</span></div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card span-2 reveal" style="--d:1">
+                        <div class="card-icon"><svg class="icon"><use href="#i-board"/></svg></div>
+                        <h3>Opportunities Board</h3>
+                        <p>Post the role you need. People apply, you choose.</p>
+                        <a class="card-link" href="board.html">Open the board <svg class="icon"><use href="#i-arrow"/></svg></a>
+                        <div class="card-art" aria-hidden="true">
+                            <div class="art">
+                                <div class="art-post">
+                                    <strong>UI designer for a 36-hour hackathon</strong>
+                                    <span>Figma · 2 spots left</span>
+                                    <div class="art-post-foot"><span class="art-tag">Open</span><span class="art-apply">Apply</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card span-2 reveal">
+                        <div class="card-icon"><svg class="icon"><use href="#i-chat"/></svg></div>
+                        <h3>Teams, chat and calls</h3>
+                        <p>Channels for your team, direct messages, and voice or video calls in the browser.</p>
+                        <a class="card-link" href="team.html">Open My Teams <svg class="icon"><use href="#i-arrow"/></svg></a>
+                        <div class="card-art" aria-hidden="true">
+                            <div class="art">
+                                <div class="bubble">API is live. Can you test login?</div>
+                                <div class="bubble me">On it. Call in 5?</div>
+                                <div class="art-call"><span class="live"></span><svg class="icon"><use href="#i-mic"/></svg><span>Voice room</span><span>04:12</span></div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card wide span-4 reveal" style="--d:1">
+                        <div class="card-text">
+                            <div class="card-icon"><svg class="icon"><use href="#i-kanban"/></svg></div>
+                            <h3>Project Hub</h3>
+                            <p>A task board for each team, plus a planning canvas for sketching the idea before anyone writes code.</p>
+                            <a class="card-link" href="project_management.html">Open Project Hub <svg class="icon"><use href="#i-arrow"/></svg></a>
+                        </div>
+                        <div class="card-art" aria-hidden="true">
+                            <div class="art">
+                                <div class="kanban">
+                                    <div class="kanban-col"><h4><i style="background:#94a3b8"></i>To do</h4><div class="task"><div class="bar dark" style="width:80%"></div><div class="bar" style="width:50%"></div></div><div class="task"><div class="bar dark" style="width:60%"></div></div></div>
+                                    <div class="kanban-col"><h4><i style="background:#4f46e5"></i>Doing</h4><div class="task"><div class="bar dark" style="width:70%"></div><div class="bar" style="width:90%"></div></div></div>
+                                    <div class="kanban-col"><h4><i style="background:#10b981"></i>Done</h4><div class="task"><div class="bar dark" style="width:55%"></div></div><div class="task"><div class="bar dark" style="width:75%"></div><div class="bar" style="width:40%"></div></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card span-3 reveal">
+                        <div class="card-icon"><svg class="icon"><use href="#i-campus"/></svg></div>
+                        <h3>Campus Network</h3>
+                        <p>See who from your own college is here, by department, and who is online right now.</p>
+                        <a class="card-link" href="college.html">Open Campus Network <svg class="icon"><use href="#i-arrow"/></svg></a>
+                        <div class="card-art" aria-hidden="true">
+                            <div class="art">
+                                <div class="orbit">
+                                    <div class="orbit-core"><svg class="icon"><use href="#i-campus"/></svg>Your college</div>
+                                    <div class="p-avatar tone-a" style="left:8%;top:12%">AS</div>
+                                    <div class="p-avatar tone-b" style="left:24%;bottom:6%;animation-delay:-1.2s">MK</div>
+                                    <div class="p-avatar tone-c" style="right:22%;top:4%;animation-delay:-2.4s">RP</div>
+                                    <div class="p-avatar tone-d" style="right:6%;bottom:14%;animation-delay:-3.6s">SD</div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card span-3 reveal" style="--d:1">
+                        <div class="card-icon"><svg class="icon"><use href="#i-book"/></svg></div>
+                        <h3>Research Collab</h3>
+                        <p>Start a topic and collect real sources for it from Wikipedia, OpenAlex and Crossref, saved as a report.</p>
+                        <a class="card-link" href="research.html">Open Research Collab <svg class="icon"><use href="#i-arrow"/></svg></a>
+                        <div class="card-art" aria-hidden="true">
+                            <div class="art">
+                                <div class="source"><b>Wikipedia</b><div><div class="bar dark" style="width:70%"></div><div class="bar" style="width:92%"></div></div></div>
+                                <div class="source"><b>OpenAlex</b><div><div class="bar dark" style="width:84%"></div><div class="bar" style="width:60%"></div></div></div>
+                                <div class="source"><b>Crossref</b><div><div class="bar dark" style="width:58%"></div><div class="bar" style="width:78%"></div></div></div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="section section-tint" id="how">
+            <div class="container how">
+                <div class="how-head">
+                    <span class="eyebrow reveal">How it works</span>
+                    <h2 class="section-title reveal" style="--d:1">Three steps from sign-up to shipping</h2>
+                    <p class="section-lead reveal" style="--d:2">Your profile is the only setup. Everything else is already there.</p>
+                </div>
+                <div class="steps" id="steps">
+                    <div class="steps-line"><i></i></div>
+                    <div class="step reveal">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h3>Set up your profile</h3>
+                            <p>Add your college and department, the skills and tools you use, and the projects you are proud of. Students confirm their account with a college ID.</p>
+                            <div class="step-tags"><span>Skills</span><span>Projects</span><span>GitHub</span></div>
+                        </div>
                     </div>
-                    
-                    <div class="text-block">
-                        <h3 class="shadow-text">The Solution</h3>
-                        <p class="shadow-text">
-                            We built this platform to bridge that gap. ProPartner is designed to make it incredibly simple for anyone to find trustworthy collaborators, form a team instantly, and bring their ideas to life without the hassle.
-                        </p>
-                        <span class="founder-tag shadow-text">— Designed for creators.</span>
+                    <div class="step reveal">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h3>Find your match</h3>
+                            <p>Search Discover for the exact skill you are missing, or post your idea on the Opportunities Board and let people apply to you.</p>
+                            <div class="step-tags"><span>Discover Talent</span><span>Opportunities Board</span></div>
+                        </div>
+                    </div>
+                    <div class="step reveal">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <h3>Build together</h3>
+                            <p>Create a team, add the people you chose, and work in one place: channels, calls, a task board and a planning canvas.</p>
+                            <div class="step-tags"><span>My Teams</span><span>Project Hub</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- THE VALUE (WHY IT'S USEFUL - ZIGZAG) -->
-        <section id="value">
-            <div class="badge shadow-text reveal-up">Why ProPartner</div>
-            <h2 class="section-title shadow-text reveal-up delay-100" style="margin-bottom: 10px;">Everything you need to succeed.</h2>
-            
-            <div class="zigzag-container">
-                <!-- Feature 1 -->
-                <div class="zig-row reveal-up">
-                    <div class="zig-text">
-                        <h3 class="shadow-text">Smart Search</h3>
-                        <p class="shadow-text">Stop relying on luck. Search for exactly what you need—like a UI Designer, a Python coder, or a Marketing student—and find the best matches instantly based on verified skills.</p>
-                    </div>
-                    <div class="zig-glass">
-                        <svg class="zig-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </div>
-                </div>
-
-                <!-- Feature 2 -->
-                <div class="zig-row reverse reveal-up">
-                    <div class="zig-text">
-                        <h3 class="shadow-text">Real Portfolios</h3>
-                        <p class="shadow-text">Know exactly who you are working with. Profiles showcase actual past projects, GitHub links, and school credentials so you can trust your new teammate from day one.</p>
-                    </div>
-                    <div class="zig-glass">
-                        <svg class="zig-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <!-- 5. STORY -->
+        <section class="section" id="story">
+            <div class="container story">
+                <div>
+                    <span class="eyebrow reveal">Our story</span>
+                    <h2 class="section-title reveal" style="--d:1">Built from real frustration</h2>
+                    <div class="story-points">
+                        <div class="reveal" style="--d:2">
+                            <h3>The problem</h3>
+                            <p>Good ideas were dying because the right people never met. Asking around in noisy group chats and messy forums came down to luck.</p>
+                        </div>
+                        <div class="reveal" style="--d:3">
+                            <h3>The answer</h3>
+                            <p>One place where you can see what someone can really do, form a team, and start building the same day.</p>
+                        </div>
                     </div>
                 </div>
+                <figure class="story-quote reveal" style="--d:1">
+                    <div class="mark" aria-hidden="true">&ldquo;</div>
+                    <blockquote>Finding a reliable teammate should not depend on luck. Brilliant people were missing out on great ideas simply because they could not find the right people to build them with.</blockquote>
+                    <figcaption class="story-by">
+                        <div class="p-avatar tone-a">OG</div>
+                        <div><strong>Omkar Gopale</strong><span>Founder, ProPartner</span></div>
+                    </figcaption>
+                </figure>
+            </div>
+        </section>
 
-                <!-- Feature 3 -->
-                <div class="zig-row reveal-up">
-                    <div class="zig-text">
-                        <h3 class="shadow-text">Built-in Workspaces</h3>
-                        <p class="shadow-text">Everything you need to collaborate is in one place. Once you connect with a partner, you can chat, share files, and hop on video calls without ever having to leave the website.</p>
+        <!-- 6. FAQ -->
+        <section class="section section-tint" id="faq">
+            <div class="container">
+                <div class="section-head center">
+                    <span class="eyebrow reveal">FAQ</span>
+                    <h2 class="section-title reveal" style="--d:1">Questions people ask first</h2>
+                </div>
+                <div class="faq reveal" id="faqList">
+                    <div class="faq-item">
+                        <h3 style="margin:0"><button class="faq-q" type="button" aria-expanded="true" aria-controls="faq-1">Who is ProPartner for?<svg class="icon"><use href="#i-plus"/></svg></button></h3>
+                        <div class="faq-a open" id="faq-1"><div><p>Students and working professionals who need people to build with: a hackathon team, a capstone group, a research partner or a co-founder. You can sign up as a student or as a professional.</p></div></div>
                     </div>
-                    <div class="zig-glass">
-                        <svg class="zig-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+                    <div class="faq-item">
+                        <h3 style="margin:0"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-2">How do I know a profile is real?<svg class="icon"><use href="#i-plus"/></svg></button></h3>
+                        <div class="faq-a" id="faq-2"><div><p>Students give their college, department and roll number and upload their college ID when they register. A campus ambassador from the same college or an admin reviews it, and accounts that pass show a verified mark next to the name.</p></div></div>
+                    </div>
+                    <div class="faq-item">
+                        <h3 style="margin:0"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-3">Can I team up with people from other colleges?<svg class="icon"><use href="#i-plus"/></svg></button></h3>
+                        <div class="faq-a" id="faq-3"><div><p>Yes. Discover Talent lists everyone and lets you filter by college, department and city. Campus Network is the view of your own college.</p></div></div>
+                    </div>
+                    <div class="faq-item">
+                        <h3 style="margin:0"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-4">Do I need to install anything?<svg class="icon"><use href="#i-plus"/></svg></button></h3>
+                        <div class="faq-a" id="faq-4"><div><p>No. Messages, team channels, voice and video calls, the task board and the planning canvas all run in your browser.</p></div></div>
+                    </div>
+                    <div class="faq-item">
+                        <h3 style="margin:0"><button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-5">What if I only have an idea and no team yet?<svg class="icon"><use href="#i-plus"/></svg></button></h3>
+                        <div class="faq-a" id="faq-5"><div><p>Post it on the Opportunities Board with the roles you need. People who are interested apply, and you decide who joins.</p></div></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- THE PROTOCOL (HOW IT WORKS - LIST) -->
-        <section id="protocol" style="margin-bottom: 80px;">
-            <div class="badge shadow-text reveal-up">How it Works</div>
-            <h2 class="section-title shadow-text reveal-up delay-100" style="margin-bottom: 10px;">Three easy steps to launch.</h2>
-            
-            <div class="step-list reveal-up delay-200">
-                <div class="step-item">
-                    <div class="step-number shadow-text">01</div>
-                    <div class="step-content">
-                        <h3 class="shadow-text">Set Up Your Profile</h3>
-                        <p class="shadow-text">Create your account and tell the community what you know. Add your school, list the software tools you use, and link to projects you're proud of.</p>
-                    </div>
-                </div>
-
-                <div class="step-item">
-                    <div class="step-number shadow-text">02</div>
-                    <div class="step-content">
-                        <h3 class="shadow-text">Find Your Match</h3>
-                        <p class="shadow-text">Browse the global network for specific skills, or post your own project idea on the Opportunities Board so other developers can find you and apply to help.</p>
-                    </div>
-                </div>
-
-                <div class="step-item">
-                    <div class="step-number shadow-text">03</div>
-                    <div class="step-content">
-                        <h3 class="shadow-text">Connect and Create</h3>
-                        <p class="shadow-text">Send a connection request to the right person. Once they accept, a private workspace opens up where you can start chatting and building your project together.</p>
+        <!-- 7. CALL TO ACTION -->
+        <div class="cta-wrap">
+            <div class="container">
+                <div class="cta reveal">
+                    <h2>Your next teammate is already here.</h2>
+                    <p>Create your profile, say what you can do, and find the people who can do the rest.</p>
+                    <div class="cta-buttons">
+                        <a class="btn btn-light only-guest" href="register.html">Get started <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                        <a class="btn btn-outline-light only-guest" href="login.html">I already have an account</a>
+                        <a class="btn btn-light only-authed" href="search.html">Open ProPartner <svg class="icon icon-arrow"><use href="#i-arrow"/></svg></a>
+                        <a class="btn btn-outline-light only-authed" href="board.html">Post an open role</a>
                     </div>
                 </div>
             </div>
-        </section>
-
+        </div>
     </main>
 
-    <footer>
-        <div class="footer-left">ProPartner &copy; 2026. Built for creators.</div>
-        <div class="footer-right">Connecting developers globally.</div>
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <a class="brand" href="index.html"><span>ProPartner</span></a>
+                    <p>Find the people your project is missing, and build it together.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Find people</h4>
+                    <a href="search.html">Discover Talent</a>
+                    <a href="board.html">Opportunities Board</a>
+                    <a href="college.html">Campus Network</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Build</h4>
+                    <a href="team.html">My Teams</a>
+                    <a href="project_management.html">Project Hub</a>
+                    <a href="research.html">Research Collab</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Account</h4>
+                    <a class="only-guest" href="register.html">Create account</a>
+                    <a class="only-guest" href="login.html">Log in</a>
+                    <a class="only-authed" href="profile.html">Your profile</a>
+                    <a class="only-authed" href="inbox.html">Messages</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 ProPartner. Built for people who build.</span>
+                <a href="#hero">Back to top</a>
+            </div>
+        </div>
     </footer>
-
-    <!-- INTERSECTION OBSERVER SCRIPT -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) { entry.target.classList.add('active'); }
-                });
-            }, observerOptions);
-
-            document.querySelectorAll('.reveal-up').forEach(el => observer.observe(el));
-        });
-    </script>
-
-    <!-- PREMIUM 3D FLUID DATA WAVE ENGINE (UNTOUCHED INFINITE TREADMILL) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById('parallax-canvas-container');
-            if (!container) return;
-
-            // 1. Scene & Camera Setup
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
-            
-            camera.position.set(0, 400, 1200);
-            camera.lookAt(0, -200, 0);
-
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
-
-            // 2. Theme Icon Setup
-            const themeBtn = document.getElementById('themeToggleBtn');
-            const moonIcon = document.getElementById('moonIcon');
-            const sunIcon = document.getElementById('sunIcon');
-
-            function updateThemeIcons() {
-                if (document.documentElement.getAttribute('data-theme') === 'dark') {
-                    moonIcon.style.display = 'none';
-                    sunIcon.style.display = 'block';
-                } else {
-                    moonIcon.style.display = 'block';
-                    sunIcon.style.display = 'none';
-                }
-            }
-            updateThemeIcons();
-
-            // 3. Dynamic Theme Colors
-            function getThemeColors() {
-                const styles = getComputedStyle(document.documentElement);
-                return {
-                    colorHigh: styles.getPropertyValue('--wave-color-high').trim() || '37, 99, 235',
-                    colorLow: styles.getPropertyValue('--wave-color-low').trim() || '14, 165, 233'
-                };
-            }
-            
-            function parseRGB(rgbStr) {
-                const [r, g, b] = rgbStr.split(',').map(n => parseInt(n.trim()) / 255);
-                return new THREE.Vector3(r, g, b);
-            }
-
-            let colors = getThemeColors();
-
-            // Soft glowing particle texture
-            function createCircleTexture() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 32; canvas.height = 32;
-                const ctx = canvas.getContext('2d');
-                ctx.beginPath(); ctx.arc(16, 16, 14, 0, Math.PI * 2);
-                ctx.fillStyle = '#FFFFFF'; ctx.fill();
-                return new THREE.CanvasTexture(canvas);
-            }
-            const circleTexture = createCircleTexture();
-
-            // 4. Generating the Grid Wave
-            const gridWidth = 150;
-            const gridDepth = 150;
-            const spacing = 35;
-            const particleCount = gridWidth * gridDepth;
-            
-            const posArray = new Float32Array(particleCount * 3);
-            const offsetArray = new Float32Array(particleCount); 
-            
-            let idx = 0;
-            for(let i=0; i<gridWidth; i++) {
-                for(let j=0; j<gridDepth; j++) {
-                    const x = (i - gridWidth/2) * spacing;
-                    const z = (j - gridDepth/2) * spacing;
-                    
-                    posArray[idx*3] = x;
-                    posArray[idx*3+1] = 0; // Height generated in shader
-                    posArray[idx*3+2] = z;
-                    
-                    offsetArray[idx] = Math.random() * Math.PI * 2;
-                    idx++;
-                }
-            }
-
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            geometry.setAttribute('aOffset', new THREE.BufferAttribute(offsetArray, 1));
-
-            // Custom GLSL Shader for infinite scrolling mathematical waves
-            const shaderMaterial = new THREE.ShaderMaterial({
-                uniforms: {
-                    uTime: { value: 0 },
-                    uScroll: { value: 0 },
-                    uMouse: { value: new THREE.Vector2(0,0) },
-                    uColorHigh: { value: parseRGB(colors.colorHigh) },
-                    uColorLow: { value: parseRGB(colors.colorLow) },
-                    uTexture: { value: circleTexture }
-                },
-                vertexShader: `
-                    uniform float uTime;
-                    uniform float uScroll;
-                    uniform vec2 uMouse;
-                    
-                    uniform vec3 uColorHigh;
-                    uniform vec3 uColorLow;
-
-                    attribute float aOffset; 
-
-                    varying vec3 vColor;
-                    varying float vAlpha;
-
-                    void main() {
-                        vec3 pos = position;
-                        
-                        // INFINITE TREADMILL
-                        float zWrapDistance = 5250.0; // Grid depth (150 * 35)
-                        float halfZ = zWrapDistance / 2.0;
-                        
-                        pos.z += uScroll * 0.8;
-                        pos.z = mod(pos.z + halfZ, zWrapDistance) - halfZ;
-
-                        // Math Wave Calculation 
-                        float wave1 = sin(pos.x * 0.003 + uTime * 0.4) * 150.0;
-                        float wave2 = cos(pos.z * 0.004 - uTime * 0.3) * 150.0;
-                        float wave3 = sin((pos.x + pos.z) * 0.002 + uTime * 0.2 + aOffset) * 100.0;
-                        
-                        pos.y = wave1 + wave2 + wave3;
-
-                        // Mouse Interaction
-                        vec2 worldMouse = vec2(uMouse.x * 2000.0, uMouse.y * -2000.0);
-                        float distToMouse = distance(vec2(pos.x, pos.z), worldMouse);
-                        float mouseInfluence = smoothstep(600.0, 0.0, distToMouse);
-                        pos.y -= mouseInfluence * 150.0;
-
-                        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                        gl_Position = projectionMatrix * mvPosition;
-
-                        // Size attenuation
-                        gl_PointSize = 6.0 * (1000.0 / -mvPosition.z);
-
-                        // Color mapping based on Y height
-                        float heightNormalized = smoothstep(-150.0, 150.0, pos.y);
-                        vColor = mix(uColorLow, uColorHigh, heightNormalized);
-
-                        // Fade edges so the infinite wrapping is invisible
-                        float distToCenter = length(pos.xz);
-                        float edgeFade = 1.0 - smoothstep(1000.0, 3000.0, distToCenter);
-                        
-                        // Fade particles close to camera to ensure text readability
-                        float depthFade = smoothstep(100.0, 500.0, -mvPosition.z);
-                        
-                        vAlpha = edgeFade * depthFade * 0.6; // Max opacity 60%
-                    }
-                `,
-                fragmentShader: `
-                    uniform sampler2D uTexture;
-                    varying vec3 vColor;
-                    varying float vAlpha;
-                    
-                    void main() {
-                        vec4 texColor = texture2D(uTexture, gl_PointCoord);
-                        gl_FragColor = vec4(vColor, vAlpha) * texColor;
-                    }
-                `,
-                transparent: true,
-                depthWrite: false,
-                blending: document.documentElement.getAttribute('data-theme') === 'dark' ? THREE.AdditiveBlending : THREE.NormalBlending
-            });
-
-            const waveMesh = new THREE.Points(geometry, shaderMaterial);
-            waveMesh.rotation.x = -0.1;
-            waveMesh.position.y = -200;
-            scene.add(waveMesh);
-
-            // 5. Window Resize & Theme Toggle Logic
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-
-            themeBtn.addEventListener('click', () => {
-                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                
-                if (isDark) {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    localStorage.setItem('theme', 'light');
-                    shaderMaterial.blending = THREE.NormalBlending;
-                } else {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('theme', 'dark');
-                    shaderMaterial.blending = THREE.AdditiveBlending;
-                }
-                
-                updateThemeIcons();
-                shaderMaterial.needsUpdate = true;
-                
-                // Update Shader Colors
-                setTimeout(() => {
-                    colors = getThemeColors();
-                    shaderMaterial.uniforms.uColorHigh.value = parseRGB(colors.colorHigh);
-                    shaderMaterial.uniforms.uColorLow.value = parseRGB(colors.colorLow);
-                }, 50);
-            });
-
-            // 6. Animation Loop & Parallax
-            let mouseX = 0; let mouseY = 0;
-            let targetX = 0; let targetY = 0;
-            let scrollY = window.scrollY; let targetScrollY = window.scrollY;
-
-            document.addEventListener('mousemove', (event) => {
-                targetX = (event.clientX / window.innerWidth) * 2 - 1;
-                targetY = -(event.clientY / window.innerHeight) * 2 + 1;
-            });
-
-            document.addEventListener('scroll', () => {
-                targetScrollY = window.scrollY;
-            });
-
-            const clock = new THREE.Clock();
-
-            function animate() {
-                requestAnimationFrame(animate);
-                
-                const time = clock.getElapsedTime();
-                
-                // Smooth interpolation
-                mouseX += (targetX - mouseX) * 0.05;
-                mouseY += (targetY - mouseY) * 0.05;
-                scrollY += (targetScrollY - scrollY) * 0.05;
-
-                // Pass variables to shader
-                shaderMaterial.uniforms.uTime.value = time;
-                shaderMaterial.uniforms.uScroll.value = scrollY;
-                shaderMaterial.uniforms.uMouse.value.set(mouseX, mouseY);
-
-                // Camera Parallax: Keep camera perfectly steady vertically.
-                camera.position.x = mouseX * 200;
-                camera.position.y = 400 - (scrollY * 0.05); // Tiny shift for parallax depth
-                
-                camera.lookAt(0, -200, 0);
-
-                renderer.render(scene, camera);
-            }
-
-            animate();
-        });
-    </script>
 </body>
 </html>
