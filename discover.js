@@ -3,7 +3,7 @@
 // Loaded after shared.js and chat-common.js (api, caches, toast, el, onlineUserIds, the people-card helpers).
 // ==========================================
 
-const CARDS_PER_PAGE = 10;
+const CARDS_PER_PAGE = 12;   // fills whole rows at both 2 and 3 cards across
 const REFRESH_AFTER_MS = 60000;
 const TRENDING_COUNT = 8;
 
@@ -211,11 +211,12 @@ function render() {
   renderActiveFilters();
 }
 
-// One person as a row of the list. The data-* hooks are the same ones the shared people card uses.
+// One person as a card. The data-* hooks are the same ones the shared people card uses.
 function cardHtml(person) {
   const profileLink = `profile.html?id=${person.id}`;
   const online = onlineUserIds.has(person.id);
-  const place = [person.college_name, person.department, person.city].map(part => String(part || '').trim()).filter(Boolean).join(' · ');
+  const college = String(person.college_name || '').trim();
+  const place = [person.department, person.city].map(part => String(part || '').trim()).filter(Boolean).join(' · ');
   const shown = person.x.skills.slice(0, MAX_SKILLS_ON_CARD);
   const extra = person.x.skills.length - shown.length;
   const skillsHtml = shown.map(skill => {
@@ -231,35 +232,36 @@ function cardHtml(person) {
   const quietIcon = 'border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-100';
 
   return `
-    <article class="flex flex-col sm:flex-row gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-slate-50 transition-colors" data-id="${person.id}">
-      <div class="flex gap-4 flex-1 min-w-0">
-        <a class="relative block shrink-0 self-start" href="${profileLink}" aria-label="${escapeHtml(person.name)}'s profile">
-          <div class="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">${personAvatarHtml(person)}</div>
-          <span data-online-dot class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white ${online ? '' : 'hidden'}" title="Online now"></span>
-        </a>
-        <div class="min-w-0 flex-1">
-          <h3 class="flex items-center gap-1.5 text-[15px] leading-5 font-semibold text-slate-900">
-            <a class="truncate hover:text-primary hover:underline" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
-            ${person.account_status === 'verified' ? '<span class="material-symbols-outlined text-[16px] text-primary shrink-0" title="Verified account">verified</span>' : ''}
-            ${person.account_type === 'professional' ? '<span class="shrink-0 px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 text-[10px] leading-3 font-semibold uppercase tracking-wide">Pro</span>' : ''}
-          </h3>
-          <p class="text-[13px] leading-5 text-slate-600 truncate mt-0.5" title="${escapeHtml(place)}">${escapeHtml(place || 'No college listed')}</p>
-          ${person.bio ? `<p class="text-[13px] leading-5 text-slate-600 line-clamp-2 mt-1.5">${escapeHtml(person.bio)}</p>` : ''}
-          <div class="flex flex-wrap items-center gap-1.5 mt-2">${skillsHtml || '<span class="text-[12px] text-slate-400">No skills listed yet</span>'}</div>
-          <p class="text-[12px] leading-4 text-slate-500 mt-2">${person.followers_count} ${person.followers_count === 1 ? 'follower' : 'followers'}${relation ? ` · ${relation}` : ''}</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-1.5 shrink-0 self-start pl-16 sm:pl-0">
-        <button type="button" data-action="follow" ${followBusy} aria-pressed="${person.is_following}" class="h-8 min-w-[104px] px-3 rounded-md text-[13px] font-semibold flex items-center justify-center transition-colors ${person.is_following ? 'border border-slate-300 bg-white text-slate-700 hover:border-rose-300 hover:text-rose-600' : 'bg-primary hover:bg-primary-container text-white'}">${followLabel}</button>
-        <a class="${iconButton} ${quietIcon}" title="Message" aria-label="Message ${escapeHtml(person.name)}" href="inbox.html?user=${person.id}">
-          <span class="material-symbols-outlined text-[18px]">chat</span>
+    <article class="flex flex-col bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:shadow-sm transition" data-id="${person.id}">
+      <div class="flex items-start justify-between gap-3">
+        <a class="relative block shrink-0" href="${profileLink}" aria-label="${escapeHtml(person.name)}'s profile">
+          <div class="w-14 h-14 rounded-full overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">${personAvatarHtml(person)}</div>
+          <span data-online-dot class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white ${online ? '' : 'hidden'}" title="Online now"></span>
         </a>
         <button type="button" data-action="save" ${saveBusy} aria-pressed="${person.is_saved}" title="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" aria-label="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" class="${iconButton} ${person.is_saved ? 'border-indigo-200 bg-indigo-50 text-primary hover:bg-indigo-100' : quietIcon}">
           <span class="material-symbols-outlined text-[18px]">${person.is_saved ? 'bookmark_added' : 'bookmark_add'}</span>
         </button>
-        <button type="button" data-action="team" title="Add to one of your teams" aria-label="Add ${escapeHtml(person.name)} to one of your teams" class="${iconButton} ${quietIcon}">
-          <span class="material-symbols-outlined text-[18px]">group_add</span>
-        </button>
+      </div>
+      <h3 class="flex items-center gap-1.5 text-[15px] leading-5 font-semibold text-slate-900 mt-3">
+        <a class="truncate hover:text-primary hover:underline" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
+        ${person.account_status === 'verified' ? '<span class="material-symbols-outlined text-[16px] text-primary shrink-0" title="Verified account">verified</span>' : ''}
+        ${person.account_type === 'professional' ? '<span class="shrink-0 px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 text-[10px] leading-3 font-semibold uppercase tracking-wide">Pro</span>' : ''}
+      </h3>
+      <p class="text-[13px] leading-5 text-slate-600 truncate mt-0.5" title="${escapeHtml(college)}">${escapeHtml(college || 'No college listed')}</p>
+      ${place ? `<p class="text-[12px] leading-4 text-slate-500 truncate mt-0.5" title="${escapeHtml(place)}">${escapeHtml(place)}</p>` : ''}
+      ${person.bio ? `<p class="text-[13px] leading-5 text-slate-600 line-clamp-2 mt-2.5">${escapeHtml(person.bio)}</p>` : ''}
+      <div class="flex flex-wrap items-center gap-1.5 mt-3">${skillsHtml || '<span class="text-[12px] text-slate-400">No skills listed yet</span>'}</div>
+      <div class="mt-auto pt-4">
+        <p class="text-[12px] leading-4 text-slate-500 mb-3">${person.followers_count} ${person.followers_count === 1 ? 'follower' : 'followers'}${relation ? ` · ${relation}` : ''}</p>
+        <div class="flex items-center gap-1.5">
+          <button type="button" data-action="follow" ${followBusy} aria-pressed="${person.is_following}" class="flex-1 h-8 px-3 rounded-md text-[13px] font-semibold flex items-center justify-center transition-colors ${person.is_following ? 'border border-slate-300 bg-white text-slate-700 hover:border-rose-300 hover:text-rose-600' : 'bg-primary hover:bg-primary-container text-white'}">${followLabel}</button>
+          <a class="${iconButton} ${quietIcon}" title="Message" aria-label="Message ${escapeHtml(person.name)}" href="inbox.html?user=${person.id}">
+            <span class="material-symbols-outlined text-[18px]">chat</span>
+          </a>
+          <button type="button" data-action="team" title="Add to one of your teams" aria-label="Add ${escapeHtml(person.name)} to one of your teams" class="${iconButton} ${quietIcon}">
+            <span class="material-symbols-outlined text-[18px]">group_add</span>
+          </button>
+        </div>
       </div>
     </article>`;
 }
@@ -306,15 +308,13 @@ function renderProblem(message) {
 
 function renderSkeleton() {
   el('search-results-grid').innerHTML = `
-    <div class="flex gap-4 px-4 sm:px-5 py-4">
-      <div class="skeleton w-12 h-12 shrink-0" style="border-radius:9999px;"></div>
-      <div class="flex-1 min-w-0">
-        <div class="skeleton h-4 w-40 mb-2"></div>
-        <div class="skeleton h-3.5 w-64 max-w-full mb-3"></div>
-        <div class="skeleton h-3.5 w-full mb-3"></div>
-        <div class="skeleton h-5 w-48"></div>
-      </div>
-      <div class="skeleton h-8 w-[104px] hidden sm:block"></div>
+    <div class="bg-white border border-slate-200 rounded-lg p-5">
+      <div class="skeleton w-14 h-14 mb-3" style="border-radius:9999px;"></div>
+      <div class="skeleton h-4 w-2/3 mb-2"></div>
+      <div class="skeleton h-3.5 w-full mb-4"></div>
+      <div class="skeleton h-3.5 w-4/5 mb-4"></div>
+      <div class="skeleton h-5 w-1/2 mb-5"></div>
+      <div class="skeleton h-8 w-full"></div>
     </div>`.repeat(6);
 }
 
