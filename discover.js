@@ -25,8 +25,6 @@ const FILTER_LABELS = { online: 'Online now', verified: 'Verified', following: '
 const pendingActions = new Set(); // "follow:12" while that request is in flight
 let searchTimer = null;
 let renderQueued = false;
-let liveSocket = null;
-let liveRetries = 0;
 
 const norm = (value) => String(value || '').trim().toLowerCase();
 
@@ -49,7 +47,7 @@ function initDiscover() {
 
   // 2. The real thing (already requested from the page head)
   loadDirectory();
-  connectLive();
+  connectNotifications((data) => { if (directoryLoaded) handleLiveEvent(data); }, loadDirectory);
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && Date.now() - directoryLoadedAt > REFRESH_AFTER_MS) loadDirectory();
@@ -597,30 +595,6 @@ async function toggleRelation(kind, personId) {
 // ==========================================
 // 7. LIVE UPDATES
 // ==========================================
-function connectLive() {
-  let socket;
-  try {
-    socket = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/api/ws/notifications/${currentUserId}`);
-  } catch (e) { return; }
-  liveSocket = socket;
-
-  socket.onopen = () => {
-    // Anything that changed while we were disconnected was missed, so ask again
-    if (liveRetries > 0) loadDirectory();
-    liveRetries = 0;
-  };
-  socket.onmessage = (event) => {
-    let data;
-    try { data = JSON.parse(event.data); } catch (e) { return; }
-    if (data && directoryLoaded) handleLiveEvent(data);
-  };
-  socket.onclose = () => {
-    if (liveSocket !== socket) return;
-    liveSocket = null;
-    setTimeout(connectLive, Math.min(30000, 1000 * 2 ** liveRetries++));
-  };
-}
-
 function handleLiveEvent(data) {
   switch (data.type) {
     case 'presence': {
@@ -656,16 +630,6 @@ function handleLiveEvent(data) {
       person.followers_count = Math.max(0, person.followers_count + (data.following ? 1 : -1));
       return queueRender();
     }
-    default:
-      // A bell notification for us
-      if (data.content) {
-        document.querySelectorAll('[data-notif-badge]').forEach(badge => {
-          const count = (parseInt(badge.textContent) || 0) + 1;
-          badge.textContent = count > 99 ? '99+' : count;
-          badge.style.display = 'flex';
-        });
-        showToast(data.content);
-      }
   }
 }
 

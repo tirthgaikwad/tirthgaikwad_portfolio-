@@ -65,6 +65,17 @@ Tables are created automatically on startup.
 - The page listens on `/api/ws/notifications/{user_id}`: profile edits, new sign-ups, follows and online status appear without a reload. "Online" means the person has Messages or Teams open.
 - The directory is capped at the 1000 newest accounts. Beyond that the search would need to move to the server.
 
+## Opportunities Board
+
+`board.html` loads `chat-common.js` and `board.js`. One request (`GET /api/board`) returns every post with its author, how many people applied and whether you are one of them. Search, category tabs, sorting and paging happen in the browser, and the list is kept in the browser so the next visit paints at once.
+
+- Anyone can post, edit and delete their own posts; admins can delete any post. Posting, editing and deleting update the page in place.
+- "Apply" stores an application (with an optional note) in `board_applications` and sends the author a bell notification. The author opens "Applicants" on their post to read the notes and message people or add them to a team. Applying again does nothing; "Applied" withdraws.
+- Ticking "Urgent" pins a post above the others with a red badge. It does not notify anyone.
+- New, edited and deleted posts and applicant counts reach every open board over `/api/ws/notifications/{user_id}`.
+- `board.html?new=1` opens the post form directly. The view (`q`, `category`, `sort`, `mine`, `applied`, `page`) is kept in the address bar.
+- The board loads the 500 newest posts.
+
 ## Project Hub
 
 `project_management.html` loads `chat-common.js` and `project-hub.js`. Every Teams workspace has one board: a kanban board, a planning canvas and two linked tools. One request (`GET /api/teams/{id}/board`) returns the board, its tasks, the canvas and the members, and the page listens on the workspace's WebSocket so teammates see changes as they happen.

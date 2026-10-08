@@ -136,6 +136,15 @@ class DBBoardPost(Base):
     skills_required = Column(String)
     author_id = Column(Integer, index=True)
     created_at = Column(String)
+    is_urgent = Column(Integer, default=0)         # urgent posts are listed first
+
+class DBBoardApplication(Base):
+    __tablename__ = "board_applications"
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    note = Column(String, default="")
+    created_at = Column(String)
 
 class DBMutedUser(Base):
     __tablename__ = "muted_users"
@@ -298,6 +307,8 @@ SCHEMA_UPGRADES = [
     "CREATE UNIQUE INDEX IF NOT EXISTS ux_team_message_reactions ON team_message_reactions (message_id, user_id, emoji)",
     "CREATE INDEX IF NOT EXISTS ix_team_members_user_team ON team_members (user_id, team_id)",
     "CREATE INDEX IF NOT EXISTS ix_team_tasks_board ON team_tasks (team_id, status, position)",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS is_urgent INTEGER DEFAULT 0",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_board_applications ON board_applications (post_id, user_id)",
 ]
 
 async def backfill_cleared_chats():
@@ -643,6 +654,10 @@ class BoardPostCreate(BaseModel):
     title: str
     description: str
     skills_required: str
+    is_urgent: Optional[bool] = False
+
+class BoardApplicationCreate(BaseModel):
+    note: Optional[str] = ""
 
 class BoardPostResponse(BaseModel):
     id: int
@@ -2314,48 +2329,218 @@ async def get_board_posts(db: AsyncSession = Depends(get_db)):
         })
     return out
 
+BOARD_CATEGORIES = ("Hackathon", "Side Project", "Research / AI", "Open Source")
+BOARD_FIELD_LIMITS = {"title": 120, "skills_required": 300, "description": 2000}
+BOARD_NOTE_LIMIT = 500
+BOARD_POST_LIMIT = 500
+
+def board_posts_query(viewer_id: int):
+    """Posts with their author, how many people applied, and whether the viewer is one of them."""
+    author_pic = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("author_pic")
+    return (
+        select(
+            DBBoardPost.id, DBBoardPost.category, DBBoardPost.title, DBBoardPost.description, DBBoardPost.skills_required,
+            DBBoardPost.created_at, DBBoardPost.author_id, DBBoardPost.is_urgent,
+            DBUser.name.label("author_name"), author_pic, DBUser.college_name.label("author_college"),
+            select(func.count()).select_from(DBBoardApplication).where(DBBoardApplication.post_id == DBBoardPost.id).scalar_subquery().label("applicant_count"),
+            exists().where(DBBoardApplication.post_id == DBBoardPost.id, DBBoardApplication.user_id == viewer_id).label("has_applied"),
+        )
+        .outerjoin(DBUser, DBBoardPost.author_id == DBUser.id)
+        .order_by(DBBoardPost.id.desc())
+    )
+
+def board_card(row) -> dict:
+    return {
+        "id": row.id,
+        "category": row.category or "",
+        "title": row.title or "",
+        "description": row.description or "",
+        "skills_required": row.skills_required or "",
+        "created_at": row.created_at or "",
+        "is_urgent": bool(row.is_urgent),
+        "author_id": row.author_id or 0,
+        "author_name": row.author_name or "Unknown",
+        "author_pic": row.author_pic or "",
+        "author_college": row.author_college or "",
+        "applicant_count": row.applicant_count or 0,
+        "has_applied": bool(row.has_applied),
+    }
+
+def public_board_card(card: dict) -> dict:
+    """A post as sent to everyone's open board: whether *they* applied is theirs to know, not the sender's."""
+    return {key: value for key, value in card.items() if key != "has_applied"}
+
+def clean_board_post(post_data: BoardPostCreate) -> dict:
+    if post_data.category not in BOARD_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Pick one of the listed categories.")
+    values = {"category": post_data.category, "is_urgent": 1 if post_data.is_urgent else 0}
+    for field, limit in BOARD_FIELD_LIMITS.items():
+        value = (getattr(post_data, field) or "").strip()
+        label = field.replace("_required", "").capitalize()
+        if not value:
+            raise HTTPException(status_code=400, detail=f"{label} cannot be empty.")
+        if len(value) > limit:
+            raise HTTPException(status_code=400, detail=f"{label} is too long. The limit is {limit} characters.")
+        values[field] = value
+    values["skills_required"] = ", ".join(skill.strip() for skill in values["skills_required"].split(",") if skill.strip())
+    return values
+
+async def load_board_card(post_id: int, viewer_id: int) -> Optional[dict]:
+    rows = await fetch_one_off(board_posts_query(viewer_id).where(DBBoardPost.id == post_id))
+    return board_card(rows[0]) if rows else None
+
+async def broadcast_applicant_count(post_id: int):
+    """Tell every open board how many people have applied to a post now. Meant to run in the background."""
+    try:
+        rows = await fetch_one_off(select(func.count()).select_from(DBBoardApplication).where(DBBoardApplication.post_id == post_id))
+        await broadcast_directory({"type": "board_applicants_changed", "post_id": post_id, "count": rows[0][0]})
+    except Exception as e:
+        print("Error broadcasting applicant count:", e)
+
+
+@app.get("/api/board")
+async def get_board(current_user_id: int = Depends(get_current_user_id)):
+    """Everything the Opportunities Board shows, in one request. Searching and filtering happen in the browser."""
+    post_rows, viewer_rows = await asyncio.gather(
+        fetch_one_off(board_posts_query(current_user_id).limit(BOARD_POST_LIMIT)),
+        fetch_one_off(select(DBUser.is_admin).where(DBUser.id == current_user_id)),
+    )
+    return {
+        "posts": [board_card(row) for row in post_rows],
+        "viewer_is_admin": bool(viewer_rows and viewer_rows[0][0] == 1),
+        "categories": list(BOARD_CATEGORIES),
+    }
+
+
 @app.post("/api/board/posts")
 async def create_board_post(
-    post_data: BoardPostCreate, 
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    post_data: BoardPostCreate,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    new_post = DBBoardPost(
-        category=post_data.category,
-        title=post_data.title,
-        description=post_data.description,
-        skills_required=post_data.skills_required,
-        author_id=current_user.id,
-        created_at=utc_now_iso()
+    values = clean_board_post(post_data)
+    result = await db.execute(
+        DBBoardPost.__table__.insert().values(**values, author_id=current_user_id, created_at=utc_now_iso()).returning(DBBoardPost.id)
     )
-    
-    db.add(new_post)
-    await log_user_activity(db, current_user.id, "Posted Opportunity", f"You created a new {post_data.category} post.")
-    await db.commit()
-    
-    return {"status": "success", "message": "Opportunity published successfully!"}
+    card = await load_board_card(result.scalar(), current_user_id)
+    spawn_background(log_activity_later(current_user_id, "Posted Opportunity", f"You created a new {values['category']} post."))
+    spawn_background(broadcast_directory({"type": "board_post_added", "post": public_board_card(card)}))
+    return {"status": "success", "message": "Opportunity published successfully!", "post": card}
+
+
+async def explain_missing_board_post(db: AsyncSession, post_id: int, action: str):
+    exists_already = (await db.execute(select(DBBoardPost.id).where(DBBoardPost.id == post_id))).first()
+    if not exists_already:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    raise HTTPException(status_code=403, detail=f"Not authorized to {action} this post.")
+
+
+@app.patch("/api/board/posts/{post_id}")
+async def update_board_post(
+    post_id: int,
+    post_data: BoardPostCreate,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    values = clean_board_post(post_data)
+    result = await db.execute(
+        update(DBBoardPost).where(DBBoardPost.id == post_id, DBBoardPost.author_id == current_user_id).values(**values).returning(DBBoardPost.id)
+    )
+    if not result.first():
+        await explain_missing_board_post(db, post_id, "edit")
+    card = await load_board_card(post_id, current_user_id)
+    spawn_background(log_activity_later(current_user_id, "Post Updated", f"You edited the post: {values['title']}."))
+    spawn_background(broadcast_directory({"type": "board_post_updated", "post": public_board_card(card)}))
+    return {"status": "success", "post": card}
+
 
 @app.delete("/api/board/posts/{post_id}")
 async def delete_board_post(
-    post_id: int, 
-    db: AsyncSession = Depends(get_db),
-    current_user: DBUser = Depends(get_current_user)
+    post_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
 ):
-    result = await db.execute(select(DBBoardPost).filter(DBBoardPost.id == post_id))
-    post = result.scalars().first()
-    
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found.")
-        
-    if post.author_id != current_user.id and current_user.is_admin != 1:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this post.")
-        
-    title = post.title
-    await db.delete(post)
-    await log_user_activity(db, current_user.id, "Post Deleted", f"You removed the post: {title}.")
-    await db.commit()
-    
+    viewer_is_admin = exists().where(DBUser.id == current_user_id, DBUser.is_admin == 1)
+    result = await db.execute(
+        delete(DBBoardPost)
+        .where(DBBoardPost.id == post_id, or_(DBBoardPost.author_id == current_user_id, viewer_is_admin))
+        .returning(DBBoardPost.title)
+    )
+    row = result.first()
+    if not row:
+        await explain_missing_board_post(db, post_id, "delete")
+    spawn_background(run_one_off(delete(DBBoardApplication).where(DBBoardApplication.post_id == post_id)))
+    spawn_background(log_activity_later(current_user_id, "Post Deleted", f"You removed the post: {row[0]}."))
+    spawn_background(broadcast_directory({"type": "board_post_removed", "post_id": post_id}))
     return {"message": "Post deleted successfully."}
+
+
+@app.post("/api/board/posts/{post_id}/apply")
+async def apply_to_board_post(
+    post_id: int,
+    application: BoardApplicationCreate,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    note = (application.note or "").strip()
+    if len(note) > BOARD_NOTE_LIMIT:
+        raise HTTPException(status_code=400, detail=f"Your note is too long. The limit is {BOARD_NOTE_LIMIT} characters.")
+
+    my_name = select(DBUser.name).where(DBUser.id == current_user_id).scalar_subquery()
+    post = (await db.execute(select(DBBoardPost.author_id, DBBoardPost.title, my_name).where(DBBoardPost.id == post_id))).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="This post is no longer on the board.")
+    if post[0] == current_user_id:
+        raise HTTPException(status_code=400, detail="You cannot apply to your own post.")
+
+    now_iso = utc_now_iso()
+    inserted = await db.execute(
+        pg_insert(DBBoardApplication)
+        .values(post_id=post_id, user_id=current_user_id, note=note, created_at=now_iso)
+        .on_conflict_do_nothing(index_elements=["post_id", "user_id"])
+        .returning(DBBoardApplication.id)
+    )
+    if inserted.first():
+        spawn_background(create_notification(post[0], "board_reply", f"{post[2] or 'Someone'} applied to your post: {post[1]}", now_iso))
+        spawn_background(log_activity_later(current_user_id, "Applied to Opportunity", f"You applied to: {post[1]}."))
+        spawn_background(broadcast_applicant_count(post_id))
+    return {"status": "applied"}
+
+
+@app.delete("/api/board/posts/{post_id}/apply")
+async def withdraw_board_application(
+    post_id: int,
+    db: AsyncSession = Depends(get_fast_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    removed = await db.execute(
+        delete(DBBoardApplication)
+        .where(DBBoardApplication.post_id == post_id, DBBoardApplication.user_id == current_user_id)
+        .returning(DBBoardApplication.id)
+    )
+    if removed.first():
+        spawn_background(broadcast_applicant_count(post_id))
+    return {"status": "withdrawn"}
+
+
+@app.get("/api/board/posts/{post_id}/applicants")
+async def get_board_applicants(post_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Who applied to a post, for its author (or an admin)."""
+    viewer_is_admin = select(DBUser.is_admin).where(DBUser.id == current_user_id).scalar_subquery()
+    post_rows, applicant_rows = await asyncio.gather(
+        fetch_one_off(select(DBBoardPost.author_id, viewer_is_admin).where(DBBoardPost.id == post_id)),
+        fetch_one_off(
+            select(DBBoardApplication.note, DBBoardApplication.created_at, DBUser)
+            .join(DBUser, DBBoardApplication.user_id == DBUser.id)
+            .where(DBBoardApplication.post_id == post_id)
+            .order_by(DBBoardApplication.id.desc())
+        ),
+    )
+    if not post_rows:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    if post_rows[0][0] != current_user_id and post_rows[0][1] != 1:
+        raise HTTPException(status_code=403, detail="Only the person who posted this can see who applied.")
+    return [dict(user_card(user, user.id), note=note or "", applied_at=created_at or "") for note, created_at, user in applicant_rows]
 
 
 # ==========================================

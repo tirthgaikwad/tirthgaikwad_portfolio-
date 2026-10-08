@@ -114,6 +114,49 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 4000);
 }
 
+// Live updates for pages that have no chat socket of their own (Discover, Opportunities Board).
+// onEvent gets every page event; bell notifications are shown here. onReconnect runs after a dropped
+// connection comes back, because anything sent in between was missed.
+let notificationSocket = null;
+
+function connectNotifications(onEvent, onReconnect) {
+  let retries = 0;
+  const open = () => {
+    let socket;
+    try {
+      socket = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/api/ws/notifications/${currentUserId}`);
+    } catch (e) { return; }
+    notificationSocket = socket;
+
+    socket.onopen = () => {
+      if (retries > 0 && onReconnect) onReconnect();
+      retries = 0;
+    };
+    socket.onmessage = (event) => {
+      let data;
+      try { data = JSON.parse(event.data); } catch (e) { return; }
+      if (!data) return;
+      if (data.content) {
+        // A bell notification for us
+        document.querySelectorAll('[data-notif-badge]').forEach(badge => {
+          const count = (parseInt(badge.textContent) || 0) + 1;
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.style.display = 'flex';
+        });
+        showToast(data.content);
+      } else {
+        onEvent(data);
+      }
+    };
+    socket.onclose = () => {
+      if (notificationSocket !== socket) return;
+      notificationSocket = null;
+      setTimeout(open, Math.min(30000, 1000 * 2 ** retries++));
+    };
+  };
+  open();
+}
+
 function getInitials(name) {
   if (!name || name.startsWith('User #')) return name ? name.split('#')[1] : '?';
   const parts = name.trim().split(/\s+/);

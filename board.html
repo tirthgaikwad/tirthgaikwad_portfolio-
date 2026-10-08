@@ -1,7 +1,19 @@
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+<html lang="en"><head><meta charset="utf-8"/>
+<title>ProPartner | Opportunities Board</title>
+<script>
+// Ask for the board right away, while styles and scripts are still downloading. board.js picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__boardPrefetch = fetch(apiBase + '/api/board', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
 /* Custom Modal Styles */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
 .modal-overlay.active { display: flex; }
@@ -17,6 +29,30 @@
 /* Hide Scrollbar for Horizontal Nav */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Opportunities Board */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-toggle:hover { background: #eff4ff; }
+.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+#boardTop { scroll-margin-top: 80px; }
+.board-overlay { z-index: 9990; }
+.board-modal { background: #fff; width: 92%; max-width: 580px; max-height: 88vh; border-radius: 16px; border: 1px solid #c7c4d8; box-shadow: 0 12px 32px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; animation: slideDown 0.25s ease; text-align: left; }
+.board-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #e5eeff; background: #eff4ff; }
+.board-modal-head h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 16px; color: #0b1c30; margin: 0; }
+.board-modal-close { display: flex; padding: 4px; border-radius: 8px; color: #464555; cursor: pointer; transition: 0.15s; }
+.board-modal-close:hover { background: #dce9ff; color: #ba1a1a; }
+.board-modal-body { padding: 20px; overflow-y: auto; }
+.board-label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; color: #464555; margin-bottom: 4px; }
+.board-count { font-weight: 400; color: #777587; font-size: 12px; }
+.board-input { width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid #c7c4d8; background: #f8f9ff; color: #0b1c30; font-size: 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.board-input:focus { border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
 </style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script>
     <script src="shared.js"></script>
 </head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
@@ -29,8 +65,8 @@
       </div>
       <nav class="hidden xl:flex items-center gap-0.5 h-16">
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="search.html">Discover Talent</a>
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="board.html">Opportunities Board</a>
-        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="team.html">My Teams</a>
+        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="board.html">Opportunities Board</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="team.html">My Teams</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="project_management.html">Project Hub</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="college.html">Campus Network</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="research.html">Research Collab</a>
@@ -42,7 +78,7 @@
     <!-- Right: Search + Utilities + Profile -->
     <div class="flex items-center gap-1.5 shrink-0">
       <!-- Search Bar -->
-      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="document.getElementById('search-modal') && document.getElementById('search-modal').classList.add('active')">
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="focusBoardSearch()">
         <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
         <span class="text-[12px] text-slate-400 truncate">Search network...</span>
         <kbd class="ml-auto text-[10px] font-semibold text-slate-400 bg-white px-1 py-0.5 rounded border border-slate-200 shadow-sm">⌘K</kbd>
@@ -95,46 +131,19 @@
     </div>
   </div>
 </header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
-<!-- Interactive script to handle category switching & filter feedback -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Highlight category buttons
-      const catButtons = document.querySelectorAll('[data-category-btn]');
-      catButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          catButtons.forEach(b => {
-            b.classList.remove('bg-on-surface', 'text-surface-container-lowest', 'shadow-sm');
-            b.classList.add('bg-surface-container-lowest', 'text-on-surface-variant', 'hover:bg-surface-container-low');
-          });
-          btn.classList.add('bg-on-surface', 'text-surface-container-lowest', 'shadow-sm');
-          btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant', 'hover:bg-surface-container-low');
-        });
-      });
-
-      // Quick skill pills toggle
-      const skillPills = document.querySelectorAll('[data-filter-pill]');
-      skillPills.forEach(pill => {
-        pill.addEventListener('click', () => {
-          pill.classList.toggle('bg-primary-fixed');
-          pill.classList.toggle('text-on-primary-fixed-variant');
-          pill.classList.toggle('font-semibold');
-        });
-      });
-    });
-  </script>
 <!-- Page Header & Hero Section -->
 <section class="relative w-full pt-space-2xl pb-space-xl z-20">
 <!-- Subtle architectural background glow -->
 <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10">
 <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-container-max h-80 bg-gradient-to-b from-primary/5 via-secondary-container/20 to-transparent rounded-full blur-3xl opacity-70"></div>
 </div>
-<div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col items-center text-center">
-<!-- Collegiate Badge -->
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop flex flex-col items-center text-center">
+<!-- Live count badge, filled in by board.js -->
 <div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-surface-container-high/60 border border-outline-variant/50 text-primary font-label-sm text-label-sm uppercase tracking-wider mb-space-md shadow-sm">
 <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-        SIH 2026 &amp; Spring Hackathons • 42 Open Teammate Roles
-      </div>
-<h1 class="font-display-hero text-display-hero text-on-surface tracking-tight max-w-3xl">
+<span id="heroBadgeText">Live teammate board</span>
+</div>
+<h1 class="font-display-hero text-display-hero-mobile md:text-display-hero text-on-surface tracking-tight max-w-3xl">
         Project &amp; Hackathon Teammate Board
       </h1>
 <p class="mt-space-sm font-body-lg text-body-lg text-on-surface-variant max-w-2xl text-balance">
@@ -142,90 +151,55 @@
       </p>
 <!-- Category Filter Tabs + Primary Action Bar -->
 <div class="w-full mt-space-xl flex flex-col lg:flex-row items-center justify-between gap-space-md">
-<!-- Category Segmented Control -->
-<div class="flex items-center flex-wrap gap-space-xs p-1.5 bg-surface-container-lowest border border-outline-variant/60 rounded-xl shadow-sm">
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md transition-all bg-on-surface text-surface-container-lowest shadow-sm" data-category-btn="" type="button" onclick="window.setCategoryFilter('')">
-            All Opportunities
-          </button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter('Hackathon')">
-            Hackathons <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-error-container text-on-error-container font-bold">28</span>
-</button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter('Side Project')">
-            Side Projects <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-surface-container text-on-surface-variant">9</span>
-</button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter('Research / AI')">
-            Research / AI <span class="ml-1 text-[11px] py-0.5 px-1.5 rounded-full bg-surface-container text-on-surface-variant">5</span>
-</button>
-<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-all" data-category-btn="" type="button" onclick="window.setCategoryFilter('Open Source')">
-            Open Source
-          </button>
-</div>
-<!-- Post Opportunity Action Button -->
-<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-3 rounded-xl bg-primary-container text-on-primary font-headline-sm text-headline-sm hover:bg-primary shadow-[0_10px_20px_-6px_rgba(79,70,229,0.35)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer" type="button" onclick="window.openPostOpportunityModal()">
+<div class="flex items-center flex-wrap justify-center gap-space-xs p-1.5 bg-surface-container-lowest border border-outline-variant/60 rounded-xl shadow-sm min-h-[50px]" id="categoryTabs"></div>
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-space-lg py-3 rounded-xl bg-primary-container text-on-primary font-headline-sm text-headline-sm hover:bg-primary shadow-[0_10px_20px_-6px_rgba(79,70,229,0.35)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer" type="button" onclick="openPostForm()">
 <span class="material-symbols-outlined text-[20px] font-bold">add</span>
 <span>Post an Opportunity</span>
 </button>
 </div>
-<!-- Advanced Filter / Search Capsule -->
-<div class="w-full mt-space-md bg-surface-container-lowest border border-outline-variant/60 rounded-2xl p-space-sm shadow-[0_4px_16px_rgba(15,23,42,0.03)] flex flex-col md:flex-row items-center gap-space-sm">
-<!-- Search Input -->
+<!-- Search and filters -->
+<div class="w-full mt-space-md bg-surface-container-lowest border border-outline-variant/60 rounded-2xl p-space-sm shadow-[0_4px_16px_rgba(15,23,42,0.03)] flex flex-col gap-space-sm" id="boardTop">
+<div class="flex flex-col md:flex-row items-center gap-space-sm">
 <div class="relative flex-1 w-full flex items-center pl-space-sm text-on-surface-variant">
 <span class="material-symbols-outlined text-[20px] text-outline mr-space-xs">search</span>
-<input id="board-search-input" class="w-full bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none py-2" placeholder="Search by role, required tech stack, hackathon event name, or college..." type="text"/>
+<input autocomplete="off" id="board-search-input" class="w-full bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none py-2" placeholder="Search by role, required tech stack, event name, person or college..." type="text"/>
+<button aria-label="Clear search" class="hidden p-1 rounded-full text-outline hover:text-on-surface hover:bg-surface-container transition-colors shrink-0" id="boardSearchClear" type="button">
+<span class="material-symbols-outlined text-[18px] block">close</span>
+</button>
 </div>
 <div class="h-6 w-[1px] bg-outline-variant/60 hidden md:block"></div>
-<!-- Quick Filters -->
-<div class="flex items-center gap-space-xs w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider pl-1 hidden lg:inline">Quick:</span>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch('python')">
-            Python <span class="text-outline font-normal">18</span>
-</button>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch('react')">
-            React / Next.js <span class="text-outline font-normal">14</span>
-</button>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch('pytorch')">
-            PyTorch <span class="text-outline font-normal">7</span>
-</button>
-<button class="px-space-sm py-1.5 rounded-lg border border-outline-variant/70 font-skill-pill text-skill-pill text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap" data-filter-pill="" type="button" onclick="window.setSearch('solidity')">
-            Solidity <span class="text-outline font-normal">5</span>
-</button>
+<!-- Most requested skills, filled in by board.js -->
+<div class="flex items-center gap-space-xs w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar" id="quickSkills"></div>
 </div>
-<!-- Sort Dropdown trigger -->
-<div class="relative inline-block ml-auto md:ml-space-xs shrink-0 z-50">
-<button id="sortDropdownBtn" class="flex items-center gap-1 px-space-md py-2 rounded-lg bg-surface-container-lowest border border-outline-variant/60 font-label-md text-label-md text-on-surface hover:bg-surface-container-low hover:border-outline-variant transition-all whitespace-nowrap shadow-sm" type="button" onclick="document.getElementById('sortDropdownMenu').classList.toggle('hidden')">
-<span class="material-symbols-outlined text-[18px] text-primary">tune</span>
-<span id="sortLabel">Newest First</span>
-<span class="material-symbols-outlined text-[18px] text-outline ml-1">keyboard_arrow_down</span>
-</button>
-<div id="sortDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.1)] border border-outline-variant/40 transition-all z-50 overflow-hidden py-2">
-<button id="sort-newest-btn" class="w-full text-left flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 hover:bg-surface-container-low transition-colors font-label-md" onclick="window.setSort('newest'); document.getElementById('sortDropdownMenu').classList.add('hidden')">
-<span>Newest First</span>
-<span class="material-symbols-outlined text-[18px]">check</span>
-</button>
-<button id="sort-oldest-btn" class="w-full text-left flex items-center justify-between px-4 py-2.5 text-on-surface hover:bg-surface-container-low transition-colors font-label-md" onclick="window.setSort('oldest'); document.getElementById('sortDropdownMenu').classList.add('hidden')">
-<span>Oldest First</span>
-<span class="material-symbols-outlined text-[18px] opacity-0">check</span>
-</button>
-</div>
+<div class="flex flex-wrap items-center gap-space-xs pt-space-sm border-t border-outline-variant/30">
+<button aria-pressed="false" class="filter-toggle" data-toggle="mine" type="button"><span class="material-symbols-outlined text-[15px]">person</span>My posts</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="applied" type="button"><span class="material-symbols-outlined text-[15px]">send</span>Applied</button>
+<button class="hidden font-label-md text-label-md text-primary hover:underline ml-1" id="boardClearFilters" type="button">Clear all</button>
+<select aria-label="Sort by" class="discover-select ml-auto" id="boardSort" style="width:auto;">
+<option value="newest">Sort: Newest first</option>
+<option value="oldest">Sort: Oldest first</option>
+<option value="applicants">Sort: Most applicants</option>
+</select>
 </div>
 </div>
 </div>
 </section>
 <!-- Main Teammate Roster Grid Section -->
 <section class="w-full pb-space-3xl">
-<div class="max-w-container-max mx-auto px-gutter-desktop">
-<!-- Live Status & Stats Bar -->
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop">
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-space-md text-on-surface-variant font-body-sm text-body-sm gap-2">
 <div class="flex items-center gap-2">
 <span class="font-headline-sm text-headline-sm font-bold text-on-surface">Available Positions</span>
-<span id="activeCallsCount" class="py-0.5 px-2 rounded-full bg-primary-fixed font-label-sm text-label-sm text-on-primary-fixed font-bold">0 active calls</span>
+<span id="activeCallsCount" class="py-0.5 px-2 rounded-full bg-primary-fixed font-label-sm text-label-sm text-on-primary-fixed font-bold normal-case"></span>
 </div>
 <div class="flex items-center gap-4 text-outline">
-<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-error"></span> SIH &amp; National Contests Closing Soon</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-error"></span> Urgent posts are listed first</span>
 </div>
 </div>
 <!-- 3-Column Card Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="board-grid">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="board-grid"></div>
+<!-- Pagination -->
+<div id="board-pagination-container" class="mt-space-xl pt-space-md border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"></div>
 <!-- Quick Tips Banner for Teammate Finders -->
 <div class="mt-space-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-low rounded-2xl p-space-lg border border-outline-variant/60 flex flex-col lg:flex-row items-center justify-between gap-space-lg">
 <div class="flex items-center gap-space-md">
@@ -235,25 +209,114 @@
 <div>
 <h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">Urgent Hackathon Deadline?</h4>
 <p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              Post your opening with the <span class="font-semibold text-error">"Urgent"</span> badge to pin it to the campus network feed and notify students with matched skills.
+              Tick <span class="font-semibold text-error">"Urgent"</span> when you post and your opening is pinned to the top of the board with a red badge. You are notified the moment someone applies.
             </p>
 </div>
 </div>
 <div class="flex items-center gap-space-sm shrink-0">
-<button class="px-space-md py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.showSystemModal('Guidelines', 'Fetching community guidelines for teammate posts...', 'alert')">
+<button class="px-space-md py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="showBoardGuidelines()">
             Read Teammate Guidelines
           </button>
-<button class="px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary/90 transition-colors shadow-sm" type="button" onclick="window.showSystemModal('Post Vacancy', 'Opening standard form to post a new vacancy.', 'alert')">
+<button class="px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary/90 transition-colors shadow-sm" type="button" onclick="openPostForm()">
             Post Vacancy Now
           </button>
 </div>
 </div>
-<!-- Pagination Controls matching Screen 4 standard -->
-<div id="board-pagination-container" class="mt-space-xl pt-space-md border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant">
-          </div>
-        </div>
-      </section>
+</div>
+</section>
 </div></main>
+
+<!-- Post / Edit Opportunity -->
+<div class="modal-overlay board-overlay" id="postOppModal">
+  <div class="board-modal">
+    <div class="board-modal-head">
+      <h3 id="postModalTitle">Post a New Opportunity</h3>
+      <button type="button" data-close-modal aria-label="Close" class="board-modal-close"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <form id="postOppForm" class="board-modal-body flex flex-col gap-4" novalidate>
+      <div>
+        <label class="board-label" for="po-category">Category</label>
+        <select id="po-category" class="board-input">
+          <option value="Hackathon">Hackathon</option>
+          <option value="Side Project">Side Project</option>
+          <option value="Research / AI">Research / AI</option>
+          <option value="Open Source">Open Source</option>
+        </select>
+      </div>
+      <div>
+        <label class="board-label" for="po-title">Title <span class="board-count" id="po-title-count"></span></label>
+        <input type="text" id="po-title" placeholder="e.g. Need a frontend dev for my AI project" class="board-input">
+      </div>
+      <div>
+        <label class="board-label" for="po-skills">Skills required (comma separated) <span class="board-count" id="po-skills-count"></span></label>
+        <input type="text" id="po-skills" placeholder="e.g. React, Tailwind, Python" class="board-input">
+      </div>
+      <div>
+        <label class="board-label" for="po-description">Description <span class="board-count" id="po-description-count"></span></label>
+        <textarea id="po-description" rows="5" placeholder="What are you building, what will this person do, and how much time does it take?" class="board-input" style="resize:vertical;"></textarea>
+      </div>
+      <label class="flex items-start gap-2 cursor-pointer">
+        <input type="checkbox" id="po-urgent" class="mt-1 accent-[#ba1a1a]">
+        <span class="font-body-sm text-body-sm text-on-surface-variant"><strong class="text-on-surface">Urgent</strong> — pin this post to the top of the board. Use it for deadlines in the next few days.</span>
+      </label>
+      <p id="po-error" class="hidden font-body-sm text-body-sm text-error" style="margin:0;"></p>
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" data-close-modal class="btn-outline-modal">Cancel</button>
+        <button type="submit" id="po-submit" class="btn-primary-modal" style="display:inline-flex;align-items:center;gap:6px;">
+          <span id="po-btn-text">Post Now</span>
+          <span class="material-symbols-outlined text-[18px]">send</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Post details -->
+<div class="modal-overlay board-overlay" id="detailModal">
+  <div class="board-modal">
+    <div class="board-modal-head">
+      <h3>Opportunity</h3>
+      <button type="button" data-close-modal aria-label="Close" class="board-modal-close"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="board-modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<!-- Apply -->
+<div class="modal-overlay board-overlay" id="applyModal">
+  <div class="board-modal" style="max-width:480px;">
+    <div class="board-modal-head">
+      <h3>Apply to this opportunity</h3>
+      <button type="button" data-close-modal aria-label="Close" class="board-modal-close"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <form id="applyForm" class="board-modal-body flex flex-col gap-3">
+      <p class="font-headline-sm text-headline-sm text-on-surface" id="applyPostTitle" style="margin:0;overflow-wrap:anywhere;"></p>
+      <p class="font-body-sm text-body-sm text-on-surface-variant" style="margin:0;"><span id="applyAuthorName"></span> will be notified and can see your profile.</p>
+      <div>
+        <label class="board-label" for="apply-note">Note (optional) <span class="board-count" id="apply-note-count"></span></label>
+        <textarea id="apply-note" rows="4" placeholder="Why you are a good fit, what you have built, when you are free..." class="board-input" style="resize:vertical;"></textarea>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" data-close-modal class="btn-outline-modal">Cancel</button>
+        <button type="submit" class="btn-primary-modal">Send Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Applicants (for the person who posted) -->
+<div class="modal-overlay board-overlay" id="applicantsModal">
+  <div class="board-modal">
+    <div class="board-modal-head">
+      <h3>Applicants</h3>
+      <button type="button" data-close-modal aria-label="Close" class="board-modal-close"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="board-modal-body">
+      <p class="font-body-sm text-body-sm text-on-surface-variant" id="applicantsPostTitle" style="margin:0 0 4px;overflow-wrap:anywhere;"></p>
+      <div id="applicantsList"></div>
+    </div>
+  </div>
+</div>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">
@@ -267,541 +330,7 @@
     </div>
 </div>
 
-<script>
-
-// ==========================================
-// GLOBAL MODAL SYSTEM (Preserved)
-// ==========================================
-window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
-    const modal = document.getElementById('systemModal');
-    const titleEl = document.getElementById('systemModalTitle');
-    const msgEl = document.getElementById('systemModalMessage');
-    const cancelBtn = document.getElementById('systemModalCancel');
-    const confirmBtn = document.getElementById('systemModalConfirm');
-
-    if (!modal) return console.error("System modal HTML is missing!");
-
-    titleEl.textContent = title;
-    msgEl.textContent = message;
-    confirmBtn.textContent = confirmText;
-
-    if (type === 'confirm') {
-        cancelBtn.style.display = 'block';
-        cancelBtn.onclick = () => window.closeSystemModal();
-        confirmBtn.onclick = () => {
-            window.closeSystemModal();
-            if (onConfirm) onConfirm();
-        };
-    } else {
-        cancelBtn.style.display = 'none';
-        confirmBtn.onclick = () => {
-            window.closeSystemModal();
-            if (onConfirm) onConfirm();
-        };
-    }
-
-    modal.classList.add('active');
-};
-
-window.closeSystemModal = function() {
-    const modal = document.getElementById('systemModal');
-    if (modal) modal.classList.remove('active');
-};
-
-window.logout = function() {
-    window.showSystemModal("Log Out", "Are you sure you want to securely log out of ProPartner?", "confirm", () => {
-        localStorage.removeItem('currentUserId');
-        window.location.href = "login.html";
-    }, "Log Out");
-};
-
-// ==========================================
-// DYNAMIC DATA, SEARCH & PAGINATION LOGIC
-// ==========================================
-window.allPosts = [];
-window.filteredPosts = [];
-window.currentPage = 1;
-window.itemsPerPage = 6;
-window.currentCategory = '';
-window.currentSort = 'newest';
-
-window.setSort = function(sortType) {
-    window.currentSort = sortType;
-    const label = document.getElementById('sortLabel');
-    if (label) {
-        label.textContent = sortType === 'newest' ? 'Newest First' : 'Oldest First';
-    }
-    
-    // Update active state in dropdown
-    const newestBtn = document.getElementById('sort-newest-btn');
-    const oldestBtn = document.getElementById('sort-oldest-btn');
-    if (newestBtn && oldestBtn) {
-        if (sortType === 'newest') {
-            newestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 hover:bg-surface-container-low transition-colors font-label-md";
-            newestBtn.querySelector('.material-symbols-outlined').classList.remove('opacity-0');
-            oldestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-on-surface hover:bg-surface-container-low transition-colors font-label-md";
-            oldestBtn.querySelector('.material-symbols-outlined').classList.add('opacity-0');
-        } else {
-            oldestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 hover:bg-surface-container-low transition-colors font-label-md";
-            oldestBtn.querySelector('.material-symbols-outlined').classList.remove('opacity-0');
-            newestBtn.className = "w-full text-left flex items-center justify-between px-4 py-2.5 text-on-surface hover:bg-surface-container-low transition-colors font-label-md";
-            newestBtn.querySelector('.material-symbols-outlined').classList.add('opacity-0');
-        }
-    }
-    
-    window.executeSearch(false);
-};
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (event) => {
-    const btn = document.getElementById('sortDropdownBtn');
-    const menu = document.getElementById('sortDropdownMenu');
-    if (btn && menu && !btn.contains(event.target) && !menu.contains(event.target)) {
-        menu.classList.add('hidden');
-    }
-});
-
-window.updateCounts = function() {
-    // Category Counts
-    const hackathonCount = window.allPosts.filter(p => p.category === 'Hackathon').length;
-    const sideProjectCount = window.allPosts.filter(p => p.category === 'Side Project').length;
-    const researchCount = window.allPosts.filter(p => p.category === 'Research / AI').length;
-    const openSourceCount = window.allPosts.filter(p => p.category === 'Open Source').length;
-
-    const catButtons = document.querySelectorAll('button[data-category-btn]');
-    catButtons.forEach(btn => {
-        const onclick = btn.getAttribute('onclick') || '';
-        const span = btn.querySelector('span');
-        if(onclick.includes('Hackathon') && span) span.textContent = hackathonCount;
-        if(onclick.includes('Side Project') && span) span.textContent = sideProjectCount;
-        if(onclick.includes('Research') && span) span.textContent = researchCount;
-        if(onclick.includes('Open Source') && span) span.textContent = openSourceCount;
-    });
-
-    // Pill Counts
-    const buttons = document.querySelectorAll('button[data-filter-pill]');
-    buttons.forEach(btn => {
-        const match = btn.getAttribute('onclick').match(/'([^']+)'/);
-        if(match) {
-            const term = match[1].toLowerCase();
-            let count = window.allPosts.filter(p => {
-                return (p.skills_required && p.skills_required.toLowerCase().includes(term)) ||
-                       (p.title && p.title.toLowerCase().includes(term));
-            }).length;
-            const span = btn.querySelector('span');
-            if(span) span.textContent = count;
-        }
-    });
-};
-
-window.setCategoryFilter = function(category) {
-    window.currentCategory = category;
-    
-    // Update active class on category buttons
-    const catButtons = document.querySelectorAll('button[data-category-btn]');
-    catButtons.forEach(btn => {
-        const onclick = btn.getAttribute('onclick') || '';
-        if((category === '' && onclick.includes("('')")) || 
-           (category !== '' && onclick.includes(category))) {
-            btn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-low');
-            btn.classList.add('bg-on-surface', 'text-surface-container-lowest');
-        } else {
-            btn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-low');
-            btn.classList.remove('bg-on-surface', 'text-surface-container-lowest');
-        }
-    });
-
-    window.executeSearch(false);
-};
-
-window.setSearch = function(term) {
-    const input = document.getElementById('board-search-input');
-    if(input) input.value = term;
-    window.executeSearch(true);
-    
-    // Handle pill active state
-    const buttons = document.querySelectorAll('button[data-filter-pill]');
-    buttons.forEach(btn => {
-        if(btn.getAttribute('onclick').includes(term)) {
-            btn.classList.remove('border-outline-variant/70', 'hover:bg-surface-container-low');
-            btn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
-            const span = btn.querySelector('span');
-            if(span) {
-                span.classList.remove('text-outline');
-                span.classList.add('text-white/80');
-            }
-        } else {
-            btn.classList.add('border-outline-variant/70', 'hover:bg-surface-container-low');
-            btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
-            const span = btn.querySelector('span');
-            if(span) {
-                span.classList.add('text-outline');
-                span.classList.remove('text-white/80');
-            }
-        }
-    });
-};
-
-window.executeSearch = function(showPopup = false) {
-    const input = document.getElementById('board-search-input');
-    const val = input ? input.value.toLowerCase().trim() : '';
-    
-    window.filteredPosts = window.allPosts.filter(p => {
-        if (window.currentCategory && p.category !== window.currentCategory) return false;
-        
-        if (!val) return true;
-        
-        const searchStr = `${p.title || ''} ${p.author_college || ''} ${p.skills_required || ''} ${p.description || ''}`.toLowerCase();
-        return searchStr.includes(val);
-    });
-    
-    if (window.currentSort === 'newest') {
-        window.filteredPosts.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    } else if (window.currentSort === 'oldest') {
-        window.filteredPosts.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
-    }
-    
-    // Update active calls
-    const activeCallsCount = document.getElementById('activeCallsCount');
-    if(activeCallsCount) activeCallsCount.textContent = `${window.filteredPosts.length} active calls`;
-    
-    window.currentPage = 1;
-    window.renderGrid();
-    
-    if(val && showPopup === true) {
-        window.showSystemModal('Search Applied', `Showing ${window.filteredPosts.length} results for "${escapeHtml(val)}".`, 'alert');
-    }
-};
-
-window.renderPagination = function() {
-    const container = document.getElementById('board-pagination-container');
-    if(!container) return;
-    
-    const total = window.filteredPosts.length;
-    const totalPages = Math.ceil(total / window.itemsPerPage) || 1;
-    
-    if (window.currentPage > totalPages) window.currentPage = totalPages;
-    if (window.currentPage < 1) window.currentPage = 1;
-    
-    const start = total === 0 ? 0 : (window.currentPage - 1) * window.itemsPerPage + 1;
-    const end = Math.min(window.currentPage * window.itemsPerPage, total);
-    
-    let html = `
-    <div>
-      Showing <span class="font-semibold text-on-surface">${start} - ${end}</span> of <span class="font-semibold text-on-surface">${total}</span> open opportunities
-    </div>
-    <div class="flex items-center gap-1">
-      <button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${window.currentPage === 1 ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage - 1})">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-      </button>
-    `;
-    
-    for(let i=1; i<=totalPages; i++) {
-        if(i === 1 || i === totalPages || (i >= window.currentPage - 1 && i <= window.currentPage + 1)) {
-            if(i === window.currentPage) {
-                html += `<button class="w-9 h-9 rounded-lg flex items-center justify-center bg-primary text-on-primary font-semibold shadow-sm" type="button">${i}</button>`;
-            } else {
-                html += `<button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-on-surface hover:bg-surface-container-low transition-colors" type="button" onclick="window.goToPage(${i})">${i}</button>`;
-            }
-        } else if (i === window.currentPage - 2 || i === window.currentPage + 2) {
-            html += `<span class="px-1 text-outline">...</span>`;
-        }
-    }
-    
-    html += `
-      <button class="w-9 h-9 rounded-lg flex items-center justify-center border border-outline-variant/60 text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${window.currentPage === totalPages ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage + 1})">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </button>
-    </div>
-    `;
-    
-    container.innerHTML = html;
-};
-
-window.goToPage = function(page) {
-    window.currentPage = page;
-    window.renderGrid();
-};
-
-window.renderGrid = function() {
-    const grid = document.getElementById('board-grid');
-    if(!grid) return;
-    
-    grid.innerHTML = '';
-    
-    const total = window.filteredPosts.length;
-    if (total === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No opportunities found matching your criteria.</div>';
-        window.renderPagination();
-        return;
-    }
-    
-    const start = (window.currentPage - 1) * window.itemsPerPage;
-    const end = Math.min(start + window.itemsPerPage, total);
-    const pagePosts = window.filteredPosts.slice(start, end);
-    
-    pagePosts.forEach(post => {
-        const currentUserId = parseInt(localStorage.getItem('currentUserId')) || 0;
-        const userRole = localStorage.getItem('userRole') || 'user';
-        let isAdmin = userRole === 'admin' || userRole === 'founder' || !!localStorage.getItem('adminToken');
-        if (window.currentUserProfile && window.currentUserProfile.is_admin === 1) {
-            isAdmin = true;
-        }
-        const dateStr = post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Recent';
-        const categoryIcon = post.category === 'Hackathon' ? 'emoji_events' : post.category === 'Research / AI' ? 'science' : post.category === 'Open Source' ? 'code' : 'work';
-        
-        const cardHtml = `
-          <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between border border-outline-variant/30 relative overflow-hidden">
-            <div class="absolute top-0 right-0 px-3 py-1 bg-tertiary text-on-tertiary font-label-sm text-[10px] font-bold rounded-bl-lg flex items-center gap-1 z-10 shadow-sm">
-              <span class="material-symbols-outlined text-[14px]">${categoryIcon}</span> ${escapeHtml(post.category || 'Opportunity')}
-            </div>
-            <div>
-              <div class="mb-space-sm mt-2">
-                <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors pr-20">
-                  ${escapeHtml(post.title)}
-                </h3>
-              </div>
-              <div class="flex items-center gap-2 mb-space-md text-on-surface-variant font-label-sm text-label-sm">
-                <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px]">person</span>
-                  ${escapeHtml(post.author_name || 'Unknown')}
-                </span>
-                <span>•</span>
-                <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px]">apartment</span>
-                  ${escapeHtml(post.author_college || 'Unknown College')}
-                </span>
-              </div>
-              <p class="font-body-md text-body-md text-on-surface-variant mb-space-sm line-clamp-3">
-                ${escapeHtml(post.description || 'No description provided.')}
-              </p>
-              <div class="flex items-center gap-1.5 flex-wrap mb-space-md">
-                ${(post.skills_required || '').split(',').map(s => s.trim()).filter(s => s).map(skill => 
-                  `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(skill)}</span>`
-                ).join('')}
-              </div>
-            </div>
-            <div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between">
-              <div class="font-label-sm text-label-sm text-on-surface-variant">
-                Posted ${dateStr}
-              </div>
-              <div class="flex gap-2">
-                  ${(post.author_id === currentUserId || isAdmin) ? `
-                    <button class="px-space-md py-1.5 rounded-lg border border-error text-error hover:bg-error hover:text-on-primary font-label-md transition-colors" type="button" onclick="window.deleteOpportunity(${post.id})">
-                      Delete
-                    </button>
-                  ` : ''}
-                  <button class="px-space-md py-1.5 rounded-lg bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md transition-colors" type="button" onclick="window.showSystemModal('Apply', 'Application feature is coming soon!', 'alert')">
-                    Apply Now
-                  </button>
-              </div>
-            </div>
-          </div>
-        `;
-        grid.innerHTML += cardHtml;
-    });
-    
-    window.renderPagination();
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  const grid = document.getElementById('board-grid');
-  
-  if(grid) {
-      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading opportunities...</p></div>';
-  }
-  
-  fetch(`${API_BASE}/api/board/posts`, { credentials: 'include' })
-    .then(res => {
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      return res.json();
-    })
-    .then(posts => {
-        window.allPosts = posts || [];
-        window.updateCounts();
-        
-        const input = document.getElementById('board-search-input');
-        if (input) {
-            input.addEventListener('input', (e) => {
-                // Reset pills state if user types
-                const buttons = document.querySelectorAll('button[data-filter-pill]');
-                buttons.forEach(btn => {
-                    btn.classList.add('border-outline-variant/70', 'hover:bg-surface-container-low');
-                    btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
-                    const span = btn.querySelector('span');
-                    if(span) {
-                        span.classList.add('text-outline');
-                        span.classList.remove('text-white/80');
-                    }
-                });
-                window.executeSearch(false);
-            });
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    window.executeSearch(true);
-                }
-            });
-        }
-        
-        window.executeSearch(false);
-    })
-    .catch(err => {
-      console.error(err);
-      if(grid) {
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Could not load opportunities. Please check your connection and try refreshing.</div>';
-      }
-    });
-});
-
-</script>
-
-
-
-    
-    
-<!-- Post Opportunity Modal -->
-<div id="postOppModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity">
-    <div class="bg-surface-container-lowest w-[90%] max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-200" id="postOppModalContent">
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-surface-container flex items-center justify-between bg-surface-container-low">
-            <h3 class="font-headline-sm text-on-surface">Post a New Opportunity</h3>
-            <button onclick="window.closePostOpportunityModal()" class="text-on-surface-variant hover:text-error transition-colors p-1 rounded-lg hover:bg-surface-container">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-        <!-- Body -->
-        <div class="p-6 overflow-y-auto max-h-[70vh]">
-            <form id="postOppForm" class="flex flex-col gap-4">
-                <div>
-                    <label class="block font-label-md text-on-surface-variant mb-1">Category</label>
-                    <select id="po-category" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
-                        <option value="Hackathon">Hackathon</option>
-                        <option value="Side Project">Side Project</option>
-                        <option value="Research / AI">Research / AI</option>
-                        <option value="Open Source">Open Source</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-label-md text-on-surface-variant mb-1">Title</label>
-                    <input type="text" id="po-title" required placeholder="e.g. Need a frontend dev for my AI project" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block font-label-md text-on-surface-variant mb-1">Skills Required (comma separated)</label>
-                    <input type="text" id="po-skills" required placeholder="e.g. React, Tailwind, Python" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block font-label-md text-on-surface-variant mb-1">Description</label>
-                    <textarea id="po-description" required rows="4" placeholder="Describe the opportunity in detail..." class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none"></textarea>
-                </div>
-            </form>
-        </div>
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-surface-container bg-surface-container-lowest flex items-center justify-end gap-3">
-            <button onclick="window.closePostOpportunityModal()" class="px-5 py-2 rounded-xl font-label-md text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
-            <button onclick="window.submitPostOpportunity()" class="px-5 py-2 rounded-xl bg-primary text-on-primary font-label-md shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                <span id="po-btn-text">Post Now</span>
-                <span class="material-symbols-outlined text-[18px]">send</span>
-            </button>
-        </div>
-    </div>
-</div>
-
-
-<script>
-window.openPostOpportunityModal = function() {
-    const m = document.getElementById('postOppModal');
-    const c = document.getElementById('postOppModalContent');
-    m.classList.remove('hidden');
-    m.classList.add('flex');
-    setTimeout(() => {
-        c.classList.remove('scale-95');
-        c.classList.add('scale-100');
-    }, 10);
-};
-window.closePostOpportunityModal = function() {
-    const m = document.getElementById('postOppModal');
-    const c = document.getElementById('postOppModalContent');
-    c.classList.remove('scale-100');
-    c.classList.add('scale-95');
-    setTimeout(() => {
-        m.classList.add('hidden');
-        m.classList.remove('flex');
-        document.getElementById('postOppForm').reset();
-    }, 200);
-};
-window.submitPostOpportunity = function() {
-    const category = document.getElementById('po-category').value;
-    const title = document.getElementById('po-title').value.trim();
-    const skills = document.getElementById('po-skills').value.trim();
-    const description = document.getElementById('po-description').value.trim();
-
-    if (!title || !skills || !description) {
-        window.showSystemModal('Error', 'Please fill in all fields.', 'alert');
-        return;
-    }
-
-    const userId = localStorage.getItem('currentUserId');
-    if (!userId) {
-        window.showSystemModal('Error', 'You must be logged in to post an opportunity.', 'alert');
-        return;
-    }
-
-    const payload = {
-        category: category,
-        title: title,
-        description: description,
-        skills_required: skills
-    };
-
-    const btnText = document.getElementById('po-btn-text');
-    btnText.textContent = 'Posting...';
-
-    fetch(`${API_BASE}/api/board/posts`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Failed to post opportunity.');
-        return res.json();
-    })
-    .then(data => {
-        btnText.textContent = 'Post Now';
-        window.closePostOpportunityModal();
-        window.showSystemModal('Success', 'Opportunity posted successfully!', 'alert');
-        setTimeout(() => {
-            window.location.reload();
-        }, 1500);
-    })
-    .catch(err => {
-        console.error(err);
-        btnText.textContent = 'Post Now';
-        window.showSystemModal('Error', 'An error occurred while posting.', 'alert');
-    });
-};
-
-window.deleteOpportunity = function(id) {
-    if (!confirm('Are you sure you want to delete this opportunity?')) return;
-    
-    fetch(`${API_BASE}/api/board/posts/` + id, {
-        method: 'DELETE',
-        credentials: 'include'
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Failed to delete');
-        window.showSystemModal('Success', 'Opportunity deleted.', 'alert');
-        setTimeout(() => window.location.reload(), 1500);
-    })
-    .catch(err => {
-        console.error(err);
-        window.showSystemModal('Error', 'Failed to delete opportunity.', 'alert');
-    });
-};
-</script>
-
+<script src="chat-common.js"></script>
+<script src="board.js"></script>
 </body>
-    </html>
+</html>
