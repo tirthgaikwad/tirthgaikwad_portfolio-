@@ -1,7 +1,19 @@
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+<html lang="en"><head><meta charset="utf-8"/>
+<title>ProPartner | Discover Talent</title>
+<script>
+// Ask for the directory right away, while styles and scripts are still downloading. discover.js picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__discoverPrefetch = fetch(apiBase + '/api/discover', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
 /* Custom Modal Styles */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
 .modal-overlay.active { display: flex; }
@@ -17,6 +29,19 @@
 /* Hide Scrollbar for Horizontal Nav */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Discover page */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.discover-select.is-set { border-color: #3525cd; background-color: #eff4ff; }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-toggle:hover { background: #eff4ff; }
+.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+#resultsTop { scroll-margin-top: 80px; }
 </style><script src="https://cdn.tailwindcss.com"></script><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
 <div class="h-16 max-w-[1536px] mx-auto px-4 lg:px-6 flex items-center justify-between gap-4">
     <!-- Left: Logo + Navigation -->
@@ -26,9 +51,9 @@
         <span class="text-xl font-bold tracking-tight text-slate-900">ProPartner</span>
       </div>
       <nav class="hidden xl:flex items-center gap-0.5 h-16">
-        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="search.html">Discover Talent</a>
+        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="search.html">Discover Talent</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="board.html">Opportunities Board</a>
-        <a aria-current="page" class="h-full flex items-center px-2 text-[13px] font-semibold text-primary border-b-2 border-primary whitespace-nowrap" href="team.html">My Teams</a>
+        <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="team.html">My Teams</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="project_management.html">Project Hub</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="college.html">Campus Network</a>
         <a class="h-full flex items-center px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors whitespace-nowrap" href="research.html">Research Collab</a>
@@ -40,7 +65,7 @@
     <!-- Right: Search + Utilities + Profile -->
     <div class="flex items-center gap-1.5 shrink-0">
       <!-- Search Bar -->
-      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="document.getElementById('search-modal') && document.getElementById('search-modal').classList.add('active')">
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer transition-colors w-44" onclick="focusDiscoverSearch()">
         <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
         <span class="text-[12px] text-slate-400 truncate">Search network...</span>
         <kbd class="ml-auto text-[10px] font-semibold text-slate-400 bg-white px-1 py-0.5 rounded border border-slate-200 shadow-sm">⌘K</kbd>
@@ -96,65 +121,71 @@
 <!-- Subtle Ambient Glow Overlay -->
 <div class="relative w-full overflow-hidden bg-surface pb-space-3xl">
 <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-primary-fixed/40 via-surface-container/30 to-transparent blur-3xl pointer-events-none rounded-full"></div>
-<div class="max-w-container-max mx-auto px-gutter-desktop relative z-10 pt-space-xl">
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop relative z-10 pt-space-xl">
 <!-- Section 1: Hero & Search Bar Section -->
-<div class="flex flex-col items-center text-center max-w-3xl mx-auto space-y-space-sm mb-space-2xl">
+<div class="flex flex-col items-center text-center max-w-3xl mx-auto space-y-space-sm mb-space-xl">
 <div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wider shadow-sm">
 <span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span>
           Peer-to-Peer Engineering Talent Engine
         </div>
-<h1 class="font-display-hero text-display-hero font-extrabold text-on-surface tracking-tight leading-tight">
+<h1 class="font-display-hero text-display-hero-mobile md:text-display-hero font-extrabold text-on-surface tracking-tight leading-tight">
           Find Student Builders, Researchers &amp; Tech Partners
         </h1>
 <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
           Connect with verified peer talent across top engineering institutes for upcoming hackathons, funded research, capstone projects, and campus-born startups.
         </p>
 <!-- Big Modern Pill Search Capsule -->
-<div class="w-full mt-space-md p-1.5 bg-surface-container-lowest rounded-full shadow-md flex flex-col md:flex-row items-center gap-space-xs">
-<div class="flex items-center gap-space-xs pl-space-md flex-1 w-full">
+<div class="w-full mt-space-md p-1.5 bg-surface-container-lowest rounded-3xl md:rounded-full shadow-md flex flex-col md:flex-row items-center gap-space-xs">
+<div class="flex items-center gap-space-xs pl-space-md pr-space-xs flex-1 w-full">
 <span class="material-symbols-outlined text-primary text-[24px]">search</span>
-<input class="w-full bg-transparent border-none text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-0 py-2" id="talent-search-input" placeholder="Search by framework, skill, project (e.g. PyTorch, React Native, Rust, Robotics)..." type="text"/>
+<input autocomplete="off" class="w-full bg-transparent border-none text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-0 py-2" id="talent-search-input" placeholder="Search by name, skill, college or project (e.g. PyTorch, React Native, Robotics)..." type="text"/>
+<button aria-label="Clear search" class="hidden p-1 rounded-full text-outline hover:text-on-surface hover:bg-surface-container transition-colors shrink-0" id="searchClearBtn" type="button">
+<span class="material-symbols-outlined text-[18px] block">close</span>
+</button>
+<kbd class="hidden md:block text-[10px] font-semibold text-outline bg-surface-container-low px-1.5 py-0.5 rounded border border-outline-variant/40 shrink-0" id="searchShortcutHint">Ctrl K</kbd>
 </div>
-<button class="w-full md:w-auto px-space-lg py-3 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all duration-200 shrink-0" id="search-btn" type="button" onclick="window.executeSearch(true)">
+<button class="w-full md:w-auto px-space-lg py-3 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all duration-200 shrink-0" id="search-btn" type="button">
 <span>Search Network</span>
 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>
 </div>
-<!-- Trending Tech Stack Pills with Counts -->
-<div class="flex flex-wrap items-center justify-center gap-space-xs pt-space-xs">
-<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline mr-space-2xs flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">local_fire_department</span> Trending:
-          </span>
-<button class="px-space-sm py-1 rounded-full bg-primary text-on-primary font-skill-pill text-skill-pill flex items-center gap-1 shadow-sm transition-transform active:scale-95" onclick="window.setSearch('Python')">
-            Python <span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">48</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('Deep Learning')">
-            Deep Learning <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">32</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('React')">
-            React <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">54</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('Docker')">
-            Docker <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">19</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('FastAPI')">
-            FastAPI <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">27</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('C++')">
-            C++ <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">63</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('Next.js')">
-            Next.js <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">41</span>
-</button>
-<button class="px-space-sm py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant font-skill-pill text-skill-pill flex items-center gap-1 transition-colors border border-outline-variant/30" onclick="window.setSearch('Rust')">
-            Rust <span class="text-[10px] bg-surface-container-high px-1.5 py-0.5 rounded-full text-on-surface">12</span>
-</button>
+<!-- Most common skills on the platform, filled in by discover.js -->
+<div class="flex flex-wrap items-center justify-center gap-space-xs pt-space-xs min-h-[28px]" id="trendingSkills"></div>
+</div>
+<!-- Section 2: Filters -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-space-md mb-space-md" id="resultsTop">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-space-sm">
+<select aria-label="College" class="discover-select" data-filter="college" id="filterCollege"><option value="">All colleges</option></select>
+<select aria-label="Department" class="discover-select" data-filter="department" id="filterDepartment"><option value="">All departments</option></select>
+<select aria-label="City" class="discover-select" data-filter="city" id="filterCity"><option value="">All cities</option></select>
+<select aria-label="Account type" class="discover-select" data-filter="type" id="filterType">
+<option value="">Students &amp; professionals</option>
+<option value="student">Students</option>
+<option value="professional">Professionals</option>
+</select>
+<select aria-label="Sort by" class="discover-select col-span-2 md:col-span-1" data-filter="sort" id="filterSort">
+<option value="match">Sort: Best match</option>
+<option value="newest">Sort: Newest members</option>
+<option value="followers">Sort: Most followed</option>
+<option value="name">Sort: Name A-Z</option>
+</select>
+</div>
+<div class="flex flex-wrap items-center gap-space-xs mt-space-sm">
+<button aria-pressed="false" class="filter-toggle" data-toggle="online" type="button"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Online now</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="verified" type="button"><span class="material-symbols-outlined text-[15px]">verified</span>Verified</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="following" type="button"><span class="material-symbols-outlined text-[15px]">group</span>Following</button>
+<button aria-pressed="false" class="filter-toggle" data-toggle="saved" type="button"><span class="material-symbols-outlined text-[15px]">bookmark</span>Saved</button>
+<div class="ml-auto flex items-center gap-space-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant" id="resultCount"></span>
+<button class="hidden font-label-md text-label-md text-primary hover:underline" id="clearFiltersBtn" type="button">Clear all</button>
 </div>
 </div>
-<!-- Section 3: Verified Student Roster (3 Columns Grid matching elevated designs) -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="search-results-grid">
 </div>
-<!-- Section 4: Academic Collaborative Bento Banner & Stats -->
+<!-- Section 3: People -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="search-results-grid"></div>
+<!-- Section 4: Pagination -->
+<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-outline-variant/30" id="discoverPagination"></div>
+<!-- Section 5: Academic Collaborative Bento Banner -->
 <div class="mt-space-2xl bg-gradient-to-r from-primary-container to-primary rounded-2xl p-space-xl text-on-primary shadow-lg flex flex-col md:flex-row items-center justify-between gap-space-lg relative overflow-hidden">
 <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
 <div class="space-y-space-xs max-w-xl">
@@ -166,40 +197,13 @@
             ProPartner lets you formulate balanced multi-disciplinary rosters (frontend, backend, ML researcher &amp; pitch designer) in minutes with institutional honor guarantees.
           </p>
 </div>
-<div class="flex items-center gap-space-sm shrink-0">
+<div class="flex items-center gap-space-sm shrink-0 relative">
 <button class="bg-surface-container-lowest text-primary hover:bg-surface-container font-label-md text-label-md px-space-lg py-3 rounded-xl shadow-md transition-all" type="button" onclick="window.location.href='board.html'">
             Post an Open Role
           </button>
-<button class="border border-on-primary/30 hover:bg-white/10 text-on-primary font-label-md text-label-md px-space-md py-3 rounded-xl transition-all flex items-center gap-1" type="button" onclick="window.showSystemModal('Guidelines', 'Fetching cross-campus collaboration rules...', 'alert')">
+<button class="border border-on-primary/30 hover:bg-white/10 text-on-primary font-label-md text-label-md px-space-md py-3 rounded-xl transition-all flex items-center gap-1" type="button" onclick="showGuidelines()">
 <span>Learn Guidelines</span>
-<span class="material-symbols-outlined text-[16px]">open_in_new</span>
-</button>
-</div>
-</div>
-<!-- Section 5: Pagination Controls & Roster Navigation -->
-<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-outline-variant/30">
-<div class="font-body-sm text-body-sm text-on-surface-variant">
-          Showing <span class="font-medium text-on-surface">1 - 6</span> of <span id="resultCountBottom">128</span> student builders
-        </div>
-<div class="flex items-center gap-1">
-<button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1" disabled="" type="button" onclick="window.showSystemModal('Pagination', 'Loading previous page...', 'alert')">
-<span class="material-symbols-outlined text-[16px]">chevron_left</span> Previous
-          </button>
-<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold shadow-sm" type="button">
-            1
-          </button>
-<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 2...', 'alert')">
-            2
-          </button>
-<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 3...', 'alert')">
-            3
-          </button>
-<span class="px-1 text-outline font-label-md">...</span>
-<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading page 22...', 'alert')">
-            22
-          </button>
-<button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1 transition-colors" type="button" onclick="window.showSystemModal('Pagination', 'Loading next page...', 'alert')">
-            Next <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
 </button>
 </div>
 </div>
@@ -219,377 +223,7 @@
     </div>
 </div>
 
-<script>
-
-    // ==========================================
-    // GLOBAL MODAL SYSTEM (Preserved)
-    // ==========================================
-    window.showSystemModal = function(title, message, type = 'alert', onConfirm = null, confirmText = 'OK') {
-        const modal = document.getElementById('systemModal');
-        const titleEl = document.getElementById('systemModalTitle');
-        const msgEl = document.getElementById('systemModalMessage');
-        const cancelBtn = document.getElementById('systemModalCancel');
-        const confirmBtn = document.getElementById('systemModalConfirm');
-
-        if (!modal) return console.error("System modal HTML is missing!");
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-        confirmBtn.textContent = confirmText;
-
-        if (type === 'confirm') {
-            cancelBtn.style.display = 'block';
-            cancelBtn.onclick = () => window.closeSystemModal();
-            confirmBtn.onclick = () => {
-                window.closeSystemModal();
-                if (onConfirm) onConfirm();
-            };
-        } else {
-            cancelBtn.style.display = 'none';
-            confirmBtn.onclick = () => {
-                window.closeSystemModal();
-                if (onConfirm) onConfirm();
-            };
-        }
-
-        modal.classList.add('active');
-    };
-
-    window.closeSystemModal = function() {
-        const modal = document.getElementById('systemModal');
-        if (modal) modal.classList.remove('active');
-    };
-    
-    window.logout = function() {
-        window.showSystemModal("Log Out", "Are you sure you want to securely log out of ProPartner?", "confirm", () => {
-            localStorage.removeItem('currentUserId');
-            window.location.href = "login.html";
-        }, "Log Out");
-    };
-
-    // ==========================================
-    // DYNAMIC DATA, SEARCH & PAGINATION LOGIC
-    // ==========================================
-    window.allProfiles = [];
-    window.filteredProfiles = [];
-    window.currentPage = 1;
-    window.itemsPerPage = 6;
-
-    window.updateTechPills = function() {
-        const buttons = document.querySelectorAll('button[onclick^="window.setSearch"]');
-        buttons.forEach(btn => {
-            const match = btn.getAttribute('onclick').match(/'([^']+)'/);
-            if(match) {
-                const term = match[1].toLowerCase();
-                let count = window.allProfiles.filter(p => {
-                    return (p.skills && p.skills.toLowerCase().includes(term)) ||
-                           (p.name && p.name.toLowerCase().includes(term));
-                }).length;
-                const span = btn.querySelector('span');
-                if(span) span.textContent = count;
-            }
-        });
-    };
-
-    window.renderPagination = function() {
-        const container = document.querySelector('.mt-space-xl.flex');
-        if(!container) return;
-        
-        const total = window.filteredProfiles.length;
-        const totalPages = Math.ceil(total / window.itemsPerPage) || 1;
-        
-        if (window.currentPage > totalPages) window.currentPage = totalPages;
-        if (window.currentPage < 1) window.currentPage = 1;
-        
-        const start = total === 0 ? 0 : (window.currentPage - 1) * window.itemsPerPage + 1;
-        const end = Math.min(window.currentPage * window.itemsPerPage, total);
-        
-        let html = `
-        <div class="font-body-sm text-body-sm text-on-surface-variant">
-          Showing <span class="font-medium text-on-surface">${start} - ${end}</span> of <span id="resultCountBottom">${total}</span> student builders
-        </div>
-        <div class="flex items-center gap-1">
-          <button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1" ${window.currentPage === 1 ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage - 1})">
-            <span class="material-symbols-outlined text-[16px]">chevron_left</span> Previous
-          </button>
-        `;
-        
-        for(let i=1; i<=totalPages; i++) {
-            if(i === 1 || i === totalPages || (i >= window.currentPage - 1 && i <= window.currentPage + 1)) {
-                if(i === window.currentPage) {
-                    html += `<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-bold shadow-sm" type="button">${i}</button>`;
-                } else {
-                    html += `<button class="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md flex items-center justify-center transition-colors" type="button" onclick="window.goToPage(${i})">${i}</button>`;
-                }
-            } else if (i === window.currentPage - 2 || i === window.currentPage + 2) {
-                html += `<span class="px-1 text-outline font-label-md">...</span>`;
-            }
-        }
-        
-        html += `
-          <button class="px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-md text-label-md disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 transition-colors" ${window.currentPage === totalPages ? 'disabled' : ''} type="button" onclick="window.goToPage(${window.currentPage + 1})">
-            Next <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          </button>
-        </div>
-        `;
-        
-        container.innerHTML = html;
-        
-        // Also update top counts if they exist
-        const countEls = document.querySelectorAll('#resultCount, #headerResultCount');
-        countEls.forEach(el => { if(el) el.textContent = total; });
-    };
-
-    window.goToPage = function(page) {
-        window.currentPage = page;
-        window.renderGrid();
-    };
-
-    window.renderGrid = function() {
-        const grid = document.getElementById('search-results-grid');
-        grid.innerHTML = '';
-        
-        const total = window.filteredProfiles.length;
-        if (total === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found.</div>';
-            window.renderPagination();
-            return;
-        }
-        
-        const start = (window.currentPage - 1) * window.itemsPerPage;
-        const end = Math.min(start + window.itemsPerPage, total);
-        const pageProfiles = window.filteredProfiles.slice(start, end);
-        
-        pageProfiles.forEach(profile => {
-            const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
-            const avatarHtml = profile.profile_pic 
-              ? `<img src="${escapeHtml(profile.profile_pic)}" class="w-full h-full object-cover">`
-              : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
-              
-            const skillsArray = profile.skills ? profile.skills.split(',').map(s => s.trim()).filter(s => s) : [];
-            const skillsHtml = skillsArray.map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`).join('');
-              
-            const cardHtml = `
-              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-                <div class="flex items-start justify-between gap-space-sm mb-space-md">
-                  <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
-                      ${avatarHtml}
-                    </div>
-                  </div>
-                </div>
-                <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                    ${escapeHtml(profile.name)}
-                  </h3>
-                  <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
-                    <span class="material-symbols-outlined text-[15px]">school</span>
-                    ${escapeHtml(profile.college_name || 'No college listed')}
-                  </p>
-                </div>
-                <div class="mb-space-lg mt-space-sm">
-                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
-                  <div class="flex flex-wrap gap-1.5">
-                    ${skillsHtml}
-                  </div>
-                </div>
-                <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
-                  <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    View Profile
-                  </button>
-                  <button class="py-2 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html?user=${profile.id}'">
-                    <span class="material-symbols-outlined text-[20px]">chat</span>
-                  </button>
-                </div>
-              </div>
-            `;
-            grid.innerHTML += cardHtml;
-        });
-        
-        window.renderPagination();
-    };
-
-    window.setSearch = function(term) {
-        const input = document.getElementById('talent-search-input');
-        if(input) input.value = term;
-        window.executeSearch(true);
-        
-        // Handle pill active state
-        const buttons = document.querySelectorAll('button[onclick^="window.setSearch"]');
-        buttons.forEach(btn => {
-            if(btn.getAttribute('onclick').includes(term)) {
-                btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
-                btn.classList.add('bg-primary', 'text-on-primary');
-                const span = btn.querySelector('span');
-                if(span) {
-                    span.classList.remove('bg-surface-container-high', 'text-on-surface');
-                    span.classList.add('bg-white/20');
-                }
-            } else {
-                btn.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
-                btn.classList.remove('bg-primary', 'text-on-primary');
-                const span = btn.querySelector('span');
-                if(span) {
-                    span.classList.add('bg-surface-container-high', 'text-on-surface');
-                    span.classList.remove('bg-white/20');
-                }
-            }
-        });
-    };
-
-    window.executeSearch = function(showPopup = false) {
-        const input = document.getElementById('talent-search-input');
-        const val = input ? input.value.toLowerCase().trim() : '';
-        
-        if(!val) {
-            window.filteredProfiles = [...window.allProfiles];
-        } else {
-            window.filteredProfiles = window.allProfiles.filter(p => {
-                const searchStr = `${p.name || ''} ${p.college_name || ''} ${p.skills || ''} ${p.department || ''} ${p.bio || ''}`.toLowerCase();
-                return searchStr.includes(val);
-            });
-        }
-        
-        window.currentPage = 1;
-        window.renderGrid();
-        
-        if(val && showPopup === true) {
-            window.showSystemModal('Search Applied', `Showing ${window.filteredProfiles.length} results for "${escapeHtml(val)}".`, 'alert');
-        }
-    };
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const searchParams = new URLSearchParams(window.location.search);
-      const query = searchParams.get('q') || searchParams.get('skill') || '';
-      
-      const grid = document.getElementById('search-results-grid');
-      let fetchUrl = `${API_BASE}/api/profiles`;
-      
-      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>Loading all profiles...</p></div>';
-      
-      fetch(fetchUrl, { credentials: 'include' })
-        .then(res => res.json())
-        .then(profiles => {
-            window.allProfiles = profiles || [];
-            window.updateTechPills();
-            
-            const input = document.getElementById('talent-search-input');
-            if (input) {
-                input.addEventListener('input', (e) => {
-                    // Reset pills state if user types
-                    const buttons = document.querySelectorAll('button[onclick^="window.setSearch"]');
-                    buttons.forEach(btn => {
-                        btn.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
-                        btn.classList.remove('bg-primary', 'text-on-primary');
-                        const span = btn.querySelector('span');
-                        if(span) {
-                            span.classList.add('bg-surface-container-high', 'text-on-surface');
-                            span.classList.remove('bg-white/20');
-                        }
-                    });
-                    window.executeSearch(false);
-                });
-                input.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        window.executeSearch(true);
-                    }
-                });
-            }
-            
-            if(query) {
-                if(input) input.value = query;
-                window.executeSearch(false);
-            } else {
-                window.filteredProfiles = [...window.allProfiles];
-                window.renderGrid();
-            }
-        })
-        .catch(err => {
-          console.error(err);
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading profiles. Are you logged in?</div>';
-        });
-    });
-
-</script>
-
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const searchParams = new URLSearchParams(window.location.search);
-      const query = searchParams.get('q') || searchParams.get('skill') || '';
-      
-      const grid = document.getElementById('search-results-grid');
-      
-      let fetchUrl = `${API_BASE}/api/profiles`;
-      let loadingMsg = 'Loading all profiles...';
-      
-      if(query) {
-        fetchUrl = `${API_BASE}/api/search?skill=${encodeURIComponent(query)}`;
-        loadingMsg = 'Searching profiles for "' + query + '"...';
-      }
-      
-      grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[32px]">sync</span><p>' + loadingMsg + '</p></div>';
-      
-      fetch(fetchUrl, { credentials: 'include' })
-        .then(res => res.json())
-        .then(profiles => {
-          grid.innerHTML = '';
-          if (profiles.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant">No profiles found.</div>';
-            return;
-          }
-
-          profiles.forEach(profile => {
-            const initials = profile.name ? profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
-            const avatarHtml = profile.profile_pic 
-              ? `<img src="${escapeHtml(profile.profile_pic)}" class="w-full h-full object-cover">`
-              : `<div class="w-full h-full flex items-center justify-center text-primary font-bold text-headline-md bg-surface-container">${initials}</div>`;
-              
-            const skillsArray = profile.skills ? profile.skills.split(',').map(s => s.trim()).filter(s => s) : [];
-            const skillsHtml = skillsArray.map(s => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(s)}</span>`).join('');
-              
-            const cardHtml = `
-              <div class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-                <div class="flex items-start justify-between gap-space-sm mb-space-md">
-                  <div class="relative cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    <div class="w-16 h-16 rounded-full overflow-hidden shadow-md ring-2 ring-surface-container">
-                      ${avatarHtml}
-                    </div>
-                  </div>
-                </div>
-                <div class="mb-space-sm cursor-pointer" onclick="window.location.href='profile.html?id=${profile.id}'">
-                  <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                    ${escapeHtml(profile.name)}
-                  </h3>
-                  <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">
-                    <span class="material-symbols-outlined text-[15px]">school</span>
-                    ${escapeHtml(profile.college_name || 'No college listed')}
-                  </p>
-                </div>
-                <div class="mb-space-lg mt-space-sm">
-                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline block mb-1.5">Verified Stack:</span>
-                  <div class="flex flex-wrap gap-1.5">
-                    ${skillsHtml}
-                  </div>
-                </div>
-                <div class="pt-space-sm border-t border-outline-variant/30 flex items-center gap-2">
-                  <button class="flex-1 py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md text-center transition-colors" type="button" onclick="window.location.href='profile.html?id=${profile.id}'">
-                    View Profile
-                  </button>
-                  <button class="py-2 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Quick Chat" type="button" onclick="window.location.href='inbox.html?user=${profile.id}'">
-                    <span class="material-symbols-outlined text-[20px]">chat</span>
-                  </button>
-                </div>
-              </div>
-            `;
-            grid.innerHTML += cardHtml;
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          grid.innerHTML = '<div class="col-span-full text-center py-8 text-error">Error loading profiles. Are you logged in?</div>';
-        });
-    });
-    </script>
-    </body>
-    </html>
+<script src="chat-common.js"></script>
+<script src="discover.js"></script>
+</body>
+</html>

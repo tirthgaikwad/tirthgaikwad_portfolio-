@@ -29,7 +29,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import aliased
-from sqlalchemy import Column, Integer, String, Float, func, delete, update, text, and_, or_, case, literal
+from sqlalchemy import Column, Integer, String, Float, func, delete, update, text, and_, or_, case, literal, exists
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from database import engine, Base, get_db, get_fast_db, SessionLocal, AutocommitSession
 
@@ -367,6 +367,14 @@ class ConnectionManager:
                 await connection.send_text(message)
             except Exception:
                 pass
+
+    async def broadcast(self, message: str):
+        for connections in list(self.active_connections.values()):
+            for connection in list(connections):
+                try:
+                    await connection.send_text(message)
+                except Exception:
+                    pass
 
 class RoomConnectionManager:
     def __init__(self):
@@ -912,6 +920,7 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
     )
     
     await log_user_activity(db, new_user.id, "Account Created", f"Welcome! Your status is: {initial_status}.")
+    spawn_background(broadcast_directory({"type": "profile_added", "profile": directory_card(new_user)}))
     return {"message": "Account registered.", "user_id": new_user.id, "status": initial_status}
 
 
@@ -1063,6 +1072,69 @@ async def get_profile_options(current_user_id: int = Depends(get_current_user_id
     return {"colleges": [c for (c,) in colleges if c], "departments": [d for (d,) in departments if d]}
 
 
+# ==========================================
+# 5a. DISCOVER TALENT DIRECTORY
+# ==========================================
+DIRECTORY_FIELDS = ("id", "name", "college_name", "department", "city", "skills", "profile_pic", "account_type", "account_status", "github_username")
+DIRECTORY_BIO_LENGTH = 240
+DIRECTORY_LIMIT = 1000
+
+def directory_card(row) -> dict:
+    """The small card the Discover page shows for one person. Never includes the password hash, email or ID documents."""
+    card = {}
+    for field in DIRECTORY_FIELDS:
+        value = getattr(row, field)
+        card[field] = value if value is not None else ""
+    card["bio"] = (row.bio or "")[:DIRECTORY_BIO_LENGTH]
+    return card
+
+async def broadcast_directory(payload: dict):
+    """Tell every open Discover page that a person's card changed. Meant to run in the background."""
+    await notification_manager.broadcast(json.dumps(payload))
+
+
+@app.get("/api/discover")
+async def get_discover_directory(current_user_id: int = Depends(get_current_user_id)):
+    """Everything the Discover Talent page shows, in one request. Searching and filtering happen in the browser."""
+    # A few old accounts may hold a whole picture as text; those are left out of the listing
+    picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("profile_pic")
+    columns = [picture if field == "profile_pic" else getattr(DBUser, field) for field in DIRECTORY_FIELDS]
+    people_query = (
+        select(
+            *columns,
+            func.left(DBUser.bio, DIRECTORY_BIO_LENGTH).label("bio"),
+            select(func.count()).select_from(DBFollow).where(DBFollow.followed_id == DBUser.id).scalar_subquery().label("followers_count"),
+            exists().where(DBFollow.follower_id == current_user_id, DBFollow.followed_id == DBUser.id).label("is_following"),
+            exists().where(DBSavedProfile.user_id == current_user_id, DBSavedProfile.saved_user_id == DBUser.id).label("is_saved"),
+        )
+        .where(
+            DBUser.id != current_user_id,
+            or_(DBUser.account_status.is_(None), DBUser.account_status != "rejected"),
+            ~exists().where(DBBlockedUser.user_id == current_user_id, DBBlockedUser.blocked_user_id == DBUser.id),
+        )
+        .order_by(DBUser.id.desc())
+        .limit(DIRECTORY_LIMIT)
+    )
+    people_rows, project_rows = await asyncio.gather(
+        fetch_one_off(people_query),
+        fetch_one_off(select(DBProject.user_id, DBProject.title, DBProject.tech_stack)),
+    )
+
+    project_words: dict = {}
+    for user_id, title, tech_stack in project_rows:
+        project_words.setdefault(user_id, []).append(f"{title or ''} {tech_stack or ''}".strip())
+
+    people = []
+    for row in people_rows:
+        card = directory_card(row)
+        card["followers_count"] = row.followers_count or 0
+        card["is_following"] = bool(row.is_following)
+        card["is_saved"] = bool(row.is_saved)
+        card["projects_text"] = " ".join(project_words.get(row.id, []))[:400]
+        people.append(card)
+    return {"people": people, "online_user_ids": all_online_user_ids(), "total": len(people)}
+
+
 @app.get("/api/profiles/{user_id}/page")
 async def get_profile_page(user_id: int, current_user_id: int = Depends(get_current_user_id)):
     """Everything the profile page shows, in one request."""
@@ -1124,6 +1196,7 @@ async def update_profile(
     if not row:
         raise HTTPException(status_code=404, detail="Developer not found.")
     spawn_background(log_activity_later(user_id, "Profile Updated", "You updated your profile information."))
+    spawn_background(broadcast_directory({"type": "profile_updated", "profile": directory_card(row)}))
     return {"message": "Profile updated successfully.", "user_id": user_id, "profile": public_profile(row)}
 
 
@@ -1281,6 +1354,7 @@ async def broadcast_presence(user_id: int, online: bool):
         if other_id != user_id:
             await chat_manager.send_personal_message(payload, other_id)
     await team_hub.broadcast_everywhere(payload)
+    await notification_manager.broadcast(payload)   # Discover pages
 
 
 @app.websocket("/api/ws/{user_id}")
@@ -1927,6 +2001,7 @@ async def toggle_follow(
 
     if was_following:
         spawn_background(log_activity_later(current_user_id, "Unfollowed Connection", f"You stopped following {target_name or 'a developer'}."))
+        spawn_background(broadcast_directory({"type": "follow_changed", "follower_id": current_user_id, "followed_id": user_id, "following": False}))
         return {"status": "unfollowed"}
 
     if target_name is None:
@@ -1937,6 +2012,7 @@ async def toggle_follow(
 
     spawn_background(log_activity_later(current_user_id, "New Connection", f"You started following {target_name}."))
     spawn_background(create_notification(user_id, "follow", f"{my_name} started following you!", now_iso))
+    spawn_background(broadcast_directory({"type": "follow_changed", "follower_id": current_user_id, "followed_id": user_id, "following": True}))
     return {"status": "followed"}
 
 
@@ -2063,6 +2139,8 @@ async def store_profile_picture(request: Request, file: UploadFile, user_id: int
     image_url = versioned_upload_url(request, file_location)
     await run_one_off(update(DBUser).where(DBUser.id == user_id).values(**{column: image_url}))
     spawn_background(log_activity_later(user_id, "Profile Updated", activity))
+    if column == "profile_pic":
+        spawn_background(broadcast_directory({"type": "profile_updated", "profile": {"id": user_id, "profile_pic": image_url}}))
     return image_url
 
 

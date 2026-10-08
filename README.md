@@ -56,6 +56,15 @@ Tables are created automatically on startup.
 - GitHub is connected by username (no sign-in with GitHub). Results are cached on the server for 10 minutes; GitHub allows about 60 unauthenticated lookups per hour per server address.
 - "Export Resume" builds a print layout and opens the browser's print dialog, which can save as PDF.
 
+## Discover Talent
+
+`search.html` loads `chat-common.js` and `discover.js`. One request (`GET /api/discover`) returns a small card for everyone else on the platform, with whether you follow or saved them, their follower count and who is online. Searching, filtering, sorting and paging then happen in the browser, so they are instant; the list is also kept in the browser and shown at once on the next visit while a fresh copy loads.
+
+- The search box matches name, college, department, city, skills, bio and project titles/tech stacks. The search, filters, sort and page are kept in the address bar, so a link reopens the same view (`?q=react&sort=followers`; the older `?skill=` still works).
+- "Best match" puts name and skill matches first, then people who share skills or a college with you.
+- The page listens on `/api/ws/notifications/{user_id}`: profile edits, new sign-ups, follows and online status appear without a reload. "Online" means the person has Messages or Teams open.
+- The directory is capped at the 1000 newest accounts. Beyond that the search would need to move to the server.
+
 ## Project Hub
 
 `project_management.html` loads `chat-common.js` and `project-hub.js`. Every Teams workspace has one board: a kanban board, a planning canvas and two linked tools. One request (`GET /api/teams/{id}/board`) returns the board, its tasks, the canvas and the members, and the page listens on the workspace's WebSocket so teammates see changes as they happen.
