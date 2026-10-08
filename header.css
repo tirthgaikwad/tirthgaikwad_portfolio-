@@ -113,7 +113,9 @@
   .app-search { width: 38px; padding: 0 !important; margin-right: 0 !important; justify-content: center; border-color: transparent !important; background: none !important; color: var(--h-ink-2) !important; }
   .app-search svg { width: 20px; height: 20px; stroke-width: 1.8; }
   .app-search span, .app-search kbd { display: none; }
-  .app-brand span { font-size: 17px; }
+  .app-brand { gap: 8px; margin-right: 0; }
+  .app-brand span { font-size: 16px; }
+  .app-header-inner { gap: 6px; padding: 0 12px; }
   .app-user-btn > svg { display: none; }
   .app-user { margin-left: 2px; }
   .app-actions { gap: 0; }
