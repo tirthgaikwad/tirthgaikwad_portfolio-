@@ -31,15 +31,28 @@
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Discover page */
-.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px 0 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.15s, box-shadow 0.15s; }
+.discover-search:focus-within { border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.discover-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: none; background: transparent; font-size: 14px; color: #0f172a; outline: none; box-shadow: none; }
+.discover-search input::placeholder { color: #94a3b8; }
+.filter-section { padding: 16px; }
+.filter-section + .filter-section { border-top: 1px solid #e2e8f0; }
+.filter-heading { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin-bottom: 10px; }
+.filter-label { display: block; font-size: 12px; line-height: 16px; font-weight: 500; color: #475569; margin-bottom: 4px; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; height: 36px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 30px 0 10px; font-size: 13px; font-weight: 500; color: #0f172a; cursor: pointer; text-overflow: ellipsis; }
 .discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
-.discover-select.is-set { border-color: #3525cd; background-color: #eff4ff; }
-.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
-.filter-toggle:hover { background: #eff4ff; }
-.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
-.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+.discover-select.is-set { border-color: #3525cd; }
+.discover-select-inline { width: auto; }
+.filter-check { display: flex; align-items: center; gap: 10px; width: calc(100% + 16px); padding: 6px 8px; margin: 0 -8px; border-radius: 6px; font-size: 13px; color: #334155; text-align: left; cursor: pointer; transition: background 0.15s; }
+.filter-check:hover { background: #f1f5f9; }
+.filter-check.hidden { display: none; }
+.filter-check-box { position: relative; width: 16px; height: 16px; flex-shrink: 0; border: 1px solid #94a3b8; border-radius: 4px; background: #fff; transition: background 0.15s, border-color 0.15s; }
+.filter-check[aria-pressed="true"] { color: #0f172a; font-weight: 500; }
+.filter-check[aria-pressed="true"] .filter-check-box { background: #3525cd; border-color: #3525cd; }
+.filter-check[aria-pressed="true"] .filter-check-box::after { content: ""; position: absolute; left: 5px; top: 1.5px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 6px; }
 @keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 #resultsTop { scroll-margin-top: 80px; }
 </style><script src="https://cdn.tailwindcss.com"></script><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
@@ -117,99 +130,105 @@
       </div>
     </div>
   </div>
-</header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
-<!-- Subtle Ambient Glow Overlay -->
-<div class="relative w-full overflow-hidden bg-surface pb-space-3xl">
-<div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-gradient-to-b from-primary-fixed/40 via-surface-container/30 to-transparent blur-3xl pointer-events-none rounded-full"></div>
-<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop relative z-10 pt-space-xl">
-<!-- Section 1: Hero & Search Bar Section -->
-<div class="flex flex-col items-center text-center max-w-3xl mx-auto space-y-space-sm mb-space-xl">
-<div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wider shadow-sm">
-<span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span>
-          Peer-to-Peer Engineering Talent Engine
-        </div>
-<h1 class="font-display-hero text-display-hero-mobile md:text-display-hero font-extrabold text-on-surface tracking-tight leading-tight">
-          Find Student Builders, Researchers &amp; Tech Partners
-        </h1>
-<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-          Connect with verified peer talent across top engineering institutes for upcoming hackathons, funded research, capstone projects, and campus-born startups.
-        </p>
-<!-- Big Modern Pill Search Capsule -->
-<div class="w-full mt-space-md p-1.5 bg-surface-container-lowest rounded-3xl md:rounded-full shadow-md flex flex-col md:flex-row items-center gap-space-xs">
-<div class="flex items-center gap-space-xs pl-space-md pr-space-xs flex-1 w-full">
-<span class="material-symbols-outlined text-primary text-[24px]">search</span>
-<input autocomplete="off" class="w-full bg-transparent border-none text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-0 py-2" id="talent-search-input" placeholder="Search by name, skill, college or project (e.g. PyTorch, React Native, Robotics)..." type="text"/>
-<button aria-label="Clear search" class="hidden p-1 rounded-full text-outline hover:text-on-surface hover:bg-surface-container transition-colors shrink-0" id="searchClearBtn" type="button">
+</header><main class="w-full pt-16 bg-slate-50 min-h-screen">
+<!-- Section 1: Page title and search -->
+<div class="bg-white border-b border-slate-200">
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="min-w-0">
+<h1 class="text-[22px] leading-7 font-semibold text-slate-900 tracking-tight">Discover Talent</h1>
+<p class="text-[13px] leading-5 text-slate-500 mt-0.5" id="directorySummary">Students and professionals you can build with.</p>
+</div>
+<div class="discover-search w-full md:w-[440px] shrink-0">
+<span class="material-symbols-outlined text-slate-400 text-[20px] shrink-0">search</span>
+<input autocomplete="off" aria-label="Search people" id="talent-search-input" placeholder="Search by name, skill, college or project" type="text"/>
+<button aria-label="Clear search" class="hidden p-0.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0" id="searchClearBtn" type="button">
 <span class="material-symbols-outlined text-[18px] block">close</span>
 </button>
-<kbd class="hidden md:block text-[10px] font-semibold text-outline bg-surface-container-low px-1.5 py-0.5 rounded border border-outline-variant/40 shrink-0" id="searchShortcutHint">Ctrl K</kbd>
+<kbd class="hidden md:block text-[10px] font-semibold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 shrink-0" id="searchShortcutHint">Ctrl K</kbd>
 </div>
-<button class="w-full md:w-auto px-space-lg py-3 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all duration-200 shrink-0" id="search-btn" type="button">
-<span>Search Network</span>
-<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-</button>
 </div>
-<!-- Most common skills on the platform, filled in by discover.js -->
-<div class="flex flex-wrap items-center justify-center gap-space-xs pt-space-xs min-h-[28px]" id="trendingSkills"></div>
 </div>
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-6 lg:flex lg:items-start lg:gap-6">
 <!-- Section 2: Filters -->
-<div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-space-md mb-space-md" id="resultsTop">
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-space-sm">
-<select aria-label="College" class="discover-select" data-filter="college" id="filterCollege"><option value="">All colleges</option></select>
-<select aria-label="Department" class="discover-select" data-filter="department" id="filterDepartment"><option value="">All departments</option></select>
-<select aria-label="City" class="discover-select" data-filter="city" id="filterCity"><option value="">All cities</option></select>
-<select aria-label="Account type" class="discover-select" data-filter="type" id="filterType">
-<option value="">Students &amp; professionals</option>
+<aside aria-label="Filters" class="hidden lg:block lg:w-[264px] lg:shrink-0 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-104px)] lg:overflow-y-auto mb-4 lg:mb-0" id="filterPanel">
+<div class="bg-white border border-slate-200 rounded-lg">
+<div class="filter-section">
+<h2 class="filter-heading">Filters</h2>
+<div class="space-y-3">
+<div>
+<label class="filter-label" for="filterCollege">College</label>
+<select class="discover-select" data-filter="college" id="filterCollege"><option value="">All colleges</option></select>
+</div>
+<div>
+<label class="filter-label" for="filterDepartment">Department</label>
+<select class="discover-select" data-filter="department" id="filterDepartment"><option value="">All departments</option></select>
+</div>
+<div>
+<label class="filter-label" for="filterCity">City</label>
+<select class="discover-select" data-filter="city" id="filterCity"><option value="">All cities</option></select>
+</div>
+<div id="filterTypeField">
+<label class="filter-label" for="filterType">Account type</label>
+<select class="discover-select" data-filter="type" id="filterType">
+<option value="">Students and professionals</option>
 <option value="student">Students</option>
 <option value="professional">Professionals</option>
 </select>
-<select aria-label="Sort by" class="discover-select col-span-2 md:col-span-1" data-filter="sort" id="filterSort">
-<option value="match">Sort: Best match</option>
-<option value="newest">Sort: Newest members</option>
-<option value="followers">Sort: Most followed</option>
-<option value="name">Sort: Name A-Z</option>
+</div>
+</div>
+</div>
+<div class="filter-section">
+<h2 class="filter-heading">Show only</h2>
+<div class="space-y-0.5">
+<button aria-pressed="false" class="filter-check" data-toggle="online" type="button"><span class="filter-check-box"></span>Online now</button>
+<button aria-pressed="false" class="filter-check" data-toggle="verified" type="button"><span class="filter-check-box"></span>Verified accounts</button>
+<button aria-pressed="false" class="filter-check" data-toggle="following" type="button"><span class="filter-check-box"></span>People I follow</button>
+<button aria-pressed="false" class="filter-check" data-toggle="saved" type="button"><span class="filter-check-box"></span>Saved profiles</button>
+</div>
+</div>
+<!-- Most common skills on the platform, filled in by discover.js -->
+<div class="filter-section hidden" id="trendingSection">
+<h2 class="filter-heading">Top skills</h2>
+<div class="space-y-0.5" id="trendingSkills"></div>
+</div>
+<div class="filter-section">
+<h2 class="filter-heading">Building a team?</h2>
+<p class="text-[13px] leading-5 text-slate-600">Post the role you need on the Opportunities Board and let people apply.</p>
+<div class="flex flex-col items-start gap-1.5 mt-2.5">
+<a class="text-[13px] font-semibold text-primary hover:underline" href="board.html?new=1">Post an open role</a>
+<button class="text-[13px] font-semibold text-primary hover:underline" onclick="showGuidelines()" type="button">Collaboration guidelines</button>
+</div>
+</div>
+</div>
+</aside>
+<!-- Section 3: People -->
+<section aria-label="People" class="flex-1 min-w-0" id="resultsTop">
+<div class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
+<button aria-controls="filterPanel" aria-expanded="false" class="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-slate-300 bg-white text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors" id="filterPanelBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">tune</span>Filters
+<span class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[11px] leading-[18px] text-center" id="filterPanelCount"></span>
+</button>
+<p class="text-[13px] font-medium text-slate-700" id="resultCount"></p>
+<div class="ml-auto flex items-center gap-2">
+<label class="hidden sm:block text-[13px] text-slate-500" for="filterSort">Sort by</label>
+<select class="discover-select discover-select-inline" data-filter="sort" id="filterSort">
+<option value="match">Best match</option>
+<option value="newest">Newest members</option>
+<option value="followers">Most followed</option>
+<option value="name">Name A-Z</option>
 </select>
 </div>
-<div class="flex flex-wrap items-center gap-space-xs mt-space-sm">
-<button aria-pressed="false" class="filter-toggle" data-toggle="online" type="button"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Online now</button>
-<button aria-pressed="false" class="filter-toggle" data-toggle="verified" type="button"><span class="material-symbols-outlined text-[15px]">verified</span>Verified</button>
-<button aria-pressed="false" class="filter-toggle" data-toggle="following" type="button"><span class="material-symbols-outlined text-[15px]">group</span>Following</button>
-<button aria-pressed="false" class="filter-toggle" data-toggle="saved" type="button"><span class="material-symbols-outlined text-[15px]">bookmark</span>Saved</button>
-<div class="ml-auto flex items-center gap-space-sm">
-<span class="font-body-sm text-body-sm text-on-surface-variant" id="resultCount"></span>
-<button class="hidden font-label-md text-label-md text-primary hover:underline" id="clearFiltersBtn" type="button">Clear all</button>
 </div>
+<div class="hidden flex flex-wrap items-center gap-2 mb-3" id="activeFilters">
+<div class="contents" id="activeFilterChips"></div>
+<button class="text-[13px] font-semibold text-primary hover:underline" id="clearFiltersBtn" type="button">Clear all</button>
 </div>
-</div>
-<!-- Section 3: People -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" id="search-results-grid"></div>
+<div class="bg-white border border-slate-200 rounded-lg divide-y divide-slate-200 overflow-hidden" id="search-results-grid"></div>
 <!-- Section 4: Pagination -->
-<div class="mt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-outline-variant/30" id="discoverPagination"></div>
-<!-- Section 5: Academic Collaborative Bento Banner -->
-<div class="mt-space-2xl bg-gradient-to-r from-primary-container to-primary rounded-2xl p-space-xl text-on-primary shadow-lg flex flex-col md:flex-row items-center justify-between gap-space-lg relative overflow-hidden">
-<div class="absolute -right-16 -bottom-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-<div class="space-y-space-xs max-w-xl">
-<div class="inline-flex items-center gap-1 text-[12px] uppercase font-bold tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-<span class="material-symbols-outlined text-[14px]">groups</span> Inter-College Consortium
-          </div>
-<h2 class="font-headline-lg text-headline-lg font-bold">Building a Cross-Campus Hackathon Team?</h2>
-<p class="font-body-md text-body-md text-on-primary-container">
-            ProPartner lets you formulate balanced multi-disciplinary rosters (frontend, backend, ML researcher &amp; pitch designer) in minutes with institutional honor guarantees.
-          </p>
+<div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3" id="discoverPagination"></div>
+</section>
 </div>
-<div class="flex items-center gap-space-sm shrink-0 relative">
-<button class="bg-surface-container-lowest text-primary hover:bg-surface-container font-label-md text-label-md px-space-lg py-3 rounded-xl shadow-md transition-all" type="button" onclick="window.location.href='board.html?new=1'">
-            Post an Open Role
-          </button>
-<button class="border border-on-primary/30 hover:bg-white/10 text-on-primary font-label-md text-label-md px-space-md py-3 rounded-xl transition-all flex items-center gap-1" type="button" onclick="showGuidelines()">
-<span>Learn Guidelines</span>
-<span class="material-symbols-outlined text-[16px]">menu_book</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
+</main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="ProPartner Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">ProPartner</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">

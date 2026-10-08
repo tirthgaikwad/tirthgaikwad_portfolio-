@@ -24,8 +24,10 @@ engine = create_async_engine(
     pool_pre_ping=False,     # Skip expensive round-trip pre-ping on remote Supabase pooler
     pool_recycle=1800,       # main.py pings the pool every 2 minutes, so connections stay alive between requests
     pool_use_lifo=True,      # Reuse the most recently used connection, which already has its statements prepared
-    pool_size=10,            # Keeps 10 connections open and ready
-    max_overflow=20          # Allows up to 20 extra connections during traffic spikes
+    pool_size=8,             # The Supabase session pooler allows 15 clients in total; the rest stay free for scripts
+                             # and for stale clients the pooler still counts after a dropped network connection
+    max_overflow=0,          # Never go past pool_size: an extra connection is refused with EMAXCONNSESSION
+    pool_timeout=30          # When all 8 are busy, a request waits here for a free one instead of failing
 )
 
 # AsyncSession is mandatory for handling high-traffic concurrency
