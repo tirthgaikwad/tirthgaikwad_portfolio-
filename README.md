@@ -1,4 +1,4 @@
-# Connect2Minds (ProPartner)
+# Connect2Minds (Connect2Minds)
 
 A networking platform for students and developers: profiles, skill search, follows, project portfolios, an opportunities board, direct chat, and team workspaces with channels.
 

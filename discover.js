@@ -293,7 +293,7 @@ function renderActiveFilters() {
 
 function emptyHtml() {
   if (directory.length === 0) {
-    return peopleStateBlock('group_off', 'No one else is here yet', 'When more people join ProPartner they will show up on this page.', '');
+    return peopleStateBlock('group_off', 'No one else is here yet', 'When more people join Connect2Minds they will show up on this page.', '');
   }
   return peopleStateBlock('search_off', 'No one matches that', 'Try a different skill or name, or remove some filters.',
     '<button type="button" data-action="clear" class="btn-primary-modal">Clear search and filters</button>');

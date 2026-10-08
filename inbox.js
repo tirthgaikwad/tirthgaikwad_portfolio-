@@ -95,7 +95,7 @@ function updateUnreadBadge() {
     badge.textContent = `${total} Unread`;
     badge.style.display = total > 0 ? '' : 'none';
   }
-  document.title = total > 0 ? `(${total}) ProPartner | Messages` : 'ProPartner | Messages';
+  document.title = total > 0 ? `(${total}) Connect2Minds | Messages` : 'Connect2Minds | Messages';
 }
 
 // ==========================================

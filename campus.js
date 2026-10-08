@@ -189,9 +189,9 @@ function campusCardHtml(person) {
 function renderCampusHeader() {
   el('campusName').textContent = campus.college || 'Your campus';
   el('campusSub').textContent = campus.college
-    ? `Everyone from ${campus.college} who is on ProPartner. Find teammates down the hall before you look anywhere else.`
-    : 'Everyone from your college who is on ProPartner.';
-  document.title = campus.college ? `ProPartner | ${campus.college}` : 'ProPartner | Campus Network';
+    ? `Everyone from ${campus.college} who is on Connect2Minds. Find teammates down the hall before you look anywhere else.`
+    : 'Everyone from your college who is on Connect2Minds.';
+  document.title = campus.college ? `Connect2Minds | ${campus.college}` : 'Connect2Minds | Campus Network';
 
   // The counts include us: we are a member of our own campus
   const departments = new Set(classmates.map(person => person.x.department).filter(Boolean));

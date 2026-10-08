@@ -229,7 +229,7 @@ function syncNetworkControls() {
   const toggle = el('notFollowingBackToggle');
   toggle.classList.toggle('hidden', networkView.tab !== 'followers');
   toggle.setAttribute('aria-pressed', String(networkView.notBack));
-  document.title = `ProPartner | ${NETWORK_TABS[networkView.tab].label}`;
+  document.title = `Connect2Minds | ${NETWORK_TABS[networkView.tab].label}`;
 }
 
 // ==========================================

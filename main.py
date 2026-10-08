@@ -302,7 +302,7 @@ async def log_user_activity(db: AsyncSession, user_id: int, action: str, detail:
 # ==========================================
 # 2. APPLICATION & WEBSOCKET SETUP
 # ==========================================
-app = FastAPI(title="ProPartner Secure Production API")
+app = FastAPI(title="Connect2Minds Secure Production API")
 
 SCHEMA_UPGRADES = [
     "ALTER TABLE cleared_chats ADD COLUMN IF NOT EXISTS cleared_up_to_id INTEGER",
@@ -1253,7 +1253,7 @@ async def get_my_network(current_user_id: int = Depends(get_current_user_id)):
         elif same_college:
             reason = "From your college"
         else:
-            reason = "New on ProPartner"
+            reason = "New on Connect2Minds"
         card = person_card(row)
         card["reason"] = reason
         suggestions.append((score, row.followers_count or 0, row.id, card))
@@ -2826,7 +2826,7 @@ github_cache: dict = {}   # lower-case username -> (expires at, data)
 
 def fetch_github_profile(username: str) -> dict:
     """Blocking calls to GitHub's public API. Run this in a worker thread, never directly in a request."""
-    headers = {"User-Agent": "ProPartner-App", "Accept": "application/vnd.github+json"}
+    headers = {"User-Agent": "Connect2Minds-App", "Accept": "application/vnd.github+json"}
 
     def get_json(url: str):
         with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10) as response:
@@ -4029,7 +4029,7 @@ async def save_team_canvas(team_id: int, data: CanvasSave, db: AsyncSession = De
 
 def fetch_github_repo(repo: str) -> dict:
     """Blocking calls to GitHub's public API for one repository. Run in a worker thread."""
-    headers = {"User-Agent": "ProPartner-App", "Accept": "application/vnd.github+json"}
+    headers = {"User-Agent": "Connect2Minds-App", "Accept": "application/vnd.github+json"}
 
     def get_json(url: str):
         with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=10) as response:

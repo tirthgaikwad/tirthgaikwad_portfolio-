@@ -813,7 +813,7 @@ async function loadGithubRepo() {
 }
 
 function figmaEmbedUrl(url) {
-  return `https://www.figma.com/embed?embed_host=propartner&url=${encodeURIComponent(url)}`;
+  return `https://www.figma.com/embed?embed_host=connect2minds&url=${encodeURIComponent(url)}`;
 }
 
 function renderFigmaCard() {

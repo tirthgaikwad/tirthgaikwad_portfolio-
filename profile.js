@@ -124,7 +124,7 @@ function pillsHtml(items, emptyText) {
 
 function renderProfile() {
   if (!profile) return;
-  document.title = `${profile.name || 'Profile'} | ProPartner`;
+  document.title = `${profile.name || 'Profile'} | Connect2Minds`;
   el('breadcrumbName').textContent = profile.name || 'Developer';
 
   // Identity

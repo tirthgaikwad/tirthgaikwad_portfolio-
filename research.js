@@ -550,7 +550,7 @@ function bindResearchControls() {
   window.addEventListener('beforeprint', () => {
     if (currentReport) document.title = `Research briefing - ${currentReport.wikipedia ? currentReport.wikipedia.title : currentReport.topic}`;
   });
-  window.addEventListener('afterprint', () => { document.title = 'ProPartner | Research Collab'; });
+  window.addEventListener('afterprint', () => { document.title = 'Connect2Minds | Research Collab'; });
 }
 
 initResearch();
