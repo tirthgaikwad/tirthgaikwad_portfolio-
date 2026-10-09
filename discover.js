@@ -6,6 +6,7 @@
 const CARDS_PER_PAGE = 12;   // fills whole rows at both 2 and 3 cards across
 const REFRESH_AFTER_MS = 60000;
 const TRENDING_COUNT = 8;
+const POPULAR_COUNT = 6;      // how many of those also sit under the search box
 
 let directory = [];               // everyone on the platform except us, as returned by /api/discover
 let directoryById = new Map();
@@ -27,6 +28,7 @@ const TYPE_LABELS = { student: 'Students', professional: 'Professionals' };
 const pendingActions = new Set(); // "follow:12" while that request is in flight
 let searchTimer = null;
 let renderQueued = false;
+let animateNextRender = false;    // true when the next redraw comes from the person's own search, filter or page change
 
 // ==========================================
 // 1. LOADING
@@ -83,6 +85,7 @@ function setDirectory(people, onlineIds) {
   directory = people.map(indexPerson);
   directoryById = new Map(directory.map(person => [person.id, person]));
   onlineUserIds = new Set(onlineIds);
+  if (!directoryLoaded) animateNextRender = true;   // the first list rises in; the refresh that follows does not
   directoryLoaded = true;
   renderFacets();
   render();
@@ -190,6 +193,7 @@ function viewChanged(keepPage) {
   if (!keepPage) view.page = 1;
   writeViewToUrl();
   syncControls();
+  animateNextRender = true;
   if (directoryLoaded) render();
 }
 
@@ -201,6 +205,9 @@ function render() {
 
   const start = (view.page - 1) * CARDS_PER_PAGE;
   const visible = people.slice(start, start + CARDS_PER_PAGE);
+  // Cards rise in only for a redraw the person asked for, not when a live update repaints the list
+  grid.classList.toggle('dt-animate', animateNextRender);
+  animateNextRender = false;
   grid.innerHTML = visible.length ? visible.map(cardHtml).join('') : emptyHtml();
 
   el('resultCount').textContent = people.length === directory.length
@@ -212,55 +219,58 @@ function render() {
 }
 
 // One person as a card. The data-* hooks are the same ones the shared people card uses.
-function cardHtml(person) {
+// position is the card's place on the page; it only staggers the entrance.
+function cardHtml(person, position = 0) {
   const profileLink = `profile.html?id=${person.id}`;
   const online = onlineUserIds.has(person.id);
   const college = String(person.college_name || '').trim();
-  const place = [person.department, person.city].map(part => String(part || '').trim()).filter(Boolean).join(' · ');
+  const city = String(person.city || '').trim();
+  const place = [String(person.department || '').trim(), city].filter(Boolean).join(' · ');
   const shown = person.x.skills.slice(0, MAX_SKILLS_ON_CARD);
   const extra = person.x.skills.length - shown.length;
+  const inCommon = person.x.skillKeys.filter(skill => mySkills.has(skill)).length;
   const skillsHtml = shown.map(skill => {
     const shared = mySkills.has(norm(skill));
-    return `<button type="button" data-skill="${escapeHtml(skill)}" title="${shared ? 'You both list this skill. ' : ''}Search ${escapeHtml(skill)}" class="px-2 py-0.5 rounded text-[12px] leading-4 font-medium transition-colors ${shared ? 'bg-indigo-50 text-primary hover:bg-indigo-100' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">${escapeHtml(skill)}</button>`;
-  }).join('') + (extra > 0 ? `<span class="px-1 py-0.5 text-[12px] leading-4 text-slate-500">+${extra}</span>` : '');
+    return `<button type="button" data-skill="${escapeHtml(skill)}" title="${shared ? 'You both list this skill. ' : ''}Search ${escapeHtml(skill)}" class="dt-chip${shared ? ' shared' : ''}">${escapeHtml(skill)}</button>`;
+  }).join('') + (extra > 0 ? `<span class="dt-more">+${extra}</span>` : '');
   const followBusy = pendingActions.has(`follow:${person.id}`) ? 'disabled' : '';
   const saveBusy = pendingActions.has(`save:${person.id}`) ? 'disabled' : '';
   const followLabel = person.is_following ? 'Following' : (person.follows_me ? 'Follow back' : 'Follow');
   const relation = person.is_following && person.follows_me ? 'you follow each other' : (person.is_following ? 'you follow' : (person.follows_me ? 'follows you' : ''));
-  // overflow-hidden: until the icon font arrives an icon is its name in plain text, wider than the button
-  const iconButton = 'w-8 h-8 rounded-md border flex items-center justify-center overflow-hidden transition-colors';
-  const quietIcon = 'border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-100';
+  const icon = (name) => `<span class="material-symbols-outlined dt-ico">${name}</span>`;
 
   return `
-    <article class="flex flex-col bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:shadow-sm transition" data-id="${person.id}">
-      <div class="flex items-start justify-between gap-3">
-        <a class="relative block shrink-0" href="${profileLink}" aria-label="${escapeHtml(person.name)}'s profile">
-          <div class="w-14 h-14 rounded-full overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">${personAvatarHtml(person)}</div>
-          <span data-online-dot class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white ${online ? '' : 'hidden'}" title="Online now"></span>
+    <article class="dt-card" data-id="${person.id}" style="--n:${position}">
+      <div class="dt-band"></div>
+      <button type="button" data-action="save" ${saveBusy} aria-pressed="${person.is_saved}" title="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" aria-label="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" class="dt-icon-btn dt-save">
+        <span class="material-symbols-outlined">${person.is_saved ? 'bookmark_added' : 'bookmark_add'}</span>
+      </button>
+      <div class="dt-body">
+        <a class="dt-avatar-link" href="${profileLink}" aria-label="${escapeHtml(person.name)}'s profile">
+          <div class="dt-avatar">${personAvatarHtml(person)}</div>
+          <span data-online-dot class="dt-online ${online ? '' : 'hidden'}" title="Online now"></span>
         </a>
-        <button type="button" data-action="save" ${saveBusy} aria-pressed="${person.is_saved}" title="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" aria-label="${person.is_saved ? 'Remove from Saved Profiles' : 'Save profile'}" class="${iconButton} ${person.is_saved ? 'border-indigo-200 bg-indigo-50 text-primary hover:bg-indigo-100' : quietIcon}">
-          <span class="material-symbols-outlined text-[18px]">${person.is_saved ? 'bookmark_added' : 'bookmark_add'}</span>
-        </button>
-      </div>
-      <h3 class="flex items-center gap-1.5 text-[15px] leading-5 font-semibold text-slate-900 mt-3">
-        <a class="truncate hover:text-primary hover:underline" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
-        ${person.account_status === 'verified' ? '<span class="material-symbols-outlined text-[16px] text-primary shrink-0" title="Verified account">verified</span>' : ''}
-        ${person.account_type === 'professional' ? '<span class="shrink-0 px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 text-[10px] leading-3 font-semibold uppercase tracking-wide">Pro</span>' : ''}
-      </h3>
-      <p class="text-[13px] leading-5 text-slate-600 truncate mt-0.5" title="${escapeHtml(college)}">${escapeHtml(college || 'No college listed')}</p>
-      ${place ? `<p class="text-[12px] leading-4 text-slate-500 truncate mt-0.5" title="${escapeHtml(place)}">${escapeHtml(place)}</p>` : ''}
-      ${person.bio ? `<p class="text-[13px] leading-5 text-slate-600 line-clamp-2 mt-2.5">${escapeHtml(person.bio)}</p>` : ''}
-      <div class="flex flex-wrap items-center gap-1.5 mt-3">${skillsHtml || '<span class="text-[12px] text-slate-400">No skills listed yet</span>'}</div>
-      <div class="mt-auto pt-4">
-        <p class="text-[12px] leading-4 text-slate-500 mb-3">${person.followers_count} ${person.followers_count === 1 ? 'follower' : 'followers'}${relation ? ` · ${relation}` : ''}</p>
-        <div class="flex items-center gap-1.5">
-          <button type="button" data-action="follow" ${followBusy} aria-pressed="${person.is_following}" class="flex-1 h-8 px-3 rounded-md text-[13px] font-semibold flex items-center justify-center transition-colors ${person.is_following ? 'border border-slate-300 bg-white text-slate-700 hover:border-rose-300 hover:text-rose-600' : 'bg-primary hover:bg-primary-container text-white'}">${followLabel}</button>
-          <a class="${iconButton} ${quietIcon}" title="Message" aria-label="Message ${escapeHtml(person.name)}" href="inbox.html?user=${person.id}">
-            <span class="material-symbols-outlined text-[18px]">chat</span>
-          </a>
-          <button type="button" data-action="team" title="Add to one of your teams" aria-label="Add ${escapeHtml(person.name)} to one of your teams" class="${iconButton} ${quietIcon}">
-            <span class="material-symbols-outlined text-[18px]">group_add</span>
-          </button>
+        <h3 class="dt-name">
+          <a class="truncate" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
+          ${person.account_status === 'verified' ? '<span class="material-symbols-outlined dt-ico text-[17px] text-primary" title="Verified account">verified</span>' : ''}
+          ${person.account_type === 'professional' ? '<span class="dt-pro">Pro</span>' : ''}
+        </h3>
+        <p class="dt-meta" title="${escapeHtml(college)}">${icon('school')}<span>${escapeHtml(college || 'No college listed')}</span></p>
+        ${place ? `<p class="dt-meta" title="${escapeHtml(place)}">${icon(city ? 'location_on' : 'category')}<span>${escapeHtml(place)}</span></p>` : ''}
+        ${inCommon ? `<p class="dt-match">${icon('handshake')}${inCommon} ${inCommon === 1 ? 'skill' : 'skills'} in common</p>` : ''}
+        ${person.bio ? `<p class="dt-bio line-clamp-2">${escapeHtml(person.bio)}</p>` : ''}
+        <div class="dt-skills">${skillsHtml || '<span class="dt-more">No skills listed yet</span>'}</div>
+        <div class="dt-foot">
+          <p class="dt-followers">${person.followers_count} ${person.followers_count === 1 ? 'follower' : 'followers'}${relation ? ` · ${relation}` : ''}</p>
+          <div class="dt-actions">
+            <button type="button" data-action="follow" ${followBusy} aria-pressed="${person.is_following}" class="dt-follow"><span class="material-symbols-outlined dt-ico">${person.is_following ? 'check' : 'person_add'}</span>${followLabel}</button>
+            <a class="dt-icon-btn" title="Message" aria-label="Message ${escapeHtml(person.name)}" href="inbox.html?user=${person.id}">
+              <span class="material-symbols-outlined">chat</span>
+            </a>
+            <button type="button" data-action="team" title="Add to one of your teams" aria-label="Add ${escapeHtml(person.name)} to one of your teams" class="dt-icon-btn">
+              <span class="material-symbols-outlined">group_add</span>
+            </button>
+          </div>
         </div>
       </div>
     </article>`;
@@ -279,9 +289,9 @@ function renderActiveFilters() {
   TOGGLE_FILTERS.forEach(key => { if (view[key]) chips.push([key, FILTER_LABELS[key]]); });
 
   el('activeFilterChips').innerHTML = chips.map(([key, label]) => `
-    <button type="button" data-clear="${key}" title="Remove this filter" class="inline-flex items-center gap-1 max-w-full h-7 pl-2.5 pr-1.5 rounded-md border border-slate-300 bg-white text-[12px] font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+    <button type="button" data-clear="${key}" title="Remove this filter" class="dt-fchip">
       <span class="truncate">${escapeHtml(label)}</span>
-      <span class="material-symbols-outlined text-[14px] text-slate-400 shrink-0">close</span>
+      <span class="material-symbols-outlined dt-ico">close</span>
     </button>`).join('');
   el('activeFilters').classList.toggle('hidden', chips.length === 0);
 
@@ -308,13 +318,16 @@ function renderProblem(message) {
 
 function renderSkeleton() {
   el('search-results-grid').innerHTML = `
-    <div class="bg-white border border-slate-200 rounded-lg p-5">
-      <div class="skeleton w-14 h-14 mb-3" style="border-radius:9999px;"></div>
-      <div class="skeleton h-4 w-2/3 mb-2"></div>
-      <div class="skeleton h-3.5 w-full mb-4"></div>
-      <div class="skeleton h-3.5 w-4/5 mb-4"></div>
-      <div class="skeleton h-5 w-1/2 mb-5"></div>
-      <div class="skeleton h-8 w-full"></div>
+    <div class="dt-card" aria-hidden="true">
+      <div class="dt-band"></div>
+      <div class="dt-body">
+        <div class="skeleton" style="width:64px;height:64px;margin-top:-32px;border-radius:9999px;border:3px solid #fff;"></div>
+        <div class="skeleton h-4 w-2/3 mt-4 mb-2"></div>
+        <div class="skeleton h-3.5 w-full mb-2"></div>
+        <div class="skeleton h-3.5 w-4/5 mb-4"></div>
+        <div class="skeleton h-6 w-1/2 mb-6" style="border-radius:9999px;"></div>
+        <div class="skeleton h-9 w-full" style="border-radius:10px;"></div>
+      </div>
     </div>`.repeat(6);
 }
 
@@ -322,7 +335,7 @@ function renderPagination(total, start, shownCount, totalPages) {
   el('discoverPagination').innerHTML = peoplePaginationHtml(view.page, total, start, shownCount, totalPages);
 }
 
-// The skills most people list, with real counts
+// The skills most people list, with real counts: a list in the filter panel and the first few as pills under the search box
 function renderTrending() {
   const counts = new Map();
   for (const person of directory) {
@@ -334,15 +347,17 @@ function renderTrending() {
   }
   const top = [...counts.entries()].sort((a, b) => (b[1].count - a[1].count) || a[1].label.localeCompare(b[1].label)).slice(0, TRENDING_COUNT);
   el('trendingSection').classList.toggle('hidden', top.length === 0);
+  el('popularSkills').classList.toggle('hidden', top.length === 0);
 
   const current = norm(view.q);
-  el('trendingSkills').innerHTML = top.map(([key, entry]) => {
-    const active = key === current;
-    return `<button type="button" data-skill="${escapeHtml(entry.label)}" aria-pressed="${active}" title="Search ${escapeHtml(entry.label)}" class="w-[calc(100%+16px)] -mx-2 px-2 py-1.5 rounded-md flex items-center justify-between gap-2 text-[13px] text-left transition-colors ${active ? 'bg-indigo-50 text-primary font-semibold' : 'text-slate-700 hover:bg-slate-100'}">
+  const most = top.length ? top[0][1].count : 1;
+  el('trendingSkills').innerHTML = top.map(([key, entry]) => `
+    <button type="button" data-skill="${escapeHtml(entry.label)}" aria-pressed="${key === current}" title="Search ${escapeHtml(entry.label)}" class="dt-skillrow" style="--share:${(entry.count / most).toFixed(2)}">
       <span class="truncate">${escapeHtml(entry.label)}</span>
-      <span class="text-[12px] tabular-nums shrink-0 ${active ? 'text-primary' : 'text-slate-400'}">${entry.count}</span>
-    </button>`;
-  }).join('');
+      <b>${entry.count}</b>
+    </button>`).join('');
+  el('popularSkills').innerHTML = '<span class="dt-popular-label">Popular</span>' + top.slice(0, POPULAR_COUNT).map(([key, entry]) =>
+    `<button type="button" data-skill="${escapeHtml(entry.label)}" aria-pressed="${key === current}" title="Search ${escapeHtml(entry.label)}" class="dt-pill">${escapeHtml(entry.label)}</button>`).join('');
 }
 
 // College, department and city choices come from the people who are actually here
@@ -430,10 +445,11 @@ function bindControls() {
     document.querySelector(`[data-toggle="${key}"]`).addEventListener('click', () => { view[key] = !view[key]; viewChanged(); });
   });
 
-  el('trendingSkills').addEventListener('click', (e) => {
+  // A top skill searches for it; the one already searched for clears the search
+  ['trendingSkills', 'popularSkills'].forEach(id => el(id).addEventListener('click', (e) => {
     const pill = e.target.closest('[data-skill]');
     if (pill) setSearch(norm(view.q) === norm(pill.dataset.skill) ? '' : pill.dataset.skill);
-  });
+  }));
 
   const grid = el('search-results-grid');
   grid.addEventListener('click', onGridClick);
@@ -515,8 +531,11 @@ function showGuidelines() {
 // ==========================================
 function refreshCard(personId) {
   const person = directoryById.get(personId);
-  const card = el('search-results-grid').querySelector(`[data-id="${personId}"]`);
-  if (person && card) card.outerHTML = cardHtml(person);
+  const grid = el('search-results-grid');
+  const card = grid.querySelector(`[data-id="${personId}"]`);
+  if (!person || !card) return;
+  grid.classList.remove('dt-animate');   // a card redrawn in place must not replay its entrance
+  card.outerHTML = cardHtml(person);
 }
 
 async function toggleRelation(kind, personId) {

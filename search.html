@@ -30,56 +30,167 @@
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Discover page */
+/* Discover page. Colours are the site's own: indigo #3525cd / #4f46e5 and its tints, the slate greys, white, emerald for "online". */
 .chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.discover-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px 0 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color 0.15s, box-shadow 0.15s; }
-.discover-search:focus-within { border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
-.discover-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: none; background: transparent; font-size: 14px; color: #0f172a; outline: none; box-shadow: none; }
+/* Until the icon font arrives an icon is its name in plain text; this keeps it from pushing the layout around */
+.dt-ico { width: 1em; overflow: hidden; flex-shrink: 0; }
+
+/* Title band */
+.dt-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #eff4ff 100%); border-bottom: 1px solid #e2e8f0; }
+.dt-hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(#c7d2fe 1px, transparent 1px); background-size: 22px 22px; opacity: 0.6; -webkit-mask-image: linear-gradient(100deg, transparent 25%, #000 100%); mask-image: linear-gradient(100deg, transparent 25%, #000 100%); pointer-events: none; }
+.dt-hero > * { position: relative; }
+.dt-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; line-height: 36px; font-weight: 800; letter-spacing: -0.025em; color: #0b1c30; }
+.dt-title span { color: #3525cd; }
+.dt-summary { font-size: 14px; line-height: 20px; color: #475569; margin-top: 6px; }
+.discover-search { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px 0 14px; background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 24px rgba(53,37,205,0.08); transition: border-color 0.15s, box-shadow 0.15s; }
+.discover-search:focus-within { border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14), 0 8px 24px rgba(53,37,205,0.1); }
+.discover-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: none; background: transparent; font-size: 15px; color: #0f172a; outline: none; box-shadow: none; }
 .discover-search input::placeholder { color: #94a3b8; }
-.filter-section { padding: 16px; }
-.filter-section + .filter-section { border-top: 1px solid #e2e8f0; }
-.filter-heading { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin-bottom: 10px; }
-.filter-label { display: block; font-size: 12px; line-height: 16px; font-weight: 500; color: #475569; margin-bottom: 4px; }
-.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; height: 36px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 30px 0 10px; font-size: 13px; font-weight: 500; color: #0f172a; cursor: pointer; text-overflow: ellipsis; }
-.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
-.discover-select.is-set { border-color: #3525cd; }
+.dt-popular { display: flex; align-items: center; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+.dt-popular.hidden { display: none; }
+.dt-popular-label { flex-shrink: 0; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
+.dt-pill { flex-shrink: 0; height: 28px; padding: 0 12px; border-radius: 9999px; border: 1px solid #e2e8f0; background: #fff; font-size: 12.5px; font-weight: 500; color: #334155; white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.dt-pill:hover { background: #eef2ff; border-color: #c7d2fe; color: #3525cd; }
+.dt-pill[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+
+/* Filter panel */
+.dt-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.05); overflow: hidden; }
+.filter-section { padding: 18px; }
+.filter-section + .filter-section { border-top: 1px solid #f1f5f9; }
+.filter-heading { display: flex; align-items: center; gap: 6px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin-bottom: 12px; }
+.filter-heading .dt-ico { font-size: 16px; color: #3525cd; }
+.filter-label { display: block; font-size: 12px; line-height: 16px; font-weight: 500; color: #475569; margin-bottom: 5px; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; height: 40px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 32px 0 12px; font-size: 13px; font-weight: 500; color: #0f172a; cursor: pointer; text-overflow: ellipsis; transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s; }
+.discover-select:hover { border-color: #94a3b8; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14); }
+.discover-select.is-set { border-color: #3525cd; background-color: #eef2ff; color: #3525cd; font-weight: 600; }
 .discover-select-inline { width: auto; }
-.filter-check { display: flex; align-items: center; gap: 10px; width: calc(100% + 16px); padding: 6px 8px; margin: 0 -8px; border-radius: 6px; font-size: 13px; color: #334155; text-align: left; cursor: pointer; transition: background 0.15s; }
+.filter-check { display: flex; align-items: center; gap: 10px; width: calc(100% + 20px); padding: 8px 10px; margin: 0 -10px; border-radius: 10px; font-size: 13px; color: #334155; text-align: left; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .filter-check:hover { background: #f1f5f9; }
 .filter-check.hidden { display: none; }
-.filter-check-box { position: relative; width: 16px; height: 16px; flex-shrink: 0; border: 1px solid #94a3b8; border-radius: 4px; background: #fff; transition: background 0.15s, border-color 0.15s; }
-.filter-check[aria-pressed="true"] { color: #0f172a; font-weight: 500; }
+.filter-check .dt-ico { font-size: 18px; color: #94a3b8; transition: color 0.15s; }
+.filter-check-box { position: relative; width: 18px; height: 18px; margin-left: auto; flex-shrink: 0; border: 1.5px solid #94a3b8; border-radius: 6px; background: #fff; transition: background 0.15s, border-color 0.15s; }
+.filter-check[aria-pressed="true"] { background: #eef2ff; color: #3525cd; font-weight: 600; }
+.filter-check[aria-pressed="true"] .dt-ico { color: #3525cd; }
 .filter-check[aria-pressed="true"] .filter-check-box { background: #3525cd; border-color: #3525cd; }
-.filter-check[aria-pressed="true"] .filter-check-box::after { content: ""; position: absolute; left: 5px; top: 1.5px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.filter-check[aria-pressed="true"] .filter-check-box::after { content: ""; position: absolute; left: 5px; top: 1.5px; width: 4px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+/* A top skill: the line under the row is its share of the most common skill */
+.dt-skillrow { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: calc(100% + 20px); margin: 0 -10px; padding: 7px 10px 9px; border-radius: 10px; font-size: 13px; color: #334155; text-align: left; overflow: hidden; cursor: pointer; transition: color 0.15s, background 0.15s; }
+.dt-skillrow::before { content: ""; position: absolute; left: 10px; bottom: 2px; height: 3px; width: calc((100% - 20px) * var(--share, 0)); background: #e0e7ff; border-radius: 3px; transition: background 0.15s; }
+.dt-skillrow > * { position: relative; }
+.dt-skillrow b { font-size: 12px; font-weight: 500; color: #94a3b8; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.dt-skillrow:hover { color: #3525cd; }
+.dt-skillrow:hover { background: #f1f5f9; }
+.dt-skillrow:hover::before { background: #c7d2fe; }
+.dt-skillrow[aria-pressed="true"] { background: #eef2ff; color: #3525cd; font-weight: 600; }
+.dt-skillrow[aria-pressed="true"]::before { background: #3525cd; }
+.dt-skillrow[aria-pressed="true"] b { color: #3525cd; }
+.dt-callout { margin: 0 8px 8px; padding: 16px; border-radius: 12px; background: #eff4ff; border: 1px solid #e0e7ff; }
+.dt-callout h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; line-height: 20px; font-weight: 700; color: #0b1c30; }
+.dt-callout p { font-size: 13px; line-height: 19px; color: #475569; margin-top: 4px; }
+.dt-btn { display: flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; background: #3525cd; color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 1px 2px rgba(53,37,205,0.3), 0 6px 14px rgba(53,37,205,0.18); transition: background 0.15s, box-shadow 0.15s; }
+.dt-btn:hover { background: #4f46e5; box-shadow: 0 1px 2px rgba(53,37,205,0.3), 0 8px 20px rgba(53,37,205,0.26); }
+.dt-btn .dt-ico { font-size: 18px; }
+.dt-link { font-size: 13px; font-weight: 600; color: #3525cd; }
+.dt-link:hover { text-decoration: underline; }
+
+/* Toolbar above the cards */
+.dt-count { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; line-height: 20px; font-weight: 700; color: #0f172a; }
+.dt-filter-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; font-size: 13px; font-weight: 600; color: #334155; transition: background 0.15s, border-color 0.15s; }
+.dt-filter-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+.dt-filter-btn[aria-expanded="true"] { background: #eef2ff; border-color: #c7d2fe; color: #3525cd; }
+.dt-fchip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; height: 28px; padding: 0 6px 0 11px; border-radius: 9999px; border: 1px solid #c7d2fe; background: #eef2ff; font-size: 12px; font-weight: 600; color: #3525cd; transition: background 0.15s; }
+.dt-fchip:hover { background: #e0e7ff; }
+.dt-fchip .dt-ico { font-size: 14px; }
+
+/* A person */
+.dt-card { position: relative; display: flex; flex-direction: column; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.05); overflow: hidden; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s, border-color 0.25s; }
+.dt-card:hover { transform: translateY(-3px); border-color: #c7d2fe; box-shadow: 0 2px 4px rgba(15,23,42,0.04), 0 16px 36px rgba(53,37,205,0.14); }
+.dt-band { height: 56px; background: radial-gradient(#c7d2fe 1px, transparent 1px) 0 0 / 16px 16px, linear-gradient(135deg, #eff4ff 0%, #e2dfff 100%); }
+.dt-body { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 0 20px 20px; }
+.dt-avatar-link { position: relative; display: block; width: 64px; margin-top: -32px; }
+.dt-avatar { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; background: #e2dfff; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(15,23,42,0.12); display: flex; align-items: center; justify-content: center; transition: box-shadow 0.25s; }
+.dt-card:hover .dt-avatar { box-shadow: 0 2px 8px rgba(15,23,42,0.12), 0 0 0 3px #c7d2fe; }
+.dt-online { position: absolute; right: 2px; bottom: 2px; width: 14px; height: 14px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 2.5px #fff; }
+.dt-online.hidden { display: none; }
+.dt-online::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #10b981; animation: dtPulse 2s ease-out infinite; }
+@keyframes dtPulse { from { transform: scale(1); opacity: 0.6; } to { transform: scale(2.4); opacity: 0; } }
+.dt-icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.dt-icon-btn:hover { background: #eef2ff; border-color: #c7d2fe; color: #3525cd; }
+.dt-icon-btn[aria-pressed="true"] { background: #eef2ff; border-color: #c7d2fe; color: #3525cd; }
+.dt-icon-btn:disabled { opacity: 0.6; }
+.dt-icon-btn .material-symbols-outlined { font-size: 18px; }
+.dt-save { position: absolute; top: 10px; right: 10px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); }
+.dt-name { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 22px; font-weight: 700; color: #0f172a; }
+.dt-name a:hover { color: #3525cd; }
+.dt-pro { flex-shrink: 0; padding: 2px 6px; border-radius: 5px; border: 1px solid #e2e8f0; font-family: 'Inter', sans-serif; font-size: 10px; line-height: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #475569; }
+.dt-meta { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 4px; font-size: 13px; line-height: 18px; color: #475569; }
+.dt-meta + .dt-meta { color: #64748b; }
+.dt-meta .dt-ico { font-size: 15px; color: #94a3b8; }
+.dt-meta span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-match { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; padding: 3px 10px 3px 8px; border-radius: 9999px; background: #eef2ff; color: #3525cd; font-size: 12px; line-height: 16px; font-weight: 600; }
+.dt-match .dt-ico { font-size: 14px; }
+.dt-bio { margin-top: 10px; font-size: 13px; line-height: 20px; color: #475569; overflow-wrap: anywhere; }
+.dt-skills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.dt-chip { padding: 3px 10px; border-radius: 9999px; background: #f1f5f9; color: #334155; font-size: 12px; line-height: 16px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+.dt-chip:hover { background: #e2e8f0; }
+.dt-chip.shared { background: #eef2ff; color: #3525cd; box-shadow: inset 0 0 0 1px #c7d2fe; }
+.dt-chip.shared:hover { background: #e0e7ff; }
+.dt-more { font-size: 12px; line-height: 16px; color: #64748b; }
+.dt-foot { margin-top: auto; padding-top: 16px; }
+.dt-followers { padding-top: 12px; margin-bottom: 12px; border-top: 1px solid #f1f5f9; font-size: 12px; line-height: 16px; color: #64748b; }
+.dt-actions { display: flex; align-items: center; gap: 8px; }
+.dt-follow { flex: 1; min-width: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #3525cd; background: #3525cd; color: #fff; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden; white-space: nowrap; box-shadow: 0 1px 2px rgba(53,37,205,0.3), 0 6px 14px rgba(53,37,205,0.18); transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s; }
+.dt-follow:hover { background: #4f46e5; border-color: #4f46e5; }
+.dt-follow .material-symbols-outlined { font-size: 17px; }
+.dt-follow[aria-pressed="true"] { background: #fff; border-color: #cbd5e1; color: #334155; box-shadow: none; }
+.dt-follow[aria-pressed="true"]:hover { border-color: #fda4af; color: #e11d48; }
+.dt-follow:disabled { opacity: 0.65; }
+/* Cards rise in after a search, filter or page change (discover.js adds dt-animate for those redraws only) */
+.dt-animate .dt-card { animation: dtRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--n, 0) * 35ms); }
+@keyframes dtRise { from { opacity: 0; transform: translateY(14px); } }
+
+/* Loading, empty and error states, and the page buttons (drawn by shared helpers, shaped here) */
 .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 6px; }
 @keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+#search-results-grid > .col-span-full { background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 56px 24px; }
+#search-results-grid > .col-span-full > .material-symbols-outlined { width: 72px; height: 72px; border-radius: 50%; background: #eef2ff; color: #3525cd; font-size: 32px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 16px; }
+#discoverPagination button { border-radius: 10px; }
 #resultsTop { scroll-margin-top: 80px; }
+@media (prefers-reduced-motion: reduce) {
+  .dt-card, .dt-card:hover { transform: none; transition: none; }
+  .dt-animate .dt-card, .dt-online::after { animation: none; }
+}
 </style><script src="https://cdn.tailwindcss.com"></script><link href="header.css" rel="stylesheet"/><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="app-header" id="appHeader"></header>
 <script>renderAppHeader()</script><main class="w-full pt-16 bg-slate-50 min-h-screen">
-<!-- Section 1: Page title and search -->
-<div class="bg-white border-b border-slate-200">
-<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<!-- Section 1: Page title, search and the most common skills -->
+<div class="dt-hero">
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-7 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
 <div class="min-w-0">
-<h1 class="text-[22px] leading-7 font-semibold text-slate-900 tracking-tight">Discover Talent</h1>
-<p class="text-[13px] leading-5 text-slate-500 mt-0.5" id="directorySummary">Students and professionals you can build with.</p>
+<h1 class="dt-title">Discover <span>Talent</span></h1>
+<p class="dt-summary" id="directorySummary">Students and professionals you can build with.</p>
 </div>
-<div class="discover-search w-full md:w-[440px] shrink-0">
-<span class="material-symbols-outlined text-slate-400 text-[20px] shrink-0">search</span>
+<div class="w-full lg:w-[520px] shrink-0 min-w-0">
+<div class="discover-search">
+<span class="material-symbols-outlined dt-ico text-slate-400 text-[22px]">search</span>
 <input autocomplete="off" aria-label="Search people" id="talent-search-input" placeholder="Search by name, skill, college or project" type="text"/>
-<button aria-label="Clear search" class="hidden p-0.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0" id="searchClearBtn" type="button">
-<span class="material-symbols-outlined text-[18px] block">close</span>
+<button aria-label="Clear search" class="hidden p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0" id="searchClearBtn" type="button">
+<span class="material-symbols-outlined dt-ico text-[18px] block">close</span>
 </button>
-<kbd class="hidden md:block text-[10px] font-semibold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 shrink-0" id="searchShortcutHint">Ctrl K</kbd>
+<kbd class="hidden md:block text-[10px] font-semibold text-slate-500 bg-slate-50 px-1.5 py-1 rounded-md border border-slate-200 shrink-0" id="searchShortcutHint">Ctrl K</kbd>
+</div>
+<!-- The same top skills as in the filter panel, filled in by discover.js -->
+<div aria-label="Popular skills" class="dt-popular hidden" id="popularSkills"></div>
 </div>
 </div>
 </div>
 <div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-6 lg:flex lg:items-start lg:gap-6">
 <!-- Section 2: Filters -->
-<aside aria-label="Filters" class="hidden lg:block lg:w-[264px] lg:shrink-0 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-104px)] lg:overflow-y-auto mb-4 lg:mb-0" id="filterPanel">
-<div class="bg-white border border-slate-200 rounded-lg">
+<aside aria-label="Filters" class="hidden lg:block lg:w-[272px] lg:shrink-0 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-104px)] lg:overflow-y-auto mb-4 lg:mb-0" id="filterPanel">
+<div class="dt-panel">
 <div class="filter-section">
-<h2 class="filter-heading">Filters</h2>
+<h2 class="filter-heading"><span class="material-symbols-outlined dt-ico">tune</span>Filters</h2>
 <div class="space-y-3">
 <div>
 <label class="filter-label" for="filterCollege">College</label>
@@ -104,37 +215,35 @@
 </div>
 </div>
 <div class="filter-section">
-<h2 class="filter-heading">Show only</h2>
+<h2 class="filter-heading"><span class="material-symbols-outlined dt-ico">filter_alt</span>Show only</h2>
 <div class="space-y-0.5">
-<button aria-pressed="false" class="filter-check" data-toggle="online" type="button"><span class="filter-check-box"></span>Online now</button>
-<button aria-pressed="false" class="filter-check" data-toggle="verified" type="button"><span class="filter-check-box"></span>Verified accounts</button>
-<button aria-pressed="false" class="filter-check" data-toggle="following" type="button"><span class="filter-check-box"></span>People I follow</button>
-<button aria-pressed="false" class="filter-check" data-toggle="saved" type="button"><span class="filter-check-box"></span>Saved profiles</button>
+<button aria-pressed="false" class="filter-check" data-toggle="online" type="button"><span class="material-symbols-outlined dt-ico">bolt</span>Online now<span class="filter-check-box"></span></button>
+<button aria-pressed="false" class="filter-check" data-toggle="verified" type="button"><span class="material-symbols-outlined dt-ico">verified</span>Verified accounts<span class="filter-check-box"></span></button>
+<button aria-pressed="false" class="filter-check" data-toggle="following" type="button"><span class="material-symbols-outlined dt-ico">group</span>People I follow<span class="filter-check-box"></span></button>
+<button aria-pressed="false" class="filter-check" data-toggle="saved" type="button"><span class="material-symbols-outlined dt-ico">bookmark</span>Saved profiles<span class="filter-check-box"></span></button>
 </div>
 </div>
 <!-- Most common skills on the platform, filled in by discover.js -->
 <div class="filter-section hidden" id="trendingSection">
-<h2 class="filter-heading">Top skills</h2>
+<h2 class="filter-heading"><span class="material-symbols-outlined dt-ico">trending_up</span>Top skills</h2>
 <div class="space-y-0.5" id="trendingSkills"></div>
 </div>
-<div class="filter-section">
-<h2 class="filter-heading">Building a team?</h2>
-<p class="text-[13px] leading-5 text-slate-600">Post the role you need on the Opportunities Board and let people apply.</p>
-<div class="flex flex-col items-start gap-1.5 mt-2.5">
-<a class="text-[13px] font-semibold text-primary hover:underline" href="board.html?new=1">Post an open role</a>
-<button class="text-[13px] font-semibold text-primary hover:underline" onclick="showGuidelines()" type="button">Collaboration guidelines</button>
-</div>
+<div class="dt-callout mt-2">
+<h2>Building a team?</h2>
+<p>Post the role you need on the Opportunities Board and let people apply.</p>
+<a class="dt-btn mt-3" href="board.html?new=1"><span class="material-symbols-outlined dt-ico">add</span>Post an open role</a>
+<button class="dt-link block mx-auto mt-3" onclick="showGuidelines()" type="button">Collaboration guidelines</button>
 </div>
 </div>
 </aside>
 <!-- Section 3: People -->
 <section aria-label="People" class="flex-1 min-w-0" id="resultsTop">
-<div class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
-<button aria-controls="filterPanel" aria-expanded="false" class="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-slate-300 bg-white text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors" id="filterPanelBtn" type="button">
-<span class="material-symbols-outlined text-[18px]">tune</span>Filters
+<div class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
+<button aria-controls="filterPanel" aria-expanded="false" class="dt-filter-btn lg:hidden" id="filterPanelBtn" type="button">
+<span class="material-symbols-outlined dt-ico text-[18px]">tune</span>Filters
 <span class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[11px] leading-[18px] text-center" id="filterPanelCount"></span>
 </button>
-<p class="text-[13px] font-medium text-slate-700" id="resultCount"></p>
+<p class="dt-count" id="resultCount"></p>
 <div class="ml-auto flex items-center gap-2">
 <label class="hidden sm:block text-[13px] text-slate-500" for="filterSort">Sort by</label>
 <select class="discover-select discover-select-inline" data-filter="sort" id="filterSort">
@@ -145,13 +254,13 @@
 </select>
 </div>
 </div>
-<div class="hidden flex flex-wrap items-center gap-2 mb-3" id="activeFilters">
+<div class="hidden flex flex-wrap items-center gap-2 mb-4" id="activeFilters">
 <div class="contents" id="activeFilterChips"></div>
-<button class="text-[13px] font-semibold text-primary hover:underline" id="clearFiltersBtn" type="button">Clear all</button>
+<button class="dt-link" id="clearFiltersBtn" type="button">Clear all</button>
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" id="search-results-grid"></div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" id="search-results-grid"></div>
 <!-- Section 4: Pagination -->
-<div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3" id="discoverPagination"></div>
+<div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3" id="discoverPagination"></div>
 </section>
 </div>
 </main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
