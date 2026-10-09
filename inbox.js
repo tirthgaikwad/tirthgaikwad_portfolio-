@@ -7,12 +7,13 @@
 let contacts = {};                 // contactId -> { id, name, profile_pic, college_name, department, skills, lastMessage, timestamp, unread, archived }
 const threads = {};                // contactId -> { messages, hasMore, loaded, loading, stale }
 let activeContactId = null;
-let chatActionsState = { muted: [], blocked: [] };
+let chatActionsState = { muted: [], blocked: [], pro: [] };   // pro: people whose chat with us was started on the Professionals page
 let showArchived = false;
 let listQuery = '';
 
 // Group state
 let currentTab = 'direct';
+let directSection = 'direct';      // which list of one-to-one chats is showing: 'direct', or 'pro' for the Professionals section
 let myTeams = [];
 let activeTeamId = null;
 let activeChannelId = null;
@@ -83,7 +84,7 @@ function notifyIncoming(contact, previewText) {
   if (settings.desktop && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
     try {
       const notification = new Notification(contact ? contact.name : 'New message', { body: previewText, tag: `chat-${contact ? contact.id : ''}` });
-      notification.onclick = () => { window.focus(); if (contact) { switchInboxTab('direct'); selectContact(contact.id); } notification.close(); };
+      notification.onclick = () => { window.focus(); if (contact) { switchInboxTab(isProContact(contact) ? 'pro' : 'direct'); selectContact(contact.id); } notification.close(); };
     } catch (e) { /* ignore */ }
   }
 }
@@ -95,6 +96,12 @@ function updateUnreadBadge() {
     badge.textContent = `${total} Unread`;
     badge.style.display = total > 0 ? '' : 'none';
   }
+  // Each of the two one-to-one tabs shows its own count
+  [['tab-direct-count', false], ['tab-pro-count', true]].forEach(([id, pro]) => {
+    const count = Object.values(contacts).filter(c => isProContact(c) === pro).reduce((sum, c) => sum + (c.unread || 0), 0);
+    el(id).textContent = count > 99 ? '99+' : count;
+    el(id).classList.toggle('hidden', count === 0);
+  });
   document.title = total > 0 ? `(${total}) Connect2Minds | Messages` : 'Connect2Minds | Messages';
 }
 
@@ -191,6 +198,7 @@ async function loadConversations() {
     contact.timestamp = c.last_message.timestamp;
     contact.unread = c.unread;
     contact.archived = c.archived;
+    contact.pro = Boolean(c.pro);
     fresh[c.id] = contact;
   });
   // Keep chats that were just started here and have no messages on the server yet
@@ -220,10 +228,18 @@ async function ensureContact(userId) {
   return contacts[userId];
 }
 
+// A chat belongs to the Professionals section when it was started from the Professionals page.
+// The conversation list says so for chats that have messages; the chat state covers one that was only just opened.
+function isProContact(contact) {
+  return Boolean(contact.pro) || (chatActionsState.pro || []).includes(contact.id);
+}
+
 async function fetchChatActionsState() {
   try {
     chatActionsState = await api('/api/chat/actions/state');
     updateComposerState();
+    renderContacts();
+    updateUnreadBadge();
   } catch (err) {
     console.warn('fetchChatActionsState failed:', err.message);
   }
@@ -342,7 +358,9 @@ function renderContactsError(message) {
 function renderContacts() {
   const list = el('contactList');
   const query = listQuery;
+  const proList = directSection === 'pro';
   const sorted = Object.values(contacts)
+    .filter(c => isProContact(c) === proList)
     .filter(c => !!c.archived === showArchived)
     .filter(c => !query || c.name.toLowerCase().includes(query) || (c.lastMessage && c.lastMessage.toLowerCase().includes(query)))
     .sort((a, b) => {
@@ -352,7 +370,7 @@ function renderContacts() {
       return new Date(b.timestamp) - new Date(a.timestamp);
     });
 
-  el('list-title').textContent = showArchived ? 'Archived' : 'Messages';
+  el('list-title').textContent = showArchived ? 'Archived' : (proList ? 'Professionals' : 'Messages');
   const archivedBtn = el('archived-toggle-btn');
   if (archivedBtn) {
     archivedBtn.classList.toggle('text-primary', showArchived);
@@ -360,11 +378,12 @@ function renderContacts() {
   }
 
   if (sorted.length === 0) {
-    const emptyText = query ? 'No conversations match your search.' : (showArchived ? 'No archived conversations.' : 'No conversations yet.');
-    const emptyHint = query ? '' : (showArchived ? 'Archive a chat from its ⋮ menu to move it here.' : 'Start a new chat to get going!');
+    const emptyText = query ? 'No conversations match your search.' : (showArchived ? 'No archived conversations.' : (proList ? 'No professional chats yet.' : 'No conversations yet.'));
+    const emptyHint = query ? '' : (showArchived ? 'Archive a chat from its ⋮ menu to move it here.'
+      : (proList ? 'Chats you start from the Professionals page, and the ones people start with you there, are kept here.' : 'Start a new chat to get going!'));
     list.innerHTML = `
       <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant text-center px-4">
-        <span class="material-symbols-outlined text-[40px] text-outline mb-3">${showArchived ? 'inventory_2' : 'chat_bubble_outline'}</span>
+        <span class="material-symbols-outlined text-[40px] text-outline mb-3">${showArchived ? 'inventory_2' : (proList ? 'work' : 'chat_bubble_outline')}</span>
         <p class="font-body-md text-body-md">${emptyText}</p>
         <p class="font-body-sm text-body-sm text-outline mt-1">${emptyHint}</p>
       </div>`;
@@ -591,6 +610,9 @@ function selectContact(id) {
   if (activeContactId && activeContactId !== id) stopTyping(activeContactId);
   activeContactId = id;
   if (contacts[id].archived !== showArchived) showArchived = !!contacts[id].archived;
+  // Show the list this chat belongs to
+  const section = isProContact(contacts[id]) ? 'pro' : 'direct';
+  if (section !== directSection) { directSection = section; paintInboxTabs(); }
 
   showChatPane();
   closeChatSearch();
@@ -1123,6 +1145,9 @@ function applyStatusReceipt(contactId, messageIds, status) {
 
 async function handleIncomingMessage(data) {
   const otherId = data.sender_id === currentUserId ? data.receiver_id : data.sender_id;
+
+  // Someone we have no chat with yet: find out first whether they started this one on the Professionals page
+  if (!contacts[otherId]) await fetchChatActionsState();
   const thread = getThread(otherId);
 
   // Our own message coming back (sent from another tab, or echoed): match it to what we already show
@@ -1370,14 +1395,28 @@ async function fetchTeams() {
   }
 }
 
-function switchInboxTab(tab) {
-  if (currentTab === 'direct' && tab !== 'direct') stopTyping(activeContactId);
-  currentTab = tab;
-  const activeClass = 'py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold';
-  const idleClass = 'py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5';
+// Marks which of the three tabs is showing
+function paintInboxTabs() {
+  const activeClass = 'py-1.5 text-center text-[12px] leading-4 text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 font-semibold';
+  const idleClass = 'py-1.5 text-center text-[12px] leading-4 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1 font-semibold';
+  const shown = currentTab === 'groups' ? 'groups' : directSection;
+  ['direct', 'pro', 'groups'].forEach(name => { el(`tab-${name}`).className = name === shown ? activeClass : idleClass; });
+}
 
-  el('tab-direct').className = tab === 'direct' ? activeClass : idleClass;
-  el('tab-groups').className = tab === 'groups' ? activeClass : idleClass;
+// tab is 'direct', 'pro' or 'groups'. 'direct' and 'pro' are two lists of the same kind of chat,
+// so the rest of this file sees both as currentTab 'direct' and tells them apart by directSection.
+function switchInboxTab(tab) {
+  const section = tab === 'pro' ? 'pro' : 'direct';
+  if (tab === 'pro') tab = 'direct';
+  const leavingChat = currentTab === 'direct' && (tab !== 'direct' || section !== directSection);
+  if (leavingChat) stopTyping(activeContactId);
+  if (tab === 'direct') {
+    // The open chat stays open only if it belongs to the list being shown
+    if (activeContactId && contacts[activeContactId] && isProContact(contacts[activeContactId]) !== (section === 'pro')) activeContactId = null;
+    directSection = section;
+  }
+  currentTab = tab;
+  paintInboxTabs();
   el('contactList').classList.toggle('hidden', tab !== 'direct');
   el('groupsList').classList.toggle('hidden', tab !== 'groups');
   closeChatSearch();
@@ -2020,7 +2059,7 @@ function startChatWith(userId) {
   if (!contacts[userId]) return;
   if (currentTab !== 'direct') {
     activeContactId = userId;
-    switchInboxTab('direct');
+    switchInboxTab(isProContact(contacts[userId]) ? 'pro' : 'direct');
   } else {
     selectContact(userId);
   }

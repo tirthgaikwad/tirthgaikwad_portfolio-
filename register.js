@@ -1,7 +1,8 @@
 // ==========================================
 // REGISTER.JS — The sign-up page (register.html): four steps, the live profile preview,
 // college and department suggestions, the ID photo, skills, and creating the account
-// Loaded after auth.js, which provides postJson, setFieldError, showNotice and setBusy.
+// Loaded after auth.js, which provides postJson, setFieldError, showNotice and setBusy,
+// and after professions.js, which holds the list of professions and their typical skills.
 // ==========================================
 (function () {
   const byId = (id) => document.getElementById(id);
@@ -120,6 +121,9 @@
 
   const SKILL_IDEAS = ['Python', 'JavaScript', 'React', 'Node.js', 'Java', 'C++', 'SQL', 'Machine learning', 'Figma', 'UI/UX', 'Flutter', 'IoT'];
   const MAX_SKILLS = 15;
+  const SKILL_IDEA_COUNT = 12;
+  const MAX_EXPERIENCE_YEARS = 70;
+  const PROFESSION_RESULTS = 8;
   const MIN_PASSWORD = 8;
   const ID_PHOTO_SIDE = 1000;       // the ID photo is shrunk to fit this many pixels, so sign-up stays a small request
   const ID_PHOTO_QUALITY = 0.72;
@@ -156,6 +160,7 @@
   const backBtn = byId('backBtn');
   const input = {
     name: byId('fullName'), email: byId('emailAddress'), roll: byId('rollNumber'), password: byId('password'),
+    profession: byId('professionInput'), experience: byId('experienceYears'),
     college: byId('collegeInput'), dept: byId('deptInput'), city: byId('location'),
     barcode: byId('idBarcode'), idFile: byId('idImageUpload'), portfolio: byId('portfolioLink'), invite: byId('inviteCode'),
     skill: byId('skillInput'), bio: byId('bio')
@@ -165,11 +170,14 @@
   let reached = 0;        // the furthest step opened so far; the stepper lets you jump back to any of them
   let skills = [];
   let idPhoto = '';       // the shrunk ID photo as a data: address, or '' when there is none
+  let openTo = [];        // what the person welcomes, as the keys of OPEN_TO_OPTIONS
 
   const accountType = () => form.elements.accountType.value;
   const isStudent = () => accountType() === 'student';
   // The server verifies an account at once when its email ends like this
   const isCollegeEmail = (email) => /\.(edu|ac)\.in$/i.test(email.trim());
+  // The profession a professional has picked, exactly as the list spells it. '' until one is picked.
+  const chosenProfession = () => (findProfession(input.profession.value) || { name: '' }).name;
 
   // ==========================================
   // 2. THE LIVE PREVIEW (picture side)
@@ -187,7 +195,8 @@
     setPreviewText(byId('pvName'), name, 'Your name');
 
     const dept = input.dept.value.trim(), city = input.city.value.trim();
-    setPreviewText(byId('pvMeta'), [dept, city].filter(Boolean).join(' · '), `${words.previewField} · City`);
+    const profession = isStudent() ? '' : chosenProfession();
+    setPreviewText(byId('pvMeta'), [profession, dept, city].filter(Boolean).join(' · '), `${isStudent() ? '' : 'Profession · '}${words.previewField} · City`);
     const place = byId('pvCollege');
     place.classList.toggle('ghost', !input.college.value.trim());
     place.lastElementChild.textContent = input.college.value.trim() || words.previewPlace;
@@ -221,7 +230,10 @@
     document.querySelectorAll('[data-ph]').forEach(el => { el.placeholder = words[el.dataset.ph]; });
     byId('studentVerification').hidden = !isStudent();
     byId('proVerification').hidden = isStudent();
-    [input.barcode, input.portfolio].forEach(field => setFieldError(field, ''));
+    byId('professionField').hidden = isStudent();
+    byId('experienceField').hidden = isStudent();
+    [input.barcode, input.portfolio, input.profession, input.experience].forEach(field => setFieldError(field, ''));
+    renderSkillIdeas();
     syncEmailHint();
     syncPreview();
   }
@@ -333,6 +345,91 @@
     field.addEventListener('blur', close);
   }
 
+  // The profession field: type to search the list in professions.js. Only a name from the list is accepted.
+  function bindProfessionPicker() {
+    const field = input.profession;
+    const list = byId('professionList');
+    let active = -1;
+
+    function close() {
+      list.hidden = true;
+      list.replaceChildren();
+      active = -1;
+      field.setAttribute('aria-expanded', 'false');
+      field.removeAttribute('aria-activedescendant');
+    }
+
+    function choose(name) {
+      field.value = name;
+      close();
+      setFieldError(field, '');
+      renderSkillIdeas();
+      syncPreview();
+    }
+
+    function setActive(index) {
+      const options = [...list.querySelectorAll('[data-value]')];
+      if (!options.length) return;
+      active = (index + options.length) % options.length;
+      options.forEach((option, n) => {
+        option.classList.toggle('active', n === active);
+        option.setAttribute('aria-selected', String(n === active));
+      });
+      options[active].scrollIntoView({ block: 'nearest' });
+      field.setAttribute('aria-activedescendant', options[active].id);
+    }
+
+    field.addEventListener('input', () => {
+      const typed = field.value.trim();
+      renderSkillIdeas();
+      if (!typed) { close(); return; }
+      const matches = searchProfessions(typed, PROFESSION_RESULTS).filter(profession => profession.name !== STUDENT_PROFESSION);
+      if (matches.length) {
+        list.replaceChildren(...matches.map((profession, n) => {
+          const option = document.createElement('li');
+          option.id = `professionList-${n}`;
+          option.setAttribute('role', 'option');
+          option.dataset.value = profession.name;
+          const group = document.createElement('small');
+          group.textContent = profession.group;
+          option.append(group, profession.name);
+          return option;
+        }));
+      } else {
+        const none = document.createElement('li');
+        none.className = 'none';
+        none.textContent = 'Nothing by that name. Try another word, or type "Other".';
+        list.replaceChildren(none);
+      }
+      active = -1;
+      list.hidden = false;
+      field.setAttribute('aria-expanded', 'true');
+    });
+
+    field.addEventListener('keydown', (e) => {
+      if (list.hidden) return;
+      const options = list.querySelectorAll('[data-value]');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(active + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+      else if (e.key === 'Escape') { close(); }
+      else if (e.key === 'Enter' && options.length) {
+        e.preventDefault();   // Enter picks the highlighted profession, or the first match, instead of sending the step
+        choose(options[Math.max(0, active)].dataset.value);
+      }
+    });
+    list.addEventListener('mousedown', (e) => {
+      const option = e.target.closest('[data-value]');
+      if (!option) return;
+      e.preventDefault();
+      choose(option.dataset.value);
+    });
+    // Leaving the field: a name typed in full is tidied to the list's spelling
+    field.addEventListener('blur', () => {
+      close();
+      if (chosenProfession()) field.value = chosenProfession();
+    });
+  }
+
   // ==========================================
   // 6. THE ID PHOTO
   // ==========================================
@@ -413,9 +510,7 @@
       tag.appendChild(remove);
       box.insertBefore(tag, input.skill);
     });
-    [...byId('skillSuggest').querySelectorAll('button')].forEach(button => {
-      button.setAttribute('aria-pressed', String(skills.some(skill => skill.toLowerCase() === button.textContent.toLowerCase())));
-    });
+    syncSkillIdeas();
     input.skill.placeholder = skills.length ? 'Add another' : 'Type a skill and press Enter';
     syncPreview();
   }
@@ -441,16 +536,54 @@
     input.skill.value = '';
   }
 
+  // The quick-add buttons: a professional gets the skills typical for their profession, a student the general list
+  function renderSkillIdeas() {
+    const ideas = byId('skillSuggest');
+    const typical = isStudent() ? [] : professionSkills(chosenProfession());
+    const wanted = (typical.length ? typical : SKILL_IDEAS).slice(0, SKILL_IDEA_COUNT);
+    const shown = [...ideas.querySelectorAll('button')].map(button => button.textContent);
+    if (wanted.join('|') !== shown.join('|')) {
+      ideas.querySelectorAll('button').forEach(button => button.remove());
+      wanted.forEach(idea => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = idea;
+        ideas.appendChild(button);
+      });
+    }
+    syncSkillIdeas();
+  }
+
+  function syncSkillIdeas() {
+    byId('skillSuggest').querySelectorAll('button').forEach(button => {
+      button.setAttribute('aria-pressed', String(skills.some(skill => skill.toLowerCase() === button.textContent.toLowerCase())));
+    });
+  }
+
+  // What the person welcomes: any number of the choices, or none
+  function bindOpenTo() {
+    const box = byId('openToBox');
+    OPEN_TO_OPTIONS.forEach(([key, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.key = key;
+      button.textContent = label;
+      button.setAttribute('aria-pressed', 'false');
+      box.appendChild(button);
+    });
+    box.addEventListener('click', (e) => {
+      const button = e.target.closest('button');
+      if (!button) return;
+      const on = button.getAttribute('aria-pressed') !== 'true';
+      button.setAttribute('aria-pressed', String(on));
+      openTo = [...box.querySelectorAll('[aria-pressed="true"]')].map(pressed => pressed.dataset.key);
+    });
+  }
+
   function bindSkills() {
     const box = byId('skillsBox');
     const ideas = byId('skillSuggest');
-    SKILL_IDEAS.forEach(idea => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = idea;
-      button.setAttribute('aria-pressed', 'false');
-      ideas.appendChild(button);
-    });
+    renderSkillIdeas();
     ideas.addEventListener('click', (e) => {
       const button = e.target.closest('button');
       if (!button) return;
@@ -499,6 +632,11 @@
     },
     () => {
       const wrong = [];
+      if (!isStudent()) {
+        if (!chosenProfession()) wrong.push([input.profession, 'Pick your profession from the list.']);
+        const years = input.experience.value.trim();
+        if (years && !(/^\d+$/.test(years) && Number(years) <= MAX_EXPERIENCE_YEARS)) wrong.push([input.experience, `Enter a whole number from 0 to ${MAX_EXPERIENCE_YEARS}, or leave it empty.`]);
+      }
       if (!input.college.value.trim()) wrong.push([input.college, isStudent() ? 'Enter your college.' : 'Enter where you work. "Freelance" is fine.']);
       if (!input.dept.value.trim()) wrong.push([input.dept, isStudent() ? 'Enter your department.' : 'Enter your industry or field.']);
       if (!input.city.value.trim()) wrong.push([input.city, 'Enter your city.']);
@@ -612,7 +750,10 @@
       id_barcode: student ? (input.barcode.value.trim() || null) : null,
       id_card_image: student ? idPhoto : '',
       portfolio_link: student ? null : input.portfolio.value.trim(),
-      invite_code: student ? null : input.invite.value.trim()
+      invite_code: student ? null : input.invite.value.trim(),
+      profession: student ? STUDENT_PROFESSION : chosenProfession(),
+      open_to: openTo.join(','),
+      experience_years: !student && input.experience.value.trim() ? Number(input.experience.value) : null
     };
 
     showNotice(notice, '');
@@ -657,8 +798,10 @@
   // ==========================================
   bindSuggestions(input.college, byId('collegeList'), COLLEGES);
   bindSuggestions(input.dept, byId('deptList'), DEPARTMENTS);
+  bindProfessionPicker();
   bindIdPhoto();
   bindSkills();
+  bindOpenTo();
 
   form.addEventListener('input', (e) => {
     if (e.target === input.password) syncPassword();

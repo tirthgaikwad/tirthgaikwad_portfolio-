@@ -101,6 +101,8 @@
         .options { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0; max-height: 264px; overflow-y: auto; padding: 6px; border-radius: 14px; background: #10132a; border: 1px solid var(--line-strong); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent; }
         .options li { padding: 10px 12px; border-radius: 9px; font-size: 14.5px; color: var(--ink-2); cursor: pointer; }
         .options li b { color: #fff; font-weight: 600; }
+        .options li small { float: right; margin-left: 12px; font-size: 12.5px; color: var(--ink-3); }
+        .options li.none { cursor: default; color: var(--ink-3); background: none; }
         .options li.active, .options li:hover { background: rgba(109, 94, 252, 0.28); color: #fff; }
 
         /* Verification step */
@@ -157,6 +159,7 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script defer src="network3d.js"></script>
     <script defer src="auth.js"></script>
+    <script defer src="professions.js"></script>
     <script defer src="register.js"></script>
 </head>
 <body>
@@ -183,6 +186,7 @@
         <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.700 0l3-3a4 4 0 00-5.700-5.700l-1 1M14 10a4 4 0 00-5.700 0l-3 3a4 4 0 005.700 5.700l1-1"/></symbol>
         <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M4 8.500A1.500 1.500 0 015.500 7h13A1.500 1.500 0 0120 8.500V10a2 2 0 000 4v1.500a1.500 1.500 0 01-1.500 1.500h-13A1.500 1.500 0 014 15.500V14a2 2 0 000-4zM14 7v10"/></symbol>
         <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.500V12l3 2"/></symbol>
+        <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5.500"/><path d="M8.500 13.500L7 21l5-2.500L17 21l-1.500-7.500"/></symbol>
     </svg>
 
     <div class="auth">
@@ -288,6 +292,15 @@
                             <h2 class="step-title" id="stepTitle1" data-text="backgroundTitle">Where you study</h2>
                             <p class="step-lead" data-text="backgroundLead">People search and filter by these.</p>
                             <div class="fields">
+                                <div class="field span2" id="professionField" hidden>
+                                    <label for="professionInput">Profession</label>
+                                    <div class="control">
+                                        <svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg>
+                                        <input type="text" id="professionInput" placeholder="Type to search: Doctor, Lawyer, Farmer, Singer..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="professionList" aria-autocomplete="list">
+                                        <ul class="options" id="professionList" role="listbox" aria-label="Professions" hidden></ul>
+                                    </div>
+                                    <p class="hint">Pick one from the list. Choose Other if yours is not there.</p>
+                                </div>
                                 <div class="field span2">
                                     <label for="collegeInput" data-text="collegeLabel">College or institution</label>
                                     <div class="control">
@@ -307,6 +320,10 @@
                                 <div class="field">
                                     <label for="location">City</label>
                                     <div class="control"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg><input type="text" id="location" placeholder="e.g. Pune" autocomplete="address-level2"></div>
+                                </div>
+                                <div class="field" id="experienceField" hidden>
+                                    <label for="experienceYears">Years of experience <span class="optional">(optional)</span></label>
+                                    <div class="control"><svg class="icon" aria-hidden="true"><use href="#i-award"/></svg><input type="number" id="experienceYears" min="0" max="70" step="1" inputmode="numeric" placeholder="e.g. 8"></div>
                                 </div>
                             </div>
                         </section>
@@ -362,6 +379,11 @@
                                 <label for="bio">Short bio</label>
                                 <div class="control"><textarea id="bio" placeholder="What you build, and what kind of team or project you are looking for"></textarea></div>
                                 <p class="hint">Two or three lines is enough.</p>
+                            </div>
+                            <div class="field">
+                                <span class="field-label" id="openToLabel">Open to <span class="optional">(optional)</span></span>
+                                <div class="suggest" id="openToBox" role="group" aria-labelledby="openToLabel" style="margin-top:0"></div>
+                                <p class="hint">Shown on your profile, so people know what they can ask you about.</p>
                             </div>
                         </section>
 

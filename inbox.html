@@ -650,19 +650,27 @@
                 </button>
               </div>
             </div>
-            <!-- Segmented Tab Switcher (Chats vs Groups) -->
+            <!-- Segmented Tab Switcher (Direct chats, chats started on the Professionals page, Groups) -->
             <div class="px-space-md py-space-xs">
-              <div class="grid grid-cols-2 p-1 bg-surface-container rounded-xl gap-1">
+              <div class="grid grid-cols-[1fr_1.35fr_1fr] p-1 bg-surface-container rounded-xl gap-1">
                 <button id="tab-direct" onclick="switchInboxTab('direct')"
-                  class="py-1.5 text-center font-label-md text-label-md text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 font-semibold"
+                  class="py-1.5 text-center text-[12px] leading-4 text-on-primary bg-primary rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 font-semibold"
                   type="button">
-                  <span class="material-symbols-outlined text-[16px]">person</span>
-                  <span>Direct Chats</span>
+                  <span class="material-symbols-outlined text-[15px]">person</span>
+                  <span>Direct</span>
+                  <span class="hidden min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error text-[10px] leading-4 font-bold" id="tab-direct-count"></span>
+                </button>
+                <button id="tab-pro" onclick="switchInboxTab('pro')" title="Chats started from the Professionals page"
+                  class="py-1.5 text-center text-[12px] leading-4 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1 font-semibold"
+                  type="button">
+                  <span class="material-symbols-outlined text-[15px]">work</span>
+                  <span>Professionals</span>
+                  <span class="hidden min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error text-[10px] leading-4 font-bold" id="tab-pro-count"></span>
                 </button>
                 <button id="tab-groups" onclick="switchInboxTab('groups')"
-                  class="py-1.5 text-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  class="py-1.5 text-center text-[12px] leading-4 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors flex items-center justify-center gap-1 font-semibold"
                   type="button">
-                  <span class="material-symbols-outlined text-[16px]">groups</span>
+                  <span class="material-symbols-outlined text-[15px]">groups</span>
                   <span>Groups</span>
                 </button>
               </div>

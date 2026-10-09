@@ -49,13 +49,15 @@ const HEADER_ICONS = {
     book: '<path d="M12 6.5C10.3 5.2 8 4.5 4 4.5v13c4 0 6.3.7 8 2 1.7-1.3 4-2 8-2v-13c-4 0-6.3.7-8 2zM12 6.5v13"/>',
     campus: '<path d="M2.5 9.5L12 4.5l9.5 5-9.5 5z"/><path d="M6.5 12v4.5c1.5 1.3 3.3 2 5.5 2s4-.7 5.5-2V12M21.5 9.5V15"/>',
     network: '<circle cx="12" cy="5.5" r="2.5"/><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M10.8 7.7L6.7 15.3M13.2 7.7l4.1 7.6M8 17.5h8"/>',
-    bookmark: '<path d="M7 4.5h10a1 1 0 011 1V20l-6-3.8L6 20V5.5a1 1 0 011-1z"/>'
+    bookmark: '<path d="M7 4.5h10a1 1 0 011 1V20l-6-3.8L6 20V5.5a1 1 0 011-1z"/>',
+    briefcase: '<rect x="3" y="7.5" width="18" height="12" rx="2.5"/><path d="M9 7.5V6a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 6v1.5M3 13h18"/>'
 };
 const headerIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${HEADER_ICONS[name]}</svg>`;
 
 // The pages behind each item of the bar. A group is shown as current when one of its pages is open.
 const HEADER_NAV = [
     { label: 'Discover', href: 'search.html', icon: 'compass', text: 'Find people by skill' },
+    { label: 'Professionals', href: 'professionals.html', icon: 'briefcase', text: 'Everyone, by profession' },
     { label: 'Opportunities', href: 'board.html', icon: 'board', text: 'Open roles and project ideas' },
     { label: 'Workspace', pages: [
         { label: 'My Teams', href: 'team.html', icon: 'teams', text: 'Channels, chat and calls' },

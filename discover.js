@@ -1,6 +1,7 @@
 // ==========================================
 // DISCOVER.JS — The Discover Talent page: search, filters, follow/save/add-to-team, live updates
-// Loaded after shared.js and chat-common.js (api, caches, toast, el, onlineUserIds, the people-card helpers).
+// Loaded after shared.js, chat-common.js (api, caches, toast, el, onlineUserIds, the people-card helpers)
+// and professions.js (which profession a person has).
 // ==========================================
 
 const CARDS_PER_PAGE = 12;   // fills whole rows at both 2 and 3 cards across
@@ -253,7 +254,7 @@ function cardHtml(person, position = 0) {
         <h3 class="dt-name">
           <a class="truncate" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
           ${person.account_status === 'verified' ? '<span class="material-symbols-outlined dt-ico text-[17px] text-primary" title="Verified account">verified</span>' : ''}
-          ${person.account_type === 'professional' ? '<span class="dt-pro">Pro</span>' : ''}
+          ${isProfessional(person) ? `<span class="dt-pro" title="${escapeHtml(professionOf(person))}">${escapeHtml(professionOf(person))}</span>` : ''}
         </h3>
         <p class="dt-meta" title="${escapeHtml(college)}">${icon('school')}<span>${escapeHtml(college || 'No college listed')}</span></p>
         ${place ? `<p class="dt-meta" title="${escapeHtml(place)}">${icon(city ? 'location_on' : 'category')}<span>${escapeHtml(place)}</span></p>` : ''}

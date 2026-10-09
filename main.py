@@ -29,7 +29,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import aliased
-from sqlalchemy import Column, Integer, String, Float, func, delete, update, text, and_, or_, case, literal, exists
+from sqlalchemy import Column, Integer, String, Float, Boolean, func, delete, update, text, and_, or_, case, literal, exists
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from database import engine, Base, get_db, get_fast_db, SessionLocal, AutocommitSession
 
@@ -59,7 +59,7 @@ class DBUser(Base):
     # Trust & Safety Architecture
     is_admin = Column(Integer, default=0)
     is_founder = Column(Integer, default=0)
-    is_ambassador = Column(Integer, default=0) # NEW: Campus Ambassador flag
+    is_ambassador = Column(Boolean, default=False) # Campus Ambassador flag (a true/false column in the database)
     ambassador_strikes = Column(Integer, default=0) # NEW: Accountability system
     account_status = Column(String, default="pending") # NEW: pending, verified, rejected, appealed
     
@@ -67,6 +67,11 @@ class DBUser(Base):
     id_card_image = Column(String, default="")
     portfolio_link = Column(String, default="")
     invite_code = Column(String, default="")
+
+    # Professions (the list of choices lives in professions.js)
+    profession = Column(String, default="")            # "Student" for students
+    open_to = Column(String, default="")               # comma-separated choices from OPEN_TO_CHOICES
+    experience_years = Column(Integer, nullable=True)
 
 class DBAdminRequest(Base):
     __tablename__ = "admin_requests"
@@ -180,6 +185,14 @@ class DBArchivedChat(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
     archived_user_id = Column(Integer, index=True)
+
+class DBProChat(Base):
+    """Two people whose conversation belongs in the Professionals section of Messages. user_a is the smaller id."""
+    __tablename__ = "pro_chats"
+    id = Column(Integer, primary_key=True, index=True)
+    user_a = Column(Integer, index=True)
+    user_b = Column(Integer, index=True)
+    created_at = Column(String)
 
 class DBTeam(Base):
     __tablename__ = "teams"
@@ -323,6 +336,10 @@ SCHEMA_UPGRADES = [
     "CREATE INDEX IF NOT EXISTS ix_history_user_id ON history (user_id, id)",
     "CREATE INDEX IF NOT EXISTS ix_follows_followed_follower ON follows (followed_id, follower_id)",
     "CREATE INDEX IF NOT EXISTS ix_saved_profiles_pair ON saved_profiles (user_id, saved_user_id)",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS profession VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS open_to VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS experience_years INTEGER",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_chats_pair ON pro_chats (user_a, user_b)",
 ]
 
 async def backfill_cleared_chats():
@@ -568,6 +585,9 @@ class ProfileRegister(BaseModel):
     id_card_image: Optional[str] = ""
     portfolio_link: Optional[str] = None
     invite_code: Optional[str] = None
+    profession: Optional[str] = ""
+    open_to: Optional[str] = ""
+    experience_years: Optional[int] = None
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
@@ -580,6 +600,9 @@ class ProfileUpdate(BaseModel):
     profile_pic: Optional[str] = None
     banner_pic: Optional[str] = None
     github_username: Optional[str] = None
+    profession: Optional[str] = None
+    open_to: Optional[str] = None
+    experience_years: Optional[int] = None
 
 class UserLogin(BaseModel):
     roll_no: str
@@ -600,6 +623,9 @@ class ProfileResponse(BaseModel):
     banner_pic: str
     account_type: str
     github_username: Optional[str] = ""
+    profession: Optional[str] = ""
+    open_to: Optional[str] = ""
+    experience_years: Optional[int] = 0
 
     class Config:
         from_attributes = True
@@ -877,6 +903,28 @@ def get_websocket_user_id(websocket: WebSocket) -> Optional[int]:
 # ==========================================
 # 5. CORE API ENDPOINTS
 # ==========================================
+STUDENT_PROFESSION = "Student"
+PROFESSION_LENGTH = 80
+OPEN_TO_CHOICES = ("mentoring", "collaboration", "hiring", "consulting", "speaking", "internships")
+MAX_EXPERIENCE_YEARS = 70
+
+def clean_open_to(value: Optional[str]) -> str:
+    """Keeps the choices we know, in a fixed order, and drops anything else."""
+    picked = {part.strip().lower() for part in (value or "").split(",")}
+    return ",".join(choice for choice in OPEN_TO_CHOICES if choice in picked)
+
+def clean_experience_years(value: Optional[int]) -> Optional[int]:
+    if value is None:
+        return None
+    if value < 0 or value > MAX_EXPERIENCE_YEARS:
+        raise HTTPException(status_code=400, detail=f"Years of experience must be between 0 and {MAX_EXPERIENCE_YEARS}.")
+    return value
+
+def is_professional_account(account_type: Optional[str], profession: Optional[str]) -> bool:
+    """The same rule professions.js uses in the browser."""
+    return account_type == "professional" or (profession or "").strip() not in ("", STUDENT_PROFESSION)
+
+
 @app.post("/api/register", status_code=status.HTTP_201_CREATED)
 async def register_user(profile: ProfileRegister, response: Response, db: AsyncSession = Depends(get_db)):
     # Auto-generate email if not provided
@@ -895,7 +943,13 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
             raise HTTPException(status_code=400, detail="This College ID barcode has already been registered.")
 
     hashed_pwd = get_password_hash(profile.password)
-    
+
+    # Professionals pick a profession when they sign up; everyone else is a student
+    profession = (profile.profession or "").strip()[:PROFESSION_LENGTH]
+    if not profession and profile.account_type != "professional":
+        profession = STUDENT_PROFESSION
+    experience_years = clean_experience_years(profile.experience_years)
+
     # ---------------------------------------------------------
     # SMART VERIFICATION LOGIC (The Gold Standard Bypass)
     # ---------------------------------------------------------
@@ -929,9 +983,12 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
         id_barcode=profile.id_barcode,
         id_card_image=profile.id_card_image,
         portfolio_link=profile.portfolio_link,
-        invite_code=profile.invite_code
+        invite_code=profile.invite_code,
+        profession=profession,
+        open_to=clean_open_to(profile.open_to),
+        experience_years=experience_years
     )
-    
+
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -1007,8 +1064,10 @@ async def get_all_profiles(
 
 PUBLIC_PROFILE_FIELDS = (
     "id", "name", "college_name", "department", "city", "division", "roll_no", "skills", "bio",
-    "profile_pic", "banner_pic", "account_type", "github_username", "is_admin", "account_status"
+    "profile_pic", "banner_pic", "account_type", "github_username", "is_admin", "account_status",
+    "profession", "open_to", "experience_years"
 )
+NUMBER_FIELDS = ("is_admin", "experience_years")   # sent as 0 when empty; every other empty field is sent as ""
 
 def public_profile_columns():
     return [getattr(DBUser, field) for field in PUBLIC_PROFILE_FIELDS]
@@ -1018,7 +1077,7 @@ def public_profile(row) -> dict:
     profile = {field: getattr(row, field) for field in PUBLIC_PROFILE_FIELDS}
     for field in PUBLIC_PROFILE_FIELDS:
         if profile[field] is None:
-            profile[field] = 0 if field == "is_admin" else ""
+            profile[field] = 0 if field in NUMBER_FIELDS else ""
     return profile
 
 def serialize_project(project) -> dict:
@@ -1104,7 +1163,8 @@ async def get_profile_options(current_user_id: int = Depends(get_current_user_id
 # ==========================================
 # 5a. DISCOVER TALENT DIRECTORY
 # ==========================================
-DIRECTORY_FIELDS = ("id", "name", "college_name", "department", "city", "skills", "profile_pic", "account_type", "account_status", "github_username")
+DIRECTORY_FIELDS = ("id", "name", "college_name", "department", "city", "skills", "profile_pic", "account_type", "account_status", "github_username",
+                    "profession", "open_to", "experience_years")
 DIRECTORY_BIO_LENGTH = 240
 DIRECTORY_LIMIT = 1000
 
@@ -1113,7 +1173,7 @@ def directory_card(row) -> dict:
     card = {}
     for field in DIRECTORY_FIELDS:
         value = getattr(row, field)
-        card[field] = value if value is not None else ""
+        card[field] = value if value is not None else (0 if field in NUMBER_FIELDS else "")
     card["bio"] = (row.bio or "")[:DIRECTORY_BIO_LENGTH]
     return card
 
@@ -1325,7 +1385,8 @@ async def get_single_profile(user_id: int, current_user_id: int = Depends(get_cu
 # ==========================================
 # 5b. PROFILE UPDATE ENDPOINT
 # ==========================================
-PROFILE_FIELD_LIMITS = {"name": 80, "college_name": 150, "department": 120, "city": 80, "division": 40, "skills": 500, "bio": 500}
+PROFILE_FIELD_LIMITS = {"name": 80, "college_name": 150, "department": 120, "city": 80, "division": 40, "skills": 500, "bio": 500,
+                        "profession": PROFESSION_LENGTH}
 
 def is_own_upload(url: str, user_id: int, kind: str) -> bool:
     """True if the address points at a picture this person uploaded through our upload endpoints."""
@@ -1354,6 +1415,10 @@ async def update_profile(
         raise HTTPException(status_code=400, detail="Name cannot be empty.")
     if "skills" in values:
         values["skills"] = ", ".join(skill.strip() for skill in values["skills"].split(",") if skill.strip())
+    if profile_data.open_to is not None:
+        values["open_to"] = clean_open_to(profile_data.open_to)
+    if profile_data.experience_years is not None:
+        values["experience_years"] = clean_experience_years(profile_data.experience_years)
 
     # Pictures are changed by uploading; this only accepts an address our own upload endpoints produced
     for field, kind in (("profile_pic", "profile"), ("banner_pic", "banner")):
@@ -1897,6 +1962,7 @@ async def get_conversations(db: AsyncSession = Depends(get_fast_db), current_use
             summary.c.other_id.label("contact_id"),
             summary.c.unread,
             DBArchivedChat.id.label("archived_id"),
+            DBProChat.id.label("pro_id"),
             DBUser.name.label("contact_name"),
             DBUser.profile_pic, DBUser.college_name, DBUser.department, DBUser.skills,
             *message_listing_columns()
@@ -1906,6 +1972,10 @@ async def get_conversations(db: AsyncSession = Depends(get_fast_db), current_use
         .outerjoin(DBArchivedChat, and_(
             DBArchivedChat.user_id == current_user_id,
             DBArchivedChat.archived_user_id == summary.c.other_id
+        ))
+        .outerjoin(DBProChat, and_(
+            DBProChat.user_a == func.least(summary.c.other_id, current_user_id),
+            DBProChat.user_b == func.greatest(summary.c.other_id, current_user_id)
         ))
         .order_by(summary.c.last_id.desc())
     )
@@ -1924,7 +1994,8 @@ async def get_conversations(db: AsyncSession = Depends(get_fast_db), current_use
             "skills": row.skills or "",
             "last_message": serialize_message_row(row),
             "unread": int(row.unread or 0),
-            "archived": row.archived_id is not None
+            "archived": row.archived_id is not None,
+            "pro": row.pro_id is not None
         }
     return list(conversations.values())
 
@@ -2155,11 +2226,47 @@ async def toggle_archive(target_id: int, db: AsyncSession = Depends(get_db), cur
 async def get_chat_actions_state(db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
     muted_q = select(literal("muted").label("kind"), DBMutedUser.muted_user_id.label("target_id")).where(DBMutedUser.user_id == current_user_id)
     blocked_q = select(literal("blocked"), DBBlockedUser.blocked_user_id).where(DBBlockedUser.user_id == current_user_id)
-    rows = (await db.execute(muted_q.union_all(blocked_q))).all()
+    pro_q = (
+        select(literal("pro"), case((DBProChat.user_a == current_user_id, DBProChat.user_b), else_=DBProChat.user_a))
+        .where(or_(DBProChat.user_a == current_user_id, DBProChat.user_b == current_user_id))
+    )
+    rows = (await db.execute(muted_q.union_all(blocked_q, pro_q))).all()
     return {
         "muted": [target_id for kind, target_id in rows if kind == "muted"],
-        "blocked": [target_id for kind, target_id in rows if kind == "blocked"]
+        "blocked": [target_id for kind, target_id in rows if kind == "blocked"],
+        "pro": [target_id for kind, target_id in rows if kind == "pro"]
     }
+
+
+@app.post("/api/pro-chats/{user_id}")
+async def open_pro_chat(user_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """Called when someone presses Message on the Professionals page. The conversation with that person goes to the
+    Professionals section of Messages for both sides, unless the person is a student or the two already have a chat."""
+    if user_id == current_user_id:
+        raise HTTPException(status_code=400, detail="You cannot start a chat with yourself.")
+    low, high = min(user_id, current_user_id), max(user_id, current_user_id)
+    row = (await db.execute(select(
+        DBUser.account_type,
+        DBUser.profession,
+        exists().where(DBProChat.user_a == low, DBProChat.user_b == high).label("already_pro"),
+        exists().where(or_(
+            and_(DBMessage.sender_id == low, DBMessage.receiver_id == high),
+            and_(DBMessage.sender_id == high, DBMessage.receiver_id == low)
+        )).label("has_messages"),
+    ).where(DBUser.id == user_id))).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="This person is no longer on Connect2Minds.")
+    if row.already_pro:
+        return {"pro": True}
+    if not is_professional_account(row.account_type, row.profession):
+        return {"pro": False, "reason": "not_professional"}
+    if row.has_messages:
+        return {"pro": False, "reason": "existing_chat"}
+    await db.execute(
+        pg_insert(DBProChat).values(user_a=low, user_b=high, created_at=utc_now_iso())
+        .on_conflict_do_nothing(index_elements=["user_a", "user_b"])
+    )
+    return {"pro": True}
 
 
 # ==========================================
@@ -4519,7 +4626,7 @@ async def delete_research_report(
 # ==========================================
 @app.get("/api/ambassador/pending", response_model=List[PendingUserResponse])
 async def get_pending_users(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
-    if current_user.is_ambassador != 1:
+    if not current_user.is_ambassador:
         raise HTTPException(status_code=403, detail="Ambassador access required.")
         
     # Ambassadors only see pending students from THEIR specific college
@@ -4532,7 +4639,7 @@ async def get_pending_users(db: AsyncSession = Depends(get_db), current_user: DB
 
 @app.post("/api/ambassador/verify/{target_id}/{action}")
 async def ambassador_verify_action(target_id: int, action: str, db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
-    if current_user.is_ambassador != 1:
+    if not current_user.is_ambassador:
         raise HTTPException(status_code=403, detail="Ambassador access required.")
     if action not in ("approve", "reject"):
         raise HTTPException(status_code=400, detail="Action must be 'approve' or 'reject'.")

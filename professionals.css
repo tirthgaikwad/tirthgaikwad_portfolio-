@@ -1,0 +1,179 @@
+/* ==========================================
+   PROFESSIONALS.CSS — The Professionals page (professionals.html)
+   Colours are the site's own: indigo #3525cd / #4f46e5 and its tints, navy #0b1c30, the slate greys, white, emerald for "online".
+   ========================================== */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Until the icon font arrives an icon is its name in plain text; this keeps it from pushing the layout around */
+.pp-ico { width: 1em; overflow: hidden; flex-shrink: 0; }
+.pp-hidden { display: none !important; }
+
+/* ==========================================
+   TITLE BAND
+   ========================================== */
+.pp-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #eff4ff 100%); border-bottom: 1px solid #e2e8f0; }
+.pp-hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(#c7d2fe 1px, transparent 1px); background-size: 22px 22px; opacity: 0.6; -webkit-mask-image: linear-gradient(100deg, transparent 25%, #000 100%); mask-image: linear-gradient(100deg, transparent 25%, #000 100%); pointer-events: none; }
+.pp-hero > * { position: relative; }
+.pp-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; line-height: 36px; font-weight: 800; letter-spacing: -0.025em; color: #0b1c30; }
+.pp-title span { color: #3525cd; }
+.pp-summary { font-size: 14px; line-height: 20px; color: #475569; margin-top: 6px; }
+.pp-search { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px 0 14px; background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 24px rgba(53,37,205,0.08); transition: border-color 0.15s, box-shadow 0.15s; }
+.pp-search:focus-within { border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14), 0 8px 24px rgba(53,37,205,0.1); }
+.pp-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: none; background: transparent; font-size: 15px; color: #0f172a; outline: none; box-shadow: none; }
+.pp-search input::placeholder { color: #94a3b8; }
+.pp-search > .pp-ico { font-size: 22px; color: #94a3b8; }
+
+/* ==========================================
+   PROFESSION PICKER: groups, then the professions of a group, then that profession's skills
+   ========================================== */
+.pp-picker { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.05); }
+.pp-picker-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 0; }
+.pp-label { display: flex; align-items: center; gap: 6px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
+.pp-label .pp-ico { font-size: 16px; color: #3525cd; }
+.pp-find { position: relative; width: 300px; max-width: 100%; }
+.pp-find-box { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
+.pp-find-box:focus-within { border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14); }
+.pp-find-box .pp-ico { font-size: 18px; color: #94a3b8; }
+.pp-find-box input { flex: 1; min-width: 0; height: 100%; padding: 0; border: none; background: transparent; font-size: 13.5px; color: #0f172a; outline: none; box-shadow: none; }
+.pp-find-box input::placeholder { color: #94a3b8; }
+.pp-options { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0; max-height: 320px; overflow-y: auto; padding: 6px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 16px 40px rgba(15,23,42,0.14); }
+.pp-options li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.pp-options li.active, .pp-options li:hover { background: #eef2ff; }
+.pp-options .pp-ico { font-size: 18px; color: #3525cd; }
+.pp-options b { display: block; font-size: 13.5px; line-height: 18px; font-weight: 600; color: #0f172a; }
+.pp-options small { display: block; font-size: 12px; line-height: 16px; color: #64748b; }
+.pp-options em { margin-left: auto; font-size: 12px; font-style: normal; color: #64748b; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.pp-options .pp-none { padding: 10px; font-size: 13px; color: #64748b; cursor: default; background: none; }
+
+.pp-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 10px; padding: 14px 18px 16px; }
+.pp-tile { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; border-radius: 14px; border: 1px solid #e2e8f0; background: #fff; text-align: left; cursor: pointer; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.pp-tile:hover { border-color: #c7d2fe; background: #f8f9ff; transform: translateY(-2px); }
+.pp-tile-ico { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: #eef2ff; color: #3525cd; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: background 0.15s, color 0.15s; }
+.pp-tile-ico .material-symbols-outlined { font-size: 20px; }
+.pp-tile-text { min-width: 0; }
+.pp-tile b { display: block; font-size: 13px; line-height: 17px; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-tile small { display: block; font-size: 12px; line-height: 16px; color: #64748b; }
+.pp-tile.is-empty b { color: #64748b; }
+.pp-tile.is-empty .pp-tile-ico { background: #f1f5f9; color: #94a3b8; }
+.pp-tile[aria-pressed="true"] { border-color: #3525cd; background: #eef2ff; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.pp-tile[aria-pressed="true"] .pp-tile-ico { background: #3525cd; color: #fff; }
+.pp-tile[aria-pressed="true"] b { color: #3525cd; }
+.pp-tile.is-more { border-style: dashed; border-color: #cbd5e1; background: #f8fafc; }
+.pp-tile.is-more b { color: #334155; }
+
+.pp-row { padding: 14px 18px 16px; border-top: 1px solid #f1f5f9; }
+.pp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pp-chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 9999px; border: 1px solid #e2e8f0; background: #fff; font-size: 13px; font-weight: 500; color: #334155; white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.pp-chip i { font-style: normal; font-size: 12px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+.pp-chip:hover { background: #eef2ff; border-color: #c7d2fe; color: #3525cd; }
+.pp-chip.is-empty { color: #64748b; background: #f8fafc; }
+.pp-chip[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.pp-chip[aria-pressed="true"] i { color: #c7d2fe; }
+.pp-chip .pp-ico { font-size: 15px; }
+.pp-row-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; line-height: 20px; font-weight: 700; color: #0b1c30; }
+
+/* ==========================================
+   TOOLBAR
+   ========================================== */
+.pp-count { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; line-height: 24px; font-weight: 700; color: #0f172a; }
+.pp-count small { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; color: #64748b; margin-left: 6px; }
+.pp-select { appearance: none; -webkit-appearance: none; height: 40px; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 32px 0 12px; font-size: 13px; font-weight: 500; color: #0f172a; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.pp-select:hover { border-color: #94a3b8; }
+.pp-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14); }
+.pp-select.is-set { border-color: #3525cd; background-color: #eef2ff; color: #3525cd; font-weight: 600; }
+.pp-toggle { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; font-size: 13px; font-weight: 500; color: #334155; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.pp-toggle .pp-ico { font-size: 17px; color: #94a3b8; }
+.pp-toggle:hover { border-color: #94a3b8; }
+.pp-toggle[aria-pressed="true"] { background: #eef2ff; border-color: #3525cd; color: #3525cd; font-weight: 600; }
+.pp-toggle[aria-pressed="true"] .pp-ico { color: #3525cd; }
+.pp-link { font-size: 13px; font-weight: 600; color: #3525cd; cursor: pointer; }
+.pp-link:hover { text-decoration: underline; }
+.pp-subhead { grid-column: 1 / -1; margin-top: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 22px; font-weight: 700; color: #0b1c30; }
+
+/* ==========================================
+   A PERSON: the profession leads, on a navy strip
+   ========================================== */
+.pp-card { position: relative; display: flex; flex-direction: column; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.05); overflow: hidden; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s, border-color 0.25s; }
+.pp-card:hover { transform: translateY(-3px); border-color: #c7d2fe; box-shadow: 0 2px 4px rgba(15,23,42,0.04), 0 18px 40px rgba(11,28,48,0.16); }
+.pp-strip { position: relative; display: flex; align-items: center; gap: 8px; min-height: 68px; padding: 12px 12px 22px 104px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, #3525cd 0%, transparent 55%), #0b1c30; }
+.pp-strip::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #3525cd, #4f46e5 60%, #c7d2fe); }
+.pp-strip-ico { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.pp-strip-ico .material-symbols-outlined { font-size: 18px; }
+.pp-strip-text { min-width: 0; flex: 1; }
+.pp-prof { display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; line-height: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-group { display: block; font-size: 11.5px; line-height: 15px; color: #c7d2fe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-save { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.12); color: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+.pp-save:hover { background: rgba(255,255,255,0.24); }
+.pp-save[aria-pressed="true"] { background: #fff; color: #3525cd; }
+.pp-save .material-symbols-outlined { font-size: 18px; }
+.pp-body { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 0 20px 20px; }
+.pp-photo-link { position: absolute; left: 20px; top: 26px; display: block; width: 72px; }
+.pp-photo { width: 72px; height: 72px; border-radius: 18px; overflow: hidden; background: #e2dfff; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(11,28,48,0.22); display: flex; align-items: center; justify-content: center; }
+.pp-online { position: absolute; right: -2px; bottom: -2px; width: 14px; height: 14px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 2.5px #fff; }
+.pp-online.hidden { display: none; }
+.pp-name { display: flex; align-items: center; gap: 6px; margin-top: 42px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; line-height: 23px; font-weight: 700; color: #0f172a; }
+.pp-name a:hover { color: #3525cd; }
+.pp-name .pp-ico { font-size: 17px; color: #3525cd; }
+.pp-meta { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 4px; font-size: 13px; line-height: 18px; color: #475569; }
+.pp-meta .pp-ico { font-size: 15px; color: #94a3b8; }
+.pp-meta span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pp-fact { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px; border-radius: 8px; font-size: 12px; line-height: 16px; font-weight: 600; background: #eef2ff; color: #3525cd; }
+.pp-fact .pp-ico { font-size: 14px; }
+.pp-fact.plain { background: #f1f5f9; color: #334155; }
+.pp-bio { margin-top: 12px; font-size: 13px; line-height: 20px; color: #475569; overflow-wrap: anywhere; }
+.pp-skills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.pp-skill { padding: 3px 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #334155; font-size: 12px; line-height: 16px; font-weight: 500; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.pp-skill:hover { border-color: #c7d2fe; background: #eef2ff; color: #3525cd; }
+.pp-skill.hit { background: #3525cd; border-color: #3525cd; color: #fff; }
+.pp-more { font-size: 12px; line-height: 16px; color: #64748b; }
+.pp-foot { margin-top: auto; padding-top: 16px; }
+.pp-followers { padding-top: 12px; margin-bottom: 12px; border-top: 1px solid #f1f5f9; font-size: 12px; line-height: 16px; color: #64748b; }
+.pp-actions { display: flex; align-items: center; gap: 8px; }
+.pp-btn { height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden; white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s; }
+.pp-btn .material-symbols-outlined { font-size: 17px; }
+.pp-btn.primary { flex: 1; min-width: 0; background: #3525cd; color: #fff; box-shadow: 0 1px 2px rgba(53,37,205,0.3), 0 6px 14px rgba(53,37,205,0.18); }
+.pp-btn.primary:hover { background: #4f46e5; }
+.pp-btn.ghost { border-color: #cbd5e1; background: #fff; color: #334155; }
+.pp-btn.ghost:hover { border-color: #3525cd; color: #3525cd; background: #eef2ff; }
+.pp-btn.ghost[aria-pressed="true"] { border-color: #c7d2fe; background: #eef2ff; color: #3525cd; }
+.pp-btn.ghost[aria-pressed="true"]:hover { border-color: #fda4af; color: #e11d48; background: #fff; }
+.pp-btn:disabled { opacity: 0.65; cursor: default; }
+.pp-icon-btn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.pp-icon-btn:hover { background: #eef2ff; border-color: #c7d2fe; color: #3525cd; }
+.pp-icon-btn .material-symbols-outlined { font-size: 18px; }
+/* Cards rise in after a choice the person made (professionals.js adds pp-animate for those redraws only) */
+.pp-animate .pp-card { animation: ppRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--n, 0) * 35ms); }
+@keyframes ppRise { from { opacity: 0; transform: translateY(14px); } }
+
+/* Loading, empty and error states, and the page buttons (drawn by shared helpers, shaped here) */
+.skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 6px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+#proGrid > .col-span-full:not(.pp-subhead) { background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 48px 24px; }
+#proGrid > .col-span-full > .material-symbols-outlined { width: 72px; height: 72px; border-radius: 50%; background: #eef2ff; color: #3525cd; font-size: 32px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 16px; }
+#proPagination button { border-radius: 10px; }
+#resultsTop { scroll-margin-top: 80px; }
+
+/* ==========================================
+   "INTRODUCE YOURSELF" BOX
+   ========================================== */
+.pp-intro { max-width: 480px !important; }
+.pp-intro-who { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.pp-intro-who .pp-photo { width: 48px; height: 48px; border-radius: 12px; border: 0; box-shadow: none; flex-shrink: 0; }
+.pp-intro-who b { display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 22px; font-weight: 700; color: #0b1c30; }
+.pp-intro-who span { font-size: 13px; color: #64748b; }
+.pp-intro textarea { width: 100%; min-height: 120px; margin-top: 12px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; line-height: 21px; color: #0f172a; resize: vertical; outline: none; box-shadow: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.pp-intro textarea:focus { border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14); }
+.pp-intro-note { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0 18px; font-size: 12px; line-height: 16px; color: #64748b; }
+.pp-intro-note.is-wrong span:first-child { color: #e11d48; font-weight: 600; }
+
+@media (max-width: 640px) {
+  .pp-find { width: 100%; }
+  /* On a phone the fields are one row to swipe through, so the people stay near the top */
+  .pp-tiles { display: flex; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .pp-tile { flex-shrink: 0; width: 200px; scroll-snap-align: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-card, .pp-card:hover, .pp-tile, .pp-tile:hover { transform: none; transition: none; }
+  .pp-animate .pp-card { animation: none; }
+}

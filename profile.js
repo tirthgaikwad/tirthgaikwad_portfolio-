@@ -163,6 +163,14 @@ function renderProfile() {
   if (profile.account_type && profile.account_type !== 'standard') {
     badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold uppercase">${escapeHtml(profile.account_type)}</span>`);
   }
+  // What the person does, how long they have done it and what they welcome
+  badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">${escapeHtml(professionOf(profile))}</span>`);
+  if (profile.experience_years > 0) {
+    badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">${profile.experience_years} ${profile.experience_years === 1 ? 'yr' : 'yrs'} experience</span>`);
+  }
+  openToLabels(profile.open_to).forEach(label => {
+    badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">Open to ${escapeHtml(label.toLowerCase())}</span>`);
+  });
   if (profile.is_admin) badges.push('<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold uppercase">Admin</span>');
   if (verified) {
     badges.push('<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed/40 text-tertiary font-label-sm text-label-sm font-bold">Verified student</span>');
@@ -415,6 +423,15 @@ function openEditModal(focusId) {
   el('editDiv').value = profile.division || '';
   el('editSkills').value = profile.skills || '';
   el('editBio').value = profile.bio || '';
+  el('editProfession').value = profile.profession || '';
+  el('editExperience').value = profile.experience_years > 0 ? profile.experience_years : '';
+  // The choices come from professions.js, the same list sign-up uses
+  if (!el('professionOptions').children.length) {
+    el('professionOptions').innerHTML = PROFESSIONS.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.group)}</option>`).join('');
+  }
+  const openNow = new Set(String(profile.open_to || '').split(','));
+  el('editOpenTo').innerHTML = OPEN_TO_OPTIONS.map(([key, label]) =>
+    `<label class="inline-flex items-center gap-1.5 font-body-md text-body-md text-on-surface cursor-pointer"><input type="checkbox" value="${key}" ${openNow.has(key) ? 'checked' : ''} class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"/>${label}</label>`).join('');
   showFormError('editError', '');
   renderSkillPreview();
   updateBioCount();
@@ -427,6 +444,20 @@ function openEditModal(focusId) {
 async function saveProfile(e) {
   e.preventDefault();
   const button = el('editSaveBtn');
+  // A profession has to be one from the list; an empty field leaves it unset
+  const typedProfession = el('editProfession').value.trim();
+  const profession = findProfession(typedProfession);
+  if (typedProfession && !profession) {
+    showFormError('editError', 'Pick a profession from the list. Choose Other if yours is not there.');
+    el('editProfession').focus();
+    return;
+  }
+  const years = el('editExperience').value.trim();
+  if (years && !(/^\d+$/.test(years) && Number(years) <= 70)) {
+    showFormError('editError', 'Years of experience must be a whole number from 0 to 70.');
+    el('editExperience').focus();
+    return;
+  }
   button.disabled = true;
   button.textContent = 'Saving...';
   showFormError('editError', '');
@@ -440,7 +471,10 @@ async function saveProfile(e) {
         department: el('editDept').value,
         division: el('editDiv').value,
         skills: el('editSkills').value,
-        bio: el('editBio').value
+        bio: el('editBio').value,
+        profession: profession ? profession.name : '',
+        experience_years: years ? Number(years) : 0,
+        open_to: [...el('editOpenTo').querySelectorAll('input:checked')].map(box => box.value).join(',')
       }
     });
     Object.assign(profile, result.profile);

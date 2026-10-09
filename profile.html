@@ -306,6 +306,19 @@ body.is-own .visitor-only { display: none !important; }
           <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editDiv">Division</label>
           <input type="text" id="editDiv" maxlength="40" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
         </div>
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editProfession">Profession</label>
+          <input type="text" id="editProfession" maxlength="80" list="professionOptions" placeholder="Type to search the list" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
+          <datalist id="professionOptions"></datalist>
+        </div>
+        <div>
+          <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editExperience">Years of experience</label>
+          <input type="number" id="editExperience" min="0" max="70" step="1" placeholder="Optional" class="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface">
+        </div>
+      </div>
+      <div>
+        <span class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block">Open to</span>
+        <div class="flex flex-wrap gap-x-4 gap-y-2" id="editOpenTo"></div>
       </div>
       <div>
         <label class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-1 block" for="editSkills">Skills (comma separated)</label>
@@ -428,5 +441,6 @@ body.is-own .visitor-only { display: none !important; }
 <div id="resumeSheet"></div>
 
 <script src="chat-common.js"></script>
+<script src="professions.js"></script>
 <script src="profile.js"></script>
 </body></html>
