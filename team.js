@@ -135,7 +135,9 @@ async function initTeams() {
   // 1. Draw what we knew last time straight away
   teams = cacheGet('teams') || [];
   renderRail();
-  const rememberedTeam = cacheGet('team-last');
+  // team.html?team=12 (the link College Hub gives for a group) opens that team instead of the last one used
+  const askedTeam = parseInt(new URLSearchParams(window.location.search).get('team'));
+  const rememberedTeam = askedTeam || cacheGet('team-last');
   const firstTeam = teams.find(t => t.id === rememberedTeam) || teams[0];
   if (firstTeam) openTeam(firstTeam.id);
   else if (!window.__teamsPrefetch) showEmptyState();
@@ -144,6 +146,8 @@ async function initTeams() {
   await refreshTeams();
   if (teams.length === 0) {
     showEmptyState();
+  } else if (askedTeam && askedTeam !== activeTeamId && teams.some(t => t.id === askedTeam)) {
+    openTeam(askedTeam);   // a team joined since the last visit is not in the saved list yet
   } else if (!teams.some(t => t.id === activeTeamId)) {
     openTeam(teams[0].id);
   }

@@ -56,6 +56,7 @@ async function loadAdmin() {
     showAdminBody(true);
     renderOverview(overview);
     loadUsers();
+    loadTeacherRequests();
   } catch (err) {
     if (err.status === 401 || err.status === 403) renderAdminGate();
     else if (!adminLoaded) renderAdminProblem(err.message);
@@ -207,6 +208,77 @@ function decideRequest(requestId, decision, name) {
 }
 
 // ==========================================
+// 3b. TEACHER ACCESS FOR COLLEGE HUB
+// ==========================================
+async function loadTeacherRequests() {
+  let requests;
+  try {
+    requests = await adminApi('/api/admin/teacher-requests');
+  } catch (err) {
+    el('teacherRequestsBody').innerHTML = `<tr><td colspan="6" class="text-center" style="color:#ba1a1a;padding:24px;">${escapeHtml(err.message)}</td></tr>`;
+    return;
+  }
+  if (!requests.length) {
+    el('teacherRequestsBody').innerHTML = '<tr><td colspan="6" class="text-center" style="color:#777587;padding:24px;">Nobody has asked for teacher access.</td></tr>';
+    return;
+  }
+  el('teacherRequestsBody').innerHTML = requests.map(request => {
+    const status = String(request.status || 'pending');
+    const actions = status === 'pending'
+      ? `<span class="flex gap-2"><button type="button" class="admin-btn good" data-teacher-request="${request.id}" data-action="approve">Approve</button><button type="button" class="admin-btn bad" data-teacher-request="${request.id}" data-action="decline">Decline</button></span>`
+      : '<span style="color:#777587;font-size:12px;">Settled</span>';
+    return `
+      <tr>
+        <td>
+          <a class="font-semibold hover:text-primary" href="profile.html?id=${request.user_id}">${escapeHtml(request.name)}</a>
+          <span class="block" style="color:#777587;font-size:12px;">${escapeHtml([request.profession, request.email].filter(Boolean).join(' · '))}</span>
+        </td>
+        <td style="color:#464555;">${escapeHtml(request.college)}</td>
+        <td style="color:#464555;max-width:260px;">${escapeHtml(request.note || '-')}</td>
+        <td style="color:#464555;">${escapeHtml(timeAgo(request.requested_at))}</td>
+        <td><span class="status-pill ${escapeHtml(status === 'approved' ? 'verified' : (status === 'declined' ? 'rejected' : 'pending'))}">${escapeHtml(status)}</span></td>
+        <td>${actions}</td>
+      </tr>`;
+  }).join('');
+}
+
+function decideTeacherRequest(requestId, action, name, college) {
+  const approving = action === 'approve';
+  window.showSystemModal(approving ? 'Approve teacher access' : 'Decline teacher access',
+    approving
+      ? `Give ${escapeHtml(name)} teacher access for ${escapeHtml(college)}? They will be able to form and change student groups, post to the notice board and read every class chat room of that college.`
+      : `Decline ${escapeHtml(name)}'s request for teacher access?`,
+    'confirm', async () => {
+      try {
+        await adminApi(`/api/admin/teacher-requests/${requestId}`, { method: 'POST', body: { action } });
+        showToast(approving ? 'Teacher access given.' : 'Request declined.');
+        loadTeacherRequests();
+        loadUsers();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }, approving ? 'Approve' : 'Decline');
+}
+
+function setTeacherAccess(userId, teacher) {
+  const user = usersShown.find(row => row.id === userId);
+  const name = user ? user.name : 'this account';
+  window.showSystemModal(teacher ? 'Give teacher access' : 'Remove teacher access',
+    teacher
+      ? `Make ${escapeHtml(name)} a teacher for ${escapeHtml(user && user.college_name ? user.college_name : 'their college')} on College Hub?`
+      : `Remove ${escapeHtml(name)}'s teacher access? Groups they created stay as they are.`,
+    'confirm', async () => {
+      try {
+        await adminApi(`/api/admin/users/${userId}/teacher`, { method: 'POST', body: { teacher } });
+        showToast(teacher ? 'Teacher access given.' : 'Teacher access removed.');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }, teacher ? 'Give access' : 'Remove');
+}
+
+// ==========================================
 // 4. ACCOUNTS
 // ==========================================
 async function loadUsers() {
@@ -229,7 +301,8 @@ async function loadUsers() {
 function userRowHtml(user) {
   const badges = [
     user.is_founder ? 'Founder' : (user.is_admin ? 'Admin' : ''),
-    user.is_ambassador ? 'Ambassador' : ''
+    user.is_ambassador ? 'Ambassador' : '',
+    user.is_teacher ? 'Teacher' : ''
   ].filter(Boolean).map(text => `<span class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-semibold uppercase tracking-wide">${text}</span>`).join(' ');
   const status = user.account_status;
   const buttons = [];
@@ -238,6 +311,8 @@ function userRowHtml(user) {
     if (status !== 'rejected') buttons.push(`<button type="button" class="admin-btn bad" data-user="${user.id}" data-set="rejected">Reject</button>`);
   }
   if (user.has_id_card) buttons.push(`<button type="button" class="admin-btn" data-user="${user.id}" data-idcard>View ID</button>`);
+  if (user.is_teacher) buttons.push(`<button type="button" class="admin-btn" data-user="${user.id}" data-teacher="0">Remove teacher</button>`);
+  else if (user.college_name) buttons.push(`<button type="button" class="admin-btn" data-user="${user.id}" data-teacher="1">Make teacher</button>`);
   return `
     <tr data-user-row="${user.id}">
       <td>
@@ -362,6 +437,13 @@ function bindAdminControls() {
     const userId = parseInt(button.dataset.user);
     if (button.dataset.set) changeAccountStatus(userId, button.dataset.set);
     else if ('idcard' in button.dataset) showIdCard(userId);
+    else if (button.dataset.teacher) setTeacherAccess(userId, button.dataset.teacher === '1');
+  });
+  el('teacherRequestsBody').addEventListener('click', (e) => {
+    const button = e.target.closest('[data-teacher-request]');
+    if (!button) return;
+    const row = button.closest('tr');
+    decideTeacherRequest(parseInt(button.dataset.teacherRequest), button.dataset.action, row.querySelector('a').textContent, row.children[1].textContent);
   });
   el('requestsBody').addEventListener('click', (e) => {
     const button = e.target.closest('[data-request]');

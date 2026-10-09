@@ -66,6 +66,7 @@ const HEADER_NAV = [
     ] },
     { label: 'Network', pages: [
         { label: 'Campus Network', href: 'college.html', icon: 'campus', text: 'People at your college' },
+        { label: 'College Hub', href: 'college-hub.html', icon: 'board', text: 'Groups, notices and class chat' },
         { label: 'My Network', href: 'network.html', icon: 'network', text: 'Followers and following' },
         { label: 'Saved Profiles', href: 'saved.html', icon: 'bookmark', text: 'People you bookmarked' }
     ] }
@@ -434,7 +435,8 @@ const BELL_ICONS = {
     team_invite: ['group_add', 'text-amber-600 bg-amber-100'],
     view: ['visibility', 'text-slate-600 bg-slate-100'],
     announcement: ['campaign', 'text-rose-600 bg-rose-100'],
-    account: ['verified_user', 'text-indigo-600 bg-indigo-100']
+    account: ['verified_user', 'text-indigo-600 bg-indigo-100'],
+    college: ['school', 'text-indigo-600 bg-indigo-100']
 };
 // A notification may only open one of our own pages
 const BELL_LINK_PATTERN = /^[a-z_-]+\.html(\?[\w=&%.-]*)?$/i;
