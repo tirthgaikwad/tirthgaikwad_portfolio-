@@ -79,6 +79,10 @@ async function api(path, { method = 'GET', body, timeout = 20000 } = {}) {
     let data = null;
     try { data = await res.json(); } catch (e) { /* empty body */ }
     if (res.status === 401) { handleLoggedOut(); throw new ApiError(401, 'Please log in again.'); }
+    if (res.status === 402 && typeof window.upgradePrompt === 'function') {
+      // A plan limit: the pop-up explains it and links to the plans
+      window.upgradePrompt(data && typeof data.detail === 'string' ? data.detail : '');
+    }
     if (!res.ok) {
       throw new ApiError(res.status, data && typeof data.detail === 'string' ? data.detail : 'Something went wrong. Please try again.');
     }
@@ -562,6 +566,7 @@ function personCardHtml(person, options = {}) {
         <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
           <span class="truncate">${escapeHtml(person.name || 'Unnamed')}</span>
           ${person.account_status === 'verified' ? '<span class="material-symbols-outlined text-[18px] text-primary shrink-0" title="Verified account">verified</span>' : ''}
+          ${window.roleBadgesHtml ? window.roleBadgesHtml(person) : ''}
           ${person.account_type === 'professional' ? '<span class="shrink-0 px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-semibold uppercase tracking-wide">Pro</span>' : ''}
         </h3>
         <p class="font-body-sm text-body-sm text-primary font-medium flex items-center gap-1 mt-0.5">

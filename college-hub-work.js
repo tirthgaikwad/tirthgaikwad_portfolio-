@@ -213,6 +213,9 @@ const marksText = (row, activity) => (activity.max_marks && row.marks !== null &
 
 function workHtml(activity) {
   if (!activity.accepts_work) return '';
+  if (!hub.licence) {
+    return `<div class="ch-work"><span>${icon('workspace_premium')}Handing in work and marks come with the institution licence.</span>${isTeacher() ? '<a class="ch-btn line small" href="pricing.html?tab=institution">See plans</a>' : ''}</div>`;
+  }
   const due = activity.submit_by;
   const passed = deadlinePassed(due);
   const chips = `<div class="ch-rules">

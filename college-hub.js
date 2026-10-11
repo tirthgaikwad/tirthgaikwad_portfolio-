@@ -155,8 +155,10 @@ function renderHub() {
   if (!member) return renderOutsider();
 
   el('hubCollege').textContent = hub.me.college || 'Your college';
+  const licence = hub.licence;
+  const licenceChip = licence ? `<span class="ch-chip ${licence.trial ? 'indigo' : 'green'}" title="Institution licence">${icon(licence.trial ? 'hourglass_top' : 'workspace_premium')}${escapeHtml(licence.name)} until ${escapeHtml(formatDate(licence.ends_at))}</span>` : '';
   el('hubSummary').innerHTML = isTeacher()
-    ? `<span class="ch-role">${icon('verified_user')}Teacher</span><span>You run the groups, the notice board and the chat rooms of this college.</span>`
+    ? `<span class="ch-role">${icon('verified_user')}Teacher</span><span>You run the groups, the notice board and the chat rooms of this college.</span>${licenceChip}${licence ? ' <a class="msg-link" href="institution.html">Analytics</a>' : ''}`
     : `<span>Your class: <b>${escapeHtml(classLabel(hub.me))}</b></span>`;
   el('hubStats').innerHTML = [
     [students().length, 'students'], [hub.groups.length, 'groups'], [activities().length, 'activities']
@@ -202,19 +204,12 @@ function renderOutsider() {
   if (request && request.status === 'pending') {
     action = `<p><b>Your request for teacher access for ${escapeHtml(request.college)} is waiting for an admin.</b></p>`;
   } else {
-    const declined = request && request.status === 'declined' ? `<p>Your last request (for ${escapeHtml(request.college)}) was declined. You can ask again.</p>` : '';
-    action = `${declined}
-      <div class="ch-form" style="max-width:460px;margin:18px auto 0;text-align:left">
-        <label>Tell the admin who you are <small>(optional)</small>
-          <textarea class="ch-textarea" id="teacherNote" maxlength="500" placeholder="For example: Assistant professor, Computer Engineering. Staff ID 1234."></textarea>
-        </label>
-        <p class="ch-form-error ch-hidden" id="teacherError" role="alert"></p>
-      </div>
-      <button class="ch-btn solid" type="button" data-act="request-teacher">${icon('how_to_reg')}Request teacher access</button>`;
+    const declined = request && request.status === 'declined' ? `<p>Your last request (for ${escapeHtml(request.college)}) was declined. You can apply again.</p>` : '';
+    action = `${declined}<a class="ch-btn solid" href="apply-teacher.html" style="margin-top:16px">${icon('how_to_reg')}Apply as a teacher</a>`;
   }
   el('hubOutsider').innerHTML = `<div class="ch-empty">${icon('school')}
     <h3>This page is for students and teachers of a college</h3>
-    <p>Students see it automatically for the college on their profile. If you teach at ${escapeHtml(hub.me.college || 'a college')}, ask for teacher access: an admin checks the request, and then you can form groups, post notices and read the class chat rooms.</p>
+    <p>Students see it automatically for the college on their profile. If you teach at ${escapeHtml(hub.me.college || 'a college')}, apply for teacher access with your staff ID: the founder checks it, and then you can form groups, post notices, take attendance and read the class chat rooms.</p>
     ${action}</div>`;
 }
 

@@ -348,7 +348,19 @@ function renderAttendance() {
 
 const statusChip = (status) => status === 'present' ? '<span class="ch-chip green">Present</span>' : status === 'late' ? '<span class="ch-chip indigo">Late</span>' : '<span class="ch-chip warn">Absent</span>';
 
+// Attendance needs the institution licence (or the free trial)
+function licenceWall(what) {
+  return `<div class="ch-empty">${icon('workspace_premium')}<h3>${escapeHtml(what)} comes with the institution licence</h3>
+    <p>Your college's free trial has ended or has not started. The notice board, groups, chat, calendar, resources and Q&amp;A stay free.</p>
+    <a class="ch-btn solid" href="pricing.html?tab=institution">${icon('sell')}See institution plans</a></div>`;
+}
+
 function renderTeacherAttendance() {
+  if (!hub.licence) {
+    el('attendanceBar').innerHTML = '<h2 class="ch-bar-title">Attendance</h2>';
+    el('attendanceBody').innerHTML = licenceWall('Attendance');
+    return;
+  }
   const classes = classList();
   if (att.classKey && !classes.some(item => item.key === att.classKey)) att.classKey = '';
   if (!att.classKey && classes.length) att.classKey = classes.some(item => item.key === `${norm(hub.me.department)}|${norm(hub.me.division)}`) ? `${norm(hub.me.department)}|${norm(hub.me.division)}` : classes[0].key;

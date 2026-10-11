@@ -191,10 +191,23 @@ function filteredPeople(options = {}) {
   } else if (view.sort === 'experience') {
     list.sort((a, b) => (b.p.years - a.p.years) || (b.followers_count - a.followers_count) || (b.id - a.id));
   } else {
+    const boost = (person) => (person.plan === 'premium_plus' ? 1 : 0);   // Premium Plus profile boost
     const scores = new Map(list.map(person => [person.id, matchScore(person, tokens)]));
-    list.sort((a, b) => (scores.get(b.id) - scores.get(a.id)) || (b.followers_count - a.followers_count) || (b.id - a.id));
+    list.sort((a, b) => (scores.get(b.id) - scores.get(a.id)) || (boost(b) - boost(a)) || (b.followers_count - a.followers_count) || (b.id - a.id));
   }
   return list;
+}
+
+// Advanced filters (open-to, experience sort, more than one must-have skill) come with the paid plans
+const ADVANCED_PLANS = ['student_pro', 'premium', 'premium_plus'];
+function advancedAllowed() {
+  const me = window.currentUserProfile || {};
+  return Number(me.is_founder) === 1 || ADVANCED_PLANS.includes(me.plan);
+}
+function refuseAdvanced(what) {
+  if (advancedAllowed()) return false;
+  window.upgradePrompt(`${what} is an advanced filter, part of Student Pro and the Premium plans.`);
+  return true;
 }
 
 // How many people each group and each profession has
@@ -369,6 +382,7 @@ function cardHtml(person, position = 0) {
         <h3 class="pp-name">
           <a class="truncate" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
           ${person.account_status === 'verified' ? '<span class="material-symbols-outlined pp-ico" title="Verified account">verified</span>' : ''}
+          ${roleBadgesHtml(person)}
         </h3>
         ${workplace ? `<p class="pp-meta" title="${escapeHtml(workplace)}">${icon(person.p.professional ? 'apartment' : 'school')}<span>${escapeHtml(workplace)}</span></p>` : ''}
         ${field || city ? `<p class="pp-meta" title="${escapeHtml([field, city].filter(Boolean).join(' · '))}">${icon(city ? 'location_on' : 'category')}<span>${escapeHtml([field, city].filter(Boolean).join(' · '))}</span></p>` : ''}
@@ -499,8 +513,16 @@ function bindControls() {
 
   el('proOpenTo').innerHTML = '<option value="">Open to anything</option>'
     + OPEN_TO_OPTIONS.map(([key, label]) => `<option value="${key}">Open to ${label.toLowerCase()}</option>`).join('');
-  el('proOpenTo').addEventListener('change', (e) => { view.openTo = e.target.value; viewChanged(); });
-  el('proSort').addEventListener('change', (e) => { view.sort = e.target.value; viewChanged(); });
+  el('proOpenTo').addEventListener('change', (e) => {
+    if (e.target.value && refuseAdvanced('Filtering by what people are open to')) { e.target.value = view.openTo; return; }
+    view.openTo = e.target.value;
+    viewChanged();
+  });
+  el('proSort').addEventListener('change', (e) => {
+    if (e.target.value === 'experience' && refuseAdvanced('Sorting by experience')) { e.target.value = view.sort; return; }
+    view.sort = e.target.value;
+    viewChanged();
+  });
   TOGGLES.forEach(key => {
     document.querySelector(`[data-toggle="${key}"]`).addEventListener('click', () => { view[key] = !view[key]; viewChanged(); });
   });
@@ -567,7 +589,9 @@ function pickProfession(group, profession) {
 
 function toggleSkill(skill) {
   const key = norm(skill);
-  view.skills = view.skills.some(have => norm(have) === key) ? view.skills.filter(have => norm(have) !== key) : [...view.skills, skill];
+  const adding = !view.skills.some(have => norm(have) === key);
+  if (adding && view.skills.length >= 1 && refuseAdvanced('Requiring several skills at once')) return;
+  view.skills = adding ? [...view.skills, skill] : view.skills.filter(have => norm(have) !== key);
   viewChanged();
 }
 

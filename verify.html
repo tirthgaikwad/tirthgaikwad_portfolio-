@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Connect2Minds | Verification desk</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+/* Custom Modal Styles */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #c7c4d8; animation: slideDown 0.3s ease; }
+.custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0b1c30;}
+.custom-modal p { color: #464555; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-outline-modal { padding: 10px 20px; border: 1px solid #c7c4d8; border-radius: 8px; background: transparent; color: #0b1c30; font-weight: 600; cursor: pointer; transition: 0.2s;}
+.btn-outline-modal:hover { background: #eff4ff; }
+.btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+.btn-primary-modal:hover { background: #2b1ea6; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+/* Hide Scrollbar for Horizontal Nav */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+</style><script src="https://cdn.tailwindcss.com"></script><link href="header.css" rel="stylesheet"/><link href="college-hub.css" rel="stylesheet"/><link href="apply.css" rel="stylesheet"/><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="app-header" id="appHeader"></header>
+<script>renderAppHeader()</script><main class="w-full pt-16 bg-slate-50 min-h-screen">
+<div class="ch-hero">
+<div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop pt-7 pb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+<div class="min-w-0">
+<p class="ch-eyebrow"><span class="material-symbols-outlined ch-ico">fact_check</span>Verification desk</p>
+<h1 class="ch-title" id="pageTitle">Verify students</h1>
+<div class="ch-summary" id="pageSummary"><span id="deskScope">Loading your departments…</span></div>
+</div>
+<div class="ch-stats vd-stats" id="deskHead"></div>
+</div>
+</div><div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop">
+<div aria-label="Queues" class="ch-tabs" id="deskTabs" role="tablist">
+<button aria-selected="true" class="ch-tab" data-tab="mine" role="tab" type="button"><span class="material-symbols-outlined ch-ico">inbox</span>Waiting</button>
+<button aria-selected="false" class="ch-tab" data-tab="needs_info" role="tab" type="button"><span class="material-symbols-outlined ch-ico">photo_camera</span>Asked for a new photo</button>
+<button aria-selected="false" class="ch-tab ch-hidden" data-tab="unassigned" id="tabUnassigned" role="tab" type="button"><span class="material-symbols-outlined ch-ico">help_center</span>Unassigned</button>
+</div></div><div class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-6"><div class="ch-bar" id="deskBar"></div><div class="vd-list" id="deskList"><div class="skeleton" style="height:110px"></div></div><p class="vd-keys">Keyboard: <kbd>J</kbd>/<kbd>K</kbd> move, <kbd>A</kbd> approve, <kbd>R</kbd> reject, <kbd>N</kbd> not my department.</p></div>
+</main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Institutional Privacy', 'Loading privacy documentation...', 'alert')">Institutional Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Academic Terms', 'Loading Terms of Service...', 'alert')">Academic Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Student Honor Code', 'Loading institutional honor code guidelines...', 'alert')">Student Honor Code</a><a class="hover:text-primary transition-colors text-decoration-none" href="javascript:void(0)" onclick="window.showSystemModal('Support Desk', 'Opening ticketing system for IT support.', 'alert')">Support Desk</a></div></div></footer>
+
+<!-- CUSTOM SYSTEM ALERTS MODAL -->
+<div class="modal-overlay" id="systemModal">
+    <div class="custom-modal">
+        <h3 id="systemModalTitle">Notification</h3>
+        <p id="systemModalMessage">Message goes here.</p>
+        <div class="modal-buttons">
+            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- ONE POP-UP FOR THE FORMS OF THIS PAGE (pages-common.js openModal) -->
+<div class="modal-overlay" id="pgModal">
+    <div aria-labelledby="pgModalTitle" aria-modal="true" class="custom-modal ch-modal" role="dialog">
+        <h3 id="pgModalTitle"></h3>
+        <div class="ch-form" id="pgModalBody"></div>
+        <p class="ch-form-error ch-hidden" id="pgModalError" role="alert" style="margin:14px 0 0;"></p>
+        <div class="modal-buttons" style="margin-top:20px;">
+            <button class="btn-outline-modal" id="pgModalCancel" type="button">Cancel</button>
+            <button class="btn-primary-modal" id="pgModalConfirm" type="button">Save</button>
+        </div>
+    </div>
+</div>
+<script src="chat-common.js"></script>
+<script src="pages-common.js"></script>
+<script src="verify.js"></script>
+</body>
+</html>

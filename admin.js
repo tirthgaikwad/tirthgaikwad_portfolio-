@@ -76,9 +76,9 @@ function showAdminBody(visible) {
 function renderAdminGate() {
   localStorage.removeItem('adminToken');
   showAdminBody(false);
-  el('adminGate').innerHTML = peopleStateBlock('lock', 'Admins only',
-    'This page is for platform admins. If you are one, sign in again through the admin form on the login page.',
-    '<a href="login.html" class="btn-primary-modal" style="display:inline-block;text-decoration:none;">Go to login</a>');
+  el('adminGate').innerHTML = peopleStateBlock('lock', 'Founder only',
+    'This dashboard is for the founder. Admins verify accounts from the Verification desk. If you are the founder, sign in again through the admin form on the login page with your founder code.',
+    '<a href="verify.html" class="btn-primary-modal" style="display:inline-block;text-decoration:none;margin-right:8px;">Verification desk</a><a href="login.html#admin" class="btn-outline-modal" style="display:inline-block;text-decoration:none;">Founder login</a>');
 }
 
 function renderAdminProblem(message) {

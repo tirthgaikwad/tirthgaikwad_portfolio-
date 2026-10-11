@@ -8,6 +8,7 @@ import math
 import asyncio
 import urllib.request
 import urllib.error
+import httpx
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
@@ -76,13 +77,40 @@ class DBUser(Base):
     # College Hub: the college (trimmed, lower-cased name) this person is an approved teacher for; empty for everyone else
     teacher_of = Column(String, default="")
 
+    # Section 17: the department a verification request was passed on to (empty: the profile's own department)
+    verify_department = Column(String, default="")
+    # Section 19: "recruiters may contact me"
+    recruiter_contact_ok = Column(Integer, default=0)
+    # Section 18: the best active personal plan and its last day, kept here for badges and limits
+    plan = Column(String, default="")
+    plan_until = Column(String, default="")
+
 class DBAdminRequest(Base):
     __tablename__ = "admin_requests"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
     name = Column(String)
-    status = Column(String, default="Pending")
+    status = Column(String, default="pending")    # pending, needs_info, approved, declined, withdrawn, revoked (old rows: Pending/Approved/Rejected)
     requested_at = Column(String)
+    # The application form (section 17)
+    college_name = Column(String, default="")
+    college_key = Column(String, default="")
+    departments = Column(String, default="[]")    # JSON list of department names
+    role_at_college = Column(String, default="")
+    staff_id = Column(String, default="")
+    official_email = Column(String, default="")
+    phone = Column(String, default="")
+    hours = Column(Integer, default=0)
+    languages = Column(String, default="")
+    id_proof_url = Column(String, default="")
+    letter_url = Column(String, default="")
+    motivation = Column(String, default="")
+    decision_note = Column(String, default="")
+    info_question = Column(String, default="")
+    info_answer = Column(String, default="")
+    decided_by = Column(Integer, nullable=True)
+    decided_at = Column(String, default="")
+    updated_at = Column(String, default="")
 
 class DBHistory(Base):
     __tablename__ = "history"
@@ -154,6 +182,18 @@ class DBBoardPost(Base):
     author_id = Column(Integer, index=True)
     created_at = Column(String)
     is_urgent = Column(Integer, default=0)         # urgent posts are listed first
+    # Sponsored challenges (section 19)
+    is_sponsored = Column(Integer, default=0)
+    kind = Column(String, default="post")          # post, bounty, hackathon
+    sponsor_tier = Column(String, default="")      # basic, featured, hackathon
+    sponsor_name = Column(String, default="")
+    sponsor_url = Column(String, default="")
+    sponsor_logo = Column(String, default="")
+    prize = Column(String, default="")
+    deadline = Column(String, default="")
+    sponsored_until = Column(String, default="")
+    max_team_size = Column(Integer, default=1)
+    winners_announced = Column(Integer, default=0)
 
 class DBBoardApplication(Base):
     __tablename__ = "board_applications"
@@ -365,6 +405,55 @@ SCHEMA_UPGRADES = [
     "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS submit_by VARCHAR DEFAULT ''",
     "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS max_marks INTEGER DEFAULT 0",
     "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS weekly_checkins INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_department VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS recruiter_contact_ok INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_until VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS college_name VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS college_key VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS departments VARCHAR DEFAULT '[]'",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS role_at_college VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS staff_id VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS official_email VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS phone VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS hours INTEGER DEFAULT 0",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS languages VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS id_proof_url VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS letter_url VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS motivation VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS decision_note VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS info_question VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS info_answer VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS decided_by INTEGER",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS decided_at VARCHAR DEFAULT ''",
+    "ALTER TABLE admin_requests ADD COLUMN IF NOT EXISTS updated_at VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS department VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS designation VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS employee_id VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS official_email VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS phone VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS subjects VARCHAR DEFAULT '[]'",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS years INTEGER DEFAULT 0",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS id_proof_url VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS letter_url VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS profile_link VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS decision_note VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS info_question VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS info_answer VARCHAR DEFAULT ''",
+    "ALTER TABLE teacher_requests ADD COLUMN IF NOT EXISTS updated_at VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS is_sponsored INTEGER DEFAULT 0",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS kind VARCHAR DEFAULT 'post'",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS sponsor_tier VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS sponsor_name VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS sponsor_url VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS sponsor_logo VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS prize VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS deadline VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS sponsored_until VARCHAR DEFAULT ''",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS max_team_size INTEGER DEFAULT 1",
+    "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS winners_announced INTEGER DEFAULT 0",
+    "UPDATE admin_requests SET status = lower(status) WHERE status IN ('Pending', 'Approved', 'Rejected')",
+    "CREATE INDEX IF NOT EXISTS ix_subscriptions_owner ON subscriptions (user_id, status, ends_at)",
 ]
 
 async def backfill_cleared_chats():
@@ -392,6 +481,7 @@ async def startup_event():
             await conn.execute(text(statement))
     await backfill_cleared_chats()
     spawn_background(keep_pool_warm())
+    spawn_background(subscription_watch())
 
 async def keep_pool_warm():
     """The database is far away and new connections are slow to open, so keep a few open and fresh."""
@@ -628,6 +718,7 @@ class ProfileUpdate(BaseModel):
     profession: Optional[str] = None
     open_to: Optional[str] = None
     experience_years: Optional[int] = None
+    recruiter_contact_ok: Optional[bool] = None
 
 class UserLogin(BaseModel):
     roll_no: str
@@ -1090,9 +1181,9 @@ async def get_all_profiles(
 PUBLIC_PROFILE_FIELDS = (
     "id", "name", "college_name", "department", "city", "division", "roll_no", "skills", "bio",
     "profile_pic", "banner_pic", "account_type", "github_username", "is_admin", "account_status",
-    "profession", "open_to", "experience_years"
+    "profession", "open_to", "experience_years", "is_founder", "teacher_of", "plan", "recruiter_contact_ok"
 )
-NUMBER_FIELDS = ("is_admin", "experience_years")   # sent as 0 when empty; every other empty field is sent as ""
+NUMBER_FIELDS = ("is_admin", "experience_years", "is_founder", "recruiter_contact_ok")   # sent as 0 when empty; every other empty field is sent as ""
 
 def public_profile_columns():
     return [getattr(DBUser, field) for field in PUBLIC_PROFILE_FIELDS]
@@ -1189,7 +1280,7 @@ async def get_profile_options(current_user_id: int = Depends(get_current_user_id
 # 5a. DISCOVER TALENT DIRECTORY
 # ==========================================
 DIRECTORY_FIELDS = ("id", "name", "college_name", "department", "city", "skills", "profile_pic", "account_type", "account_status", "github_username",
-                    "profession", "open_to", "experience_years")
+                    "profession", "open_to", "experience_years", "is_admin", "is_founder", "teacher_of", "plan")
 DIRECTORY_BIO_LENGTH = 240
 DIRECTORY_LIMIT = 1000
 
@@ -1444,6 +1535,8 @@ async def update_profile(
         values["open_to"] = clean_open_to(profile_data.open_to)
     if profile_data.experience_years is not None:
         values["experience_years"] = clean_experience_years(profile_data.experience_years)
+    if profile_data.recruiter_contact_ok is not None:
+        values["recruiter_contact_ok"] = 1 if profile_data.recruiter_contact_ok else 0
 
     # Pictures are changed by uploading; this only accepts an address our own upload endpoints produced
     for field, kind in (("profile_pic", "profile"), ("banner_pic", "banner")):
@@ -1828,6 +1921,8 @@ async def store_message(sender_id: int, receiver_id: int, content: str):
         refusal, is_muted = await get_messaging_rules(db, sender_id, receiver_id)
         if refusal:
             raise MessageRefused(refusal)
+        if (sender_id, receiver_id) not in KNOWN_CONVERSATIONS:
+            await check_new_conversation(db, sender_id, receiver_id)
         new_msg = DBMessage(
             sender_id=sender_id,
             receiver_id=receiver_id,
@@ -2287,10 +2382,13 @@ async def open_pro_chat(user_id: int, db: AsyncSession = Depends(get_fast_db), c
         return {"pro": False, "reason": "not_professional"}
     if row.has_messages:
         return {"pro": False, "reason": "existing_chat"}
+    await check_limit(current_user_id, "pro_intros")
     await db.execute(
         pg_insert(DBProChat).values(user_a=low, user_b=high, created_at=utc_now_iso())
         .on_conflict_do_nothing(index_elements=["user_a", "user_b"])
     )
+    spawn_background(bump_usage(current_user_id, "pro_intros"))
+    KNOWN_CONVERSATIONS.add((current_user_id, user_id))   # the introduction is the conversation it opened
     return {"pro": True}
 
 
@@ -2747,12 +2845,14 @@ def board_posts_query(viewer_id: int):
         select(
             DBBoardPost.id, DBBoardPost.category, DBBoardPost.title, DBBoardPost.description, DBBoardPost.skills_required,
             DBBoardPost.created_at, DBBoardPost.author_id, DBBoardPost.is_urgent,
+            DBBoardPost.is_sponsored, DBBoardPost.kind, DBBoardPost.sponsor_tier, DBBoardPost.sponsor_name, DBBoardPost.sponsor_url, DBBoardPost.sponsor_logo,
+            DBBoardPost.prize, DBBoardPost.deadline, DBBoardPost.sponsored_until, DBBoardPost.max_team_size, DBBoardPost.winners_announced,
             DBUser.name.label("author_name"), author_pic, DBUser.college_name.label("author_college"),
             select(func.count()).select_from(DBBoardApplication).where(DBBoardApplication.post_id == DBBoardPost.id).scalar_subquery().label("applicant_count"),
             exists().where(DBBoardApplication.post_id == DBBoardPost.id, DBBoardApplication.user_id == viewer_id).label("has_applied"),
         )
         .outerjoin(DBUser, DBBoardPost.author_id == DBUser.id)
-        .order_by(DBBoardPost.id.desc())
+        .order_by(case((and_(DBBoardPost.is_sponsored == 1, DBBoardPost.sponsored_until >= datetime.now().date().isoformat()), 0), else_=1), DBBoardPost.id.desc())
     )
 
 def board_card(row) -> dict:
@@ -2770,6 +2870,11 @@ def board_card(row) -> dict:
         "author_college": row.author_college or "",
         "applicant_count": row.applicant_count or 0,
         "has_applied": bool(row.has_applied),
+        "is_sponsored": bool(row.is_sponsored) and (row.sponsored_until or "") >= datetime.now().date().isoformat(),
+        "was_sponsored": bool(row.is_sponsored),
+        "kind": row.kind or "post", "sponsor_tier": row.sponsor_tier or "", "sponsor_name": row.sponsor_name or "", "sponsor_url": row.sponsor_url or "",
+        "sponsor_logo": row.sponsor_logo or "", "prize": row.prize or "", "deadline": row.deadline or "", "max_team_size": row.max_team_size or 1,
+        "winners_announced": bool(row.winners_announced),
     }
 
 def public_board_card(card: dict) -> dict:
@@ -2814,6 +2919,8 @@ async def get_board(current_user_id: int = Depends(get_current_user_id)):
     return {
         "posts": [board_card(row) for row in post_rows],
         "viewer_is_admin": bool(viewer_rows and viewer_rows[0][0] == 1),
+        "viewer_is_founder": await founder_flag(current_user_id),
+        "sponsor_credits": sum(sub.credits or 0 for sub in await sponsor_credits(current_user_id)),
         "categories": list(BOARD_CATEGORIES),
     }
 
@@ -2876,6 +2983,7 @@ async def delete_board_post(
     if not row:
         await explain_missing_board_post(db, post_id, "delete")
     spawn_background(run_one_off(delete(DBBoardApplication).where(DBBoardApplication.post_id == post_id)))
+    spawn_background(run_one_off(delete(DBChallengeSubmission).where(DBChallengeSubmission.post_id == post_id)))
     spawn_background(log_activity_later(current_user_id, "Post Deleted", f"You removed the post: {row[0]}."))
     spawn_background(broadcast_directory({"type": "board_post_removed", "post_id": post_id}))
     return {"message": "Post deleted successfully."}
@@ -2893,11 +3001,15 @@ async def apply_to_board_post(
         raise HTTPException(status_code=400, detail=f"Your note is too long. The limit is {BOARD_NOTE_LIMIT} characters.")
 
     my_name = select(DBUser.name).where(DBUser.id == current_user_id).scalar_subquery()
-    post = (await db.execute(select(DBBoardPost.author_id, DBBoardPost.title, my_name).where(DBBoardPost.id == post_id))).first()
+    already = exists().where(DBBoardApplication.post_id == post_id, DBBoardApplication.user_id == current_user_id)
+    post = (await db.execute(select(DBBoardPost.author_id, DBBoardPost.title, my_name, DBBoardPost.is_sponsored, already).where(DBBoardPost.id == post_id))).first()
     if not post:
         raise HTTPException(status_code=404, detail="This post is no longer on the board.")
     if post[0] == current_user_id:
         raise HTTPException(status_code=400, detail="You cannot apply to your own post.")
+    counts_toward_limit = not post[3] and not post[4]   # registering for a sponsored challenge is always free
+    if counts_toward_limit:
+        await check_limit(current_user_id, "board_applications")
 
     now_iso = utc_now_iso()
     inserted = await db.execute(
@@ -2907,6 +3019,8 @@ async def apply_to_board_post(
         .returning(DBBoardApplication.id)
     )
     if inserted.first():
+        if counts_toward_limit:
+            spawn_background(bump_usage(current_user_id, "board_applications"))
         spawn_background(create_notification(post[0], "board_reply", f"{post[2] or 'Someone'} applied to your post: {post[1]}", now_iso, "board.html?mine=1"))
         spawn_background(log_activity_later(current_user_id, "Applied to Opportunity", f"You applied to: {post[1]}."))
         spawn_background(broadcast_applicant_count(post_id))
@@ -3067,6 +3181,8 @@ async def create_team(
     name = team_data.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Team name is required.")
+    owned = (await db.execute(select(func.count()).select_from(DBTeam).where(DBTeam.created_by == current_user_id, func.coalesce(DBTeam.college_key, "") == ""))).scalar() or 0
+    await check_limit(current_user_id, "teams", used=owned)
     now_iso = utc_now_iso()
     new_team = DBTeam(
         name=name[:80],
@@ -4287,20 +4403,8 @@ FOUNDER_NAME = "Gopale Omkar Ravindra"
 FOUNDER_CODE = os.getenv("FOUNDER_CODE")  # Founder login is disabled when unset
 
 @app.post("/api/admin/apply")
-async def apply_for_admin(db: AsyncSession = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
-    existing = await db.execute(select(DBAdminRequest).filter(DBAdminRequest.user_id == current_user.id))
-    if existing.scalars().first():
-        raise HTTPException(status_code=400, detail="You have already applied for admin access.")
-    
-    req = DBAdminRequest(
-        user_id=current_user.id,
-        name=current_user.name,
-        status="Pending",
-        requested_at=utc_now_iso()
-    )
-    db.add(req)
-    await db.commit()
-    return {"message": "Admin request submitted successfully."}
+async def apply_for_admin():
+    raise HTTPException(status_code=410, detail="Apply on the 'Apply as admin' page (apply-admin.html).")
 
 @app.post("/api/admin/login")
 @limiter.limit("5/minute")
@@ -4314,8 +4418,7 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
             raise HTTPException(status_code=404, detail="Please create a normal account with your name first before claiming Founder access.")
         
         founder_user.is_founder = 1
-        founder_user.is_admin = 1
-        founder_user.account_type = "premium" 
+        founder_user.is_admin = 1   # kept so older checks still let the founder in; new code asks is_founder first
         await db.commit()
         
         access_token = create_access_token(data={"sub": str(founder_user.id)})
@@ -4360,11 +4463,25 @@ async def get_current_admin(request: Request, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=401, detail="Admin authentication required.")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("role") != "admin" and payload.get("role") != "founder":
-            raise HTTPException(status_code=403, detail="Insufficient permissions.")
-        return payload
-    except:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid admin token.")
+    if payload.get("role") not in ("admin", "founder"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions.")
+    # A token outlives a revoked admin, so the flag is checked again every time
+    rows = await fetch_one_off(select(DBUser.is_admin, DBUser.is_founder).where(DBUser.id == int(payload.get("sub") or 0)))
+    if not rows or ((rows[0].is_admin or 0) != 1 and (rows[0].is_founder or 0) != 1):
+        raise HTTPException(status_code=401, detail="Admin access has been removed.")
+    return payload
+
+async def founder_flag(user_id: int) -> bool:
+    rows = await fetch_one_off(select(DBUser.is_founder).where(DBUser.id == user_id))
+    return bool(rows) and (rows[0][0] or 0) == 1
+
+async def get_founder_admin(admin_data: dict = Depends(get_current_admin)) -> dict:
+    """The older admin-token routes that are now founder-only (the accounts dashboard)."""
+    if admin_data.get("role") != "founder" or not await founder_flag(int(admin_data["sub"])):
+        raise HTTPException(status_code=403, detail="Only the founder can do this.")
+    return admin_data
 
 @app.get("/api/admin/requests", response_model=List[AdminRequestResponse])
 async def get_admin_requests(db: AsyncSession = Depends(get_db), admin_data: dict = Depends(get_current_admin)):
@@ -4373,6 +4490,7 @@ async def get_admin_requests(db: AsyncSession = Depends(get_db), admin_data: dic
 
 @app.post("/api/admin/requests/{req_id}/accept")
 async def accept_admin(req_id: int, db: AsyncSession = Depends(get_db), admin_data: dict = Depends(get_current_admin)):
+    raise HTTPException(status_code=410, detail="Decide admin applications in the Founder console, where a department scope is given.")
     if admin_data.get("role") != "founder":
         raise HTTPException(status_code=403, detail="Only the founder can accept new admins.")
         
@@ -4393,6 +4511,7 @@ async def accept_admin(req_id: int, db: AsyncSession = Depends(get_db), admin_da
 
 @app.post("/api/admin/requests/{req_id}/reject")
 async def reject_admin(req_id: int, db: AsyncSession = Depends(get_db), admin_data: dict = Depends(get_current_admin)):
+    raise HTTPException(status_code=410, detail="Decide admin applications in the Founder console.")
     if admin_data.get("role") != "founder":
         raise HTTPException(status_code=403, detail="Only the founder can reject new admins.")
         
@@ -4423,10 +4542,10 @@ async def get_admin_stats(db: AsyncSession = Depends(get_db), admin_data: dict =
 
 GROWTH_WEEKS = 12
 ADMIN_USERS_PAGE = 25
-ACCOUNT_STATUSES = ("pending", "verified", "rejected", "appealed", "active")
+ACCOUNT_STATUSES = ("pending", "verified", "rejected", "appealed", "active", "needs_info")
 
 @app.get("/api/admin/overview")
-async def get_admin_overview(admin_data: dict = Depends(get_current_admin)):
+async def get_admin_overview(admin_data: dict = Depends(get_founder_admin)):
     """Everything the admin dashboard shows on load, in one request."""
     def count_of(model, *conditions):
         query = select(func.count()).select_from(model)
@@ -4492,7 +4611,7 @@ async def get_admin_users(
     q: str = "",
     status: str = "",
     page: int = 1,
-    admin_data: dict = Depends(get_current_admin)
+    admin_data: dict = Depends(get_founder_admin)
 ):
     """Accounts for the admin dashboard, searchable and paged. Never returns password hashes."""
     conditions = []
@@ -4531,7 +4650,7 @@ async def get_admin_users(
 
 
 @app.get("/api/admin/users/{user_id}/id-card")
-async def get_admin_user_id_card(user_id: int, admin_data: dict = Depends(get_current_admin)):
+async def get_admin_user_id_card(user_id: int, admin_data: dict = Depends(get_founder_admin)):
     """The ID document a person uploaded at sign-up, for checking an account by hand."""
     rows = await fetch_one_off(select(DBUser.id_card_image).where(DBUser.id == user_id))
     if not rows or not rows[0][0]:
@@ -4547,7 +4666,7 @@ async def set_account_status(
     user_id: int,
     change: AccountStatusChange,
     db: AsyncSession = Depends(get_fast_db),
-    admin_data: dict = Depends(get_current_admin)
+    admin_data: dict = Depends(get_founder_admin)
 ):
     """Verify or reject an account. This is where pending and appealed accounts are settled."""
     if change.status not in ("verified", "rejected", "pending"):
@@ -4581,7 +4700,7 @@ async def send_announcement(
     request: Request,
     announcement: Announcement,
     db: AsyncSession = Depends(get_fast_db),
-    admin_data: dict = Depends(get_current_admin)
+    admin_data: dict = Depends(get_founder_admin)
 ):
     """Send one bell notification to every account, and show it at once to everyone who is online."""
     message = announcement.message.strip()
@@ -4653,6 +4772,7 @@ async def save_research_report(
     saved = (await db.execute(select(func.count()).select_from(DBResearchReport).where(DBResearchReport.user_id == current_user_id))).scalar() or 0
     if saved >= RESEARCH_REPORT_LIMIT:
         raise HTTPException(status_code=400, detail=f"You can keep {RESEARCH_REPORT_LIMIT} reports. Delete one to save another.")
+    await check_limit(current_user_id, "research_saves", used=saved)
 
     new_report = DBResearchReport(user_id=current_user_id, topic=topic, content=content, created_at=utc_now_iso())
     db.add(new_report)
@@ -4730,10 +4850,25 @@ class DBTeacherRequest(Base):
     college_key = Column(String, index=True)
     college_name = Column(String, default="")     # as the person wrote it, for the admin to read
     note = Column(String, default="")
-    status = Column(String, default="pending")    # pending, approved, declined
+    status = Column(String, default="pending")    # pending, needs_info, approved, declined, withdrawn
     requested_at = Column(String)
     decided_by = Column(Integer, nullable=True)
     decided_at = Column(String, default="")
+    # The application form (section 17)
+    department = Column(String, default="")
+    designation = Column(String, default="")
+    employee_id = Column(String, default="")
+    official_email = Column(String, default="")
+    phone = Column(String, default="")
+    subjects = Column(String, default="[]")
+    years = Column(Integer, default=0)
+    id_proof_url = Column(String, default="")
+    letter_url = Column(String, default="")
+    profile_link = Column(String, default="")
+    decision_note = Column(String, default="")
+    info_question = Column(String, default="")
+    info_answer = Column(String, default="")
+    updated_at = Column(String, default="")
 
 class DBCollegePost(Base):
     """One entry on a college's notice board: a notice, or an activity that groups are formed for."""
@@ -5015,7 +5150,7 @@ async def get_college_hub(current_user_id: int = Depends(get_current_user_id)):
     key = me["key"]
     picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("profile_pic")
     team_ids = select(DBTeam.id).where(DBTeam.college_key == key)
-    people, groups, members, posts, settings, extras = await asyncio.gather(
+    people, groups, members, posts, settings, extras, licence = await asyncio.gather(
         fetch_one_off(
             select(DBUser.id, DBUser.name, DBUser.college_name, DBUser.department, DBUser.division, picture, DBUser.teacher_of)
             .where(hub_people_clause(key)).order_by(DBUser.name).limit(HUB_PEOPLE_LIMIT)
@@ -5025,6 +5160,7 @@ async def get_college_hub(current_user_id: int = Depends(get_current_user_id)):
         fetch_one_off(select(DBCollegePost).where(DBCollegePost.college_key == key).order_by(DBCollegePost.pinned.desc(), DBCollegePost.id.desc()).limit(300)),
         fetch_one_off(select(DBCollegeSetting.students_can_form_groups).where(DBCollegeSetting.college_key == key)),
         hub_extras(key, me),
+        college_licence(key),
     )
 
     teacher_ids = {row.id for row in people if (row.teacher_of or "") == key}
@@ -5045,6 +5181,7 @@ async def get_college_hub(current_user_id: int = Depends(get_current_user_id)):
         "checkins": extras["checkins"],
         "events": [row for row in extras["events"] if addressed_to(row["department"], row["division"], me)],
         "today": datetime.now().date().isoformat(),
+        "licence": licence,
         "groups": [{
             "id": team.id, "name": team.name or "", "topic": team.topic or "", "activity_id": team.activity_id,
             "created_by": team.created_by, "teacher_managed": bool(team.teacher_managed), "open_to_join": bool(team.open_to_join),
@@ -5084,7 +5221,7 @@ async def request_teacher_access(body: TeacherRequestCreate, db: AsyncSession = 
 
 
 @app.get("/api/admin/teacher-requests")
-async def get_teacher_requests(admin_data: dict = Depends(get_current_admin)):
+async def get_teacher_requests(admin_data: dict = Depends(get_founder_admin)):
     """Teacher-access requests, the waiting ones first."""
     rows = await fetch_one_off(
         select(DBTeacherRequest, DBUser.name, DBUser.email, DBUser.profession, DBUser.account_status)
@@ -5100,7 +5237,7 @@ async def get_teacher_requests(admin_data: dict = Depends(get_current_admin)):
 
 
 @app.post("/api/admin/teacher-requests/{request_id}")
-async def decide_teacher_request(request_id: int, decision: TeacherDecision, db: AsyncSession = Depends(get_fast_db), admin_data: dict = Depends(get_current_admin)):
+async def decide_teacher_request(request_id: int, decision: TeacherDecision, db: AsyncSession = Depends(get_fast_db), admin_data: dict = Depends(get_founder_admin)):
     if decision.action not in ("approve", "decline"):
         raise HTTPException(status_code=400, detail="Action must be approve or decline.")
     status_now = "approved" if decision.action == "approve" else "declined"
@@ -5115,6 +5252,7 @@ async def decide_teacher_request(request_id: int, decision: TeacherDecision, db:
     user_id, key, college = row
     if status_now == "approved":
         await db.execute(update(DBUser).where(DBUser.id == user_id).values(teacher_of=key))
+        await ensure_institution_trial(key, college)
         message = f"You now have teacher access for {college} on College Hub."
         hub_changed(key)
     else:
@@ -5124,7 +5262,7 @@ async def decide_teacher_request(request_id: int, decision: TeacherDecision, db:
 
 
 @app.post("/api/admin/users/{user_id}/teacher")
-async def set_teacher_access(user_id: int, flag: TeacherFlag, db: AsyncSession = Depends(get_fast_db), admin_data: dict = Depends(get_current_admin)):
+async def set_teacher_access(user_id: int, flag: TeacherFlag, db: AsyncSession = Depends(get_fast_db), admin_data: dict = Depends(get_founder_admin)):
     """Give teacher access for the college on the person's own profile, or take it away."""
     row = (await db.execute(select(DBUser.college_name, DBUser.teacher_of).where(DBUser.id == user_id))).first()
     if not row:
@@ -5134,6 +5272,8 @@ async def set_teacher_access(user_id: int, flag: TeacherFlag, db: AsyncSession =
     if flag.teacher and not new_key:
         raise HTTPException(status_code=400, detail="This account has no college on its profile.")
     await db.execute(update(DBUser).where(DBUser.id == user_id).values(teacher_of=new_key))
+    if new_key:
+        await ensure_institution_trial(new_key, (row.college_name or "").strip())
     for key in {old_key, new_key} - {""}:
         hub_changed(key)
     if old_key != new_key:
@@ -6108,6 +6248,7 @@ async def submit_hub_work(activity_id: int, body: HubSubmission, current_user_id
     me = await require_hub_member(current_user_id)
     if me["role"] != "student":
         raise HTTPException(status_code=403, detail="Students hand in work; teachers review it.")
+    await require_licence(me["key"], "Handing in work")
     activity, group = await asyncio.gather(hub_activity_or_404(me["key"], activity_id), my_group_for(me["key"], activity_id, current_user_id))
     if not activity.accepts_work:
         raise HTTPException(status_code=400, detail="This activity does not collect work.")
@@ -6142,6 +6283,7 @@ async def submit_hub_work(activity_id: int, body: HubSubmission, current_user_id
 @app.put("/api/college-hub/submissions/{submission_id}/grade")
 async def grade_hub_work(submission_id: int, body: HubGrade, current_user_id: int = Depends(get_current_user_id)):
     me = await require_hub_teacher(current_user_id)
+    await require_licence(me["key"], "Marks and feedback")
     rows = await fetch_one_off(
         select(DBCollegeSubmission, DBCollegePost.title, DBCollegePost.max_marks)
         .join(DBCollegePost, DBCollegePost.id == DBCollegeSubmission.activity_id)
@@ -6506,6 +6648,7 @@ async def warn_low_attendance(key: str, user_ids: list):
 @app.post("/api/college-hub/attendance")
 async def create_hub_attendance(body: HubAttendanceBody, current_user_id: int = Depends(get_current_user_id)):
     me = await require_hub_teacher(current_user_id)
+    await require_licence(me["key"], "Attendance")
     values, marks = await clean_attendance(me, body)
     async with SessionLocal() as db:   # the session and its marks are saved together or not at all
         session = DBAttendanceSession(college_key=me["key"], teacher_id=current_user_id, created_at=utc_now_iso(), **values)
@@ -6521,6 +6664,7 @@ async def create_hub_attendance(body: HubAttendanceBody, current_user_id: int = 
 @app.put("/api/college-hub/attendance/{session_id}")
 async def update_hub_attendance(session_id: int, body: HubAttendanceBody, current_user_id: int = Depends(get_current_user_id)):
     me = await require_hub_teacher(current_user_id)
+    await require_licence(me["key"], "Attendance")
     values, marks = await clean_attendance(me, body)
     async with SessionLocal() as db:
         found = (await db.execute(update(DBAttendanceSession).where(DBAttendanceSession.id == session_id, DBAttendanceSession.college_key == me["key"]).values(**values).returning(DBAttendanceSession.id))).first()
@@ -6709,3 +6853,2016 @@ async def unvote_hub_question(question_id: int, current_user_id: int = Depends(g
     await run_one_off(delete(DBCollegeQuestionVote).where(DBCollegeQuestionVote.question_id == question_id, DBCollegeQuestionVote.user_id == current_user_id))
     qa_changed(me["key"])
     return {"id": question_id, "voted": False}
+
+
+# ==========================================
+# 17. ROLES: FOUNDER, ADMINS AND TEACHERS. APPLICATIONS AND THE VERIFICATION DESK
+# The founder (users.is_founder) runs the platform. The founder row also has is_admin=1 for older checks,
+# but everything new asks is_founder first: the founder is never treated as an admin, and never pays.
+# An admin (is_admin, not founder) verifies accounts of one college, for the departments in admin_scopes.
+# A teacher (users.teacher_of) runs College Hub for one college. Only the founder approves admins and teachers.
+# ==========================================
+class DBAdminScope(Base):
+    __tablename__ = "admin_scopes"
+    __table_args__ = (UniqueConstraint("user_id", "college_key", "department_key", name="ux_admin_scopes"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    college_key = Column(String, index=True)
+    college_name = Column(String, default="")
+    department_key = Column(String, index=True)
+    department = Column(String, default="")       # as the founder approved it, for showing
+    granted_by = Column(Integer, nullable=True)
+    granted_at = Column(String, default="")
+
+class DBVerificationLog(Base):
+    __tablename__ = "verification_log"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, index=True)
+    admin_id = Column(Integer, index=True)
+    action = Column(String)                       # approve, reject, pass, needs_info, reverse
+    reason = Column(String, default="")
+    from_department = Column(String, default="")
+    to_department = Column(String, default="")
+    reversed = Column(Integer, default=0)
+    created_at = Column(String)
+
+
+OPEN_APPLICATION = ("pending", "needs_info")
+TEACHER_DESIGNATIONS = ("Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Lab Instructor",
+                        "Head of Department", "Principal / Director", "Visiting Faculty")
+ADMIN_ROLES = ("Faculty", "Non-teaching staff", "Training & placement cell", "Student coordinator", "Other")
+REJECT_REASONS = {
+    "unreadable": "the ID card photo could not be read",
+    "mismatch": "the name or details on the ID card do not match the profile",
+    "not_student": "the ID does not show that you study at this college",
+    "fake": "the document does not look genuine",
+    "other": "",
+}
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
+PHONE_PATTERN = re.compile(r"^\+?[0-9][0-9 ()-]{7,15}$")
+VERIFY_QUEUE_LIMIT = 300
+MAX_ID_IMAGE_CHARS = 2_000_000
+
+EFFECTIVE_DEPARTMENT = func.lower(func.trim(func.coalesce(func.nullif(func.trim(DBUser.verify_department), ""), DBUser.department, "")))
+
+
+class TeacherApplicationBody(BaseModel):
+    department: str
+    designation: str
+    employee_id: str
+    official_email: str
+    phone: str
+    subjects: Optional[List[str]] = None
+    years: Optional[int] = 0
+    id_proof_url: str
+    letter_url: Optional[str] = ""
+    profile_link: Optional[str] = ""
+    note: Optional[str] = ""
+    agree: bool = False
+
+class AdminApplicationBody(BaseModel):
+    role_at_college: str
+    staff_id: str
+    official_email: str
+    phone: str
+    departments: List[str]
+    hours: Optional[int] = 0
+    languages: Optional[str] = ""
+    id_proof_url: str
+    letter_url: Optional[str] = ""
+    motivation: str
+    agree: bool = False
+
+class ApplicationAnswer(BaseModel):
+    answer: str
+
+class FounderDecision(BaseModel):
+    action: str                                   # approve, decline, ask
+    note: Optional[str] = ""
+    departments: Optional[List[str]] = None       # admin applications: the scope to grant
+
+class ScopeBody(BaseModel):
+    departments: List[str]
+
+class ReasonBody(BaseModel):
+    reason: Optional[str] = ""
+
+class VerifyAction(BaseModel):
+    action: str                                   # approve, reject, pass, needs_info
+    reason: Optional[str] = ""                    # reject: a key of REJECT_REASONS
+    note: Optional[str] = ""
+    department: Optional[str] = ""                # pass: the department it belongs to
+
+class VerifyBulk(BaseModel):
+    ids: List[int]
+
+class IdCardUpload(BaseModel):
+    image: str
+
+
+# ---------- who is who ----------
+def roles_of(row) -> dict:
+    founder = (getattr(row, "is_founder", 0) or 0) == 1
+    return {
+        "founder": founder,
+        "admin": (getattr(row, "is_admin", 0) or 0) == 1 and not founder,
+        "teacher": bool((getattr(row, "teacher_of", "") or "").strip()),
+    }
+
+async def require_founder(current_user_id: int = Depends(get_current_user_id)) -> int:
+    """For founder-only routes. Uses the normal login and checks the founder flag in the database."""
+    if not await founder_flag(current_user_id):
+        raise HTTPException(status_code=403, detail="Only the founder can do this.")
+    return current_user_id
+
+def clean_required(value: Optional[str], limit: int, what: str) -> str:
+    value = clean_text(value, limit, what)
+    if not value:
+        raise HTTPException(status_code=400, detail=f"Fill in the {what}.")
+    return value
+
+def clean_contact(email: Optional[str], phone: Optional[str]) -> tuple:
+    email, phone = (email or "").strip()[:160], (phone or "").strip()[:20]
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+    if not PHONE_PATTERN.match(phone):
+        raise HTTPException(status_code=400, detail="Enter a valid phone number.")
+    return email, phone
+
+def json_strings(values, limit_each: int, limit_count: int) -> list:
+    out = []
+    for value in values or []:
+        value = (value or "").strip()[:limit_each]
+        if value and college_key_of(value) not in {college_key_of(have) for have in out}:
+            out.append(value)
+    return out[:limit_count]
+
+async def applicant_profile(user_id: int):
+    rows = await fetch_one_off(select(DBUser.name, DBUser.college_name, DBUser.department, DBUser.is_admin, DBUser.is_founder, DBUser.teacher_of).where(DBUser.id == user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    return rows[0]
+
+
+# ---------- teacher applications ----------
+def serialize_teacher_application(req, extra: Optional[dict] = None) -> dict:
+    return {
+        "id": req.id, "user_id": req.user_id, "status": req.status or "pending", "college": req.college_name or req.college_key,
+        "department": req.department or "", "designation": req.designation or "", "employee_id": req.employee_id or "",
+        "official_email": req.official_email or "", "phone": req.phone or "", "subjects": json_list(req.subjects), "years": req.years or 0,
+        "id_proof_url": req.id_proof_url or "", "letter_url": req.letter_url or "", "profile_link": req.profile_link or "",
+        "note": req.note or "", "decision_note": req.decision_note or "", "info_question": req.info_question or "",
+        "info_answer": req.info_answer or "", "requested_at": req.requested_at or "", "updated_at": req.updated_at or req.requested_at or "",
+        "decided_at": req.decided_at or "", **(extra or {}),
+    }
+
+
+@app.post("/api/teacher-applications")
+async def create_teacher_application(body: TeacherApplicationBody, current_user_id: int = Depends(get_current_user_id)):
+    """Apply to be a teacher of the college on your profile. The founder checks it."""
+    me = await applicant_profile(current_user_id)
+    college = (me.college_name or "").strip()
+    if not college:
+        raise HTTPException(status_code=400, detail="Add your college or institution to your profile first.")
+    if (me.teacher_of or "").strip():
+        raise HTTPException(status_code=400, detail="You already have teacher access.")
+    if body.designation not in TEACHER_DESIGNATIONS:
+        raise HTTPException(status_code=400, detail="Pick your designation from the list.")
+    if not body.agree:
+        raise HTTPException(status_code=400, detail="Confirm the declarations before sending.")
+    email, phone = clean_contact(body.official_email, body.phone)
+    id_proof = clean_link(body.id_proof_url, "ID proof address")
+    if not id_proof:
+        raise HTTPException(status_code=400, detail="Attach a photo of your staff ID card.")
+    years = body.years or 0
+    if not (0 <= years <= 60):
+        raise HTTPException(status_code=400, detail="Years of teaching must be between 0 and 60.")
+    open_rows = await fetch_one_off(select(DBTeacherRequest.id).where(DBTeacherRequest.user_id == current_user_id, DBTeacherRequest.status.in_(OPEN_APPLICATION)))
+    if open_rows:
+        raise HTTPException(status_code=400, detail="You already have an application waiting. You can withdraw it and apply again.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBTeacherRequest.__table__.insert().values(
+        user_id=current_user_id, college_key=college_key_of(college), college_name=college, status="pending", requested_at=now_iso, updated_at=now_iso,
+        department=clean_required(body.department, 120, "department"), designation=body.designation,
+        employee_id=clean_required(body.employee_id, 60, "employee ID"), official_email=email, phone=phone,
+        subjects=json.dumps(json_strings(body.subjects, 60, 15)), years=years, id_proof_url=id_proof,
+        letter_url=clean_link(body.letter_url, "letter address"), profile_link=clean_link(body.profile_link, "profile link"),
+        note=clean_text(body.note, 1000, "note"), decision_note="", info_question="", info_answer="", decided_at="",
+    ).returning(DBTeacherRequest.id))
+    spawn_background(notify_founders("account", f"New teacher application from {me.name or 'someone'} ({college}).", "founder.html?tab=teachers"))
+    return {"id": rows[0][0], "status": "pending"}
+
+
+@app.get("/api/teacher-applications/me")
+async def my_teacher_application(current_user_id: int = Depends(get_current_user_id)):
+    me = await applicant_profile(current_user_id)
+    rows = await fetch_one_off(select(DBTeacherRequest).where(DBTeacherRequest.user_id == current_user_id).order_by(DBTeacherRequest.id.desc()).limit(1))
+    return {
+        "profile": {"name": me.name or "", "college": (me.college_name or "").strip(), "department": (me.department or "").strip(), "is_teacher": bool((me.teacher_of or "").strip())},
+        "application": serialize_teacher_application(rows[0][0]) if rows else None,
+        "designations": list(TEACHER_DESIGNATIONS),
+    }
+
+
+async def update_my_application(model, user_id: int, from_statuses: tuple, values: dict):
+    rows = await run_returning(
+        update(model).where(model.id == select(func.max(model.id)).where(model.user_id == user_id).scalar_subquery(), model.status.in_(from_statuses))
+        .values(updated_at=utc_now_iso(), **values).returning(model.id)
+    )
+    if not rows:
+        raise HTTPException(status_code=400, detail="There is no application in a state that allows this.")
+    return rows[0][0]
+
+@app.post("/api/teacher-applications/me/withdraw")
+async def withdraw_teacher_application(current_user_id: int = Depends(get_current_user_id)):
+    await update_my_application(DBTeacherRequest, current_user_id, OPEN_APPLICATION, {"status": "withdrawn"})
+    return {"status": "withdrawn"}
+
+@app.post("/api/teacher-applications/me/answer")
+async def answer_teacher_application(body: ApplicationAnswer, current_user_id: int = Depends(get_current_user_id)):
+    answer = clean_required(body.answer, 2000, "answer")
+    await update_my_application(DBTeacherRequest, current_user_id, ("needs_info",), {"status": "pending", "info_answer": answer})
+    spawn_background(notify_founders("account", "A teacher applicant answered your question.", "founder.html?tab=teachers"))
+    return {"status": "pending"}
+
+
+@app.get("/api/founder/teacher-applications")
+async def founder_teacher_applications(status: str = "", founder_id: int = Depends(require_founder)):
+    conditions = [DBTeacherRequest.status == status] if status else []
+    rows = await fetch_one_off(
+        select(DBTeacherRequest, DBUser.name, DBUser.email, DBUser.account_status, DBUser.profile_pic)
+        .outerjoin(DBUser, DBUser.id == DBTeacherRequest.user_id).where(*conditions)
+        .order_by(case((DBTeacherRequest.status.in_(OPEN_APPLICATION), 0), else_=1), DBTeacherRequest.id.desc()).limit(300)
+    )
+    return {"applications": [serialize_teacher_application(req, {
+        "name": name or f"User #{req.user_id}", "email": email or "", "account_status": account_status or "pending",
+        "profile_pic": pic if pic and len(pic) <= 1000 else "",
+    }) for req, name, email, account_status, pic in rows]}
+
+
+@app.post("/api/founder/teacher-applications/{request_id}")
+async def founder_decide_teacher(request_id: int, body: FounderDecision, founder_id: int = Depends(require_founder)):
+    note = clean_text(body.note, 1000, "note")
+    rows = await fetch_one_off(select(DBTeacherRequest).where(DBTeacherRequest.id == request_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That application was not found.")
+    req = rows[0][0]
+    if req.status not in OPEN_APPLICATION:
+        raise HTTPException(status_code=400, detail="That application has already been settled.")
+    now_iso = utc_now_iso()
+    if body.action == "approve":
+        await run_one_off(update(DBTeacherRequest).where(DBTeacherRequest.id == request_id).values(status="approved", decision_note=note, decided_by=founder_id, decided_at=now_iso, updated_at=now_iso))
+        await run_one_off(update(DBUser).where(DBUser.id == req.user_id).values(teacher_of=req.college_key))
+        await ensure_institution_trial(req.college_key, req.college_name)
+        hub_changed(req.college_key)
+        message = f"You are now a teacher of {req.college_name} on College Hub."
+    elif body.action == "decline":
+        if not note:
+            raise HTTPException(status_code=400, detail="Give the applicant a reason.")
+        await run_one_off(update(DBTeacherRequest).where(DBTeacherRequest.id == request_id).values(status="declined", decision_note=note, decided_by=founder_id, decided_at=now_iso, updated_at=now_iso))
+        message = f"Your teacher application was declined: {note}"
+    elif body.action == "ask":
+        if not note:
+            raise HTTPException(status_code=400, detail="Write the question for the applicant.")
+        await run_one_off(update(DBTeacherRequest).where(DBTeacherRequest.id == request_id).values(status="needs_info", info_question=note, info_answer="", updated_at=now_iso))
+        message = f"The founder has a question about your teacher application: {note[:120]}"
+    else:
+        raise HTTPException(status_code=400, detail="Action must be approve, decline or ask.")
+    spawn_background(create_notification(req.user_id, "account", message, now_iso, "apply-teacher.html"))
+    return {"id": request_id, "status": {"approve": "approved", "decline": "declined", "ask": "needs_info"}[body.action]}
+
+
+@app.get("/api/founder/teachers")
+async def founder_teachers(founder_id: int = Depends(require_founder)):
+    rows = await fetch_one_off(select(DBUser.id, DBUser.name, DBUser.email, DBUser.college_name, DBUser.department, DBUser.teacher_of)
+                               .where(func.coalesce(DBUser.teacher_of, "") != "").order_by(DBUser.teacher_of, DBUser.name))
+    return {"teachers": [{"id": r.id, "name": r.name or "", "email": r.email or "", "college": r.college_name or r.teacher_of, "department": r.department or "", "college_key": r.teacher_of} for r in rows]}
+
+
+@app.post("/api/founder/teachers/{user_id}/revoke")
+async def founder_revoke_teacher(user_id: int, body: ReasonBody, founder_id: int = Depends(require_founder)):
+    rows = await run_returning(update(DBUser).where(DBUser.id == user_id, func.coalesce(DBUser.teacher_of, "") != "").values(teacher_of="").returning(DBUser.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That person is not a teacher.")
+    old = await fetch_one_off(select(DBTeacherRequest.college_key).where(DBTeacherRequest.user_id == user_id, DBTeacherRequest.status == "approved").order_by(DBTeacherRequest.id.desc()).limit(1))
+    if old:
+        hub_changed(old[0][0])
+    reason = clean_text(body.reason, 500, "reason")
+    spawn_background(create_notification(user_id, "account", "Your teacher access was removed." + (f" Reason: {reason}" if reason else ""), utc_now_iso(), "apply-teacher.html"))
+    return {"status": "revoked"}
+
+
+# ---------- admin applications ----------
+def serialize_admin_application(req, extra: Optional[dict] = None) -> dict:
+    status_now = (req.status or "pending").lower()
+    status_now = {"rejected": "declined"}.get(status_now, status_now)
+    return {
+        "id": req.id, "user_id": req.user_id, "status": status_now, "college": req.college_name or "", "departments": json_list(req.departments),
+        "role_at_college": req.role_at_college or "", "staff_id": req.staff_id or "", "official_email": req.official_email or "", "phone": req.phone or "",
+        "hours": req.hours or 0, "languages": req.languages or "", "id_proof_url": req.id_proof_url or "", "letter_url": req.letter_url or "",
+        "motivation": req.motivation or "", "decision_note": req.decision_note or "", "info_question": req.info_question or "",
+        "info_answer": req.info_answer or "", "requested_at": req.requested_at or "", "updated_at": req.updated_at or req.requested_at or "",
+        "decided_at": req.decided_at or "", **(extra or {}),
+    }
+
+
+@app.post("/api/admin-applications")
+async def create_admin_application(body: AdminApplicationBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await applicant_profile(current_user_id)
+    if (me.is_founder or 0) == 1:
+        raise HTTPException(status_code=400, detail="You are the founder.")
+    if (me.is_admin or 0) == 1:
+        raise HTTPException(status_code=400, detail="You are already an admin.")
+    college = (me.college_name or "").strip()
+    if not college:
+        raise HTTPException(status_code=400, detail="Add your college or institution to your profile first.")
+    if body.role_at_college not in ADMIN_ROLES:
+        raise HTTPException(status_code=400, detail="Pick your role at the college from the list.")
+    if not body.agree:
+        raise HTTPException(status_code=400, detail="Accept the code of conduct before sending.")
+    departments = json_strings(body.departments, 120, 12)
+    if not departments:
+        raise HTTPException(status_code=400, detail="Pick at least one department you will verify.")
+    email, phone = clean_contact(body.official_email, body.phone)
+    id_proof = clean_link(body.id_proof_url, "ID proof address")
+    if not id_proof:
+        raise HTTPException(status_code=400, detail="Attach a photo of your college ID card.")
+    hours = body.hours or 0
+    if not (1 <= hours <= 60):
+        raise HTTPException(status_code=400, detail="Hours per week must be between 1 and 60.")
+    motivation = clean_required(body.motivation, 2000, "reason you want to help")
+    if len(motivation) < 30:
+        raise HTTPException(status_code=400, detail="Tell the founder a little more about why you want to help (at least 30 characters).")
+    open_rows = await fetch_one_off(select(DBAdminRequest.id).where(DBAdminRequest.user_id == current_user_id, func.lower(DBAdminRequest.status).in_(OPEN_APPLICATION)))
+    if open_rows:
+        raise HTTPException(status_code=400, detail="You already have an application waiting. You can withdraw it and apply again.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBAdminRequest.__table__.insert().values(
+        user_id=current_user_id, name=me.name or "", status="pending", requested_at=now_iso, updated_at=now_iso,
+        college_name=college, college_key=college_key_of(college), departments=json.dumps(departments), role_at_college=body.role_at_college,
+        staff_id=clean_required(body.staff_id, 60, "staff or student ID"), official_email=email, phone=phone, hours=hours,
+        languages=clean_text(body.languages, 120, "languages"), id_proof_url=id_proof, letter_url=clean_link(body.letter_url, "letter address"),
+        motivation=motivation, decision_note="", info_question="", info_answer="", decided_at="",
+    ).returning(DBAdminRequest.id))
+    spawn_background(notify_founders("account", f"New admin application from {me.name or 'someone'} ({college}).", "founder.html?tab=admins"))
+    return {"id": rows[0][0], "status": "pending"}
+
+
+@app.get("/api/admin-applications/me")
+async def my_admin_application(current_user_id: int = Depends(get_current_user_id)):
+    me = await applicant_profile(current_user_id)
+    rows, scopes, departments = await asyncio.gather(
+        fetch_one_off(select(DBAdminRequest).where(DBAdminRequest.user_id == current_user_id).order_by(DBAdminRequest.id.desc()).limit(1)),
+        fetch_one_off(select(DBAdminScope.department, DBAdminScope.college_name).where(DBAdminScope.user_id == current_user_id)),
+        fetch_one_off(select(DBUser.department).where(USER_COLLEGE_KEY == college_key_of(me.college_name), func.coalesce(DBUser.department, "") != "").distinct()),
+    )
+    return {
+        "profile": {"name": me.name or "", "college": (me.college_name or "").strip(), "department": (me.department or "").strip(),
+                    "is_admin": (me.is_admin or 0) == 1 and (me.is_founder or 0) != 1, "is_founder": (me.is_founder or 0) == 1},
+        "application": serialize_admin_application(rows[0][0]) if rows else None,
+        "scopes": [d for d, _ in scopes],
+        "college_departments": sorted({(d or "").strip() for (d,) in departments if (d or "").strip()}),
+        "roles": list(ADMIN_ROLES),
+    }
+
+@app.post("/api/admin-applications/me/withdraw")
+async def withdraw_admin_application(current_user_id: int = Depends(get_current_user_id)):
+    await update_my_application(DBAdminRequest, current_user_id, OPEN_APPLICATION, {"status": "withdrawn"})
+    return {"status": "withdrawn"}
+
+@app.post("/api/admin-applications/me/answer")
+async def answer_admin_application(body: ApplicationAnswer, current_user_id: int = Depends(get_current_user_id)):
+    answer = clean_required(body.answer, 2000, "answer")
+    await update_my_application(DBAdminRequest, current_user_id, ("needs_info",), {"status": "pending", "info_answer": answer})
+    spawn_background(notify_founders("account", "An admin applicant answered your question.", "founder.html?tab=admins"))
+    return {"status": "pending"}
+
+
+async def replace_scopes(user_id: int, college_name: str, departments: list, granted_by: int):
+    key, now_iso = college_key_of(college_name), utc_now_iso()
+    async with AutocommitSession() as db:
+        await db.execute(delete(DBAdminScope).where(DBAdminScope.user_id == user_id))
+        if departments:
+            await db.execute(DBAdminScope.__table__.insert().values([{
+                "user_id": user_id, "college_key": key, "college_name": college_name, "department_key": college_key_of(d), "department": d,
+                "granted_by": granted_by, "granted_at": now_iso} for d in departments]))
+
+
+@app.get("/api/founder/admin-applications")
+async def founder_admin_applications(status: str = "", founder_id: int = Depends(require_founder)):
+    conditions = [func.lower(DBAdminRequest.status) == status] if status else []
+    rows = await fetch_one_off(
+        select(DBAdminRequest, DBUser.name, DBUser.email, DBUser.account_status, DBUser.profile_pic, DBUser.department)
+        .outerjoin(DBUser, DBUser.id == DBAdminRequest.user_id).where(*conditions)
+        .order_by(case((func.lower(DBAdminRequest.status).in_(OPEN_APPLICATION), 0), else_=1), DBAdminRequest.id.desc()).limit(300)
+    )
+    return {"applications": [serialize_admin_application(req, {
+        "name": name or req.name or f"User #{req.user_id}", "email": email or "", "account_status": account_status or "pending",
+        "profile_pic": pic if pic and len(pic) <= 1000 else "", "own_department": department or "",
+    }) for req, name, email, account_status, pic, department in rows]}
+
+
+@app.post("/api/founder/admin-applications/{request_id}")
+async def founder_decide_admin(request_id: int, body: FounderDecision, founder_id: int = Depends(require_founder)):
+    note = clean_text(body.note, 1000, "note")
+    rows = await fetch_one_off(select(DBAdminRequest).where(DBAdminRequest.id == request_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That application was not found.")
+    req = rows[0][0]
+    if (req.status or "").lower() not in OPEN_APPLICATION:
+        raise HTTPException(status_code=400, detail="That application has already been settled.")
+    now_iso = utc_now_iso()
+    if body.action == "approve":
+        departments = json_strings(body.departments if body.departments is not None else json_list(req.departments), 120, 20)
+        if not departments:
+            raise HTTPException(status_code=400, detail="Give the admin at least one department.")
+        college = req.college_name or ""
+        if not college:
+            profile = await applicant_profile(req.user_id)
+            college = (profile.college_name or "").strip()
+        await run_one_off(update(DBAdminRequest).where(DBAdminRequest.id == request_id).values(status="approved", decision_note=note, decided_by=founder_id, decided_at=now_iso, updated_at=now_iso, departments=json.dumps(departments)))
+        await run_one_off(update(DBUser).where(DBUser.id == req.user_id).values(is_admin=1))
+        await replace_scopes(req.user_id, college, departments, founder_id)
+        message = f"You are now an admin for {college} ({', '.join(departments)}). Open the Verification desk from your account menu."
+        link = "verify.html"
+    elif body.action == "decline":
+        if not note:
+            raise HTTPException(status_code=400, detail="Give the applicant a reason.")
+        await run_one_off(update(DBAdminRequest).where(DBAdminRequest.id == request_id).values(status="declined", decision_note=note, decided_by=founder_id, decided_at=now_iso, updated_at=now_iso))
+        message, link = f"Your admin application was declined: {note}", "apply-admin.html"
+    elif body.action == "ask":
+        if not note:
+            raise HTTPException(status_code=400, detail="Write the question for the applicant.")
+        await run_one_off(update(DBAdminRequest).where(DBAdminRequest.id == request_id).values(status="needs_info", info_question=note, info_answer="", updated_at=now_iso))
+        message, link = f"The founder has a question about your admin application: {note[:120]}", "apply-admin.html"
+    else:
+        raise HTTPException(status_code=400, detail="Action must be approve, decline or ask.")
+    spawn_background(create_notification(req.user_id, "account", message, now_iso, link))
+    return {"id": request_id, "status": {"approve": "approved", "decline": "declined", "ask": "needs_info"}[body.action]}
+
+
+@app.get("/api/founder/admins")
+async def founder_admins(founder_id: int = Depends(require_founder)):
+    since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    admins, scopes, stats = await asyncio.gather(
+        fetch_one_off(select(DBUser.id, DBUser.name, DBUser.email, DBUser.college_name).where(DBUser.is_admin == 1, func.coalesce(DBUser.is_founder, 0) == 0).order_by(DBUser.name)),
+        fetch_one_off(select(DBAdminScope.user_id, DBAdminScope.department, DBAdminScope.college_name)),
+        fetch_one_off(select(DBVerificationLog.admin_id, DBVerificationLog.action, func.count(), func.sum(DBVerificationLog.reversed))
+                      .where(DBVerificationLog.created_at >= since).group_by(DBVerificationLog.admin_id, DBVerificationLog.action)),
+    )
+    scope_of: dict = {}
+    for user_id, department, college in scopes:
+        scope_of.setdefault(user_id, {"college": college, "departments": []})["departments"].append(department)
+    stat_of: dict = {}
+    for admin_id, action, count, reversed_count in stats:
+        entry = stat_of.setdefault(admin_id, {"approve": 0, "reject": 0, "pass": 0, "needs_info": 0, "reversed": 0})
+        if action in entry:
+            entry[action] += count
+        entry["reversed"] += reversed_count or 0
+    return {"admins": [{
+        "id": r.id, "name": r.name or "", "email": r.email or "", "college": (scope_of.get(r.id) or {}).get("college") or r.college_name or "",
+        "departments": (scope_of.get(r.id) or {}).get("departments", []), "last_30_days": stat_of.get(r.id, {"approve": 0, "reject": 0, "pass": 0, "needs_info": 0, "reversed": 0}),
+    } for r in admins]}
+
+
+@app.put("/api/founder/admins/{user_id}/scope")
+async def founder_set_scope(user_id: int, body: ScopeBody, founder_id: int = Depends(require_founder)):
+    rows = await fetch_one_off(select(DBUser.college_name, DBUser.is_admin, DBUser.is_founder).where(DBUser.id == user_id))
+    if not rows or (rows[0].is_admin or 0) != 1 or (rows[0].is_founder or 0) == 1:
+        raise HTTPException(status_code=404, detail="That person is not an admin.")
+    departments = json_strings(body.departments, 120, 20)
+    if not departments:
+        raise HTTPException(status_code=400, detail="Keep at least one department, or revoke the admin instead.")
+    existing = await fetch_one_off(select(DBAdminScope.college_name).where(DBAdminScope.user_id == user_id).limit(1))
+    college = existing[0][0] if existing else (rows[0].college_name or "")
+    await replace_scopes(user_id, college, departments, founder_id)
+    spawn_background(create_notification(user_id, "account", f"Your verification departments are now: {', '.join(departments)}.", utc_now_iso(), "verify.html"))
+    return {"id": user_id, "departments": departments}
+
+
+@app.post("/api/founder/admins/{user_id}/revoke")
+async def founder_revoke_admin(user_id: int, body: ReasonBody, founder_id: int = Depends(require_founder)):
+    rows = await run_returning(update(DBUser).where(DBUser.id == user_id, DBUser.is_admin == 1, func.coalesce(DBUser.is_founder, 0) == 0).values(is_admin=0).returning(DBUser.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That person is not an admin.")
+    await run_one_off(delete(DBAdminScope).where(DBAdminScope.user_id == user_id))
+    await run_one_off(update(DBAdminRequest).where(DBAdminRequest.user_id == user_id, func.lower(DBAdminRequest.status) == "approved").values(status="revoked", updated_at=utc_now_iso()))
+    reason = clean_text(body.reason, 500, "reason")
+    spawn_background(create_notification(user_id, "account", "Your admin access was removed." + (f" Reason: {reason}" if reason else ""), utc_now_iso(), "apply-admin.html"))
+    return {"status": "revoked"}
+
+
+async def notify_founders(notif_type: str, content: str, link: str):
+    try:
+        rows = await fetch_one_off(select(DBUser.id).where(DBUser.is_founder == 1))
+        await notify_many([row[0] for row in rows], notif_type, content, link)
+    except Exception as e:
+        print("Error notifying the founder:", e)
+
+
+# ---------- the verification desk ----------
+async def verifier_of(user_id: int) -> dict:
+    """Who may verify what: the founder everything, an admin the (college, department) pairs of their scope."""
+    rows, scopes = await asyncio.gather(
+        fetch_one_off(select(DBUser.is_admin, DBUser.is_founder, DBUser.name).where(DBUser.id == user_id)),
+        fetch_one_off(select(DBAdminScope.college_key, DBAdminScope.department_key, DBAdminScope.department, DBAdminScope.college_name).where(DBAdminScope.user_id == user_id)),
+    )
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    founder = (rows[0].is_founder or 0) == 1
+    if not founder and (rows[0].is_admin or 0) != 1:
+        raise HTTPException(status_code=403, detail="The verification desk is for admins.")
+    return {"id": user_id, "name": rows[0].name or "", "founder": founder, "scopes": [(c, d) for c, d, _, _ in scopes],
+            "scope_labels": [label for _, _, label, _ in scopes], "college": scopes[0][3] if scopes else ""}
+
+def scope_clause(verifier: dict):
+    if verifier["founder"]:
+        return literal(True)
+    if not verifier["scopes"]:
+        return literal(False)
+    return or_(*[and_(USER_COLLEGE_KEY == college, EFFECTIVE_DEPARTMENT == department) for college, department in verifier["scopes"]])
+
+UNASSIGNED_CLAUSE = ~exists().where(DBAdminScope.college_key == USER_COLLEGE_KEY, DBAdminScope.department_key == EFFECTIVE_DEPARTMENT)
+
+async def student_in_scope(verifier: dict, student_id: int):
+    rows = await fetch_one_off(
+        select(DBUser.id, DBUser.name, DBUser.college_name, DBUser.department, DBUser.verify_department, DBUser.account_status, DBUser.is_founder)
+        .where(DBUser.id == student_id, scope_clause(verifier))
+    )
+    if not rows or (rows[0].is_founder or 0) == 1:
+        raise HTTPException(status_code=403, detail="That account is not in your verification scope.")
+    return rows[0]
+
+
+@app.get("/api/verify/queue")
+async def verify_queue(tab: str = "mine", current_user_id: int = Depends(get_current_user_id)):
+    verifier = await verifier_of(current_user_id)
+    statuses = ("needs_info",) if tab == "needs_info" else ("pending", "appealed")
+    conditions = [func.coalesce(DBUser.account_status, "pending").in_(statuses), func.coalesce(DBUser.is_founder, 0) == 0, DBUser.id != current_user_id, scope_clause(verifier)]
+    if tab == "unassigned":
+        if not verifier["founder"]:
+            raise HTTPException(status_code=403, detail="Only the founder sees accounts no admin covers.")
+        conditions.append(UNASSIGNED_CLAUSE)
+    joined = select(func.min(DBHistory.time)).where(DBHistory.user_id == DBUser.id, DBHistory.action == "Account Created").correlate(DBUser).scalar_subquery()
+    picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("profile_pic")
+    rows = await fetch_one_off(
+        select(DBUser.id, DBUser.name, DBUser.college_name, DBUser.department, DBUser.division, DBUser.roll_no, DBUser.verify_department,
+               DBUser.account_status, DBUser.account_type, DBUser.profession, picture, joined.label("joined"),
+               (func.length(func.coalesce(DBUser.id_card_image, "")) > 0).label("has_id_card"))
+        .where(*conditions).order_by(DBUser.id).limit(VERIFY_QUEUE_LIMIT)
+    )
+    ids = [row.id for row in rows]
+    logs = await fetch_one_off(
+        select(DBVerificationLog.student_id, DBVerificationLog.action, DBVerificationLog.reason, DBVerificationLog.from_department, DBVerificationLog.to_department, DBVerificationLog.created_at, DBUser.name)
+        .outerjoin(DBUser, DBUser.id == DBVerificationLog.admin_id)
+        .where(DBVerificationLog.student_id.in_(ids)).order_by(DBVerificationLog.id.desc())
+    ) if ids else []
+    last: dict = {}
+    for student_id, action, reason, from_d, to_d, at, admin_name in logs:
+        last.setdefault(student_id, {"action": action, "reason": reason or "", "from": from_d or "", "to": to_d or "", "at": at or "", "by": admin_name or ""})
+    return {"people": [{
+        "id": r.id, "name": r.name or "", "college": r.college_name or "", "department": r.department or "", "division": r.division or "",
+        "roll_no": r.roll_no or "", "routed_department": r.verify_department or "", "status": r.account_status or "pending",
+        "account_type": r.account_type or "standard", "profession": r.profession or "", "profile_pic": r.profile_pic or "",
+        "joined": r.joined or "", "has_id_card": bool(r.has_id_card), "last": last.get(r.id),
+    } for r in rows]}
+
+
+@app.get("/api/verify/summary")
+async def verify_summary(current_user_id: int = Depends(get_current_user_id)):
+    verifier = await verifier_of(current_user_id)
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    waiting = and_(func.coalesce(DBUser.account_status, "pending").in_(("pending", "appealed")), func.coalesce(DBUser.is_founder, 0) == 0, DBUser.id != current_user_id)
+    reads = [
+        fetch_one_off(select(DBVerificationLog.action, func.count()).where(DBVerificationLog.admin_id == current_user_id, DBVerificationLog.created_at >= today_start).group_by(DBVerificationLog.action)),
+        fetch_one_off(select(func.count()).select_from(DBUser).where(waiting, scope_clause(verifier))),
+        fetch_one_off(select(func.count()).select_from(DBUser).where(func.coalesce(DBUser.account_status, "") == "needs_info", scope_clause(verifier))),
+    ]
+    if verifier["founder"]:
+        reads.append(fetch_one_off(select(func.count()).select_from(DBUser).where(waiting, UNASSIGNED_CLAUSE)))
+    results = await asyncio.gather(*reads)
+    return {
+        "founder": verifier["founder"], "college": verifier["college"], "departments": verifier["scope_labels"],
+        "today": {action: count for action, count in results[0]}, "waiting": results[1][0][0] or 0, "needs_info": results[2][0][0] or 0,
+        "unassigned": (results[3][0][0] or 0) if verifier["founder"] else 0,
+        "reasons": {key: text_ for key, text_ in REJECT_REASONS.items()},
+    }
+
+
+@app.get("/api/verify/{student_id}/id-card")
+async def verify_id_card(student_id: int, current_user_id: int = Depends(get_current_user_id)):
+    verifier = await verifier_of(current_user_id)
+    await student_in_scope(verifier, student_id)
+    rows = await fetch_one_off(select(DBUser.id_card_image).where(DBUser.id == student_id))
+    if not rows or not rows[0][0]:
+        raise HTTPException(status_code=404, detail="This account has no ID document.")
+    return {"image": rows[0][0]}
+
+
+@app.get("/api/verify/{student_id}/departments")
+async def verify_departments(student_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Departments of the student's college, to pass a request on to, and which of them have an admin."""
+    verifier = await verifier_of(current_user_id)
+    student = await student_in_scope(verifier, student_id)
+    key = college_key_of(student.college_name)
+    used, covered = await asyncio.gather(
+        fetch_one_off(select(DBUser.department).where(USER_COLLEGE_KEY == key, func.coalesce(DBUser.department, "") != "").distinct()),
+        fetch_one_off(select(DBAdminScope.department, DBAdminScope.department_key).where(DBAdminScope.college_key == key)),
+    )
+    names = {college_key_of(d): d.strip() for (d,) in used if d and d.strip()}
+    for department, dept_key in covered:
+        names.setdefault(dept_key, department)
+    covered_keys = {dept_key for _, dept_key in covered}
+    return {"departments": [{"name": name, "has_admin": dept_key in covered_keys} for dept_key, name in sorted(names.items(), key=lambda item: item[1])]}
+
+
+async def apply_verification(verifier: dict, student, body: VerifyAction) -> dict:
+    now_iso = utc_now_iso()
+    current_department = (student.verify_department or "").strip() or (student.department or "").strip()
+    values, message, log_values = {}, "", {"reason": "", "from_department": current_department, "to_department": ""}
+    note = clean_text(body.note, 500, "note")
+    if body.action == "approve":
+        values = {"account_status": "verified"}
+        message = "Your account is verified. Welcome to Connect2Minds!"
+    elif body.action == "reject":
+        if body.reason not in REJECT_REASONS:
+            raise HTTPException(status_code=400, detail="Pick a reason for rejecting.")
+        reason_text = REJECT_REASONS[body.reason] or note
+        if not reason_text:
+            raise HTTPException(status_code=400, detail="Write the reason for rejecting.")
+        values = {"account_status": "rejected"}
+        log_values["reason"] = reason_text if not note or body.reason == "other" else f"{reason_text}. {note}"
+        message = f"Your account could not be verified: {log_values['reason']}. Fix your profile and appeal from your profile page."
+    elif body.action == "pass":
+        department = clean_required(body.department, 120, "department")
+        if college_key_of(department) == college_key_of(current_department):
+            raise HTTPException(status_code=400, detail="Pick a different department.")
+        values = {"verify_department": department}
+        log_values.update({"to_department": department, "reason": note})
+        message = ""
+    elif body.action == "needs_info":
+        if not note:
+            raise HTTPException(status_code=400, detail="Tell the student what to fix or upload again.")
+        values = {"account_status": "needs_info"}
+        log_values["reason"] = note
+        message = f"Your verification needs something from you: {note} Upload a new ID photo from your profile page."
+    else:
+        raise HTTPException(status_code=400, detail="Action must be approve, reject, pass or needs_info.")
+    result = await run_returning(update(DBUser).where(DBUser.id == student.id).values(**values).returning(*[getattr(DBUser, field) for field in DIRECTORY_FIELDS], DBUser.bio))
+    await run_one_off(DBVerificationLog.__table__.insert().values(student_id=student.id, admin_id=verifier["id"], action=body.action, created_at=now_iso, **log_values))
+    if message:
+        spawn_background(create_notification(student.id, "account", message, now_iso, "profile.html"))
+    if body.action == "pass":
+        key = college_key_of(student.college_name)
+        admins = await fetch_one_off(select(DBAdminScope.user_id).where(DBAdminScope.college_key == key, DBAdminScope.department_key == college_key_of(values["verify_department"])))
+        targets = [row[0] for row in admins] or [row[0] for row in await fetch_one_off(select(DBUser.id).where(DBUser.is_founder == 1))]
+        spawn_background(notify_many(targets, "account", f"{student.name or 'A student'} was passed to {values['verify_department']} for verification.", "verify.html"))
+    if result:
+        spawn_background(broadcast_directory({"type": "profile_updated", "profile": directory_card(result[0])}))
+    return {"id": student.id, "action": body.action, **values}
+
+
+@app.post("/api/verify/bulk")
+async def verify_bulk(body: VerifyBulk, current_user_id: int = Depends(get_current_user_id)):
+    """Approve many at once. Accounts outside your scope are skipped and counted."""
+    verifier = await verifier_of(current_user_id)
+    ids = list(dict.fromkeys(body.ids))[:100]
+    done, skipped = 0, 0
+    for student_id in ids:
+        try:
+            student = await student_in_scope(verifier, student_id)
+            await apply_verification(verifier, student, VerifyAction(action="approve"))
+            done += 1
+        except HTTPException:
+            skipped += 1
+    return {"approved": done, "skipped": skipped}
+
+
+@app.post("/api/verify/{student_id}")
+async def verify_student(student_id: int, body: VerifyAction, current_user_id: int = Depends(get_current_user_id)):
+    verifier = await verifier_of(current_user_id)
+    student = await student_in_scope(verifier, student_id)
+    return await apply_verification(verifier, student, body)
+
+
+@app.get("/api/founder/verification-log")
+async def founder_verification_log(admin_id: Optional[int] = None, founder_id: int = Depends(require_founder)):
+    student = aliased(DBUser)
+    conditions = [DBVerificationLog.admin_id == admin_id] if admin_id else []
+    rows = await fetch_one_off(
+        select(DBVerificationLog, DBUser.name, student.name)
+        .outerjoin(DBUser, DBUser.id == DBVerificationLog.admin_id).outerjoin(student, student.id == DBVerificationLog.student_id)
+        .where(*conditions).order_by(DBVerificationLog.id.desc()).limit(200)
+    )
+    return {"log": [{
+        "id": log.id, "student_id": log.student_id, "student": student_name or f"User #{log.student_id}", "admin_id": log.admin_id,
+        "admin": admin_name or f"User #{log.admin_id}", "action": log.action, "reason": log.reason or "", "from": log.from_department or "",
+        "to": log.to_department or "", "reversed": bool(log.reversed), "at": log.created_at or "",
+    } for log, admin_name, student_name in rows]}
+
+
+@app.post("/api/founder/verification-log/{log_id}/reverse")
+async def founder_reverse_verification(log_id: int, founder_id: int = Depends(require_founder)):
+    rows = await run_returning(update(DBVerificationLog).where(DBVerificationLog.id == log_id, DBVerificationLog.reversed == 0, DBVerificationLog.action.in_(("approve", "reject", "needs_info")))
+                               .values(reversed=1).returning(DBVerificationLog.student_id))
+    if not rows:
+        raise HTTPException(status_code=400, detail="That decision cannot be reversed (already reversed, or nothing to undo).")
+    student_id = rows[0][0]
+    await run_one_off(update(DBUser).where(DBUser.id == student_id).values(account_status="pending"))
+    await run_one_off(DBVerificationLog.__table__.insert().values(student_id=student_id, admin_id=founder_id, action="reverse", reason=f"Reversed decision #{log_id}", created_at=utc_now_iso()))
+    spawn_background(create_notification(student_id, "account", "Your verification is being looked at again.", utc_now_iso(), "profile.html"))
+    return {"status": "pending"}
+
+
+@app.post("/api/me/id-card")
+async def upload_my_id_card(body: IdCardUpload, current_user_id: int = Depends(get_current_user_id)):
+    """A new ID photo from the student (after "needs info" or a rejection). The request goes back in the queue."""
+    image = (body.image or "").strip()
+    if not image.startswith("data:image/") or len(image) > MAX_ID_IMAGE_CHARS:
+        raise HTTPException(status_code=400, detail="Send a JPEG or PNG photo under 1.5 MB.")
+    rows = await run_returning(update(DBUser).where(DBUser.id == current_user_id).values(
+        id_card_image=image,
+        account_status=case((func.coalesce(DBUser.account_status, "pending").in_(("needs_info", "rejected")), "pending"), else_=DBUser.account_status),
+    ).returning(DBUser.account_status))
+    return {"account_status": rows[0][0] if rows else "pending"}
+
+
+# ==========================================
+# 18. PLANS, LIMITS AND PAYMENTS (INR, Razorpay)
+# PLANS is the one list of prices and limits; the pricing page reads it from /api/plans.
+# Prices are in paise. B2C prices include 18% GST; business prices are before GST.
+# The founder is never limited and never charged. Admins and teachers pay like everyone else.
+# ==========================================
+GST_RATE = 18
+UNLIMITED = None
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+BUSINESS_NAME = os.getenv("BUSINESS_NAME", "Connect2Minds")
+BUSINESS_GSTIN = os.getenv("BUSINESS_GSTIN", "")
+INSTITUTION_TRIAL_DAYS = 60
+MULTI_YEAR_DISCOUNT = {1: 0, 2: 10, 3: 18}   # per cent off the yearly price, for institutions
+
+FREE_LIMITS = {"new_conversations": 10, "board_applications": 5, "teams": 3, "research_saves": 5, "pro_intros": 3,
+               "advanced_filters": False, "profile_boost": False}
+
+PLANS = {
+    # ---- Freemium B2C and professional networking (self-serve, for one person) ----
+    "free": {"line": "personal", "name": "Free", "rank": 0, "gst": "inclusive", "prices": {}, "self_serve": False,
+             "limits": FREE_LIMITS, "blurb": "Everything you need to build a profile, find people and join teams."},
+    "student_pro": {"line": "personal", "name": "Student Pro", "rank": 1, "gst": "inclusive", "prices": {"month": 9900, "year": 79900}, "self_serve": True,
+                    "limits": {"new_conversations": 30, "board_applications": UNLIMITED, "teams": 10, "research_saves": UNLIMITED, "pro_intros": 10,
+                               "advanced_filters": True, "profile_boost": False},
+                    "blurb": "Low-cost upgrade for students: unlimited applications, more outreach and advanced filters."},
+    "premium": {"line": "personal", "name": "Networking Premium", "rank": 2, "gst": "inclusive", "prices": {"month": 29900, "year": 249900}, "self_serve": True,
+                "limits": {"new_conversations": UNLIMITED, "board_applications": UNLIMITED, "teams": 10, "research_saves": UNLIMITED, "pro_intros": UNLIMITED,
+                           "advanced_filters": True, "profile_boost": False},
+                "blurb": "Unrestricted messaging and direct outreach to professionals."},
+    "premium_plus": {"line": "personal", "name": "Premium Plus", "rank": 3, "gst": "inclusive", "prices": {"month": 59900, "year": 499900}, "self_serve": True,
+                     "limits": {"new_conversations": UNLIMITED, "board_applications": UNLIMITED, "teams": UNLIMITED, "research_saves": UNLIMITED, "pro_intros": UNLIMITED,
+                                "advanced_filters": True, "profile_boost": True},
+                     "blurb": "Everything in Premium, plus a profile boost (shown first in Discover and Professionals) and unlimited teams."},
+    # ---- Recruiter access (enquiry, the founder switches it on) ----
+    "recruiter_starter": {"line": "recruiter", "name": "Recruiter Starter", "gst": "extra", "prices": {"month": 299900, "year": 2999900},
+                          "unlocks": 50, "seats": 1, "git_filters": False, "csv": False, "blurb": "Search verified talent and contact 50 people a month."},
+    "recruiter_growth": {"line": "recruiter", "name": "Recruiter Growth", "gst": "extra", "prices": {"month": 799900, "year": 7999900},
+                         "unlocks": 250, "seats": 3, "git_filters": True, "csv": True, "blurb": "250 contacts a month, GitHub-backed filters, CSV export and 3 seats."},
+    "recruiter_enterprise": {"line": "recruiter", "name": "Recruiter Enterprise", "gst": "extra", "prices": {"year": 25000000}, "quote": True,
+                             "unlocks": UNLIMITED, "seats": 10, "git_filters": True, "csv": True, "blurb": "Unlimited contacts and 10+ seats. Priced on request, from ₹2,50,000 a year."},
+    # ---- Institutional SaaS licence (per college, yearly; enquiry) ----
+    "inst_trial": {"line": "institution", "name": "Institution trial", "gst": "extra", "prices": {}, "max_students": 300, "hidden": True,
+                   "blurb": f"{INSTITUTION_TRIAL_DAYS} days of the full institution features, free, when a college's first teacher is approved."},
+    "inst_starter": {"line": "institution", "name": "Institution Starter", "gst": "extra", "prices": {"year": 4999900}, "max_students": 500,
+                     "blurb": "Up to 500 students: attendance, marks, analytics, exports and admin controls."},
+    "inst_growth": {"line": "institution", "name": "Institution Growth", "gst": "extra", "prices": {"year": 14999900}, "max_students": 2000,
+                    "blurb": "Up to 2,000 students, with priority support."},
+    "inst_campus": {"line": "institution", "name": "Institution Campus", "gst": "extra", "prices": {"year": 29999900}, "max_students": 5000,
+                    "blurb": "Up to 5,000 students, several departments and campuses."},
+    "inst_enterprise": {"line": "institution", "name": "Institution Enterprise", "gst": "extra", "prices": {"year": 5500}, "per_student": True, "quote": True,
+                        "max_students": UNLIMITED, "blurb": "Above 5,000 students: ₹55 per student a year, priced on request."},
+    # ---- Sponsored bounties and hackathons (per challenge; enquiry) ----
+    "sponsor_basic": {"line": "sponsor", "name": "Bounty Basic", "gst": "extra", "prices": {"one_time": 499900}, "days": 30, "credits": 1, "tier": "basic",
+                      "blurb": "One sponsored challenge on the Opportunities board for 30 days, with a Sponsored tag."},
+    "sponsor_featured": {"line": "sponsor", "name": "Featured Challenge", "gst": "extra", "prices": {"one_time": 1499900}, "days": 60, "credits": 1, "tier": "featured",
+                         "blurb": "Pinned for 60 days and pushed to students whose skills match."},
+    "sponsor_hackathon": {"line": "sponsor", "name": "Hackathon Package", "gst": "extra", "prices": {"one_time": 4999900}, "days": 90, "credits": 1, "tier": "hackathon",
+                          "blurb": "Registration, teams, submissions, judging, winners and a campus-wide push."},
+    "sponsor_season": {"line": "sponsor", "name": "Season Pack", "gst": "extra", "prices": {"one_time": 5999900}, "days": 365, "credits": 5, "tier": "featured",
+                       "blurb": "Five Featured challenges to use within a year."},
+}
+PERSONAL_PLANS = [key for key, plan in PLANS.items() if plan["line"] == "personal" and key != "free"]
+PERIOD_DAYS = {"month": 30, "year": 365}
+LIMIT_LABELS = {"new_conversations": "new conversations this month", "board_applications": "board applications this month",
+                "teams": "teams", "research_saves": "saved research reports", "pro_intros": "introductions to professionals this month"}
+MONTHLY_METRICS = ("new_conversations", "board_applications", "pro_intros")
+
+
+class DBSubscription(Base):
+    __tablename__ = "subscriptions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, nullable=True)       # the person, or the owner of a recruiter / sponsor plan
+    college_key = Column(String, index=True, default="")        # institution licences belong to a college
+    org_name = Column(String, default="")
+    plan_key = Column(String, index=True)
+    period = Column(String, default="month")                    # month, year, one_time, trial
+    years = Column(Integer, default=1)
+    status = Column(String, index=True, default="active")       # active, expired, cancelled
+    starts_at = Column(String)                                  # YYYY-MM-DD
+    ends_at = Column(String)                                    # YYYY-MM-DD, last day included
+    amount_paise = Column(Integer, default=0)
+    gst_paise = Column(Integer, default=0)
+    credits = Column(Integer, default=0)                        # sponsor challenges left
+    seats = Column(Integer, default=0)
+    source = Column(String, default="razorpay")                 # razorpay, manual, trial
+    granted_by = Column(Integer, nullable=True)
+    note = Column(String, default="")
+    reminded = Column(Integer, default=0)
+    created_at = Column(String)
+
+class DBPayment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    subscription_id = Column(Integer, nullable=True)
+    plan_key = Column(String)
+    period = Column(String, default="month")
+    amount_paise = Column(Integer)
+    gst_paise = Column(Integer, default=0)
+    status = Column(String, index=True, default="created")      # created, paid, failed, refunded
+    method = Column(String, default="razorpay")                 # razorpay, manual
+    razorpay_order_id = Column(String, index=True, default="")
+    razorpay_payment_id = Column(String, default="")
+    reference = Column(String, default="")                      # manual payments: UPI / bank reference
+    receipt_no = Column(String, default="")
+    created_at = Column(String)
+    paid_at = Column(String, default="")
+
+class DBUsageCounter(Base):
+    __tablename__ = "usage_counters"
+    __table_args__ = (UniqueConstraint("user_id", "metric", "period", name="ux_usage_counters"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    metric = Column(String)
+    period = Column(String)                                     # YYYY-MM
+    count = Column(Integer, default=0)
+
+
+class OrderBody(BaseModel):
+    plan_key: str
+    period: str
+
+class PaymentVerifyBody(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+
+def gst_split(plan: dict, amount: int) -> tuple:
+    """(total to charge, the GST inside it) in paise."""
+    if plan.get("gst") == "inclusive":
+        return amount, round(amount * GST_RATE / (100 + GST_RATE))
+    gst = round(amount * GST_RATE / 100)
+    return amount + gst, gst
+
+def plan_price(plan_key: str, period: str, years: int = 1) -> int:
+    plan = PLANS.get(plan_key)
+    if not plan or period not in plan["prices"]:
+        raise HTTPException(status_code=400, detail="That plan cannot be bought for that period.")
+    price = plan["prices"][period]
+    if plan["line"] == "institution" and period == "year":
+        price = round(price * years * (100 - MULTI_YEAR_DISCOUNT.get(years, 0)) / 100)
+    return price
+
+def this_month() -> str:
+    return datetime.now().strftime("%Y-%m")
+
+def today_iso() -> str:
+    return datetime.now().date().isoformat()
+
+def limit_of(plan_key: str, metric: str):
+    return PLANS.get(plan_key or "free", PLANS["free"]).get("limits", FREE_LIMITS).get(metric, FREE_LIMITS.get(metric))
+
+async def personal_plan(user_id: int) -> tuple:
+    """(founder?, plan key) from the users row; a plan past its last day counts as free."""
+    rows = await fetch_one_off(select(DBUser.is_founder, DBUser.plan, DBUser.plan_until).where(DBUser.id == user_id))
+    if not rows:
+        return False, "free"
+    founder, plan, until = rows[0]
+    if (founder or 0) == 1:
+        return True, "founder"
+    if plan in PLANS and until and until >= today_iso():
+        return False, plan
+    return False, "free"
+
+async def usage_count(user_id: int, metric: str) -> int:
+    rows = await fetch_one_off(select(DBUsageCounter.count).where(DBUsageCounter.user_id == user_id, DBUsageCounter.metric == metric, DBUsageCounter.period == this_month()))
+    return rows[0][0] if rows else 0
+
+async def bump_usage(user_id: int, metric: str, by: int = 1):
+    try:
+        await run_one_off(pg_insert(DBUsageCounter).values(user_id=user_id, metric=metric, period=this_month(), count=by)
+                          .on_conflict_do_update(index_elements=["user_id", "metric", "period"], set_={"count": DBUsageCounter.count + by}))
+    except Exception as e:
+        print("Error counting usage:", e)
+
+def upgrade_for(metric: str, plan_key: str) -> str:
+    """The cheapest plan above plan_key that raises this limit."""
+    current = limit_of(plan_key, metric)
+    for key in PERSONAL_PLANS:
+        if PLANS[key]["rank"] > PLANS.get(plan_key, PLANS["free"]).get("rank", 0):
+            better = PLANS[key]["limits"].get(metric)
+            if better is UNLIMITED or (current is not UNLIMITED and better > current):
+                return key
+    return "premium_plus"
+
+async def check_limit(user_id: int, metric: str, used: Optional[int] = None):
+    """Raises 402 when the person has used up a limit of their plan. used is given for totals (teams, reports);
+    monthly limits are read from usage_counters."""
+    founder, plan_key = await personal_plan(user_id)
+    if founder:
+        return
+    limit = limit_of(plan_key, metric)
+    if limit is UNLIMITED:
+        return
+    if used is None:
+        used = await usage_count(user_id, metric)
+    if used >= limit:
+        better = PLANS[upgrade_for(metric, plan_key)]["name"]
+        raise HTTPException(status_code=402, detail=f"You have used all {limit} {LIMIT_LABELS.get(metric, metric)} on the {PLANS.get(plan_key, PLANS['free'])['name']} plan. Upgrade to {better} on the Plans page to get more.")
+
+
+# ---------- subscriptions ----------
+def serialize_subscription(sub) -> dict:
+    plan = PLANS.get(sub.plan_key, {})
+    return {
+        "id": sub.id, "user_id": sub.user_id, "college_key": sub.college_key or "", "org_name": sub.org_name or "", "plan_key": sub.plan_key,
+        "plan_name": plan.get("name", sub.plan_key), "line": plan.get("line", ""), "period": sub.period, "years": sub.years or 1, "status": sub.status,
+        "starts_at": sub.starts_at or "", "ends_at": sub.ends_at or "", "amount_paise": sub.amount_paise or 0, "gst_paise": sub.gst_paise or 0,
+        "credits": sub.credits or 0, "seats": sub.seats or 0, "source": sub.source or "", "note": sub.note or "", "created_at": sub.created_at or "",
+    }
+
+async def refresh_user_plan(user_id: int):
+    """users.plan / plan_until follow the best active personal subscription (shown as a badge, used by limits)."""
+    rows = await fetch_one_off(select(DBSubscription.plan_key, DBSubscription.ends_at).where(
+        DBSubscription.user_id == user_id, DBSubscription.status == "active", DBSubscription.plan_key.in_(PERSONAL_PLANS), DBSubscription.ends_at >= today_iso()))
+    best = max(rows, key=lambda row: (PLANS[row[0]]["rank"], row[1]), default=None)
+    await run_one_off(update(DBUser).where(DBUser.id == user_id).values(plan=best[0] if best else "", plan_until=best[1] if best else ""))
+
+async def activate_subscription(*, user_id: Optional[int], plan_key: str, period: str, years: int = 1, amount: int = 0, gst: int = 0,
+                                source: str, college_key: str = "", org_name: str = "", granted_by: Optional[int] = None, note: str = "",
+                                starts_at: Optional[str] = None, ends_at: Optional[str] = None, credits: Optional[int] = None, seats: Optional[int] = None) -> int:
+    plan = PLANS[plan_key]
+    start = datetime.fromisoformat(starts_at).date() if starts_at else datetime.now().date()
+    if not starts_at and user_id and plan["line"] == "personal":
+        # Renewing the same plan early: the new period starts when the current one ends
+        same = await fetch_one_off(select(func.max(DBSubscription.ends_at)).where(DBSubscription.user_id == user_id, DBSubscription.plan_key == plan_key, DBSubscription.status == "active"))
+        if same and same[0][0] and same[0][0] >= start.isoformat():
+            start = datetime.fromisoformat(same[0][0]).date() + timedelta(days=1)
+    if ends_at:
+        end = datetime.fromisoformat(ends_at).date()
+    elif period == "one_time":
+        end = start + timedelta(days=plan.get("days", 30) - 1)
+    elif period == "trial":
+        end = start + timedelta(days=INSTITUTION_TRIAL_DAYS - 1)
+    else:
+        end = start + timedelta(days=PERIOD_DAYS.get(period, 30) * (years or 1) - 1)
+    rows = await run_returning(DBSubscription.__table__.insert().values(
+        user_id=user_id, college_key=college_key, org_name=org_name, plan_key=plan_key, period=period, years=years or 1, status="active",
+        starts_at=start.isoformat(), ends_at=end.isoformat(), amount_paise=amount, gst_paise=gst,
+        credits=plan.get("credits", 0) if credits is None else credits, seats=plan.get("seats", 0) if seats is None else seats,
+        source=source, granted_by=granted_by, note=note, reminded=0, created_at=utc_now_iso(),
+    ).returning(DBSubscription.id))
+    if user_id and plan["line"] == "personal":
+        await refresh_user_plan(user_id)
+    return rows[0][0]
+
+async def college_licence(key: str) -> Optional[dict]:
+    """The institution licence (or trial) a college has today."""
+    if not key:
+        return None
+    rows = await fetch_one_off(select(DBSubscription).where(DBSubscription.college_key == key, DBSubscription.status == "active",
+                                                           DBSubscription.plan_key.like("inst_%"), DBSubscription.ends_at >= today_iso()).order_by(DBSubscription.ends_at.desc()).limit(1))
+    if not rows:
+        return None
+    sub = rows[0][0]
+    plan = PLANS.get(sub.plan_key, {})
+    return {"plan_key": sub.plan_key, "name": plan.get("name", sub.plan_key), "ends_at": sub.ends_at, "trial": sub.plan_key == "inst_trial", "max_students": plan.get("max_students")}
+
+async def ensure_institution_trial(key: str, college_name: str = ""):
+    """The first approved teacher of a college starts its free trial, once."""
+    if not key:
+        return
+    seen = await fetch_one_off(select(DBSubscription.id).where(DBSubscription.college_key == key, DBSubscription.plan_key.like("inst_%")).limit(1))
+    if not seen:
+        await activate_subscription(user_id=None, plan_key="inst_trial", period="trial", source="trial", college_key=key, org_name=college_name, note="Started with the first approved teacher")
+
+async def require_licence(key: str, feature: str):
+    if not await college_licence(key):
+        raise HTTPException(status_code=402, detail=f"{feature} is part of the Connect2Minds institution licence. Your college can start one from the Plans page.")
+
+
+async def recruiter_access(user_id: int) -> Optional[dict]:
+    """The recruiter plan this person may use: their own, or a seat on someone else's. The founder always may."""
+    founder, _ = await personal_plan(user_id)
+    if founder:
+        return {"sub_id": 0, "plan_key": "recruiter_enterprise", "name": "Founder access", "owner": True, "owner_id": user_id, "unlocks": UNLIMITED,
+                "seats": 0, "git_filters": True, "csv": True, "ends_at": ""}
+    seat_subs = select(DBRecruiterSeat.subscription_id).where(DBRecruiterSeat.user_id == user_id)
+    rows = await fetch_one_off(select(DBSubscription).where(
+        or_(DBSubscription.user_id == user_id, DBSubscription.id.in_(seat_subs)), DBSubscription.status == "active",
+        DBSubscription.plan_key.like("recruiter_%"), DBSubscription.ends_at >= today_iso()).order_by(DBSubscription.ends_at.desc()).limit(1))
+    if not rows:
+        return None
+    sub = rows[0][0]
+    plan = PLANS[sub.plan_key]
+    return {"sub_id": sub.id, "plan_key": sub.plan_key, "name": plan["name"], "owner": sub.user_id == user_id, "owner_id": sub.user_id,
+            "unlocks": plan["unlocks"], "seats": sub.seats or plan["seats"], "git_filters": plan["git_filters"], "csv": plan["csv"], "ends_at": sub.ends_at}
+
+async def sponsor_credits(user_id: int) -> list:
+    """Active sponsor packages with challenges left, newest first."""
+    rows = await fetch_one_off(select(DBSubscription).where(DBSubscription.user_id == user_id, DBSubscription.status == "active",
+                                                           DBSubscription.plan_key.like("sponsor_%"), DBSubscription.ends_at >= today_iso(), DBSubscription.credits > 0))
+    return [row[0] for row in rows]
+
+
+async def entitlements(user_id: int) -> dict:
+    founder, plan_key = await personal_plan(user_id)
+    usage_rows, teams, reports, subs, recruiter, credits = await asyncio.gather(
+        fetch_one_off(select(DBUsageCounter.metric, DBUsageCounter.count).where(DBUsageCounter.user_id == user_id, DBUsageCounter.period == this_month())),
+        fetch_one_off(select(func.count()).select_from(DBTeam).where(DBTeam.created_by == user_id, func.coalesce(DBTeam.college_key, "") == "")),
+        fetch_one_off(select(func.count()).select_from(DBResearchReport).where(DBResearchReport.user_id == user_id)),
+        fetch_one_off(select(DBSubscription).where(DBSubscription.user_id == user_id).order_by(DBSubscription.id.desc()).limit(50)),
+        recruiter_access(user_id),
+        sponsor_credits(user_id),
+    )
+    usage = {metric: count for metric, count in usage_rows}
+    usage.update({"teams": teams[0][0] or 0, "research_saves": reports[0][0] or 0})
+    if founder:
+        limits = {metric: UNLIMITED for metric in FREE_LIMITS}
+        limits.update({"advanced_filters": True, "profile_boost": True})
+    else:
+        limits = dict(PLANS[plan_key]["limits"])
+    return {
+        "founder": founder, "plan": plan_key, "plan_name": "Founder" if founder else PLANS[plan_key]["name"],
+        "limits": limits, "usage": usage, "recruiter": recruiter,
+        "sponsor_credits": sum(sub.credits or 0 for sub in credits) if not founder else UNLIMITED,
+        "subscriptions": [serialize_subscription(sub) for (sub,) in subs],
+        "payments_enabled": bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET),
+    }
+
+
+@app.get("/api/plans")
+async def get_plans():
+    """Every plan with its price (in paise, with GST worked out). Public: the pricing page and the landing page read it."""
+    out = {}
+    for key, plan in PLANS.items():
+        if plan.get("hidden"):
+            continue
+        prices = {}
+        for period, amount in plan["prices"].items():
+            total, gst = gst_split(plan, amount)
+            prices[period] = {"base": amount if plan.get("gst") == "extra" else amount - gst, "gst": gst, "total": total}
+        out[key] = {**{k: v for k, v in plan.items() if k not in ("prices",)}, "key": key, "prices": prices}
+    return {"plans": out, "gst_rate": GST_RATE, "multi_year_discount": MULTI_YEAR_DISCOUNT, "trial_days": INSTITUTION_TRIAL_DAYS,
+            "free_limits": FREE_LIMITS, "payments_enabled": bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET), "razorpay_key_id": RAZORPAY_KEY_ID}
+
+
+@app.get("/api/me/plan")
+async def get_my_plan(current_user_id: int = Depends(get_current_user_id)):
+    return await entitlements(current_user_id)
+
+
+# ---------- Razorpay ----------
+async def razorpay(method: str, path: str, payload: Optional[dict] = None) -> dict:
+    if not (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET):
+        raise HTTPException(status_code=503, detail="Online payments are not switched on yet. Please try again later.")
+    try:
+        async with httpx.AsyncClient(base_url="https://api.razorpay.com/v1", auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET), timeout=20) as client:
+            response = await client.request(method, path, json=payload)
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="The payment service could not be reached. Please try again.")
+    if response.status_code >= 400:
+        print("Razorpay error:", response.status_code, response.text[:300])
+        raise HTTPException(status_code=502, detail="The payment service refused the request. Please try again.")
+    return response.json()
+
+def razorpay_signature_ok(order_id: str, payment_id: str, signature: str) -> bool:
+    if not RAZORPAY_KEY_SECRET:
+        return False
+    expected = hmac.new(RAZORPAY_KEY_SECRET.encode(), f"{order_id}|{payment_id}".encode(), "sha256").hexdigest()
+    return hmac.compare_digest(expected, signature or "")
+
+async def settle_payment(order_id: str, payment_id: str, user_id: Optional[int] = None) -> Optional[int]:
+    """Marks a payment paid and starts its plan, exactly once (the browser and the webhook may both report it)."""
+    conditions = [DBPayment.razorpay_order_id == order_id, DBPayment.status != "paid"]
+    if user_id is not None:
+        conditions.append(DBPayment.user_id == user_id)
+    now_iso = utc_now_iso()
+    rows = await run_returning(update(DBPayment).where(*conditions).values(status="paid", razorpay_payment_id=payment_id, paid_at=now_iso,
+                               receipt_no=func.concat("C2M-", func.to_char(func.now(), "YYYYMM"), "-", DBPayment.id))
+                               .returning(DBPayment.id, DBPayment.user_id, DBPayment.plan_key, DBPayment.period, DBPayment.amount_paise, DBPayment.gst_paise))
+    if not rows:
+        return None
+    payment = rows[0]
+    sub_id = await activate_subscription(user_id=payment.user_id, plan_key=payment.plan_key, period=payment.period, amount=payment.amount_paise,
+                                         gst=payment.gst_paise, source="razorpay")
+    await run_one_off(update(DBPayment).where(DBPayment.id == payment.id).values(subscription_id=sub_id))
+    spawn_background(create_notification(payment.user_id, "account", f"Payment received. {PLANS[payment.plan_key]['name']} is now active.", now_iso, "billing.html"))
+    return sub_id
+
+
+@app.post("/api/billing/order")
+async def create_billing_order(body: OrderBody, current_user_id: int = Depends(get_current_user_id)):
+    """A Razorpay order for a self-serve plan. The amount always comes from PLANS, never from the browser."""
+    plan = PLANS.get(body.plan_key)
+    if not plan or not plan.get("self_serve"):
+        raise HTTPException(status_code=400, detail="That plan is arranged with our team. Use 'Talk to us' on the Plans page.")
+    founder, _ = await personal_plan(current_user_id)
+    if founder:
+        raise HTTPException(status_code=400, detail="As the founder you already have every feature, free.")
+    total, gst = gst_split(plan, plan_price(body.plan_key, body.period))
+    rows = await fetch_one_off(select(DBUser.name, DBUser.email).where(DBUser.id == current_user_id))
+    payment_rows = await run_returning(DBPayment.__table__.insert().values(
+        user_id=current_user_id, plan_key=body.plan_key, period=body.period, amount_paise=total, gst_paise=gst, status="created", method="razorpay", created_at=utc_now_iso(),
+    ).returning(DBPayment.id))
+    payment_id = payment_rows[0][0]
+    order = await razorpay("POST", "/orders", {"amount": total, "currency": "INR", "receipt": f"c2m-{payment_id}",
+                                               "notes": {"user_id": str(current_user_id), "plan_key": body.plan_key, "period": body.period}})
+    await run_one_off(update(DBPayment).where(DBPayment.id == payment_id).values(razorpay_order_id=order["id"]))
+    return {"key_id": RAZORPAY_KEY_ID, "order_id": order["id"], "amount": total, "currency": "INR", "name": BUSINESS_NAME,
+            "description": f"{plan['name']} ({'yearly' if body.period == 'year' else 'monthly'})",
+            "prefill": {"name": rows[0].name or "", "email": rows[0].email or ""} if rows else {}}
+
+
+@app.post("/api/billing/verify")
+async def verify_billing_payment(body: PaymentVerifyBody, current_user_id: int = Depends(get_current_user_id)):
+    if not razorpay_signature_ok(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature):
+        raise HTTPException(status_code=400, detail="The payment could not be verified. If money left your account, it will be refunded automatically.")
+    await settle_payment(body.razorpay_order_id, body.razorpay_payment_id, current_user_id)
+    return await entitlements(current_user_id)
+
+
+@app.post("/api/billing/webhook")
+async def razorpay_webhook(request: Request):
+    body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    if not RAZORPAY_WEBHOOK_SECRET:
+        raise HTTPException(status_code=503, detail="Webhook not configured.")
+    expected = hmac.new(RAZORPAY_WEBHOOK_SECRET.encode(), body, "sha256").hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        raise HTTPException(status_code=400, detail="Bad signature.")
+    try:
+        event = json.loads(body)
+        entity = event["payload"]["payment"]["entity"]
+    except (ValueError, KeyError, TypeError):
+        return {"status": "ignored"}
+    if event.get("event") == "payment.captured":
+        await settle_payment(entity.get("order_id", ""), entity.get("id", ""))
+    elif event.get("event") == "payment.failed":
+        await run_one_off(update(DBPayment).where(DBPayment.razorpay_order_id == entity.get("order_id", ""), DBPayment.status == "created").values(status="failed"))
+    return {"status": "ok"}
+
+
+@app.get("/api/billing/history")
+async def billing_history(current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBPayment).where(DBPayment.user_id == current_user_id, DBPayment.status.in_(("paid", "refunded", "failed"))).order_by(DBPayment.id.desc()).limit(100))
+    return {"payments": [serialize_payment(payment) for (payment,) in rows]}
+
+def serialize_payment(payment) -> dict:
+    return {"id": payment.id, "plan_key": payment.plan_key, "plan_name": PLANS.get(payment.plan_key, {}).get("name", payment.plan_key), "period": payment.period,
+            "amount_paise": payment.amount_paise or 0, "gst_paise": payment.gst_paise or 0, "status": payment.status, "method": payment.method,
+            "reference": payment.razorpay_payment_id or payment.reference or "", "receipt_no": payment.receipt_no or "", "created_at": payment.created_at or "",
+            "paid_at": payment.paid_at or "", "user_id": payment.user_id}
+
+
+@app.get("/api/billing/receipt/{payment_id}")
+async def billing_receipt(payment_id: int, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBPayment, DBUser.name, DBUser.email).outerjoin(DBUser, DBUser.id == DBPayment.user_id).where(DBPayment.id == payment_id))
+    if not rows or (rows[0][0].user_id != current_user_id and not await founder_flag(current_user_id)):
+        raise HTTPException(status_code=404, detail="Receipt not found.")
+    payment, name, email = rows[0]
+    if payment.status not in ("paid", "refunded"):
+        raise HTTPException(status_code=400, detail="There is no receipt for an unpaid order.")
+    return {**serialize_payment(payment), "customer": name or "", "email": email or "", "business": BUSINESS_NAME, "gstin": BUSINESS_GSTIN, "gst_rate": GST_RATE,
+            "taxable_paise": (payment.amount_paise or 0) - (payment.gst_paise or 0)}
+
+
+async def subscription_watch():
+    """Every few hours: end subscriptions past their last day, and remind people 3 days before the end."""
+    while True:
+        try:
+            today = today_iso()
+            ended = await run_returning(update(DBSubscription).where(DBSubscription.status == "active", DBSubscription.ends_at < today)
+                                        .values(status="expired").returning(DBSubscription.user_id, DBSubscription.plan_key))
+            for user_id, plan_key in ended:
+                if user_id and PLANS.get(plan_key, {}).get("line") == "personal":
+                    await refresh_user_plan(user_id)
+                    await create_notification(user_id, "account", f"Your {PLANS[plan_key]['name']} plan has ended. Renew it from Plans & billing.", utc_now_iso(), "billing.html")
+            soon = (datetime.now().date() + timedelta(days=3)).isoformat()
+            due = await run_returning(update(DBSubscription).where(DBSubscription.status == "active", DBSubscription.reminded == 0, DBSubscription.ends_at <= soon,
+                                                                  DBSubscription.user_id.isnot(None), DBSubscription.source != "trial")
+                                      .values(reminded=1).returning(DBSubscription.user_id, DBSubscription.plan_key, DBSubscription.ends_at))
+            for user_id, plan_key, ends_at in due:
+                await create_notification(user_id, "account", f"Your {PLANS.get(plan_key, {}).get('name', plan_key)} plan ends on {ends_at}.", utc_now_iso(), "billing.html")
+        except Exception as e:
+            print("Error checking subscriptions:", e)
+        await asyncio.sleep(6 * 3600)
+
+
+# ---------- the first message to someone who does not follow you ----------
+KNOWN_CONVERSATIONS: set = set()   # (sender, receiver) pairs that are past the check, so later messages skip it
+
+async def check_new_conversation(db, sender_id: int, receiver_id: int):
+    """A conversation counts against the monthly limit when it is new and the other person does not follow you back.
+    Replies, followers and people a recruiter unlocked are free. Raises MessageRefused when the limit is used up."""
+    row = (await db.execute(select(
+        exists().where(or_(and_(DBMessage.sender_id == sender_id, DBMessage.receiver_id == receiver_id),
+                           and_(DBMessage.sender_id == receiver_id, DBMessage.receiver_id == sender_id))),
+        exists().where(DBFollow.follower_id == receiver_id, DBFollow.followed_id == sender_id),
+        exists().where(DBRecruiterUnlock.recruiter_id == sender_id, DBRecruiterUnlock.user_id == receiver_id),
+    ))).first()
+    if len(KNOWN_CONVERSATIONS) > 50000:
+        KNOWN_CONVERSATIONS.clear()
+    if not any(row):
+        try:
+            await check_limit(sender_id, "new_conversations")
+        except HTTPException as limit:
+            raise MessageRefused(limit.detail)
+        spawn_background(bump_usage(sender_id, "new_conversations"))
+    KNOWN_CONVERSATIONS.add((sender_id, receiver_id))
+
+
+# ==========================================
+# 19. BUSINESS: ENQUIRIES, RECRUITER ACCESS, SPONSORED CHALLENGES, INSTITUTION ANALYTICS
+# Business plans start with an enquiry; the founder switches the plan on (section 20).
+# ==========================================
+class DBEnquiry(Base):
+    __tablename__ = "b2b_enquiries"
+    id = Column(Integer, primary_key=True, index=True)
+    kind = Column(String, index=True)               # institution, recruiter, sponsor
+    plan_key = Column(String, default="")
+    organisation = Column(String)
+    contact_name = Column(String)
+    email = Column(String)
+    phone = Column(String, default="")
+    size = Column(String, default="")               # students, hires a year, or challenges
+    message = Column(String, default="")
+    user_id = Column(Integer, nullable=True)
+    status = Column(String, index=True, default="new")   # new, contacted, won, lost
+    founder_note = Column(String, default="")
+    subscription_id = Column(Integer, nullable=True)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+class DBRecruiterSeat(Base):
+    __tablename__ = "recruiter_seats"
+    __table_args__ = (UniqueConstraint("subscription_id", "user_id", name="ux_recruiter_seats"),)
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    added_at = Column(String)
+
+class DBRecruiterUnlock(Base):
+    __tablename__ = "recruiter_unlocks"
+    __table_args__ = (UniqueConstraint("subscription_id", "user_id", name="ux_recruiter_unlocks"),)
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, index=True)    # 0 for the founder
+    recruiter_id = Column(Integer, index=True)       # who pressed Unlock
+    user_id = Column(Integer, index=True)            # the candidate
+    created_at = Column(String)
+
+class DBRecruiterShortlist(Base):
+    __tablename__ = "recruiter_shortlists"
+    __table_args__ = (UniqueConstraint("subscription_id", "user_id", name="ux_recruiter_shortlists"),)
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    stage = Column(String, default="shortlisted")   # shortlisted, contacted, interviewing, offer, hired, rejected
+    note = Column(String, default="")
+    added_by = Column(Integer)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+class DBGithubStats(Base):
+    __tablename__ = "github_stats"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, index=True)
+    username = Column(String)
+    repos = Column(Integer, default=0)
+    followers = Column(Integer, default=0)
+    stars = Column(Integer, default=0)
+    languages = Column(String, default="[]")
+    fetched_at = Column(String)
+
+class DBChallengeSubmission(Base):
+    __tablename__ = "challenge_submissions"
+    __table_args__ = (UniqueConstraint("post_id", "user_id", name="ux_challenge_submissions"),)
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    team_id = Column(Integer, nullable=True)
+    link = Column(String)
+    note = Column(String, default="")
+    score = Column(Integer, nullable=True)
+    remarks = Column(String, default="")
+    rank = Column(Integer, nullable=True)            # 1, 2, 3 ... for winners
+    submitted_at = Column(String)
+    updated_at = Column(String)
+
+
+ENQUIRY_KINDS = ("institution", "recruiter", "sponsor")
+SHORTLIST_STAGES = ("shortlisted", "contacted", "interviewing", "offer", "hired", "rejected")
+CHALLENGE_KINDS = ("bounty", "hackathon")
+SPONSOR_TIERS = {"basic": 30, "featured": 60, "hackathon": 90}
+RECRUITER_RESULTS = 200
+GITHUB_STATS_DAYS = 1
+
+
+class EnquiryBody(BaseModel):
+    kind: str
+    plan_key: Optional[str] = ""
+    organisation: str
+    contact_name: str
+    email: str
+    phone: Optional[str] = ""
+    size: Optional[str] = ""
+    message: Optional[str] = ""
+
+class ShortlistBody(BaseModel):
+    user_id: int
+    stage: Optional[str] = "shortlisted"
+    note: Optional[str] = ""
+
+class SeatBody(BaseModel):
+    email: str
+
+class ChallengeBody(BaseModel):
+    title: str
+    description: str
+    skills_required: str
+    kind: str = "bounty"
+    tier: str = "basic"
+    sponsor_name: str
+    sponsor_url: Optional[str] = ""
+    sponsor_logo: Optional[str] = ""
+    prize: Optional[str] = ""
+    deadline: str
+    max_team_size: Optional[int] = 1
+
+class ChallengeSubmissionBody(BaseModel):
+    link: str
+    note: Optional[str] = ""
+    team_id: Optional[int] = None
+
+class JudgeBody(BaseModel):
+    score: Optional[int] = None
+    remarks: Optional[str] = ""
+    rank: Optional[int] = None
+
+
+def optional_user_id(request: Request) -> Optional[int]:
+    """The logged-in person if there is one; enquiries can also come from people without an account."""
+    token = request.cookies.get("authToken")
+    if not token:
+        return None
+    try:
+        return int(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]).get("sub"))
+    except Exception:
+        return None
+
+
+# ---------- enquiries ----------
+@app.post("/api/enquiries")
+@limiter.limit("5/minute")
+async def create_enquiry(request: Request, body: EnquiryBody):
+    if body.kind not in ENQUIRY_KINDS:
+        raise HTTPException(status_code=400, detail="Pick what you are asking about.")
+    if body.plan_key and (body.plan_key not in PLANS or PLANS[body.plan_key]["line"] != body.kind):
+        raise HTTPException(status_code=400, detail="That plan does not match the enquiry.")
+    email = (body.email or "").strip()[:160]
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+    phone = (body.phone or "").strip()[:20]
+    if phone and not PHONE_PATTERN.match(phone):
+        raise HTTPException(status_code=400, detail="Enter a valid phone number, or leave it empty.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBEnquiry.__table__.insert().values(
+        kind=body.kind, plan_key=body.plan_key or "", organisation=clean_required(body.organisation, 160, "organisation"),
+        contact_name=clean_required(body.contact_name, 120, "your name"), email=email, phone=phone, size=clean_text(body.size, 60, "size"),
+        message=clean_text(body.message, 2000, "message"), user_id=optional_user_id(request), status="new", founder_note="", created_at=now_iso, updated_at=now_iso,
+    ).returning(DBEnquiry.id))
+    spawn_background(notify_founders("account", f"New {body.kind} enquiry from {body.organisation.strip()[:80]}.", "founder.html?tab=enquiries"))
+    return {"id": rows[0][0], "status": "received"}
+
+
+# ---------- recruiter access ----------
+async def require_recruiter(user_id: int) -> dict:
+    access = await recruiter_access(user_id)
+    if not access:
+        raise HTTPException(status_code=402, detail="Recruiter access is a paid plan. Ask for it from the Plans page (Recruiters tab).")
+    return access
+
+def contact_ok_clause():
+    open_to = func.lower(func.coalesce(DBUser.open_to, ""))
+    return or_(func.coalesce(DBUser.recruiter_contact_ok, 0) == 1, open_to.like("%hiring%"), open_to.like("%internships%"))
+
+async def refresh_github_stats(rows):
+    """Fill github_stats for people whose numbers are missing or older than a day. Meant to run in the background."""
+    stale_before = (datetime.now(timezone.utc) - timedelta(days=GITHUB_STATS_DAYS)).isoformat()
+    for user_id, username, fetched_at in rows[:10]:
+        if fetched_at and fetched_at > stale_before:
+            continue
+        try:
+            data = await asyncio.to_thread(fetch_github_profile, username)
+        except Exception:
+            continue
+        values = {"username": username, "repos": data.get("public_repos") or 0, "followers": data.get("followers") or 0, "stars": data.get("total_stars") or 0,
+                  "languages": json.dumps(list((data.get("languages") or {}).keys())), "fetched_at": utc_now_iso()}
+        await run_one_off(pg_insert(DBGithubStats).values(user_id=user_id, **values).on_conflict_do_update(index_elements=["user_id"], set_=values))
+
+
+@app.get("/api/recruiter/me")
+async def recruiter_me(current_user_id: int = Depends(get_current_user_id)):
+    access = await recruiter_access(current_user_id)
+    if not access:
+        return {"access": None}
+    seats = []
+    if access["sub_id"]:
+        seats = [{"id": r.id, "name": r.name or "", "email": r.email or ""} for r in await fetch_one_off(
+            select(DBUser.id, DBUser.name, DBUser.email).join(DBRecruiterSeat, DBRecruiterSeat.user_id == DBUser.id).where(DBRecruiterSeat.subscription_id == access["sub_id"]))]
+    used = await usage_count(access["owner_id"], f"recruiter_unlocks:{access['sub_id']}") if access["sub_id"] else 0
+    return {"access": access, "unlocks_used": used, "seat_members": seats}
+
+
+@app.get("/api/recruiter/search")
+async def recruiter_search(q: str = "", skills: str = "", college: str = "", department: str = "", city: str = "", open_to: str = "",
+                           has_github: bool = False, min_repos: int = 0, contactable: bool = False, current_user_id: int = Depends(get_current_user_id)):
+    """Verified people only. Skills must all be present. GitHub filters need a plan that includes them."""
+    access = await require_recruiter(current_user_id)
+    conditions = [func.coalesce(DBUser.account_status, "") == "verified", DBUser.id != current_user_id]
+    for skill in [s.strip() for s in skills.split(",") if s.strip()][:8]:
+        conditions.append(func.lower(func.coalesce(DBUser.skills, "")).like(f"%{skill.lower()}%"))
+    for field, value in ((DBUser.college_name, college), (DBUser.department, department), (DBUser.city, city)):
+        if value.strip():
+            conditions.append(func.lower(func.coalesce(field, "")).like(f"%{value.strip().lower()}%"))
+    if q.strip():
+        like = f"%{q.strip().lower()}%"
+        conditions.append(or_(func.lower(DBUser.name).like(like), func.lower(func.coalesce(DBUser.bio, "")).like(like), func.lower(func.coalesce(DBUser.skills, "")).like(like)))
+    if open_to.strip():
+        conditions.append(func.lower(func.coalesce(DBUser.open_to, "")).like(f"%{open_to.strip().lower()}%"))
+    if contactable:
+        conditions.append(contact_ok_clause())
+    if access["git_filters"]:
+        if has_github:
+            conditions.append(func.coalesce(DBUser.github_username, "") != "")
+        if min_repos > 0:
+            conditions.append(func.coalesce(DBGithubStats.repos, 0) >= min_repos)
+    picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("profile_pic")
+    sub_id = access["sub_id"]
+    rows = await fetch_one_off(
+        select(DBUser.id, DBUser.name, DBUser.college_name, DBUser.department, DBUser.city, DBUser.skills, picture, DBUser.github_username,
+               DBUser.open_to, DBUser.profession, DBUser.experience_years, func.left(DBUser.bio, 240).label("bio"), contact_ok_clause().label("contact_ok"),
+               DBGithubStats.repos, DBGithubStats.followers, DBGithubStats.stars, DBGithubStats.languages, DBGithubStats.fetched_at,
+               exists().where(DBRecruiterUnlock.subscription_id == sub_id, DBRecruiterUnlock.user_id == DBUser.id).label("unlocked"),
+               select(DBRecruiterShortlist.stage).where(DBRecruiterShortlist.subscription_id == sub_id, DBRecruiterShortlist.user_id == DBUser.id).correlate(DBUser).scalar_subquery().label("stage"))
+        .outerjoin(DBGithubStats, DBGithubStats.user_id == DBUser.id).where(*conditions)
+        .order_by(func.coalesce(DBGithubStats.repos, 0).desc(), DBUser.id.desc()).limit(RECRUITER_RESULTS)
+    )
+    spawn_background(refresh_github_stats([(r.id, r.github_username, r.fetched_at) for r in rows if r.github_username]))
+    return {"people": [{
+        "id": r.id, "name": r.name or "", "college": r.college_name or "", "department": r.department or "", "city": r.city or "", "skills": r.skills or "",
+        "profile_pic": r.profile_pic or "", "github_username": r.github_username or "", "open_to": r.open_to or "", "profession": r.profession or "",
+        "experience_years": r.experience_years, "bio": r.bio or "", "contact_ok": bool(r.contact_ok), "unlocked": bool(r.unlocked), "stage": r.stage or "",
+        "github": {"repos": r.repos, "followers": r.followers, "stars": r.stars, "languages": json_list(r.languages)} if r.fetched_at else None,
+    } for r in rows], "git_filters": access["git_filters"]}
+
+
+@app.post("/api/recruiter/unlock/{user_id}")
+async def recruiter_unlock(user_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Use one contact from the plan. Only people who are verified and open to being contacted."""
+    access = await require_recruiter(current_user_id)
+    rows = await fetch_one_off(select(DBUser.name, DBUser.email, DBUser.account_status, DBUser.recruiter_contact_ok, contact_ok_clause()).where(DBUser.id == user_id))
+    if not rows or rows[0].account_status != "verified":
+        raise HTTPException(status_code=404, detail="Only verified people can be contacted.")
+    if not rows[0][4]:
+        raise HTTPException(status_code=403, detail="This person has not said they are open to recruiters.")
+    sub_id = access["sub_id"]
+    already = await fetch_one_off(select(DBRecruiterUnlock.id).where(DBRecruiterUnlock.subscription_id == sub_id, DBRecruiterUnlock.user_id == user_id))
+    if not already:
+        metric = f"recruiter_unlocks:{sub_id}"
+        if access["unlocks"] is not UNLIMITED and sub_id:
+            used = await usage_count(access["owner_id"], metric)
+            if used >= access["unlocks"]:
+                raise HTTPException(status_code=402, detail=f"You have used all {access['unlocks']} contacts of {access['name']} this month. Upgrade from the Plans page.")
+        await run_one_off(pg_insert(DBRecruiterUnlock).values(subscription_id=sub_id, recruiter_id=current_user_id, user_id=user_id, created_at=utc_now_iso())
+                          .on_conflict_do_nothing(index_elements=["subscription_id", "user_id"]))
+        if sub_id:
+            await bump_usage(access["owner_id"], metric)
+        spawn_background(create_notification(user_id, "account", "A recruiter on Connect2Minds is interested in your profile and may message you.", utc_now_iso(), "inbox.html"))
+    return {"user_id": user_id, "email": (rows[0].email or "") if (rows[0].recruiter_contact_ok or 0) == 1 else "", "message_url": f"inbox.html?user={user_id}"}
+
+
+@app.get("/api/recruiter/shortlist")
+async def recruiter_shortlist(current_user_id: int = Depends(get_current_user_id)):
+    access = await require_recruiter(current_user_id)
+    rows = await fetch_one_off(
+        select(DBRecruiterShortlist, DBUser.name, DBUser.college_name, DBUser.department, DBUser.skills, DBUser.github_username)
+        .join(DBUser, DBUser.id == DBRecruiterShortlist.user_id).where(DBRecruiterShortlist.subscription_id == access["sub_id"]).order_by(DBRecruiterShortlist.updated_at.desc())
+    )
+    return {"shortlist": [{"user_id": s.user_id, "stage": s.stage, "note": s.note or "", "name": name or "", "college": college or "", "department": department or "",
+                           "skills": skills or "", "github_username": github or "", "updated_at": s.updated_at or ""} for s, name, college, department, skills, github in rows],
+            "stages": list(SHORTLIST_STAGES)}
+
+
+@app.post("/api/recruiter/shortlist")
+async def recruiter_shortlist_save(body: ShortlistBody, current_user_id: int = Depends(get_current_user_id)):
+    access = await require_recruiter(current_user_id)
+    if body.stage not in SHORTLIST_STAGES:
+        raise HTTPException(status_code=400, detail="Pick a stage from the list.")
+    now_iso = utc_now_iso()
+    values = {"stage": body.stage, "note": clean_text(body.note, 1000, "note"), "updated_at": now_iso}
+    await run_one_off(pg_insert(DBRecruiterShortlist).values(subscription_id=access["sub_id"], user_id=body.user_id, added_by=current_user_id, created_at=now_iso, **values)
+                      .on_conflict_do_update(index_elements=["subscription_id", "user_id"], set_=values))
+    return {"user_id": body.user_id, **values}
+
+
+@app.delete("/api/recruiter/shortlist/{user_id}")
+async def recruiter_shortlist_remove(user_id: int, current_user_id: int = Depends(get_current_user_id)):
+    access = await require_recruiter(current_user_id)
+    await run_one_off(delete(DBRecruiterShortlist).where(DBRecruiterShortlist.subscription_id == access["sub_id"], DBRecruiterShortlist.user_id == user_id))
+    return {"status": "removed"}
+
+
+@app.post("/api/recruiter/seats")
+async def recruiter_add_seat(body: SeatBody, current_user_id: int = Depends(get_current_user_id)):
+    access = await require_recruiter(current_user_id)
+    if not access["owner"] or not access["sub_id"]:
+        raise HTTPException(status_code=403, detail="Only the person who holds the plan can add colleagues.")
+    rows = await fetch_one_off(select(DBUser.id).where(func.lower(DBUser.email) == (body.email or "").strip().lower()))
+    if not rows:
+        raise HTTPException(status_code=404, detail="No account has that email. Ask your colleague to sign up first.")
+    taken = await fetch_one_off(select(func.count()).select_from(DBRecruiterSeat).where(DBRecruiterSeat.subscription_id == access["sub_id"]))
+    if (taken[0][0] or 0) + 1 >= (access["seats"] or 1):
+        raise HTTPException(status_code=402, detail=f"{access['name']} includes {access['seats']} seat(s), and they are all in use.")
+    await run_one_off(pg_insert(DBRecruiterSeat).values(subscription_id=access["sub_id"], user_id=rows[0][0], added_at=utc_now_iso()).on_conflict_do_nothing(index_elements=["subscription_id", "user_id"]))
+    spawn_background(create_notification(rows[0][0], "account", f"You were given a seat on {access['name']}. Open Recruiter search from your account menu.", utc_now_iso(), "recruiter.html"))
+    return {"status": "added"}
+
+
+@app.delete("/api/recruiter/seats/{user_id}")
+async def recruiter_remove_seat(user_id: int, current_user_id: int = Depends(get_current_user_id)):
+    access = await require_recruiter(current_user_id)
+    if not access["owner"]:
+        raise HTTPException(status_code=403, detail="Only the person who holds the plan can remove colleagues.")
+    await run_one_off(delete(DBRecruiterSeat).where(DBRecruiterSeat.subscription_id == access["sub_id"], DBRecruiterSeat.user_id == user_id))
+    return {"status": "removed"}
+
+
+# ---------- sponsored challenges on the Opportunities board ----------
+def clean_challenge(body: ChallengeBody) -> dict:
+    if body.kind not in CHALLENGE_KINDS:
+        raise HTTPException(status_code=400, detail="A challenge is a bounty or a hackathon.")
+    if body.tier not in SPONSOR_TIERS:
+        raise HTTPException(status_code=400, detail="Pick a sponsorship package.")
+    deadline = (body.deadline or "").strip()
+    if not HUB_DATE_PATTERN.match(deadline) or deadline < today_iso():
+        raise HTTPException(status_code=400, detail="Pick a deadline from today on.")
+    team_size = body.max_team_size or 1
+    if not (1 <= team_size <= 10):
+        raise HTTPException(status_code=400, detail="Teams can have 1 to 10 people.")
+    skills = ", ".join(s.strip() for s in clean_required(body.skills_required, 300, "skills").split(",") if s.strip())
+    return {
+        "category": "Hackathon" if body.kind == "hackathon" else "Open Source", "title": clean_required(body.title, 120, "title"),
+        "description": clean_required(body.description, 2000, "description"), "skills_required": skills, "is_urgent": 0,
+        "is_sponsored": 1, "kind": body.kind, "sponsor_tier": body.tier, "sponsor_name": clean_required(body.sponsor_name, 120, "sponsor name"),
+        "sponsor_url": clean_link(body.sponsor_url, "sponsor website"), "sponsor_logo": clean_link(body.sponsor_logo, "logo address"),
+        "prize": clean_text(body.prize, 120, "prize"), "deadline": deadline, "max_team_size": team_size, "winners_announced": 0,
+        "sponsored_until": (max(datetime.now().date() + timedelta(days=SPONSOR_TIERS[body.tier] - 1), datetime.fromisoformat(deadline).date() + timedelta(days=7))).isoformat(),
+    }
+
+async def notify_matching_students(post_id: int, title: str, skills: str, author_id: int):
+    """Featured challenges reach students whose skills match. Meant to run in the background."""
+    try:
+        wanted = [s.strip().lower() for s in skills.split(",") if s.strip()][:6]
+        if not wanted:
+            return
+        rows = await fetch_one_off(select(DBUser.id).where(or_(*[func.lower(func.coalesce(DBUser.skills, "")).like(f"%{s}%") for s in wanted]),
+                                                           is_student_clause(), DBUser.id != author_id).limit(500))
+        await notify_many([row[0] for row in rows], "board_reply", f"Sponsored challenge that matches your skills: {title[:90]}", f"board.html?post={post_id}")
+    except Exception as e:
+        print("Error notifying students about a challenge:", e)
+
+
+@app.post("/api/board/challenges")
+async def create_challenge(body: ChallengeBody, current_user_id: int = Depends(get_current_user_id)):
+    """A sponsored bounty or hackathon. The founder can post any; a sponsor uses one challenge from their package."""
+    values = clean_challenge(body)
+    founder = await founder_flag(current_user_id)
+    used_sub = None
+    if not founder:
+        packages = [sub for sub in await sponsor_credits(current_user_id) if body.tier == "basic" or PLANS[sub.plan_key]["tier"] in (body.tier, "hackathon") or (body.tier == "featured" and sub.plan_key == "sponsor_season")]
+        if not packages:
+            raise HTTPException(status_code=402, detail="Posting a sponsored challenge needs a sponsorship package for that tier. Ask for one from the Plans page (Sponsors tab).")
+        used_sub = packages[0]
+    rows = await run_returning(DBBoardPost.__table__.insert().values(author_id=current_user_id, created_at=utc_now_iso(), **values).returning(DBBoardPost.id))
+    post_id = rows[0][0]
+    if used_sub is not None:
+        await run_one_off(update(DBSubscription).where(DBSubscription.id == used_sub.id).values(credits=DBSubscription.credits - 1))
+    card = await load_board_card(post_id, current_user_id)
+    spawn_background(broadcast_directory({"type": "board_post_added", "post": public_board_card(card)}))
+    if body.tier in ("featured", "hackathon"):
+        spawn_background(notify_matching_students(post_id, values["title"], values["skills_required"], current_user_id))
+    return {"status": "success", "post": card}
+
+
+async def challenge_or_404(post_id: int):
+    rows = await fetch_one_off(select(DBBoardPost).where(DBBoardPost.id == post_id, DBBoardPost.is_sponsored == 1))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That challenge is no longer on the board.")
+    return rows[0][0]
+
+async def may_judge(post, user_id: int) -> bool:
+    return post.author_id == user_id or await founder_flag(user_id)
+
+
+@app.post("/api/board/posts/{post_id}/submission")
+async def submit_challenge(post_id: int, body: ChallengeSubmissionBody, current_user_id: int = Depends(get_current_user_id)):
+    post = await challenge_or_404(post_id)
+    if post.author_id == current_user_id:
+        raise HTTPException(status_code=400, detail="You cannot enter your own challenge.")
+    if post.deadline and post.deadline < today_iso():
+        raise HTTPException(status_code=400, detail="The deadline for this challenge has passed.")
+    if post.winners_announced:
+        raise HTTPException(status_code=400, detail="The winners of this challenge have been announced.")
+    link = clean_link(body.link, "submission link")
+    if not link:
+        raise HTTPException(status_code=400, detail="Add a link to your work (GitHub, a demo or a document).")
+    team_id = None
+    if body.team_id:
+        member = await fetch_one_off(select(func.count()).select_from(DBTeamMember).where(DBTeamMember.team_id == body.team_id, DBTeamMember.user_id == current_user_id))
+        size = await fetch_one_off(select(func.count()).select_from(DBTeamMember).where(DBTeamMember.team_id == body.team_id))
+        if not member[0][0]:
+            raise HTTPException(status_code=403, detail="You can only submit for a team you are in.")
+        if (size[0][0] or 0) > (post.max_team_size or 1):
+            raise HTTPException(status_code=400, detail=f"Teams for this challenge can have up to {post.max_team_size} people.")
+        team_id = body.team_id
+    now_iso = utc_now_iso()
+    values = {"link": link, "note": clean_text(body.note, 1000, "note"), "team_id": team_id, "updated_at": now_iso}
+    await run_one_off(pg_insert(DBBoardApplication).values(post_id=post_id, user_id=current_user_id, note="Registered with a submission", created_at=now_iso)
+                      .on_conflict_do_nothing(index_elements=["post_id", "user_id"]))
+    await run_one_off(pg_insert(DBChallengeSubmission).values(post_id=post_id, user_id=current_user_id, submitted_at=now_iso, remarks="", **values)
+                      .on_conflict_do_update(index_elements=["post_id", "user_id"], set_=values))
+    spawn_background(broadcast_applicant_count(post_id))
+    return {"status": "submitted"}
+
+
+@app.get("/api/board/posts/{post_id}/submissions")
+async def challenge_submissions(post_id: int, current_user_id: int = Depends(get_current_user_id)):
+    post = await challenge_or_404(post_id)
+    judge = await may_judge(post, current_user_id)
+    conditions = [DBChallengeSubmission.post_id == post_id]
+    if not judge and not post.winners_announced:
+        conditions.append(DBChallengeSubmission.user_id == current_user_id)
+    rows = await fetch_one_off(select(DBChallengeSubmission, DBUser.name, DBUser.college_name, DBTeam.name)
+                               .outerjoin(DBUser, DBUser.id == DBChallengeSubmission.user_id).outerjoin(DBTeam, DBTeam.id == DBChallengeSubmission.team_id)
+                               .where(*conditions).order_by(func.coalesce(DBChallengeSubmission.rank, 999), DBChallengeSubmission.score.desc().nulls_last(), DBChallengeSubmission.id))
+    public = not judge
+    return {"judge": judge, "winners_announced": bool(post.winners_announced), "submissions": [{
+        "id": s.id, "user_id": s.user_id, "name": name or "", "college": college or "", "team": team or "",
+        "link": s.link if (judge or s.user_id == current_user_id or s.rank) else "", "note": s.note if (judge or s.user_id == current_user_id) else "",
+        "score": s.score if (judge or s.user_id == current_user_id or not public) else None, "remarks": s.remarks if (judge or s.user_id == current_user_id) else "",
+        "rank": s.rank, "submitted_at": s.submitted_at or "",
+    } for s, name, college, team in rows if judge or s.user_id == current_user_id or s.rank]}
+
+
+@app.put("/api/board/submissions/{submission_id}/judge")
+async def judge_submission(submission_id: int, body: JudgeBody, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBChallengeSubmission.post_id).where(DBChallengeSubmission.id == submission_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That submission is gone.")
+    post = await challenge_or_404(rows[0][0])
+    if not await may_judge(post, current_user_id):
+        raise HTTPException(status_code=403, detail="Only the sponsor who posted the challenge can judge it.")
+    if body.score is not None and not (0 <= body.score <= 100):
+        raise HTTPException(status_code=400, detail="Scores go from 0 to 100.")
+    if body.rank is not None and not (1 <= body.rank <= 10):
+        raise HTTPException(status_code=400, detail="Places go from 1 to 10.")
+    await run_one_off(update(DBChallengeSubmission).where(DBChallengeSubmission.id == submission_id).values(
+        score=body.score, rank=body.rank, remarks=clean_text(body.remarks, 1000, "remarks"), updated_at=utc_now_iso()))
+    return {"status": "saved"}
+
+
+@app.post("/api/board/posts/{post_id}/winners")
+async def announce_winners(post_id: int, current_user_id: int = Depends(get_current_user_id)):
+    post = await challenge_or_404(post_id)
+    if not await may_judge(post, current_user_id):
+        raise HTTPException(status_code=403, detail="Only the sponsor who posted the challenge can announce winners.")
+    rows = await fetch_one_off(select(DBChallengeSubmission.user_id, DBChallengeSubmission.rank).where(DBChallengeSubmission.post_id == post_id))
+    if not any(rank for _, rank in rows):
+        raise HTTPException(status_code=400, detail="Give at least one submission a place first.")
+    await run_one_off(update(DBBoardPost).where(DBBoardPost.id == post_id).values(winners_announced=1))
+    winners = [(user_id, rank) for user_id, rank in rows if rank]
+    for user_id, rank in winners:
+        spawn_background(create_notification(user_id, "board_reply", f"Congratulations! You placed #{rank} in {post.title}.", utc_now_iso(), f"board.html?post={post_id}"))
+    spawn_background(notify_many([user_id for user_id, rank in rows if not rank], "board_reply", f"The winners of {post.title} have been announced.", f"board.html?post={post_id}"))
+    card = await load_board_card(post_id, current_user_id)
+    spawn_background(broadcast_directory({"type": "board_post_updated", "post": public_board_card(card)}))
+    return {"status": "announced", "winners": len(winners)}
+
+
+# ---------- institution analytics ----------
+async def analytics_college_for(user_id: int, college: str) -> str:
+    """Which college this person may see analytics for: the founder any, a teacher theirs, an admin the college of their scope."""
+    rows = await fetch_one_off(select(DBUser.is_founder, DBUser.teacher_of).where(DBUser.id == user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    if (rows[0].is_founder or 0) == 1:
+        key = college_key_of(college)
+        if not key:
+            raise HTTPException(status_code=400, detail="Pick a college.")
+        return key
+    if (rows[0].teacher_of or "").strip():
+        return rows[0].teacher_of
+    scope = await fetch_one_off(select(DBAdminScope.college_key).where(DBAdminScope.user_id == user_id).limit(1))
+    if scope:
+        return scope[0][0]
+    raise HTTPException(status_code=403, detail="Institution analytics are for a college's teachers and admins.")
+
+
+@app.get("/api/institution/colleges")
+async def institution_colleges(founder_id: int = Depends(require_founder)):
+    """For the founder: colleges with students on the platform, and their licence."""
+    rows = await fetch_one_off(select(func.min(DBUser.college_name), USER_COLLEGE_KEY.label("key"), func.count()).where(func.coalesce(DBUser.college_name, "") != "")
+                               .group_by(USER_COLLEGE_KEY).order_by(func.count().desc()).limit(300))
+    subs = await fetch_one_off(select(DBSubscription.college_key, DBSubscription.plan_key, DBSubscription.ends_at).where(DBSubscription.college_key != "", DBSubscription.status == "active", DBSubscription.ends_at >= today_iso()))
+    licence = {key: {"plan_key": plan, "name": PLANS.get(plan, {}).get("name", plan), "ends_at": ends} for key, plan, ends in subs}
+    return {"colleges": [{"name": name, "key": key, "people": count, "licence": licence.get(key)} for name, key, count in rows]}
+
+
+@app.get("/api/institution/analytics")
+async def institution_analytics(college: str = "", current_user_id: int = Depends(get_current_user_id)):
+    key = await analytics_college_for(current_user_id, college)
+    licence = await college_licence(key)
+    if not licence and not await founder_flag(current_user_id):
+        raise HTTPException(status_code=402, detail="Institution analytics are part of the institution licence. Start one from the Plans page (Institutions tab).")
+    weeks_back = (datetime.now(timezone.utc) - timedelta(weeks=12)).isoformat()
+    student = hub_student_clause(key)
+    status_rows, skill_rows, name_rows, hub_rows, sub_rows, att_rows, qa_rows, group_rows, signup_rows = await asyncio.gather(
+        fetch_one_off(select(DBUser.account_status, func.count()).where(student).group_by(DBUser.account_status)),
+        fetch_one_off(select(DBUser.skills).where(student, func.coalesce(DBUser.skills, "") != "").limit(3000)),
+        fetch_one_off(select(func.min(DBUser.college_name)).where(USER_COLLEGE_KEY == key)),
+        fetch_one_off(text("""
+            SELECT to_char(date_trunc('week', ts::timestamptz), 'YYYY-MM-DD') AS week, kind, count(*) FROM (
+              SELECT timestamp AS ts, 'chat' AS kind FROM college_messages WHERE college_key = :key AND timestamp >= :since
+              UNION ALL SELECT created_at, 'posts' FROM college_posts WHERE college_key = :key AND created_at >= :since
+              UNION ALL SELECT submitted_at, 'work' FROM college_submissions WHERE college_key = :key AND submitted_at >= :since
+              UNION ALL SELECT created_at, 'questions' FROM college_questions WHERE college_key = :key AND created_at >= :since
+            ) AS activity GROUP BY 1, 2 ORDER BY 1""").bindparams(key=key, since=weeks_back)),
+        fetch_one_off(select(func.count(), func.sum(DBCollegeSubmission.late), func.avg(case((DBCollegePost.max_marks > 0, DBCollegeSubmission.marks * 100.0 / DBCollegePost.max_marks), else_=None)))
+                      .join(DBCollegePost, DBCollegePost.id == DBCollegeSubmission.activity_id).where(DBCollegeSubmission.college_key == key)),
+        fetch_one_off(select(DBAttendanceSession.department, DBAttendanceSession.division, func.count(DBAttendanceMark.id),
+                             func.sum(case((DBAttendanceMark.status.in_(("present", "late")), 1), else_=0)))
+                      .join(DBAttendanceMark, DBAttendanceMark.session_id == DBAttendanceSession.id).where(DBAttendanceSession.college_key == key)
+                      .group_by(DBAttendanceSession.department, DBAttendanceSession.division)),
+        fetch_one_off(select(func.count(DBCollegeQuestion.id), func.count(DBCollegeQuestion.accepted_answer_id),
+                             func.sum(case((exists().where(DBCollegeAnswer.question_id == DBCollegeQuestion.id), 1), else_=0))).where(DBCollegeQuestion.college_key == key)),
+        fetch_one_off(select(func.count()).select_from(DBTeam).where(DBTeam.college_key == key)),
+        fetch_one_off(select(DBHistory.time).join(DBUser, DBUser.id == DBHistory.user_id).where(student, DBHistory.action == "Account Created", DBHistory.time >= weeks_back)),
+    )
+    statuses: dict = {}
+    for status_, count in status_rows:
+        statuses[status_ or "pending"] = statuses.get(status_ or "pending", 0) + count
+    total = sum(statuses.values())
+    skills: dict = {}
+    for (raw,) in skill_rows:
+        for skill in {s.strip().lower(): s.strip() for s in raw.split(",") if s.strip()}.values():
+            skills[skill] = skills.get(skill, 0) + 1
+    activity: dict = {}
+    for week, kind, count in hub_rows:
+        activity.setdefault(week, {"chat": 0, "posts": 0, "work": 0, "questions": 0})[kind] = count
+    signups: dict = {}
+    for (stamp,) in signup_rows:
+        try:
+            day = parse_timestamp(stamp).date()
+        except (TypeError, ValueError):
+            continue
+        week = (day - timedelta(days=day.weekday())).isoformat()
+        signups[week] = signups.get(week, 0) + 1
+    submissions, late, avg_marks = sub_rows[0]
+    questions, solved, answered = qa_rows[0]
+    max_students = (licence or {}).get("max_students")
+    return {
+        "college": name_rows[0][0] if name_rows and name_rows[0][0] else key, "key": key, "licence": licence,
+        "students": total, "max_students": max_students, "over_limit": bool(max_students and total > max_students),
+        "verification": statuses, "groups": group_rows[0][0] or 0,
+        "activity": [{"week": week, **counts} for week, counts in sorted(activity.items())], "signups": [{"week": w, "count": c} for w, c in sorted(signups.items())],
+        "work": {"submissions": submissions or 0, "late": int(late or 0), "average_marks_percent": round(float(avg_marks), 1) if avg_marks is not None else None},
+        "attendance": [{"class": f"{dept}{' · Div ' + div if div else ''}", "marks": marks, "percent": round(attended * 100 / marks) if marks else 0} for dept, div, marks, attended in att_rows],
+        "questions": {"total": questions or 0, "answered": int(answered or 0), "solved": solved or 0},
+        "top_skills": [{"skill": name, "students": count} for name, count in sorted(skills.items(), key=lambda item: -item[1])[:12]],
+    }
+
+
+# ==========================================
+# 20. THE FOUNDER CONSOLE: OVERVIEW, PLANS GIVEN BY HAND, ENQUIRIES
+# ==========================================
+class GrantBody(BaseModel):
+    plan_key: str
+    user_id: Optional[int] = None                  # the person, by account id ...
+    email: Optional[str] = ""                      # ... or by login email (personal, recruiter and sponsor plans)
+    college_name: Optional[str] = ""               # institution licences
+    org_name: Optional[str] = ""
+    period: Optional[str] = ""                     # month, year, one_time; empty picks the plan's own
+    years: Optional[int] = 1
+    starts_at: Optional[str] = ""
+    ends_at: Optional[str] = ""
+    amount_rupees: Optional[float] = 0             # what was actually paid, before GST for business plans
+    reference: Optional[str] = ""                  # UPI / bank reference, if paid outside Razorpay
+    note: Optional[str] = ""
+    credits: Optional[int] = None
+    seats: Optional[int] = None
+    enquiry_id: Optional[int] = None
+
+class ExtendBody(BaseModel):
+    days: int
+
+class EnquiryUpdate(BaseModel):
+    status: str
+    note: Optional[str] = ""
+
+
+@app.get("/api/founder/overview")
+async def founder_overview(founder_id: int = Depends(require_founder)):
+    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+    counts, statuses, subs, paid, recent = await asyncio.gather(
+        fetch_one_off(select(
+            select(func.count()).select_from(DBUser).scalar_subquery(),
+            select(func.count()).select_from(DBUser).where(DBUser.is_admin == 1, func.coalesce(DBUser.is_founder, 0) == 0).scalar_subquery(),
+            select(func.count()).select_from(DBUser).where(func.coalesce(DBUser.teacher_of, "") != "").scalar_subquery(),
+            select(func.count()).select_from(DBAdminRequest).where(func.lower(DBAdminRequest.status).in_(OPEN_APPLICATION)).scalar_subquery(),
+            select(func.count()).select_from(DBTeacherRequest).where(DBTeacherRequest.status.in_(OPEN_APPLICATION)).scalar_subquery(),
+            select(func.count()).select_from(DBEnquiry).where(DBEnquiry.status.in_(("new", "contacted"))).scalar_subquery(),
+            select(func.count()).select_from(DBUser).where(func.coalesce(DBUser.account_status, "pending").in_(("pending", "appealed")), func.coalesce(DBUser.is_founder, 0) == 0, UNASSIGNED_CLAUSE).scalar_subquery(),
+        )),
+        fetch_one_off(select(DBUser.account_status, func.count()).group_by(DBUser.account_status)),
+        fetch_one_off(select(DBSubscription.plan_key, DBSubscription.period, DBSubscription.years, DBSubscription.amount_paise, DBSubscription.gst_paise)
+                      .where(DBSubscription.status == "active", DBSubscription.ends_at >= today_iso())),
+        fetch_one_off(select(func.coalesce(func.sum(DBPayment.amount_paise), 0), func.coalesce(func.sum(DBPayment.gst_paise), 0), func.count())
+                      .where(DBPayment.status == "paid", DBPayment.paid_at >= month_start)),
+        fetch_one_off(select(DBPayment, DBUser.name).outerjoin(DBUser, DBUser.id == DBPayment.user_id).where(DBPayment.status.in_(("paid", "refunded"))).order_by(DBPayment.id.desc()).limit(10)),
+    )
+    users, admins, teachers, admin_apps, teacher_apps, enquiries, unassigned = counts[0]
+    status_counts: dict = {}
+    for status_, count in statuses:
+        status_counts[status_ or "pending"] = status_counts.get(status_ or "pending", 0) + count
+    mrr, by_line = 0, {}
+    for plan_key, period, years, amount, gst in subs:
+        line = PLANS.get(plan_key, {}).get("line", "other")
+        by_line[line] = by_line.get(line, 0) + 1
+        net = (amount or 0) - (gst or 0)
+        if period == "month":
+            mrr += net
+        elif period == "year":
+            mrr += net / (12 * (years or 1))
+    revenue, revenue_gst, payments = paid[0]
+    return {
+        "users": users or 0, "verified": status_counts.get("verified", 0), "statuses": status_counts, "admins": admins or 0, "teachers": teachers or 0,
+        "open": {"admin_applications": admin_apps or 0, "teacher_applications": teacher_apps or 0, "enquiries": enquiries or 0, "unassigned_verification": unassigned or 0},
+        "revenue_month_paise": revenue or 0, "revenue_month_gst_paise": revenue_gst or 0, "payments_month": payments or 0, "mrr_paise": round(mrr),
+        "active_by_line": by_line, "payments_enabled": bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET),
+        "recent_payments": [{**serialize_payment(p), "name": name or ""} for p, name in recent],
+    }
+
+
+@app.get("/api/founder/subscriptions")
+async def founder_subscriptions(status: str = "active", founder_id: int = Depends(require_founder)):
+    conditions = [DBSubscription.status == status] if status else []
+    rows = await fetch_one_off(select(DBSubscription, DBUser.name, DBUser.email).outerjoin(DBUser, DBUser.id == DBSubscription.user_id)
+                               .where(*conditions).order_by(DBSubscription.id.desc()).limit(300))
+    return {"subscriptions": [{**serialize_subscription(sub), "name": name or "", "email": email or ""} for sub, name, email in rows],
+            "plans": [{"key": key, "name": plan["name"], "line": plan["line"], "periods": list(plan["prices"].keys())} for key, plan in PLANS.items() if key not in ("free",)]}
+
+
+@app.post("/api/founder/subscriptions")
+async def founder_grant(body: GrantBody, founder_id: int = Depends(require_founder)):
+    """Switch a plan on by hand: after an enquiry, a bank transfer or UPI payment, or as a gift."""
+    plan = PLANS.get(body.plan_key)
+    if not plan or body.plan_key == "free":
+        raise HTTPException(status_code=400, detail="Pick a plan.")
+    period = body.period or ("one_time" if plan["line"] == "sponsor" else ("trial" if body.plan_key == "inst_trial" else ("year" if "year" in plan["prices"] else "month")))
+    for value, what in ((body.starts_at, "start date"), (body.ends_at, "end date")):
+        if value and not HUB_DATE_PATTERN.match(value):
+            raise HTTPException(status_code=400, detail=f"The {what} must be a date.")
+    user_id, college_key, college_name = None, "", ""
+    if plan["line"] == "institution":
+        college_name = (body.college_name or "").strip()
+        college_key = college_key_of(college_name)
+        if not college_key:
+            raise HTTPException(status_code=400, detail="Name the college this licence is for.")
+    else:
+        if body.user_id:
+            rows = await fetch_one_off(select(DBUser.id).where(DBUser.id == body.user_id))
+        elif (body.email or "").strip():
+            rows = await fetch_one_off(select(DBUser.id).where(func.lower(DBUser.email) == body.email.strip().lower()))
+        else:
+            raise HTTPException(status_code=400, detail="Give the account's email or id.")
+        if not rows:
+            raise HTTPException(status_code=404, detail="No account matches that email or id.")
+        user_id = rows[0][0]
+    amount = max(0, round((body.amount_rupees or 0) * 100))
+    total, gst = gst_split(plan, amount) if amount else (0, 0)
+    years = max(1, min(3, body.years or 1))
+    sub_id = await activate_subscription(user_id=user_id, plan_key=body.plan_key, period=period, years=years, amount=total, gst=gst, source="manual",
+                                         college_key=college_key, org_name=(body.org_name or college_name).strip()[:160], granted_by=founder_id,
+                                         note=clean_text(body.note, 500, "note"), starts_at=body.starts_at or None, ends_at=body.ends_at or None,
+                                         credits=body.credits, seats=body.seats)
+    if total:
+        payer = user_id or founder_id
+        await run_one_off(DBPayment.__table__.insert().values(
+            user_id=payer, subscription_id=sub_id, plan_key=body.plan_key, period=period, amount_paise=total, gst_paise=gst, status="paid", method="manual",
+            reference=clean_text(body.reference, 120, "reference"), created_at=utc_now_iso(), paid_at=utc_now_iso(), receipt_no=f"C2M-M-{sub_id}"))
+    if body.enquiry_id:
+        await run_one_off(update(DBEnquiry).where(DBEnquiry.id == body.enquiry_id).values(status="won", subscription_id=sub_id, updated_at=utc_now_iso()))
+    if user_id:
+        spawn_background(create_notification(user_id, "account", f"{plan['name']} is now active on your account.", utc_now_iso(), "billing.html"))
+    if college_key:
+        teachers = await fetch_one_off(select(DBUser.id).where(DBUser.teacher_of == college_key))
+        spawn_background(notify_many([row[0] for row in teachers], "account", f"{college_name} now has {plan['name']} on Connect2Minds.", "institution.html"))
+        hub_changed(college_key)
+    return {"id": sub_id}
+
+
+@app.post("/api/founder/subscriptions/{sub_id}/cancel")
+async def founder_cancel_subscription(sub_id: int, founder_id: int = Depends(require_founder)):
+    rows = await run_returning(update(DBSubscription).where(DBSubscription.id == sub_id, DBSubscription.status == "active").values(status="cancelled")
+                               .returning(DBSubscription.user_id, DBSubscription.plan_key, DBSubscription.college_key))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That subscription is not active.")
+    user_id, plan_key, college_key = rows[0]
+    if user_id and PLANS.get(plan_key, {}).get("line") == "personal":
+        await refresh_user_plan(user_id)
+    if college_key:
+        hub_changed(college_key)
+    return {"status": "cancelled"}
+
+
+@app.post("/api/founder/subscriptions/{sub_id}/extend")
+async def founder_extend_subscription(sub_id: int, body: ExtendBody, founder_id: int = Depends(require_founder)):
+    if not (1 <= body.days <= 1100):
+        raise HTTPException(status_code=400, detail="Extend by 1 to 1100 days.")
+    rows = await fetch_one_off(select(DBSubscription.ends_at, DBSubscription.user_id, DBSubscription.plan_key).where(DBSubscription.id == sub_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="Subscription not found.")
+    base = max(datetime.fromisoformat(rows[0][0]).date(), datetime.now().date() - timedelta(days=1))
+    new_end = (base + timedelta(days=body.days)).isoformat()
+    await run_one_off(update(DBSubscription).where(DBSubscription.id == sub_id).values(ends_at=new_end, status="active", reminded=0))
+    if rows[0][1] and PLANS.get(rows[0][2], {}).get("line") == "personal":
+        await refresh_user_plan(rows[0][1])
+    return {"id": sub_id, "ends_at": new_end}
+
+
+@app.post("/api/founder/payments/{payment_id}/refund")
+async def founder_mark_refund(payment_id: int, founder_id: int = Depends(require_founder)):
+    """Record a refund made in the Razorpay dashboard (or by bank). The plan it paid for is cancelled."""
+    rows = await run_returning(update(DBPayment).where(DBPayment.id == payment_id, DBPayment.status == "paid").values(status="refunded").returning(DBPayment.subscription_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That payment is not a paid one.")
+    if rows[0][0]:
+        await founder_cancel_subscription(rows[0][0], founder_id)
+    return {"status": "refunded"}
+
+
+@app.get("/api/founder/payments")
+async def founder_payments(founder_id: int = Depends(require_founder)):
+    rows = await fetch_one_off(select(DBPayment, DBUser.name, DBUser.email).outerjoin(DBUser, DBUser.id == DBPayment.user_id).order_by(DBPayment.id.desc()).limit(300))
+    return {"payments": [{**serialize_payment(p), "name": name or "", "email": email or ""} for p, name, email in rows]}
+
+
+@app.get("/api/founder/enquiries")
+async def founder_enquiries(founder_id: int = Depends(require_founder)):
+    rows = await fetch_one_off(select(DBEnquiry).order_by(case((DBEnquiry.status.in_(("new", "contacted")), 0), else_=1), DBEnquiry.id.desc()).limit(300))
+    return {"enquiries": [{
+        "id": e.id, "kind": e.kind, "plan_key": e.plan_key or "", "plan_name": PLANS.get(e.plan_key or "", {}).get("name", ""), "organisation": e.organisation or "",
+        "contact_name": e.contact_name or "", "email": e.email or "", "phone": e.phone or "", "size": e.size or "", "message": e.message or "",
+        "status": e.status, "founder_note": e.founder_note or "", "subscription_id": e.subscription_id, "created_at": e.created_at or "", "updated_at": e.updated_at or "",
+    } for (e,) in rows]}
+
+
+@app.put("/api/founder/enquiries/{enquiry_id}")
+async def founder_update_enquiry(enquiry_id: int, body: EnquiryUpdate, founder_id: int = Depends(require_founder)):
+    if body.status not in ("new", "contacted", "won", "lost"):
+        raise HTTPException(status_code=400, detail="Status must be new, contacted, won or lost.")
+    rows = await run_returning(update(DBEnquiry).where(DBEnquiry.id == enquiry_id).values(status=body.status, founder_note=clean_text(body.note, 1000, "note"), updated_at=utc_now_iso()).returning(DBEnquiry.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="Enquiry not found.")
+    return {"id": enquiry_id, "status": body.status}
+
+
+@app.get("/api/founder/sponsored")
+async def founder_sponsored(founder_id: int = Depends(require_founder)):
+    rows = await fetch_one_off(
+        select(DBBoardPost, DBUser.name, select(func.count()).select_from(DBChallengeSubmission).where(DBChallengeSubmission.post_id == DBBoardPost.id).correlate(DBBoardPost).scalar_subquery())
+        .outerjoin(DBUser, DBUser.id == DBBoardPost.author_id).where(DBBoardPost.is_sponsored == 1).order_by(DBBoardPost.id.desc()).limit(200))
+    return {"challenges": [{"id": p.id, "title": p.title or "", "kind": p.kind or "", "tier": p.sponsor_tier or "", "sponsor": p.sponsor_name or "", "prize": p.prize or "",
+                            "deadline": p.deadline or "", "sponsored_until": p.sponsored_until or "", "winners_announced": bool(p.winners_announced),
+                            "author": name or "", "submissions": count or 0} for p, name, count in rows]}

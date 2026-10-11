@@ -101,7 +101,7 @@
         localStorage.setItem('currentUserId', data.user_id);
         localStorage.setItem('userRole', data.role);
         localStorage.setItem('adminToken', data.token);
-        return 'search.html';
+        return data.role === 'founder' ? 'founder.html' : 'verify.html';
       });
   });
 

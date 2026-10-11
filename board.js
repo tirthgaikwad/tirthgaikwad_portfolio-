@@ -79,6 +79,7 @@ async function loadBoard() {
     boardLoadedAt = Date.now();
     viewerIsAdmin = Boolean(data.viewer_is_admin);
     setPosts(data.posts || []);
+    applyChallengeViewer(data);
     saveBoard();
   } catch (err) {
     if (!boardLoaded) renderBoardProblem(err.message);
@@ -151,8 +152,8 @@ function filteredPosts() {
   const order = boardView.sort === 'oldest' ? (a, b) => byAge(b, a)
     : boardView.sort === 'applicants' ? (a, b) => (b.applicant_count - a.applicant_count) || byAge(a, b)
     : byAge;
-  // Urgent posts stay on top whatever the order
-  return list.sort((a, b) => (Number(b.is_urgent) - Number(a.is_urgent)) || order(a, b));
+  // Sponsored challenges, then urgent posts, stay on top whatever the order
+  return list.sort((a, b) => (Number(Boolean(b.is_sponsored)) - Number(Boolean(a.is_sponsored))) || (Number(b.is_urgent) - Number(a.is_urgent)) || order(a, b));
 }
 
 function boardHasFilters() {
@@ -218,6 +219,8 @@ function skillPillsHtml(post, limit) {
 
 // The buttons under a post: different for its author, for an admin and for everyone else
 function postActionsHtml(post) {
+  const special = challengeActionsHtml(post);   // sponsored challenges have their own buttons (board-challenges.js)
+  if (special !== null) return special;
   const mine = post.author_id === currentUserId;
   const busy = pendingPosts.has(post.id) ? 'disabled' : '';
   const iconButton = 'p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50';
@@ -242,6 +245,7 @@ function postActionsHtml(post) {
 
 function postBadgesHtml(post) {
   return `
+    ${challengeBadgesHtml(post)}
     ${post.is_urgent ? '<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">priority_high</span>Urgent</span>' : ''}
     <span class="px-2 py-0.5 rounded-full bg-tertiary text-on-tertiary font-label-sm text-[10px] font-bold flex items-center gap-1">
       <span class="material-symbols-outlined text-[13px]">${CATEGORY_ICONS[post.category] || 'work'}</span>${escapeHtml(post.category || 'Opportunity')}
@@ -262,11 +266,12 @@ function authorLineHtml(post) {
 
 function postCardHtml(post) {
   return `
-    <article class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col border ${post.is_urgent ? 'border-error/30' : 'border-outline-variant/30'} relative" data-id="${post.id}">
+    <article class="developer-card group bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col border ${post.is_sponsored ? 'bc-card' : (post.is_urgent ? 'border-error/30' : 'border-outline-variant/30')} relative" data-id="${post.id}">
       <div class="flex items-center flex-wrap gap-1.5 mb-space-sm">${postBadgesHtml(post)}</div>
       <button type="button" data-action="details" class="text-left mb-space-sm">
         <h3 class="font-headline-md text-headline-md text-on-surface font-bold group-hover:text-primary transition-colors line-clamp-2">${escapeHtml(post.title)}</h3>
       </button>
+      ${challengeStripHtml(post)}
       <div class="flex items-center gap-2 mb-space-sm text-on-surface-variant font-body-sm text-body-sm min-w-0">${authorLineHtml(post)}</div>
       <p class="font-body-md text-body-md text-on-surface-variant mb-space-sm line-clamp-3">${escapeHtml(post.description || 'No description provided.')}</p>
       <div class="flex items-center gap-1.5 flex-wrap mb-space-md">${skillPillsHtml(post, 6)}</div>
@@ -492,6 +497,8 @@ function onBoardClick(e) {
   if (action === 'applicants') openApplicants(post.id);
   if (action === 'edit') openPostForm(post.id);
   if (action === 'delete') confirmDeletePost(post.id);
+  if (action === 'entries') openEntries(post);
+  if (action === 'submit-entry') openSubmitEntry(post);
 }
 
 function setBoardSearch(text) {
@@ -683,6 +690,7 @@ function renderPostDetails() {
     <h3 class="font-headline-lg text-headline-lg text-on-surface mb-space-sm" style="overflow-wrap:anywhere;">${escapeHtml(post.title)}</h3>
     <div class="flex items-center gap-2 mb-space-md text-on-surface-variant font-body-sm text-body-sm min-w-0">${authorLineHtml(post)}</div>
     <p class="font-body-md text-body-md text-on-surface mb-space-md" style="white-space:pre-line;overflow-wrap:anywhere;">${escapeHtml(post.description || 'No description provided.')}</p>
+    ${challengeDetailsHtml(post)}
     <div class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-1.5">Skills needed</div>
     <div class="flex items-center gap-1.5 flex-wrap mb-space-md">${skillPillsHtml(post, 50)}</div>
     <div class="pt-space-sm border-t border-outline-variant/30 flex items-center justify-between gap-2 flex-wrap">

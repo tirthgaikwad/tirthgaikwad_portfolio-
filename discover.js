@@ -170,8 +170,10 @@ function filteredPeople() {
   } else if (view.sort === 'name') {
     list.sort((a, b) => a.x.name.localeCompare(b.x.name));
   } else {
+    // Premium Plus members get a profile boost: shown first among equally good matches (on an empty search, before everyone)
+    const boost = (person) => (person.plan === 'premium_plus' ? 1 : 0);
     const scores = new Map(list.map(person => [person.id, matchScore(person, tokens)]));
-    list.sort((a, b) => (scores.get(b.id) - scores.get(a.id)) || (b.followers_count - a.followers_count) || (b.id - a.id));
+    list.sort((a, b) => (scores.get(b.id) - scores.get(a.id)) || (boost(b) - boost(a)) || (b.followers_count - a.followers_count) || (b.id - a.id));
   }
   return list;
 }
@@ -254,6 +256,7 @@ function cardHtml(person, position = 0) {
         <h3 class="dt-name">
           <a class="truncate" href="${profileLink}">${escapeHtml(person.name || 'Unnamed')}</a>
           ${person.account_status === 'verified' ? '<span class="material-symbols-outlined dt-ico text-[17px] text-primary" title="Verified account">verified</span>' : ''}
+          ${roleBadgesHtml(person)}
           ${isProfessional(person) ? `<span class="dt-pro" title="${escapeHtml(professionOf(person))}">${escapeHtml(professionOf(person))}</span>` : ''}
         </h3>
         <p class="dt-meta" title="${escapeHtml(college)}">${icon('school')}<span>${escapeHtml(college || 'No college listed')}</span></p>

@@ -171,12 +171,16 @@ function renderProfile() {
   openToLabels(profile.open_to).forEach(label => {
     badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">Open to ${escapeHtml(label.toLowerCase())}</span>`);
   });
-  if (profile.is_admin) badges.push('<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold uppercase">Admin</span>');
+  badges.unshift(roleBadgesHtml(profile));
   if (verified) {
     badges.push('<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed/40 text-tertiary font-label-sm text-label-sm font-bold">Verified student</span>');
   } else if (showsOwnerControls() && profile.account_status) {
-    const label = { pending: 'Verification pending', rejected: 'Verification rejected', appealed: 'Appeal under review' }[profile.account_status] || profile.account_status;
+    const label = { pending: 'Verification pending', rejected: 'Verification rejected', appealed: 'Appeal under review', needs_info: 'Verification needs a new ID photo' }[profile.account_status] || profile.account_status;
     badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">${escapeHtml(label)}</span>`);
+    // An admin asked for a better photo, or rejected it: let the person send a new one from here
+    if (profile.account_status === 'needs_info' || profile.account_status === 'rejected') {
+      badges.push(`<button type="button" onclick="uploadNewIdCard()" class="px-2.5 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold">Upload a new ID photo</button>`);
+    }
   }
   el('profileBadges').innerHTML = badges.join('');
 
@@ -430,6 +434,7 @@ function openEditModal(focusId) {
     el('professionOptions').innerHTML = PROFESSIONS.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.group)}</option>`).join('');
   }
   const openNow = new Set(String(profile.open_to || '').split(','));
+  el('editRecruiterOk').checked = Number(profile.recruiter_contact_ok) === 1;
   el('editOpenTo').innerHTML = OPEN_TO_OPTIONS.map(([key, label]) =>
     `<label class="inline-flex items-center gap-1.5 font-body-md text-body-md text-on-surface cursor-pointer"><input type="checkbox" value="${key}" ${openNow.has(key) ? 'checked' : ''} class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"/>${label}</label>`).join('');
   showFormError('editError', '');
@@ -474,7 +479,8 @@ async function saveProfile(e) {
         bio: el('editBio').value,
         profession: profession ? profession.name : '',
         experience_years: years ? Number(years) : 0,
-        open_to: [...el('editOpenTo').querySelectorAll('input:checked')].map(box => box.value).join(',')
+        open_to: [...el('editOpenTo').querySelectorAll('input:checked')].map(box => box.value).join(','),
+        recruiter_contact_ok: el('editRecruiterOk').checked
       }
     });
     Object.assign(profile, result.profile);
@@ -863,3 +869,36 @@ if (document.readyState === 'loading') {
 } else {
   initProfile();
 }
+
+// A new ID photo for verification, shrunk in the browser like at sign-up (JPEG, at most 1000 px)
+function uploadNewIdCard() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (!file) return;
+    const image = new Image();
+    image.onload = async () => {
+      const scale = Math.min(1, 1000 / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(image.width * scale);
+      canvas.height = Math.round(image.height * scale);
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(image.src);
+      try {
+        const result = await api('/api/me/id-card', { method: 'POST', body: { image: canvas.toDataURL('image/jpeg', 0.85) } });
+        profile.account_status = result.account_status;
+        profileChanged();
+        renderProfile();
+        showToast('New ID photo sent. Your verification is back in the queue.');
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+    image.onerror = () => showToast('That file is not a picture we can read.');
+    image.src = URL.createObjectURL(file);
+  };
+  input.click();
+}
+

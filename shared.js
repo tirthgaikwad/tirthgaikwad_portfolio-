@@ -50,7 +50,13 @@ const HEADER_ICONS = {
     campus: '<path d="M2.5 9.5L12 4.5l9.5 5-9.5 5z"/><path d="M6.5 12v4.5c1.5 1.3 3.3 2 5.5 2s4-.7 5.5-2V12M21.5 9.5V15"/>',
     network: '<circle cx="12" cy="5.5" r="2.5"/><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M10.8 7.7L6.7 15.3M13.2 7.7l4.1 7.6M8 17.5h8"/>',
     bookmark: '<path d="M7 4.5h10a1 1 0 011 1V20l-6-3.8L6 20V5.5a1 1 0 011-1z"/>',
-    briefcase: '<rect x="3" y="7.5" width="18" height="12" rx="2.5"/><path d="M9 7.5V6a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 6v1.5M3 13h18"/>'
+    briefcase: '<rect x="3" y="7.5" width="18" height="12" rx="2.5"/><path d="M9 7.5V6a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 6v1.5M3 13h18"/>',
+    star: '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
+    card: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h4"/>',
+    check: '<path d="M12 3.5l7 2.5v5.5c0 4.3-2.8 7.6-7 9-4.2-1.4-7-4.7-7-9V6z"/><path d="M9 12l2.2 2.2L15.2 10"/>',
+    chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
+    target: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M11 8v6M8 11h6"/>',
+    plus: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>'
 };
 const headerIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${HEADER_ICONS[name]}</svg>`;
 
@@ -119,7 +125,14 @@ window.renderAppHeader = function() {
                         <div class="app-user-head"><strong data-header-name>Your account</strong><span data-header-sub></span></div>
                         <a class="app-menu-row" href="profile.html">${headerIcon('person')}Your profile</a>
                         <a class="app-menu-row" href="history.html">${headerIcon('history')}Activity history</a>
-                        <a class="app-menu-row" href="admin_dashboard.html" data-admin-only hidden>${headerIcon('shield')}Admin dashboard</a>
+                        <a class="app-menu-row" href="billing.html">${headerIcon('card')}Plans &amp; billing</a>
+                        <a class="app-menu-row" href="founder.html" data-role-show="founder" hidden>${headerIcon('star')}Founder console</a>
+                        <a class="app-menu-row" href="admin_dashboard.html" data-role-show="founder" hidden>${headerIcon('shield')}Accounts dashboard</a>
+                        <a class="app-menu-row" href="verify.html" data-role-show="verifier" hidden>${headerIcon('check')}Verification desk</a>
+                        <a class="app-menu-row" href="institution.html" data-role-show="institution" hidden>${headerIcon('chart')}Institution analytics</a>
+                        <a class="app-menu-row" href="recruiter.html">${headerIcon('target')}Recruiter search</a>
+                        <a class="app-menu-row" href="apply-teacher.html" data-role-hide="teacher">${headerIcon('campus')}Apply as teacher</a>
+                        <a class="app-menu-row" href="apply-admin.html" data-role-hide="verifier">${headerIcon('plus')}Apply as admin</a>
                         <div class="app-menu-sep"></div>
                         <button class="app-menu-row is-danger" type="button" data-logout>${headerIcon('logout')}Log out</button>
                     </div>
@@ -200,6 +213,43 @@ function bindAppHeader(header) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !e.defaultPrevented) { e.preventDefault(); runHeaderSearch(); }
     });
 }
+
+// ==========================================
+// 0.5 ROLE AND PLAN BADGES (styled by header.css, so every app page has them)
+// Founder: runs Connect2Minds. Admin: verifies accounts for a college's departments. Teacher: runs College Hub.
+// ==========================================
+window.rolesOf = function(person) {
+    const founder = Number(person && person.is_founder) === 1 || person.is_founder === true;
+    return {
+        founder,
+        admin: !founder && (Number(person && person.is_admin) === 1 || person.is_admin === true),
+        teacher: Boolean(person && (person.is_teacher || String(person.teacher_of || '').trim()))
+    };
+};
+
+const PLAN_BADGES = { student_pro: 'Pro', premium: 'Premium', premium_plus: 'Premium+' };
+
+window.roleBadgesHtml = function(person, options) {
+    if (!person) return '';
+    const roles = window.rolesOf(person);
+    const badge = (kind, label, title) => `<span class="c2m-badge ${kind}" title="${title}">${label}</span>`;
+    const parts = [];
+    if (roles.founder) parts.push(badge('founder', '★ Founder', 'Founder of Connect2Minds'));
+    if (roles.admin) parts.push(badge('admin', 'Admin', 'Verifies accounts for their college'));
+    if (roles.teacher) parts.push(badge('teacher', 'Teacher', 'Approved teacher on College Hub'));
+    if ((!options || options.plan !== false) && PLAN_BADGES[person.plan] && !roles.founder) parts.push(badge('plan', PLAN_BADGES[person.plan], 'Paid plan'));
+    return parts.join('');
+};
+
+// A limit of the free plan was reached (the server answered 402): say so and offer the plans
+window.upgradePrompt = function(message) {
+    const text = message || 'This needs a paid plan.';
+    if (!document.getElementById('systemModal')) {
+        if (window.confirm(`${text}\n\nSee the plans?`)) window.location.href = 'pricing.html';
+        return;
+    }
+    window.showSystemModal('Upgrade to continue', escapeHtml(text), 'confirm', () => { window.location.href = 'pricing.html'; }, 'See plans');
+};
 
 // ==========================================
 // 1. GLOBAL MODAL SYSTEM (Shared across all pages)
@@ -329,6 +379,15 @@ window.applyHeaderProfile = function(profile) {
     document.querySelectorAll('[data-header-name]').forEach(node => { node.textContent = profile.name || 'Your account'; });
     document.querySelectorAll('[data-header-sub]').forEach(node => { node.textContent = profile.college_name || ''; });
     document.querySelectorAll('[data-admin-only]').forEach(node => { node.hidden = !profile.is_admin; });
+    // Menu rows by role: the founder is not an admin, and an admin is not the founder
+    const roles = window.rolesOf(profile);
+    const has = { founder: roles.founder, verifier: roles.founder || roles.admin, teacher: roles.teacher || roles.founder,
+                  institution: roles.founder || roles.teacher || roles.admin };
+    document.querySelectorAll('[data-role-show]').forEach(node => { node.hidden = !has[node.dataset.roleShow]; });
+    document.querySelectorAll('[data-role-hide]').forEach(node => { node.hidden = Boolean(has[node.dataset.roleHide]); });
+    document.querySelectorAll('[data-header-name]').forEach(node => {
+        node.innerHTML = `${escapeHtml(profile.name || 'Your account')} ${window.roleBadgesHtml(profile, { plan: true })}`;
+    });
     const initials = profile.name ? profile.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';
 
     // --- Update ALL header avatars on the page ---

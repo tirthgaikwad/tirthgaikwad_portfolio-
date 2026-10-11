@@ -126,3 +126,12 @@
 @media (prefers-reduced-motion: reduce) {
   .app-header *, .app-panel { transition: none !important; }
 }
+
+/* Role and plan badges (shared.js roleBadgesHtml), used on cards, profiles and chats across the site */
+.c2m-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 9999px; font-family: Inter, sans-serif; font-size: 10.5px; line-height: 16px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; vertical-align: middle; flex-shrink: 0; }
+.c2m-badge.founder { background: #0b1c30; color: #fff; }
+.c2m-badge.admin { background: #3525cd; color: #fff; }
+.c2m-badge.teacher { background: #10b981; color: #fff; }
+.c2m-badge.plan { background: #eef2ff; color: #3525cd; box-shadow: inset 0 0 0 1px #c7d2fe; }
+.c2m-badge + .c2m-badge { margin-left: 3px; }
+.app-user-head strong .c2m-badge { margin-left: 4px; }

@@ -1,0 +1,51 @@
+/* ==========================================
+   BOARD-CHALLENGES.CSS — Sponsored bounties and hackathons on the Opportunities board (board-challenges.js).
+   Site colours only: indigo #3525cd and tints, navy #0b1c30, slate greys, white, emerald, rose.
+   ========================================== */
+.bc-card { border-color: #3525cd !important; box-shadow: 0 0 0 3px rgba(53,37,205,0.1), 0 4px 16px rgba(15,23,42,0.05); }
+.bc-pill { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 9999px; background: #eef2ff; color: #3525cd; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; }
+.bc-pill.sponsored { background: #0b1c30; color: #fff; }
+.bc-pill.done { background: #10b981; color: #fff; }
+.bc-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 10px; font-size: 12.5px; color: #475569; }
+.bc-strip > span { display: inline-flex; align-items: center; gap: 4px; }
+.bc-sponsor img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; }
+.bc-sponsor a { color: #3525cd; font-weight: 600; }
+.bc-prize { color: #0b1c30; font-weight: 700; }
+.bc-prize .material-symbols-outlined { color: #3525cd; }
+.bc-deadline { color: #3525cd; font-weight: 600; }
+.bc-deadline.closed { color: #e11d48; }
+.bc-btn { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.bc-btn:hover { border-color: #3525cd; color: #3525cd; background: #eef2ff; }
+.bc-btn.primary { background: #3525cd; border-color: #3525cd; color: #fff; }
+.bc-btn.primary:hover { background: #4f46e5; }
+.bc-btn:disabled { opacity: 0.6; }
+.bc-btn[hidden], .bc-link-small[hidden] { display: none; }
+.bc-icon { padding: 6px; border-radius: 8px; color: #64748b; }
+.bc-icon:hover { background: #eef2ff; color: #3525cd; }
+.bc-closed { font-size: 12px; color: #64748b; margin-right: 6px; }
+.bc-link-small { margin-left: 10px; font-size: 12.5px; font-weight: 600; color: #3525cd; }
+.bc-details { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; background: #f8f9ff; border: 1px solid #e0e7ff; }
+.bc-details ul { display: grid; gap: 6px; font-size: 13px; color: #334155; }
+.bc-details li { display: flex; align-items: center; gap: 6px; }
+.bc-details li .material-symbols-outlined { color: #3525cd; }
+.bc-modal { max-width: 560px !important; max-height: calc(100vh - 48px); overflow-y: auto; }
+.bc-modal.wide { max-width: 760px !important; }
+.bc-form { display: grid; gap: 12px; }
+.bc-form label { display: block; font-size: 12.5px; font-weight: 600; color: #334155; }
+.bc-form label small { font-weight: 400; color: #64748b; }
+.bc-form input, .bc-form select, .bc-form textarea { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13.5px; font-weight: 400; color: #0f172a; background: #fff; }
+.bc-form input:focus, .bc-form select:focus, .bc-form textarea:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 4px rgba(53,37,205,0.14); }
+.bc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bc-row.three { grid-template-columns: 1fr 1fr auto; align-items: end; }
+.bc-note { margin: 0; font-size: 13px; line-height: 19px; color: #64748b; }
+.bc-error { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: #e11d48; }
+.bc-entry { display: grid; gap: 6px; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.bc-entry-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; color: #0b1c30; }
+.bc-entry-top small { color: #64748b; }
+.bc-entry p { font-size: 13px; color: #334155; }
+.bc-rank { padding: 1px 8px; border-radius: 9999px; background: #0b1c30; color: #fff; font-size: 12px; font-weight: 800; }
+.bc-link { font-size: 13px; color: #3525cd; text-decoration: underline; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .bc-row, .bc-row.three { grid-template-columns: minmax(0, 1fr); }
+  #sponsorButton { margin-left: 0 !important; }
+}
