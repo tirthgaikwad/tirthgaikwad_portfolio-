@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -482,6 +483,7 @@ async def startup_event():
     await backfill_cleared_chats()
     spawn_background(keep_pool_warm())
     spawn_background(subscription_watch())
+    spawn_background(move_id_cards_to_files())
 
 async def keep_pool_warm():
     """The database is far away and new connections are slow to open, so keep a few open and fresh."""
@@ -668,6 +670,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Lists such as /api/discover are large JSON; compressed they are 5-8 times smaller over the wire
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -959,6 +964,13 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
+# bcrypt is slow on purpose (about 0.25 s); run it on a worker thread so a burst of logins does not stall every other request
+async def hash_password_async(password: str) -> str:
+    return await asyncio.to_thread(get_password_hash, password)
+
+async def check_password_async(plain_password: str, hashed_password: str) -> bool:
+    return await asyncio.to_thread(verify_password, plain_password, hashed_password)
+
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -1058,7 +1070,8 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
         if bc_check.scalars().first():
             raise HTTPException(status_code=400, detail="This College ID barcode has already been registered.")
 
-    hashed_pwd = get_password_hash(profile.password)
+    hashed_pwd = await hash_password_async(profile.password)
+    id_card = await store_id_card(profile.id_card_image) if (profile.id_card_image or "").strip() else ""
 
     # Professionals pick a profession when they sign up; everyone else is a student
     profession = (profile.profession or "").strip()[:PROFESSION_LENGTH]
@@ -1097,7 +1110,7 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
         account_status=initial_status, # Applies the smart logic
         github_username=profile.github_username,
         id_barcode=profile.id_barcode,
-        id_card_image=profile.id_card_image,
+        id_card_image=id_card,
         portfolio_link=profile.portfolio_link,
         invite_code=profile.invite_code,
         profession=profession,
@@ -1106,9 +1119,13 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
     )
 
     db.add(new_user)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        remove_id_card_file(id_card)
+        raise
     await db.refresh(new_user)
-    
+
     access_token = create_access_token(data={"sub": str(new_user.id)})
     
     response.set_cookie(
@@ -1135,7 +1152,7 @@ async def login_user(request: Request, credentials: UserLogin, response: Respons
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials.")
         
-    if not verify_password(credentials.password, user.hashed_password):
+    if not await check_password_async(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
         
     access_token = create_access_token(data={"sub": str(user.id)})
@@ -1281,8 +1298,8 @@ async def get_profile_options(current_user_id: int = Depends(get_current_user_id
 # ==========================================
 DIRECTORY_FIELDS = ("id", "name", "college_name", "department", "city", "skills", "profile_pic", "account_type", "account_status", "github_username",
                     "profession", "open_to", "experience_years", "is_admin", "is_founder", "teacher_of", "plan")
-DIRECTORY_BIO_LENGTH = 240
-DIRECTORY_LIMIT = 1000
+DIRECTORY_BIO_LENGTH = 160   # cards show two lines of it
+DIRECTORY_LIMIT = 5000        # Discover filters in the browser; past this many people it needs server-side paging
 
 def directory_card(row) -> dict:
     """The small card the Discover page shows for one person. Never includes the password hash, email or ID documents."""
@@ -1346,7 +1363,7 @@ async def get_discover_directory(current_user_id: int = Depends(get_current_user
     people = []
     for row in people_rows:
         card = person_card(row)
-        card["projects_text"] = " ".join(project_words.get(row.id, []))[:400]
+        card["projects_text"] = " ".join(project_words.get(row.id, []))[:200]
         people.append(card)
     return {"people": people, "online_user_ids": all_online_user_ids(), "total": len(people)}
 
@@ -4432,10 +4449,11 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
     
     # --- REGULAR ADMIN LOGIN (the secure code is the admin's own account password) ---
     result = await db.execute(select(DBUser).filter(DBUser.name == credentials.name, DBUser.is_admin == 1))
-    admin_user = next(
-        (u for u in result.scalars().all() if u.hashed_password and verify_password(credentials.bypass_code, u.hashed_password)),
-        None
-    )
+    admin_user = None
+    for candidate in result.scalars().all():
+        if candidate.hashed_password and await check_password_async(credentials.bypass_code, candidate.hashed_password):
+            admin_user = candidate
+            break
 
     if not admin_user:
         raise HTTPException(status_code=403, detail="Unauthorized. Invalid name or bypass code.")
@@ -4653,9 +4671,10 @@ async def get_admin_users(
 async def get_admin_user_id_card(user_id: int, admin_data: dict = Depends(get_founder_admin)):
     """The ID document a person uploaded at sign-up, for checking an account by hand."""
     rows = await fetch_one_off(select(DBUser.id_card_image).where(DBUser.id == user_id))
-    if not rows or not rows[0][0]:
+    image = await load_id_card(rows[0][0]) if rows else None
+    if not image:
         raise HTTPException(status_code=404, detail="This account has no ID document.")
-    return {"image": rows[0][0]}
+    return {"image": image}
 
 
 class AccountStatusChange(BaseModel):
@@ -6903,6 +6922,81 @@ PHONE_PATTERN = re.compile(r"^\+?[0-9][0-9 ()-]{7,15}$")
 VERIFY_QUEUE_LIMIT = 300
 MAX_ID_IMAGE_CHARS = 2_000_000
 
+# ID photos live as files in a private folder (never under static/, so /static cannot serve them);
+# users.id_card_image holds "file:<name>". Rows from before the move may still hold the whole "data:" picture.
+ID_CARD_DIR = os.path.join("private_uploads", "id_cards")
+ID_CARD_DATA_URL = re.compile(r"^data:image/(jpeg|jpg|png|webp|gif);base64,([A-Za-z0-9+/=\s]+)$")
+ID_CARD_FILE = re.compile(r"^file:(idcard_[0-9a-f]{32}\.(jpg|png|webp|gif))$")
+ID_CARD_EXTENSION = {"jpeg": "jpg", "jpg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}
+ID_CARD_MIME = {"jpg": "jpeg", "png": "png", "webp": "webp", "gif": "gif"}
+
+def write_id_card_file(data_url: str, check_size: bool = True) -> str:
+    match = ID_CARD_DATA_URL.match(data_url or "")
+    if not match or (check_size and len(data_url) > MAX_ID_IMAGE_CHARS):
+        raise HTTPException(status_code=400, detail="Send a JPEG or PNG photo under 1.5 MB.")
+    try:
+        raw = base64.b64decode(re.sub(r"\s", "", match.group(2)), validate=True)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="That photo could not be read.")
+    name = f"idcard_{uuid.uuid4().hex}.{ID_CARD_EXTENSION[match.group(1)]}"
+    os.makedirs(ID_CARD_DIR, exist_ok=True)
+    with open(os.path.join(ID_CARD_DIR, name), "wb") as handle:
+        handle.write(raw)
+    return f"file:{name}"
+
+async def store_id_card(data_url: str, check_size: bool = True) -> str:
+    """Save a "data:image/..." photo as a file and return the "file:<name>" value for users.id_card_image."""
+    return await asyncio.to_thread(write_id_card_file, data_url, check_size)
+
+def read_id_card_file(value: str) -> Optional[str]:
+    if (value or "").startswith("data:"):
+        return value
+    match = ID_CARD_FILE.match(value or "")
+    if not match:
+        return None
+    try:
+        with open(os.path.join(ID_CARD_DIR, match.group(1)), "rb") as handle:
+            raw = handle.read()
+    except OSError:
+        return None
+    return f"data:image/{ID_CARD_MIME[match.group(2)]};base64,{base64.b64encode(raw).decode('ascii')}"
+
+async def load_id_card(value: str) -> Optional[str]:
+    """The photo as a "data:" address, the same shape the verification pages always got. None when there is none."""
+    return await asyncio.to_thread(read_id_card_file, value)
+
+def remove_id_card_file(value: str):
+    match = ID_CARD_FILE.match(value or "")
+    if match:
+        try:
+            os.remove(os.path.join(ID_CARD_DIR, match.group(1)))
+        except OSError:
+            pass
+
+async def move_id_cards_to_files():
+    """One-time move at startup: photos still saved inside users.id_card_image become files. Later starts find nothing."""
+    last_id = 0
+    try:
+        while True:
+            rows = await fetch_one_off(select(DBUser.id, DBUser.id_card_image)
+                                       .where(DBUser.id > last_id, DBUser.id_card_image.like("data:%")).order_by(DBUser.id).limit(5))
+            if not rows:
+                return
+            for user_id, image in rows:
+                last_id = user_id
+                try:
+                    marker = await store_id_card(image, check_size=False)
+                except HTTPException:
+                    print(f"ID photo of user {user_id} could not be read; left in the database.")
+                    continue
+                # Only replace the exact picture we copied, so a re-upload in the meantime is never overwritten
+                moved = await run_returning(update(DBUser).where(DBUser.id == user_id, DBUser.id_card_image == image)
+                                            .values(id_card_image=marker).returning(DBUser.id))
+                if not moved:
+                    remove_id_card_file(marker)
+    except Exception as e:
+        print("Moving ID photos to files stopped:", e)
+
 EFFECTIVE_DEPARTMENT = func.lower(func.trim(func.coalesce(func.nullif(func.trim(DBUser.verify_department), ""), DBUser.department, "")))
 
 
@@ -7454,9 +7548,10 @@ async def verify_id_card(student_id: int, current_user_id: int = Depends(get_cur
     verifier = await verifier_of(current_user_id)
     await student_in_scope(verifier, student_id)
     rows = await fetch_one_off(select(DBUser.id_card_image).where(DBUser.id == student_id))
-    if not rows or not rows[0][0]:
+    image = await load_id_card(rows[0][0]) if rows else None
+    if not image:
         raise HTTPException(status_code=404, detail="This account has no ID document.")
-    return {"image": rows[0][0]}
+    return {"image": image}
 
 
 @app.get("/api/verify/{student_id}/departments")
@@ -7577,13 +7672,14 @@ async def founder_reverse_verification(log_id: int, founder_id: int = Depends(re
 @app.post("/api/me/id-card")
 async def upload_my_id_card(body: IdCardUpload, current_user_id: int = Depends(get_current_user_id)):
     """A new ID photo from the student (after "needs info" or a rejection). The request goes back in the queue."""
-    image = (body.image or "").strip()
-    if not image.startswith("data:image/") or len(image) > MAX_ID_IMAGE_CHARS:
-        raise HTTPException(status_code=400, detail="Send a JPEG or PNG photo under 1.5 MB.")
+    marker = await store_id_card((body.image or "").strip())
+    old = await fetch_one_off(select(DBUser.id_card_image).where(DBUser.id == current_user_id))
     rows = await run_returning(update(DBUser).where(DBUser.id == current_user_id).values(
-        id_card_image=image,
+        id_card_image=marker,
         account_status=case((func.coalesce(DBUser.account_status, "pending").in_(("needs_info", "rejected")), "pending"), else_=DBUser.account_status),
     ).returning(DBUser.account_status))
+    if old:
+        remove_id_card_file(old[0][0])
     return {"account_status": rows[0][0] if rows else "pending"}
 
 
