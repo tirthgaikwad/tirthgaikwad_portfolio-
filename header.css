@@ -1,3 +1,5 @@
+@import url("mobile.css");   /* phone layout and the bottom tab bar */
+
 /* ==========================================
    HEADER.CSS — The top navigation bar of every app page.
    The markup is written by renderAppHeader() in shared.js. Plain CSS (not Tailwind), so the bar looks the

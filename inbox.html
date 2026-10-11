@@ -445,6 +445,18 @@
       }
     }
 
+    /* Phones: the page is exactly one screen tall (dvh leaves out the browser's own bars), the list ends above
+       the bottom tab bar, and an open chat takes everything under the header so the message box stays in view */
+    @media (max-width: 767px) {
+      main { min-height: 0 !important; }
+      #inbox-subbar > div { flex-wrap: nowrap; padding-top: 6px; padding-bottom: 6px; }
+      #inbox-subbar > div > div:first-child { display: none; }
+      #inbox-subbar > div > div:last-child { width: 100%; justify-content: space-between; }
+      #inbox-workspace { height: calc(100vh - 64px - 49px - 60px) !important; height: calc(100dvh - 64px - 49px - 60px - env(safe-area-inset-bottom)) !important; }
+      body.chat-open #inbox-subbar { display: none; }
+      body.chat-open #inbox-workspace { height: calc(100vh - 64px) !important; height: calc(100dvh - 64px) !important; }
+    }
+
     /* ===== Message bubbles ===== */
     .msg-bubble a.msg-link {
       text-decoration: underline;
@@ -584,7 +596,7 @@
     <div class="flex flex-col w-full">
 
       <!-- Subheader Context Bar -->
-      <div
+      <div id="inbox-subbar"
         class="w-full bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30 sticky top-16 z-40">
         <div
           class="max-w-container-max mx-auto px-gutter-mobile md:px-gutter-desktop py-space-xs flex flex-wrap items-center justify-between gap-space-sm">
@@ -622,7 +634,7 @@
 
       <!-- Main Dual-Pane Workspace Layout -->
       <div class="w-full flex-1">
-        <div
+        <div id="inbox-workspace"
           class="w-full bg-surface-container-lowest border-t border-outline-variant/30 flex flex-col lg:flex-row h-[calc(100vh-6.5rem)] overflow-hidden">
 
           <!-- ==================== LEFT COLUMN: Conversation Directory ==================== -->

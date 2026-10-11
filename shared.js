@@ -143,7 +143,33 @@ window.renderAppHeader = function() {
         <div class="app-mobile" id="appHeaderMobile" data-mobile-panel hidden>${mobile}</div>`;
 
     bindAppHeader(header);
+    renderAppTabbar(currentPage);
 };
+
+// Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
+const TABBAR_ITEMS = [
+    { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html', 'department.html', 'global.html', 'followers.html'] },
+    { label: 'Opportunities', href: 'board.html', icon: 'briefcase', also: [] },
+    { label: 'Messages', href: 'inbox.html', icon: 'chat', also: [] },
+    { label: 'College Hub', href: 'college-hub.html', icon: 'campus', also: ['team.html', 'project_management.html', 'research.html'] },
+    { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'billing.html', 'pricing.html'] }
+];
+
+function renderAppTabbar(currentPage) {
+    if (document.querySelector('.app-tabbar')) return;
+    // Someone else's profile (profile.html?id=…) is not "Me"
+    const ownProfile = !new URLSearchParams(window.location.search).get('id');
+    const isCurrent = (item) => (item.href === currentPage && (item.href !== 'profile.html' || ownProfile)) || item.also.includes(currentPage);
+    const bar = document.createElement('nav');
+    bar.className = 'app-tabbar';
+    bar.setAttribute('aria-label', 'Main');
+    bar.innerHTML = TABBAR_ITEMS.map(item => `
+        <a class="app-tab${isCurrent(item) ? ' is-current' : ''}" href="${item.href}"${item.href === currentPage ? ' aria-current="page"' : ''}>
+            <span class="app-tab-icon">${headerIcon(item.icon)}</span><span>${item.label}</span>
+        </a>`).join('');
+    document.body.appendChild(bar);
+    document.body.classList.add('has-tabbar');
+}
 
 // The search field focuses the page's own search box where there is one; elsewhere it opens Discover
 function runHeaderSearch() {

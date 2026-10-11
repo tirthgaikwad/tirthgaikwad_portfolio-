@@ -1,0 +1,124 @@
+/* ==========================================
+   MOBILE.CSS — Phone layer for every app page. Loaded by header.css (@import), so pages need no extra link.
+   Every rule sits behind a phone-width media query: desktop is untouched.
+   ========================================== */
+
+/* ---------- Bottom tab bar (written by renderAppHeader in shared.js) ---------- */
+.app-tabbar { display: none; }
+
+@media (max-width: 767px) {
+  .app-tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+    display: flex; align-items: stretch; justify-content: space-around;
+    height: calc(60px + env(safe-area-inset-bottom)); padding: 0 4px env(safe-area-inset-bottom);
+    background: rgba(255, 255, 255, 0.96);
+    -webkit-backdrop-filter: saturate(180%) blur(14px); backdrop-filter: saturate(180%) blur(14px);
+    border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .app-tab {
+    position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: #64748b !important; text-decoration: none !important; font-size: 10.5px; line-height: 13px; font-weight: 600; letter-spacing: 0.01em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app-tab span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .app-tab-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 28px; border-radius: 999px; transition: background 0.15s; }
+  .app-tab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .app-tab.is-current { color: #3525cd !important; }
+  .app-tab.is-current .app-tab-icon { background: #eef0ff; }
+  .app-tab.is-current svg { stroke-width: 2.1; }
+  .app-tab:active .app-tab-icon { background: #e0e7ff; }
+  .app-tab .app-badge { top: -2px; right: 4px; display: flex; }
+
+  body.has-tabbar { padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
+  /* Full-screen work views hide the bar so their own composer or toolbar sits at the bottom */
+  body.chat-open .app-tabbar, body.tabbar-off .app-tabbar { display: none; }
+  body.chat-open.has-tabbar, body.tabbar-off.has-tabbar { padding-bottom: 0 !important; }
+  /* Messages has its own tab, so the header icon is not needed on phones */
+  .app-header a.app-icon-btn[href="inbox.html"] { display: none !important; }
+}
+
+/* ---------- General phone rules ---------- */
+@media (max-width: 767px) {
+  html, body { overflow-x: clip; }
+  img, video, canvas, iframe { max-width: 100%; }
+  main { overflow-wrap: break-word; }
+  main pre, main code { white-space: pre-wrap; }
+
+  /* The pages use the desktop gutter everywhere; phones get the site's own mobile gutter (16px) and slimmer card padding */
+  .px-gutter-desktop { padding-left: 16px !important; padding-right: 16px !important; }
+  main .p-space-lg { padding: 18px !important; }
+  main .p-space-xl { padding: 20px !important; }
+
+  /* 16px text in form fields stops iPhones from zooming in while typing */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]), select, textarea { font-size: 16px !important; }
+
+  /* The shared footer: brand on one line, links as a 2 x 2 grid */
+  footer.py-space-xl { padding-top: 24px !important; padding-bottom: 24px !important; }
+  footer.py-space-xl > div { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; padding-left: 20px !important; padding-right: 20px !important; }
+  footer.py-space-xl > div > div:first-child { flex-wrap: wrap; row-gap: 4px; }
+  footer.py-space-xl > div > div:first-child > span:last-child { flex-basis: 100%; font-size: 12px; }
+  footer.py-space-xl > div > div:last-child { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px 16px !important; width: 100%; }
+  footer.py-space-xl > div > div:last-child a { font-size: 13px; padding: 2px 0; }
+
+  /* Pop-ups that use the shared overlay become bottom sheets */
+  .modal-overlay.active { align-items: flex-end !important; }
+  .modal-overlay .custom-modal { width: 100% !important; max-width: none !important; border-radius: 20px 20px 0 0 !important; padding: 24px 20px calc(20px + env(safe-area-inset-bottom)) !important; max-height: 90vh; overflow-y: auto; border-left: 0; border-right: 0; border-bottom: 0; animation: c2m-sheet-up 0.22s ease-out !important; }
+  .modal-overlay .custom-modal button { min-height: 44px; }
+
+  /* Tables scroll sideways inside their own box instead of widening the page */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .table-scroll > table { min-width: 560px; }
+
+  /* A row of tabs stays on one line and scrolls sideways */
+  .tab-scroll { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tab-scroll::-webkit-scrollbar { display: none; }
+  .tab-scroll > * { flex: none !important; }
+}
+
+/* ---------- Page by page ---------- */
+@media (max-width: 767px) {
+  /* Profile: the three top actions share one row; card titles stay on one line next to their edit button */
+  #profileActions { display: flex !important; flex-wrap: nowrap !important; gap: 8px !important; width: 100%; }
+  #profileActions > button { flex: 1 1 0; min-width: 0; justify-content: center; min-height: 40px; padding-left: 6px !important; padding-right: 6px !important; white-space: nowrap; }
+  #profileActions > button > .material-symbols-outlined { display: none; }
+  #profileContent section > div:first-child h2 { white-space: nowrap; font-size: 18px !important; line-height: 26px !important; }
+  #profileContent section > div:first-child > button, #profileContent section > div:first-child > div:last-child button { white-space: nowrap; flex-shrink: 0; }
+
+  /* Founder console and institution analytics: figures two per row */
+  .in-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .in-kpi { padding: 14px !important; }
+  .in-kpi b { font-size: 21px !important; line-height: 26px !important; }
+
+  /* Verification desk: the four counters as a 2 x 2 grid; keyboard shortcuts mean nothing on a phone */
+  .vd-stats { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .vd-stats .ch-stat { min-width: 0 !important; }
+  .vd-keys { display: none !important; }
+
+  /* Tables in the plan, billing, founder and recruiter pages: readable first column that stays put while the rest scrolls */
+  .bl-table > .ch-table, .pr-table-wrap > .ch-table, .in-card > .ch-table { min-width: 520px; }
+  .ch-table th, .ch-table td { padding: 10px 12px !important; }
+  .pr-table-wrap .ch-table th:first-child, .pr-table-wrap .ch-table td:first-child { position: sticky; left: 0; z-index: 1; min-width: 150px; max-width: 170px; background: #fff; box-shadow: 1px 0 0 #e2e8f0; }
+  .pr-table-wrap .ch-table th:first-child { background: #f8f9ff; }
+
+  /* Activity history: Export and Clear side by side across the full width */
+  #historyActions { display: grid !important; grid-template-columns: 1fr 1fr; width: 100%; }
+  #historyActions > button { justify-content: center; padding-left: 8px !important; padding-right: 8px !important; white-space: nowrap; }
+
+  /* Messages is an app screen: no site footer under the chat list */
+  body:has(#conversation-pane) footer.py-space-xl { display: none !important; }
+
+  /* Project Hub: the three view tabs share the width */
+  #hubTabs { display: flex !important; width: 100%; }
+  #hubTabs .hub-tab { flex: 1 1 0; min-width: 0; justify-content: center; padding: 9px 4px; font-size: 13px; }
+  #hubTabs .hub-tab .material-symbols-outlined { display: none; }
+
+  /* College Hub style tab rows already scroll; fade the right edge so it is clear there is more */
+  .ch-tabs { -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); }
+}
+
+@keyframes c2m-sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay .custom-modal { animation: none !important; }
+}
