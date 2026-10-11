@@ -29,7 +29,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import aliased
-from sqlalchemy import Column, Integer, String, Float, Boolean, func, delete, update, text, and_, or_, case, literal, exists
+from sqlalchemy import Column, Integer, String, Float, Boolean, func, delete, update, text, and_, or_, case, literal, exists, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from database import engine, Base, get_db, get_fast_db, SessionLocal, AutocommitSession
 
@@ -358,6 +358,13 @@ SCHEMA_UPGRADES = [
     "ALTER TABLE teams ADD COLUMN IF NOT EXISTS open_to_join INTEGER DEFAULT 0",
     "CREATE INDEX IF NOT EXISTS ix_teams_college_key ON teams (college_key)",
     "CREATE INDEX IF NOT EXISTS ix_college_messages_room ON college_messages (college_key, room, id)",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS poll_options VARCHAR DEFAULT '[]'",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS poll_multi INTEGER DEFAULT 0",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS needs_ack INTEGER DEFAULT 0",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS accepts_work INTEGER DEFAULT 0",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS submit_by VARCHAR DEFAULT ''",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS max_marks INTEGER DEFAULT 0",
+    "ALTER TABLE college_posts ADD COLUMN IF NOT EXISTS weekly_checkins INTEGER DEFAULT 0",
 ]
 
 async def backfill_cleared_chats():
@@ -4245,6 +4252,8 @@ async def purge_team(db: AsyncSession, team_id: int):
         run_one_off(delete(DBTeamTask).where(DBTeamTask.team_id == team_id)),
         run_one_off(delete(DBTeamBoard).where(DBTeamBoard.team_id == team_id)),
         run_one_off(delete(DBTeam).where(DBTeam.id == team_id)),
+        run_one_off(delete(DBCollegeSubmission).where(DBCollegeSubmission.group_id == team_id)),
+        run_one_off(delete(DBGroupCheckin).where(DBGroupCheckin.group_id == team_id)),
     )
 
 
@@ -4745,6 +4754,14 @@ class DBCollegePost(Base):
     students_form_groups = Column(Integer, default=1)
     created_at = Column(String)
     updated_at = Column(String)
+    # Added later (section 16): a poll, read confirmation, handing in work and weekly check-ins
+    poll_options = Column(String, default="[]")   # JSON list of strings; empty means no poll
+    poll_multi = Column(Integer, default=0)
+    needs_ack = Column(Integer, default=0)
+    accepts_work = Column(Integer, default=0)     # activity only: groups hand in their work
+    submit_by = Column(String, default="")        # YYYY-MM-DD or empty
+    max_marks = Column(Integer, default=0)        # 0 means feedback without marks
+    weekly_checkins = Column(Integer, default=0)
 
 class DBCollegeSetting(Base):
     __tablename__ = "college_settings"
@@ -4767,6 +4784,7 @@ class DBCollegeMessage(Base):
 HUB_POST_KINDS = ("notice", "activity")
 HUB_MAX_GROUP_SIZE = 50
 HUB_MAX_TOPICS = 40
+HUB_MAX_POLL_OPTIONS = 10
 HUB_CHAT_PAGE = 50
 HUB_COLLEGE_ROOM = "college"
 HUB_PEOPLE_LIMIT = 3000
@@ -4818,6 +4836,13 @@ class HubPostBody(BaseModel):
     deadline: Optional[str] = ""
     topics: Optional[List[str]] = None
     students_form_groups: Optional[bool] = None
+    poll_options: Optional[List[str]] = None
+    poll_multi: Optional[bool] = False
+    needs_ack: Optional[bool] = False
+    accepts_work: Optional[bool] = False
+    submit_by: Optional[str] = ""
+    max_marks: Optional[int] = 0
+    weekly_checkins: Optional[bool] = False
 
 class HubGroupCreate(BaseModel):
     name: str
@@ -4939,24 +4964,34 @@ async def notify_many(user_ids, notif_type: str, content: str, link: str):
 
 
 # ---------- reading the hub ----------
-def serialize_hub_post(post: DBCollegePost) -> dict:
+def json_list(raw: Optional[str]) -> list:
     try:
-        topics = [str(topic) for topic in json.loads(post.topics or "[]")]
+        return [str(item) for item in json.loads(raw or "[]")]
     except (ValueError, TypeError):
-        topics = []
+        return []
+
+def serialize_hub_post(post: DBCollegePost) -> dict:
+    topics = json_list(post.topics)
     return {
         "id": post.id, "kind": post.kind or "notice", "title": post.title or "", "body": post.body or "",
         "author_id": post.author_id, "department": post.department or "", "division": post.division or "",
         "pinned": bool(post.pinned), "group_min": post.group_min or 1, "group_max": post.group_max or HUB_MAX_GROUP_SIZE,
         "deadline": post.deadline or "", "topics": topics, "students_form_groups": bool(post.students_form_groups),
         "created_at": post.created_at or "", "updated_at": post.updated_at or "",
+        "poll_options": json_list(post.poll_options), "poll_multi": bool(post.poll_multi), "needs_ack": bool(post.needs_ack),
+        "accepts_work": bool(post.accepts_work), "submit_by": post.submit_by or "", "max_marks": post.max_marks or 0,
+        "weekly_checkins": bool(post.weekly_checkins),
     }
 
 def post_is_for(post, me: dict) -> bool:
     """Teachers see every post of their college; a student sees the ones addressed to the college or to their class."""
+    return addressed_to(post.department, post.division, me)
+
+def addressed_to(department: Optional[str], division: Optional[str], me: dict) -> bool:
+    """The same rule for anything with a department and a division: posts, events, resources, questions."""
     if me["role"] == "teacher":
         return True
-    department, division = college_key_of(post.department), college_key_of(post.division)
+    department, division = college_key_of(department), college_key_of(division)
     if department and department != college_key_of(me["department"]):
         return False
     return not division or division == college_key_of(me["division"])
@@ -4980,7 +5015,7 @@ async def get_college_hub(current_user_id: int = Depends(get_current_user_id)):
     key = me["key"]
     picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic).label("profile_pic")
     team_ids = select(DBTeam.id).where(DBTeam.college_key == key)
-    people, groups, members, posts, settings = await asyncio.gather(
+    people, groups, members, posts, settings, extras = await asyncio.gather(
         fetch_one_off(
             select(DBUser.id, DBUser.name, DBUser.college_name, DBUser.department, DBUser.division, picture, DBUser.teacher_of)
             .where(hub_people_clause(key)).order_by(DBUser.name).limit(HUB_PEOPLE_LIMIT)
@@ -4989,6 +5024,7 @@ async def get_college_hub(current_user_id: int = Depends(get_current_user_id)):
         fetch_one_off(select(DBTeamMember.team_id, DBTeamMember.user_id, DBTeamMember.role).where(DBTeamMember.team_id.in_(team_ids))),
         fetch_one_off(select(DBCollegePost).where(DBCollegePost.college_key == key).order_by(DBCollegePost.pinned.desc(), DBCollegePost.id.desc()).limit(300)),
         fetch_one_off(select(DBCollegeSetting.students_can_form_groups).where(DBCollegeSetting.college_key == key)),
+        hub_extras(key, me),
     )
 
     teacher_ids = {row.id for row in people if (row.teacher_of or "") == key}
@@ -5000,10 +5036,15 @@ async def get_college_hub(current_user_id: int = Depends(get_current_user_id)):
         names = [row.college_name.strip() for row in people if row.id not in teacher_ids and row.college_name]
         public_me["college"] = max(set(names), key=names.count) if names else (me["college"] or key)
 
+    my_group_ids = {team_id for team_id, people_in in members_of.items() if any(member["id"] == current_user_id for member in people_in)}
     return {
         "me": public_me,
         "settings": {"students_can_form_groups": bool(settings[0][0]) if settings else True},
-        "posts": [serialize_hub_post(post) for (post,) in posts if post_is_for(post, me)],
+        "posts": [with_post_extras(serialize_hub_post(post), extras, me) for (post,) in posts if post_is_for(post, me)],
+        "submissions": [row for row in extras["submissions"] if me["role"] == "teacher" or row["group_id"] in my_group_ids],
+        "checkins": extras["checkins"],
+        "events": [row for row in extras["events"] if addressed_to(row["department"], row["division"], me)],
+        "today": datetime.now().date().isoformat(),
         "groups": [{
             "id": team.id, "name": team.name or "", "topic": team.topic or "", "activity_id": team.activity_id,
             "created_by": team.created_by, "teacher_managed": bool(team.teacher_managed), "open_to_join": bool(team.open_to_join),
@@ -5129,8 +5170,27 @@ def clean_hub_post(body: HubPostBody, default_students_form: bool) -> dict:
     if division and not department:
         raise HTTPException(status_code=400, detail="Pick a department before a division.")
     values = {"kind": kind, "title": title, "body": text_body, "department": department, "division": division, "pinned": 1 if body.pinned else 0}
+    options = []   # in the order given, without repeats
+    for option in body.poll_options or []:
+        option = (option or "").strip()[:120]
+        if option and college_key_of(option) not in {college_key_of(have) for have in options}:
+            options.append(option)
+    if len(options) == 1:
+        raise HTTPException(status_code=400, detail="A poll needs at least two choices.")
+    if len(options) > HUB_MAX_POLL_OPTIONS:
+        raise HTTPException(status_code=400, detail=f"A poll can have up to {HUB_MAX_POLL_OPTIONS} choices.")
+    values.update({"poll_options": json.dumps(options), "poll_multi": 1 if options and body.poll_multi else 0, "needs_ack": 1 if body.needs_ack else 0})
     if kind != "activity":
         return values
+
+    accepts_work = bool(body.accepts_work)
+    submit_by = (body.submit_by or "").strip() if accepts_work else ""
+    if submit_by and not HUB_DATE_PATTERN.match(submit_by):
+        raise HTTPException(status_code=400, detail="The date to hand in work by must be a date.")
+    max_marks = (body.max_marks or 0) if accepts_work else 0
+    if not (0 <= max_marks <= 1000):
+        raise HTTPException(status_code=400, detail="Marks can go from 0 up to 1000.")
+    values.update({"accepts_work": 1 if accepts_work else 0, "submit_by": submit_by, "max_marks": max_marks, "weekly_checkins": 1 if body.weekly_checkins else 0})
 
     group_min, group_max = body.group_min or 1, body.group_max or HUB_MAX_GROUP_SIZE
     if not (1 <= group_min <= group_max <= HUB_MAX_GROUP_SIZE):
@@ -5187,6 +5247,9 @@ async def update_hub_post(post_id: int, body: HubPostBody, db: AsyncSession = De
         raise HTTPException(status_code=404, detail="That post is no longer on the board.")
     body.kind = post.kind   # a notice stays a notice and an activity an activity: groups may already hang on it
     values = clean_hub_post(body, bool(post.students_form_groups))
+    poll_changed = values["poll_options"] != (post.poll_options or "[]") or values["poll_multi"] != (post.poll_multi or 0)
+    if poll_changed and (await db.execute(select(exists().where(DBCollegePollVote.post_id == post_id)))).scalar():
+        raise HTTPException(status_code=400, detail="People have already voted, so the poll's choices can no longer change.")
     for field, value in values.items():
         setattr(post, field, value)
     post.updated_at = utc_now_iso()
@@ -5202,7 +5265,12 @@ async def delete_hub_post(post_id: int, db: AsyncSession = Depends(get_fast_db),
     result = await db.execute(delete(DBCollegePost).where(DBCollegePost.id == post_id, DBCollegePost.college_key == me["key"]).returning(DBCollegePost.id))
     if not result.first():
         raise HTTPException(status_code=404, detail="That post is no longer on the board.")
-    await db.execute(update(DBTeam).where(DBTeam.college_key == me["key"], DBTeam.activity_id == post_id).values(activity_id=None))
+    await asyncio.gather(
+        run_one_off(update(DBTeam).where(DBTeam.college_key == me["key"], DBTeam.activity_id == post_id).values(activity_id=None)),
+        run_one_off(delete(DBCollegePollVote).where(DBCollegePollVote.post_id == post_id)),
+        run_one_off(delete(DBCollegePostRead).where(DBCollegePostRead.post_id == post_id)),
+        run_one_off(delete(DBCollegeSubmission).where(DBCollegeSubmission.activity_id == post_id)),
+    )
     hub_changed(me["key"])
     return {"status": "deleted"}
 
@@ -5620,3 +5688,1024 @@ async def delete_hub_chat(message_id: int, db: AsyncSession = Depends(get_fast_d
         raise HTTPException(status_code=404, detail="That message is gone, or it is not yours to delete.")
     spawn_background(hub_push(me["key"], {"type": "college_chat_deleted", "id": message_id, "room": row[0]}, row[0]))
     return {"status": "deleted"}
+
+
+# ==========================================
+# 16. COLLEGE HUB: POLLS, READ CONFIRMATION, HANDED-IN WORK, CHECK-INS, CALENDAR, RESOURCES, ATTENDANCE, Q&A
+# Everything here belongs to one college (college_key) and uses the section 15 rules for who sees what:
+# an item with a department and a division is for that class, an empty department means the whole college.
+# ==========================================
+class DBCollegePollVote(Base):
+    __tablename__ = "college_poll_votes"
+    __table_args__ = (UniqueConstraint("post_id", "user_id", "option_index", name="ux_college_poll_votes"),)
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    option_index = Column(Integer)
+
+class DBCollegePostRead(Base):
+    __tablename__ = "college_post_reads"
+    __table_args__ = (UniqueConstraint("post_id", "user_id", name="ux_college_post_reads"),)
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    read_at = Column(String)
+
+class DBCollegeSubmission(Base):
+    """The work one group hands in for one activity."""
+    __tablename__ = "college_submissions"
+    __table_args__ = (UniqueConstraint("activity_id", "group_id", name="ux_college_submissions"),)
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    activity_id = Column(Integer, index=True)
+    group_id = Column(Integer, index=True)
+    submitted_by = Column(Integer)
+    link = Column(String, default="")
+    file_url = Column(String, default="")
+    file_name = Column(String, default="")
+    note = Column(String, default="")
+    late = Column(Integer, default=0)
+    submitted_at = Column(String)
+    updated_at = Column(String)
+    marks = Column(Integer, nullable=True)
+    feedback = Column(String, default="")
+    graded_by = Column(Integer, nullable=True)
+    graded_at = Column(String, default="")
+
+class DBGroupCheckin(Base):
+    """A group's progress note for one week (the week is named by its Monday)."""
+    __tablename__ = "group_checkins"
+    __table_args__ = (UniqueConstraint("group_id", "week_start", name="ux_group_checkins"),)
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    group_id = Column(Integer, index=True)
+    activity_id = Column(Integer, nullable=True)
+    author_id = Column(Integer)
+    week_start = Column(String)
+    done = Column(String, default="")
+    next_steps = Column(String, default="")
+    blockers = Column(String, default="")
+    teacher_note = Column(String, default="")
+    teacher_id = Column(Integer, nullable=True)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+class DBCollegeEvent(Base):
+    __tablename__ = "college_events"
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    author_id = Column(Integer)
+    title = Column(String)
+    kind = Column(String, default="event")        # exam, lecture, event, holiday, other
+    date = Column(String, index=True)             # YYYY-MM-DD
+    start_time = Column(String, default="")       # HH:MM or empty
+    end_time = Column(String, default="")
+    location = Column(String, default="")
+    details = Column(String, default="")
+    department = Column(String, default="")
+    division = Column(String, default="")
+    created_at = Column(String)
+
+class DBCollegeResource(Base):
+    __tablename__ = "college_resources"
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    author_id = Column(Integer)
+    title = Column(String)
+    url = Column(String, default="")
+    file_url = Column(String, default="")
+    file_name = Column(String, default="")
+    description = Column(String, default="")
+    subject = Column(String, default="")
+    department = Column(String, default="")
+    division = Column(String, default="")
+    created_at = Column(String)
+
+class DBCollegeResourceSave(Base):
+    __tablename__ = "college_resource_saves"
+    __table_args__ = (UniqueConstraint("resource_id", "user_id", name="ux_college_resource_saves"),)
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+
+class DBAttendanceSession(Base):
+    __tablename__ = "attendance_sessions"
+    __table_args__ = (Index("ix_attendance_sessions_class", "college_key", "department", "division"),)
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    teacher_id = Column(Integer)
+    department = Column(String, default="")       # as written on the students' profiles
+    division = Column(String, default="")
+    subject = Column(String, default="")
+    date = Column(String)
+    created_at = Column(String)
+
+class DBAttendanceMark(Base):
+    __tablename__ = "attendance_marks"
+    __table_args__ = (UniqueConstraint("session_id", "user_id", name="ux_attendance_marks"),)
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    status = Column(String, default="present")    # present, absent, late
+
+class DBCollegeQuestion(Base):
+    __tablename__ = "college_questions"
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    author_id = Column(Integer, index=True)
+    anonymous = Column(Integer, default=0)        # hidden from students; teachers still see who asked
+    title = Column(String)
+    body = Column(String, default="")
+    subject = Column(String, default="")
+    department = Column(String, default="")       # empty: asked to the whole college
+    division = Column(String, default="")
+    accepted_answer_id = Column(Integer, nullable=True)
+    created_at = Column(String)
+
+class DBCollegeAnswer(Base):
+    __tablename__ = "college_answers"
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, index=True)
+    author_id = Column(Integer)
+    body = Column(String)
+    created_at = Column(String)
+
+class DBCollegeQuestionVote(Base):
+    __tablename__ = "college_question_votes"
+    __table_args__ = (UniqueConstraint("question_id", "user_id", name="ux_college_question_votes"),)
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+
+
+HUB_EVENT_KINDS = ("exam", "lecture", "event", "holiday", "other")
+HUB_ATTENDANCE_STATUSES = ("present", "absent", "late")
+HUB_ATTENDANCE_LOW = 75          # per cent; a student who drops below it is told once
+HUB_ATTENDANCE_MIN_SESSIONS = 4  # ...but not before there are enough sessions for the figure to mean something
+HUB_EVENTS_PAST_DAYS = 60
+HUB_TIME_PATTERN = re.compile(r"^\d{2}:\d{2}$")
+HUB_LINK_PATTERN = re.compile(r"^https?://", re.IGNORECASE)
+
+
+class HubVote(BaseModel):
+    options: List[int]
+
+class HubSubmission(BaseModel):
+    link: Optional[str] = ""
+    file_url: Optional[str] = ""
+    file_name: Optional[str] = ""
+    note: Optional[str] = ""
+
+class HubGrade(BaseModel):
+    marks: Optional[int] = None
+    feedback: Optional[str] = ""
+
+class HubCheckin(BaseModel):
+    done: Optional[str] = ""
+    next_steps: Optional[str] = ""
+    blockers: Optional[str] = ""
+
+class HubCheckinNote(BaseModel):
+    teacher_note: Optional[str] = ""
+
+class HubEventBody(BaseModel):
+    title: str
+    kind: Optional[str] = "event"
+    date: str
+    start_time: Optional[str] = ""
+    end_time: Optional[str] = ""
+    location: Optional[str] = ""
+    details: Optional[str] = ""
+    department: Optional[str] = ""
+    division: Optional[str] = ""
+
+class HubResourceBody(BaseModel):
+    title: str
+    url: Optional[str] = ""
+    file_url: Optional[str] = ""
+    file_name: Optional[str] = ""
+    description: Optional[str] = ""
+    subject: Optional[str] = ""
+    department: Optional[str] = ""
+    division: Optional[str] = ""
+
+class HubAttendanceBody(BaseModel):
+    department: Optional[str] = ""
+    division: Optional[str] = ""
+    subject: Optional[str] = ""
+    date: str
+    marks: dict
+
+class HubQuestionBody(BaseModel):
+    title: str
+    body: Optional[str] = ""
+    subject: Optional[str] = ""
+    to_class: Optional[bool] = False
+    anonymous: Optional[bool] = False
+
+class HubAnswerBody(BaseModel):
+    body: str
+
+class HubAccept(BaseModel):
+    answer_id: Optional[int] = None
+
+
+# ---------- small shared pieces ----------
+def clean_link(value: Optional[str], what: str) -> str:
+    """A web address people will click: only http(s), so nothing can run script from the page."""
+    value = (value or "").strip()[:1000]
+    if value and not HUB_LINK_PATTERN.match(value):
+        raise HTTPException(status_code=400, detail=f"The {what} must start with http:// or https://.")
+    return value
+
+def clean_text(value: Optional[str], limit: int, what: str) -> str:
+    value = (value or "").strip()
+    if len(value) > limit:
+        raise HTTPException(status_code=400, detail=f"The {what} is too long. The limit is {limit} characters.")
+    return value
+
+def clean_audience(department: Optional[str], division: Optional[str]) -> tuple:
+    department, division = (department or "").strip()[:120], (division or "").strip()[:40]
+    if division and not department:
+        raise HTTPException(status_code=400, detail="Pick a department before a division.")
+    return department, division
+
+def week_start_of(day) -> str:
+    return (day - timedelta(days=day.weekday())).isoformat()
+
+def this_week() -> str:
+    return week_start_of(datetime.now().date())
+
+def class_clause(key: str, department: str, division: str):
+    """The students of one class of a college. An empty division means the whole department."""
+    conditions = [hub_student_clause(key), func.lower(func.trim(func.coalesce(DBUser.department, ""))) == college_key_of(department)]
+    if division:
+        conditions.append(func.lower(func.trim(func.coalesce(DBUser.division, ""))) == college_key_of(division))
+    return and_(*conditions)
+
+async def hub_teacher_ids(key: str) -> list:
+    rows = await fetch_one_off(select(DBUser.id).where(DBUser.teacher_of == key))
+    return [row[0] for row in rows]
+
+async def hub_push_teachers(key: str, payload: dict):
+    """A live event for the college's teachers only. Meant to run in the background."""
+    try:
+        message = json.dumps(payload)
+        for user_id in await hub_teacher_ids(key):
+            await notification_manager.send_personal_message(message, user_id)
+    except Exception as e:
+        print("Error pushing a College Hub event to teachers:", e)
+
+async def hub_post_or_404(key: str, post_id: int):
+    rows = await fetch_one_off(select(DBCollegePost).where(DBCollegePost.id == post_id, DBCollegePost.college_key == key))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That post is no longer on the board.")
+    return rows[0][0]
+
+
+# ---------- what the board needs, in one round trip ----------
+HUB_EXTRAS_SQL = text("""
+SELECT
+  (SELECT coalesce(json_agg(json_build_array(v.post_id, v.user_id, v.option_index)), '[]')
+     FROM college_poll_votes v JOIN college_posts p ON p.id = v.post_id WHERE p.college_key = :key) AS votes,
+  (SELECT coalesce(json_agg(json_build_array(r.post_id, r.user_id)), '[]')
+     FROM college_post_reads r JOIN college_posts p ON p.id = r.post_id
+     WHERE p.college_key = :key AND (:teacher OR r.user_id = :me)) AS reads,
+  (SELECT coalesce(json_agg(json_build_object(
+       'id', s.id, 'activity_id', s.activity_id, 'group_id', s.group_id, 'submitted_by', s.submitted_by,
+       'link', s.link, 'file_url', s.file_url, 'file_name', s.file_name, 'note', s.note, 'late', s.late = 1,
+       'submitted_at', s.submitted_at, 'updated_at', s.updated_at, 'marks', s.marks, 'feedback', s.feedback,
+       'graded', s.graded_at <> '', 'graded_at', s.graded_at)), '[]')
+     FROM college_submissions s WHERE s.college_key = :key) AS submissions,
+  (SELECT coalesce(json_agg(json_build_object(
+       'id', c.id, 'group_id', c.group_id, 'week_start', c.week_start, 'author_id', c.author_id,
+       'updated_at', c.updated_at, 'has_note', c.teacher_note <> '')), '[]')
+     FROM (SELECT DISTINCT ON (group_id) * FROM group_checkins WHERE college_key = :key ORDER BY group_id, week_start DESC) c) AS checkins,
+  (SELECT coalesce(json_agg(json_build_object(
+       'id', e.id, 'title', e.title, 'kind', e.kind, 'date', e.date, 'start_time', e.start_time, 'end_time', e.end_time,
+       'location', e.location, 'details', e.details, 'department', e.department, 'division', e.division,
+       'author_id', e.author_id) ORDER BY e.date, e.start_time), '[]')
+     FROM college_events e WHERE e.college_key = :key AND e.date >= :since) AS events
+""")
+
+async def hub_extras(key: str, me: dict) -> dict:
+    since = (datetime.now().date() - timedelta(days=HUB_EVENTS_PAST_DAYS)).isoformat()
+    rows = await fetch_one_off(HUB_EXTRAS_SQL.bindparams(key=key, teacher=me["role"] == "teacher", me=me["id"], since=since))
+    loaded = [json.loads(value) if isinstance(value, str) else (value or []) for value in rows[0]]
+    votes, reads, submissions, checkins, events = loaded
+    return {"votes": votes, "reads": reads, "submissions": submissions, "checkins": checkins, "events": events}
+
+def with_post_extras(post: dict, extras: dict, me: dict) -> dict:
+    """Adds the poll results and the read confirmations a post shows. Teachers see who voted and who has read."""
+    teacher = me["role"] == "teacher"
+    if post["poll_options"]:
+        count = len(post["poll_options"])
+        voters = [[] for _ in range(count)]
+        for post_id, user_id, option in extras["votes"]:
+            if post_id == post["id"] and 0 <= option < count:
+                voters[option].append(user_id)
+        post["poll_counts"] = [len(ids) for ids in voters]
+        post["poll_total"] = len({user_id for ids in voters for user_id in ids})
+        post["my_votes"] = [n for n, ids in enumerate(voters) if me["id"] in ids]
+        if teacher:
+            post["poll_voters"] = voters
+    if post["needs_ack"]:
+        readers = [user_id for post_id, user_id in extras["reads"] if post_id == post["id"]]
+        post["acked"] = me["id"] in readers
+        if teacher:
+            post["ack_ids"] = readers
+    return post
+
+
+# ---------- polls ----------
+async def poll_counts_of(post_id: int, count: int) -> tuple:
+    rows = await fetch_one_off(select(DBCollegePollVote.option_index, DBCollegePollVote.user_id).where(DBCollegePollVote.post_id == post_id))
+    counts = [0] * count
+    for option, _ in rows:
+        if 0 <= option < count:
+            counts[option] += 1
+    return counts, len({user_id for _, user_id in rows})
+
+
+@app.post("/api/college-hub/posts/{post_id}/vote")
+async def vote_hub_poll(post_id: int, body: HubVote, current_user_id: int = Depends(get_current_user_id)):
+    """A student's choice on a poll. Voting again replaces the earlier choice; an empty list takes the vote back."""
+    me = await require_hub_member(current_user_id)
+    if me["role"] != "student":
+        raise HTTPException(status_code=403, detail="Polls are for students to answer.")
+    post = await hub_post_or_404(me["key"], post_id)
+    options = json_list(post.poll_options)
+    if not options:
+        raise HTTPException(status_code=400, detail="This post has no poll.")
+    if not post_is_for(post, me):
+        raise HTTPException(status_code=403, detail="This poll is for another class.")
+    chosen = sorted(set(body.options))
+    if any(not (0 <= option < len(options)) for option in chosen):
+        raise HTTPException(status_code=400, detail="That choice is not on the poll.")
+    if len(chosen) > 1 and not post.poll_multi:
+        raise HTTPException(status_code=400, detail="Pick one choice on this poll.")
+
+    async with AutocommitSession() as db:
+        await db.execute(delete(DBCollegePollVote).where(DBCollegePollVote.post_id == post_id, DBCollegePollVote.user_id == current_user_id))
+        if chosen:
+            await db.execute(DBCollegePollVote.__table__.insert().values([{"post_id": post_id, "user_id": current_user_id, "option_index": option} for option in chosen]))
+    counts, total = await poll_counts_of(post_id, len(options))
+    spawn_background(hub_push(me["key"], {"type": "college_poll", "post_id": post_id, "counts": counts, "total": total}))
+    return {"post_id": post_id, "counts": counts, "total": total, "my_votes": chosen}
+
+
+# ---------- read confirmation ----------
+@app.post("/api/college-hub/posts/{post_id}/ack")
+async def ack_hub_post(post_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    if me["role"] != "student":
+        raise HTTPException(status_code=403, detail="Only students confirm that they have read a notice.")
+    post = await hub_post_or_404(me["key"], post_id)
+    if not post.needs_ack or not post_is_for(post, me):
+        raise HTTPException(status_code=400, detail="This post does not ask you to confirm.")
+    await run_one_off(
+        pg_insert(DBCollegePostRead).values(post_id=post_id, user_id=current_user_id, read_at=utc_now_iso())
+        .on_conflict_do_nothing(index_elements=["post_id", "user_id"])
+    )
+    spawn_background(hub_push_teachers(me["key"], {"type": "college_ack", "post_id": post_id, "user_id": current_user_id}))
+    return {"post_id": post_id, "acked": True}
+
+
+@app.post("/api/college-hub/posts/{post_id}/ack-remind")
+async def remind_hub_ack(post_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Tell the students a post is for who have not confirmed reading it yet."""
+    me = await require_hub_teacher(current_user_id)
+    post = await hub_post_or_404(me["key"], post_id)
+    if not post.needs_ack:
+        raise HTTPException(status_code=400, detail="This post does not ask students to confirm.")
+    audience, readers = await asyncio.gather(
+        hub_post_audience(me["key"], post.department, post.division, current_user_id),
+        fetch_one_off(select(DBCollegePostRead.user_id).where(DBCollegePostRead.post_id == post_id)),
+    )
+    read = {row[0] for row in readers}
+    waiting = [user_id for user_id in audience if user_id not in read]
+    spawn_background(notify_many(waiting, "college", f"Please read and confirm: {post.title}", "college-hub.html"))
+    return {"reminded": len(waiting)}
+
+
+# ---------- handed-in work ----------
+async def my_group_for(key: str, activity_id: int, user_id: int):
+    rows = await fetch_one_off(
+        select(DBTeam.id, DBTeam.name).join(DBTeamMember, DBTeamMember.team_id == DBTeam.id)
+        .where(DBTeam.college_key == key, DBTeam.activity_id == activity_id, DBTeamMember.user_id == user_id)
+    )
+    return rows[0] if rows else None
+
+async def group_student_ids(key: str, group_id: int) -> list:
+    teachers = select(DBUser.id).where(DBUser.teacher_of == key)
+    rows = await fetch_one_off(select(DBTeamMember.user_id).where(DBTeamMember.team_id == group_id, DBTeamMember.user_id.not_in(teachers)))
+    return [row[0] for row in rows]
+
+
+@app.put("/api/college-hub/activities/{activity_id}/submission")
+async def submit_hub_work(activity_id: int, body: HubSubmission, current_user_id: int = Depends(get_current_user_id)):
+    """Hand in (or replace) your group's work for an activity. Once a teacher has graded it, it stays as it is."""
+    me = await require_hub_member(current_user_id)
+    if me["role"] != "student":
+        raise HTTPException(status_code=403, detail="Students hand in work; teachers review it.")
+    activity, group = await asyncio.gather(hub_activity_or_404(me["key"], activity_id), my_group_for(me["key"], activity_id, current_user_id))
+    if not activity.accepts_work:
+        raise HTTPException(status_code=400, detail="This activity does not collect work.")
+    if not group:
+        raise HTTPException(status_code=400, detail="Join a group for this activity first. Work is handed in per group.")
+    link, file_url = clean_link(body.link, "link"), clean_link(body.file_url, "file address")
+    if not link and not file_url:
+        raise HTTPException(status_code=400, detail="Add a link or a file.")
+    note = clean_text(body.note, 2000, "note")
+    now_iso = utc_now_iso()
+    values = {
+        "submitted_by": current_user_id, "link": link, "file_url": file_url, "file_name": (body.file_name or "").strip()[:200] if file_url else "",
+        "note": note, "late": 1 if deadline_passed(activity.submit_by) else 0, "updated_at": now_iso,
+    }
+    async with AutocommitSession() as db:
+        existing = (await db.execute(select(DBCollegeSubmission.id, DBCollegeSubmission.graded_at).where(
+            DBCollegeSubmission.activity_id == activity_id, DBCollegeSubmission.group_id == group.id))).first()
+        if existing and existing.graded_at:
+            raise HTTPException(status_code=400, detail="A teacher has already graded this work, so it can no longer be changed.")
+        if existing:
+            await db.execute(update(DBCollegeSubmission).where(DBCollegeSubmission.id == existing.id).values(**values))
+        else:
+            await db.execute(pg_insert(DBCollegeSubmission).values(
+                college_key=me["key"], activity_id=activity_id, group_id=group.id, submitted_at=now_iso, marks=None, feedback="", graded_at="", **values
+            ).on_conflict_do_update(index_elements=["activity_id", "group_id"], set_=values))
+    others = [user_id for user_id in await group_student_ids(me["key"], group.id) if user_id != current_user_id]
+    spawn_background(notify_many(others, "college", f"{me['name']} handed in your group's work for: {activity.title}", "college-hub.html"))
+    hub_changed(me["key"])
+    return {"status": "submitted", "late": bool(values["late"])}
+
+
+@app.put("/api/college-hub/submissions/{submission_id}/grade")
+async def grade_hub_work(submission_id: int, body: HubGrade, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    rows = await fetch_one_off(
+        select(DBCollegeSubmission, DBCollegePost.title, DBCollegePost.max_marks)
+        .join(DBCollegePost, DBCollegePost.id == DBCollegeSubmission.activity_id)
+        .where(DBCollegeSubmission.id == submission_id, DBCollegeSubmission.college_key == me["key"])
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="That submission is gone.")
+    submission, title, max_marks = rows[0]
+    marks = body.marks
+    if max_marks:
+        if marks is None or not (0 <= marks <= max_marks):
+            raise HTTPException(status_code=400, detail=f"Give marks from 0 to {max_marks}.")
+    else:
+        marks = None
+    feedback = clean_text(body.feedback, 2000, "feedback")
+    first_time = not submission.graded_at
+    await run_one_off(update(DBCollegeSubmission).where(DBCollegeSubmission.id == submission_id).values(
+        marks=marks, feedback=feedback, graded_by=current_user_id, graded_at=utc_now_iso()))
+    students_in = await group_student_ids(me["key"], submission.group_id)
+    result = f" ({marks}/{max_marks})" if max_marks else ""
+    spawn_background(notify_many(students_in, "college", f"{'Your work was reviewed' if first_time else 'Your review was updated'}{result}: {title}", "college-hub.html"))
+    hub_changed(me["key"])
+    return {"id": submission_id, "marks": marks, "feedback": feedback}
+
+
+@app.delete("/api/college-hub/submissions/{submission_id}")
+async def delete_hub_work(submission_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """A teacher removes a submission (to let the group hand in again); a student can take back ungraded work of their group."""
+    me = await require_hub_member(current_user_id)
+    rows = await fetch_one_off(select(DBCollegeSubmission).where(DBCollegeSubmission.id == submission_id, DBCollegeSubmission.college_key == me["key"]))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That submission is gone.")
+    submission = rows[0][0]
+    if me["role"] != "teacher":
+        if submission.graded_at:
+            raise HTTPException(status_code=400, detail="Graded work stays. Ask a teacher if it needs to be handed in again.")
+        if current_user_id not in await group_student_ids(me["key"], submission.group_id):
+            raise HTTPException(status_code=403, detail="That is another group's work.")
+    await run_one_off(delete(DBCollegeSubmission).where(DBCollegeSubmission.id == submission_id))
+    hub_changed(me["key"])
+    return {"status": "deleted"}
+
+
+# ---------- weekly check-ins ----------
+def serialize_checkin(row: DBGroupCheckin, names: dict) -> dict:
+    return {
+        "id": row.id, "group_id": row.group_id, "week_start": row.week_start, "author_id": row.author_id,
+        "author_name": names.get(row.author_id, f"User #{row.author_id}"), "done": row.done or "", "next_steps": row.next_steps or "",
+        "blockers": row.blockers or "", "teacher_note": row.teacher_note or "", "teacher_name": names.get(row.teacher_id, "") if row.teacher_id else "",
+        "created_at": row.created_at or "", "updated_at": row.updated_at or "",
+    }
+
+
+@app.put("/api/college-hub/groups/{group_id}/checkin")
+async def write_hub_checkin(group_id: int, body: HubCheckin, current_user_id: int = Depends(get_current_user_id)):
+    """This week's progress note of a group. Any student in the group writes it; writing again the same week replaces it."""
+    me = await require_hub_member(current_user_id)
+    if me["role"] != "student":
+        raise HTTPException(status_code=403, detail="Students write the check-in; teachers can add a note to it.")
+    team, members = await hub_group_row(me["key"], group_id)
+    if not any(user_id == current_user_id for user_id, _ in members):
+        raise HTTPException(status_code=403, detail="Only the group's members write its check-in.")
+    done, next_steps, blockers = clean_text(body.done, 2000, "'done' text"), clean_text(body.next_steps, 2000, "'next' text"), clean_text(body.blockers, 2000, "'blockers' text")
+    if not (done or next_steps or blockers):
+        raise HTTPException(status_code=400, detail="Write at least one line about this week.")
+    now_iso = utc_now_iso()
+    values = {"author_id": current_user_id, "done": done, "next_steps": next_steps, "blockers": blockers, "updated_at": now_iso}
+    await run_one_off(pg_insert(DBGroupCheckin).values(
+        college_key=me["key"], group_id=group_id, activity_id=team.activity_id, week_start=this_week(), created_at=now_iso, teacher_note="", **values
+    ).on_conflict_do_update(index_elements=["group_id", "week_start"], set_=values))
+    hub_changed(me["key"])
+    return {"status": "saved", "week_start": this_week()}
+
+
+@app.get("/api/college-hub/groups/{group_id}/checkins")
+async def get_hub_checkins(group_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    team, members = await hub_group_row(me["key"], group_id)
+    if me["role"] != "teacher" and not any(user_id == current_user_id for user_id, _ in members):
+        raise HTTPException(status_code=403, detail="Only the group's members and teachers can read its check-ins.")
+    rows = await fetch_one_off(select(DBGroupCheckin).where(DBGroupCheckin.group_id == group_id).order_by(DBGroupCheckin.week_start.desc()).limit(60))
+    checkins = [row for (row,) in rows]
+    ids = {row.author_id for row in checkins} | {row.teacher_id for row in checkins if row.teacher_id}
+    names = {row.id: row.name or "" for row in await fetch_one_off(select(DBUser.id, DBUser.name).where(DBUser.id.in_(ids)))} if ids else {}
+    return {"group_id": group_id, "this_week": this_week(), "checkins": [serialize_checkin(row, names) for row in checkins]}
+
+
+@app.put("/api/college-hub/checkins/{checkin_id}/note")
+async def note_hub_checkin(checkin_id: int, body: HubCheckinNote, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    note = clean_text(body.teacher_note, 2000, "note")
+    result = await run_returning(
+        update(DBGroupCheckin).where(DBGroupCheckin.id == checkin_id, DBGroupCheckin.college_key == me["key"])
+        .values(teacher_note=note, teacher_id=current_user_id if note else None).returning(DBGroupCheckin.group_id)
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="That check-in is gone.")
+    if note:
+        students_in = await group_student_ids(me["key"], result[0][0])
+        spawn_background(notify_many(students_in, "college", "A teacher replied to your group's check-in.", "college-hub.html?tab=groups"))
+    hub_changed(me["key"])
+    return {"id": checkin_id, "teacher_note": note}
+
+
+@app.post("/api/college-hub/activities/{activity_id}/checkin-remind")
+async def remind_hub_checkins(activity_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Tell the students of every group of this activity that has not checked in this week."""
+    me = await require_hub_teacher(current_user_id)
+    activity = await hub_activity_or_404(me["key"], activity_id)
+    done_groups = select(DBGroupCheckin.group_id).where(DBGroupCheckin.college_key == me["key"], DBGroupCheckin.week_start == this_week())
+    teachers = select(DBUser.id).where(DBUser.teacher_of == me["key"])
+    rows = await fetch_one_off(
+        select(DBTeamMember.user_id, DBTeam.id).join(DBTeam, DBTeam.id == DBTeamMember.team_id)
+        .where(DBTeam.college_key == me["key"], DBTeam.activity_id == activity_id, DBTeam.id.not_in(done_groups), DBTeamMember.user_id.not_in(teachers))
+    )
+    spawn_background(notify_many([user_id for user_id, _ in rows], "college", f"Your group has not checked in this week for: {activity.title}", "college-hub.html?tab=groups"))
+    return {"groups": len({team_id for _, team_id in rows}), "reminded": len({user_id for user_id, _ in rows})}
+
+
+async def run_returning(statement) -> list:
+    async with AutocommitSession() as session:
+        return (await session.execute(statement)).all()
+
+
+# ---------- calendar ----------
+def clean_event(body: HubEventBody) -> dict:
+    title = clean_text(body.title, 120, "title")
+    if not title:
+        raise HTTPException(status_code=400, detail="Give the event a title.")
+    date = (body.date or "").strip()
+    if not HUB_DATE_PATTERN.match(date):
+        raise HTTPException(status_code=400, detail="Pick a date for the event.")
+    start, end = (body.start_time or "").strip(), (body.end_time or "").strip()
+    if (start and not HUB_TIME_PATTERN.match(start)) or (end and not HUB_TIME_PATTERN.match(end)):
+        raise HTTPException(status_code=400, detail="Times must look like 09:30.")
+    if end and not start:
+        raise HTTPException(status_code=400, detail="Give a start time before an end time.")
+    if start and end and end <= start:
+        raise HTTPException(status_code=400, detail="The event must end after it starts.")
+    department, division = clean_audience(body.department, body.division)
+    return {
+        "title": title, "kind": body.kind if body.kind in HUB_EVENT_KINDS else "other", "date": date, "start_time": start, "end_time": end,
+        "location": clean_text(body.location, 120, "place"), "details": clean_text(body.details, 2000, "details"),
+        "department": department, "division": division,
+    }
+
+
+@app.post("/api/college-hub/events")
+async def create_hub_event(body: HubEventBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    values = clean_event(body)
+    rows = await run_returning(DBCollegeEvent.__table__.insert().values(college_key=me["key"], author_id=current_user_id, created_at=utc_now_iso(), **values).returning(DBCollegeEvent.id))
+    if values["date"] >= datetime.now().date().isoformat():
+        async def announce():
+            audience = await hub_post_audience(me["key"], values["department"], values["division"], current_user_id)
+            await notify_many(audience, "college", f"New on the calendar ({values['date']}): {values['title']}", "college-hub.html?tab=calendar")
+        spawn_background(announce())
+    hub_changed(me["key"])
+    return {"id": rows[0][0], **values}
+
+
+@app.put("/api/college-hub/events/{event_id}")
+async def update_hub_event(event_id: int, body: HubEventBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    values = clean_event(body)
+    rows = await run_returning(update(DBCollegeEvent).where(DBCollegeEvent.id == event_id, DBCollegeEvent.college_key == me["key"]).values(**values).returning(DBCollegeEvent.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That event is no longer on the calendar.")
+    hub_changed(me["key"])
+    return {"id": event_id, **values}
+
+
+@app.delete("/api/college-hub/events/{event_id}")
+async def delete_hub_event(event_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    rows = await run_returning(delete(DBCollegeEvent).where(DBCollegeEvent.id == event_id, DBCollegeEvent.college_key == me["key"]).returning(DBCollegeEvent.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That event is no longer on the calendar.")
+    hub_changed(me["key"])
+    return {"status": "deleted"}
+
+
+# ---------- resources ----------
+def clean_resource(body: HubResourceBody) -> dict:
+    title = clean_text(body.title, 160, "title")
+    if not title:
+        raise HTTPException(status_code=400, detail="Give the resource a title.")
+    url, file_url = clean_link(body.url, "link"), clean_link(body.file_url, "file address")
+    if not url and not file_url:
+        raise HTTPException(status_code=400, detail="Add a link or a file.")
+    department, division = clean_audience(body.department, body.division)
+    return {
+        "title": title, "url": url, "file_url": file_url, "file_name": (body.file_name or "").strip()[:200] if file_url else "",
+        "description": clean_text(body.description, 2000, "description"), "subject": clean_text(body.subject, 80, "subject"),
+        "department": department, "division": division,
+    }
+
+
+@app.get("/api/college-hub/resources")
+async def get_hub_resources(current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    mine = select(DBCollegeResourceSave.resource_id).where(DBCollegeResourceSave.user_id == current_user_id)
+    saves = select(func.count()).where(DBCollegeResourceSave.resource_id == DBCollegeResource.id).correlate(DBCollegeResource).scalar_subquery()
+    rows = await fetch_one_off(
+        select(DBCollegeResource, DBUser.name, DBCollegeResource.id.in_(mine).label("saved"), saves.label("saves"))
+        .outerjoin(DBUser, DBUser.id == DBCollegeResource.author_id)
+        .where(DBCollegeResource.college_key == me["key"]).order_by(DBCollegeResource.id.desc()).limit(500)
+    )
+    return {"resources": [{
+        "id": item.id, "title": item.title or "", "url": item.url or "", "file_url": item.file_url or "", "file_name": item.file_name or "",
+        "description": item.description or "", "subject": item.subject or "", "department": item.department or "", "division": item.division or "",
+        "author_id": item.author_id, "author_name": name or "", "created_at": item.created_at or "", "saved": bool(saved), "saves": saves_count or 0,
+    } for item, name, saved, saves_count in rows if addressed_to(item.department, item.division, me)]}
+
+
+@app.post("/api/college-hub/resources")
+async def create_hub_resource(body: HubResourceBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    values = clean_resource(body)
+    rows = await run_returning(DBCollegeResource.__table__.insert().values(college_key=me["key"], author_id=current_user_id, created_at=utc_now_iso(), **values).returning(DBCollegeResource.id))
+    spawn_background(hub_push(me["key"], {"type": "college_resources_changed"}))
+    return {"id": rows[0][0], **values}
+
+
+@app.put("/api/college-hub/resources/{resource_id}")
+async def update_hub_resource(resource_id: int, body: HubResourceBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    values = clean_resource(body)
+    rows = await run_returning(update(DBCollegeResource).where(DBCollegeResource.id == resource_id, DBCollegeResource.college_key == me["key"]).values(**values).returning(DBCollegeResource.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That resource is gone.")
+    spawn_background(hub_push(me["key"], {"type": "college_resources_changed"}))
+    return {"id": resource_id, **values}
+
+
+@app.delete("/api/college-hub/resources/{resource_id}")
+async def delete_hub_resource(resource_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    rows = await run_returning(delete(DBCollegeResource).where(DBCollegeResource.id == resource_id, DBCollegeResource.college_key == me["key"]).returning(DBCollegeResource.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That resource is gone.")
+    await run_one_off(delete(DBCollegeResourceSave).where(DBCollegeResourceSave.resource_id == resource_id))
+    spawn_background(hub_push(me["key"], {"type": "college_resources_changed"}))
+    return {"status": "deleted"}
+
+
+@app.post("/api/college-hub/resources/{resource_id}/save")
+async def save_hub_resource(resource_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    rows = await fetch_one_off(select(DBCollegeResource.department, DBCollegeResource.division).where(DBCollegeResource.id == resource_id, DBCollegeResource.college_key == me["key"]))
+    if not rows or not addressed_to(rows[0].department, rows[0].division, me):
+        raise HTTPException(status_code=404, detail="That resource is gone.")
+    await run_one_off(pg_insert(DBCollegeResourceSave).values(resource_id=resource_id, user_id=current_user_id).on_conflict_do_nothing(index_elements=["resource_id", "user_id"]))
+    return {"id": resource_id, "saved": True}
+
+
+@app.delete("/api/college-hub/resources/{resource_id}/save")
+async def unsave_hub_resource(resource_id: int, current_user_id: int = Depends(get_current_user_id)):
+    await require_hub_member(current_user_id)
+    await run_one_off(delete(DBCollegeResourceSave).where(DBCollegeResourceSave.resource_id == resource_id, DBCollegeResourceSave.user_id == current_user_id))
+    return {"id": resource_id, "saved": False}
+
+
+# ---------- attendance ----------
+def attendance_class_filter(key: str, department: str, division: str):
+    return and_(
+        DBAttendanceSession.college_key == key,
+        func.lower(func.trim(DBAttendanceSession.department)) == college_key_of(department),
+        func.lower(func.trim(DBAttendanceSession.division)) == college_key_of(division),
+    )
+
+def serialize_session(session: DBAttendanceSession, marks: dict) -> dict:
+    return {
+        "id": session.id, "department": session.department or "", "division": session.division or "", "subject": session.subject or "",
+        "date": session.date or "", "teacher_id": session.teacher_id, "created_at": session.created_at or "", "marks": marks,
+    }
+
+
+@app.get("/api/college-hub/attendance")
+async def get_hub_attendance(department: str = "", division: str = "", current_user_id: int = Depends(get_current_user_id)):
+    """A teacher reads one class's sessions with every mark; a student reads their own marks."""
+    me = await require_hub_member(current_user_id)
+    if me["role"] == "teacher":
+        if not department.strip():
+            raise HTTPException(status_code=400, detail="Pick a class.")
+        sessions = await fetch_one_off(
+            select(DBAttendanceSession).where(attendance_class_filter(me["key"], department, division))
+            .order_by(DBAttendanceSession.date.desc(), DBAttendanceSession.id.desc()).limit(400)
+        )
+        ids = [session.id for (session,) in sessions]
+        marks = await fetch_one_off(select(DBAttendanceMark.session_id, DBAttendanceMark.user_id, DBAttendanceMark.status).where(DBAttendanceMark.session_id.in_(ids))) if ids else []
+        by_session: dict = {}
+        for session_id, user_id, status_now in marks:
+            by_session.setdefault(session_id, {})[str(user_id)] = status_now
+        return {"sessions": [serialize_session(session, by_session.get(session.id, {})) for (session,) in sessions]}
+
+    rows = await fetch_one_off(
+        select(DBAttendanceSession, DBAttendanceMark.status)
+        .join(DBAttendanceMark, DBAttendanceMark.session_id == DBAttendanceSession.id)
+        .where(DBAttendanceSession.college_key == me["key"], DBAttendanceMark.user_id == current_user_id)
+        .order_by(DBAttendanceSession.date.desc(), DBAttendanceSession.id.desc()).limit(1000)
+    )
+    return {"sessions": [serialize_session(session, {str(current_user_id): status_now}) for session, status_now in rows]}
+
+
+async def clean_attendance(me: dict, body: HubAttendanceBody) -> tuple:
+    department, division = clean_audience(body.department, body.division)
+    if not department:
+        raise HTTPException(status_code=400, detail="Pick a class.")
+    date = (body.date or "").strip()
+    if not HUB_DATE_PATTERN.match(date):
+        raise HTTPException(status_code=400, detail="Pick the date of the class.")
+    subject = clean_text(body.subject, 80, "subject")
+    marks = {}
+    for user_id, status_now in (body.marks or {}).items():
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="A mark names an unknown student.")
+        if status_now not in HUB_ATTENDANCE_STATUSES:
+            raise HTTPException(status_code=400, detail="Each student is present, absent or late.")
+        marks[user_id] = status_now
+    if not marks:
+        raise HTTPException(status_code=400, detail="There is no one to mark.")
+    in_class = {row[0] for row in await fetch_one_off(select(DBUser.id).where(DBUser.id.in_(list(marks)), class_clause(me["key"], department, division)))}
+    if set(marks) - in_class:
+        raise HTTPException(status_code=400, detail="Only students of this class can be marked.")
+    return {"department": department, "division": division, "subject": subject, "date": date}, marks
+
+async def warn_low_attendance(key: str, user_ids: list):
+    """Tell a student once, when their attendance has just gone under the line. Meant to run in the background."""
+    try:
+        present = func.sum(case((DBAttendanceMark.status.in_(("present", "late")), 1), else_=0))
+        rows = await fetch_one_off(
+            select(DBAttendanceMark.user_id, func.count(), present)
+            .join(DBAttendanceSession, DBAttendanceSession.id == DBAttendanceMark.session_id)
+            .where(DBAttendanceSession.college_key == key, DBAttendanceMark.user_id.in_(user_ids))
+            .group_by(DBAttendanceMark.user_id)
+        )
+        last = await fetch_one_off(  # the newest mark of each student, to know where they stood before it
+            select(DBAttendanceMark.user_id, DBAttendanceMark.status)
+            .distinct(DBAttendanceMark.user_id)
+            .join(DBAttendanceSession, DBAttendanceSession.id == DBAttendanceMark.session_id)
+            .where(DBAttendanceSession.college_key == key, DBAttendanceMark.user_id.in_(user_ids))
+            .order_by(DBAttendanceMark.user_id, DBAttendanceMark.id.desc())
+        )
+        last_status = dict(last)
+        warn = []
+        for user_id, total, attended in rows:
+            attended = attended or 0
+            if total < HUB_ATTENDANCE_MIN_SESSIONS or attended * 100 >= HUB_ATTENDANCE_LOW * total:
+                continue
+            before_attended = attended - (1 if last_status.get(user_id) in ("present", "late") else 0)
+            if total - 1 >= HUB_ATTENDANCE_MIN_SESSIONS and before_attended * 100 < HUB_ATTENDANCE_LOW * (total - 1):
+                continue   # already under the line before this class: told then
+            warn.append(user_id)
+        await notify_many(warn, "college", f"Your attendance is now under {HUB_ATTENDANCE_LOW}%.", "college-hub.html?tab=attendance")
+    except Exception as e:
+        print("Error checking attendance:", e)
+
+
+@app.post("/api/college-hub/attendance")
+async def create_hub_attendance(body: HubAttendanceBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    values, marks = await clean_attendance(me, body)
+    async with SessionLocal() as db:   # the session and its marks are saved together or not at all
+        session = DBAttendanceSession(college_key=me["key"], teacher_id=current_user_id, created_at=utc_now_iso(), **values)
+        db.add(session)
+        await db.flush()
+        await db.execute(DBAttendanceMark.__table__.insert().values([{"session_id": session.id, "user_id": user_id, "status": status_now} for user_id, status_now in marks.items()]))
+        await db.commit()
+        session_id = session.id
+    spawn_background(warn_low_attendance(me["key"], list(marks)))
+    return {"id": session_id, **values, "marks": {str(user_id): status_now for user_id, status_now in marks.items()}}
+
+
+@app.put("/api/college-hub/attendance/{session_id}")
+async def update_hub_attendance(session_id: int, body: HubAttendanceBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    values, marks = await clean_attendance(me, body)
+    async with SessionLocal() as db:
+        found = (await db.execute(update(DBAttendanceSession).where(DBAttendanceSession.id == session_id, DBAttendanceSession.college_key == me["key"]).values(**values).returning(DBAttendanceSession.id))).first()
+        if not found:
+            raise HTTPException(status_code=404, detail="That class session is gone.")
+        await db.execute(delete(DBAttendanceMark).where(DBAttendanceMark.session_id == session_id))
+        await db.execute(DBAttendanceMark.__table__.insert().values([{"session_id": session_id, "user_id": user_id, "status": status_now} for user_id, status_now in marks.items()]))
+        await db.commit()
+    return {"id": session_id, **values, "marks": {str(user_id): status_now for user_id, status_now in marks.items()}}
+
+
+@app.delete("/api/college-hub/attendance/{session_id}")
+async def delete_hub_attendance(session_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_teacher(current_user_id)
+    rows = await run_returning(delete(DBAttendanceSession).where(DBAttendanceSession.id == session_id, DBAttendanceSession.college_key == me["key"]).returning(DBAttendanceSession.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That class session is gone.")
+    await run_one_off(delete(DBAttendanceMark).where(DBAttendanceMark.session_id == session_id))
+    return {"status": "deleted"}
+
+
+# ---------- questions and answers ----------
+def question_visible(question, me: dict) -> bool:
+    return addressed_to(question.department, question.division, me)
+
+def question_author(question, name: Optional[str], picture: Optional[str], me: dict) -> dict:
+    """Who asked. An anonymous question shows no name to students; its asker and the teachers still see it."""
+    hidden = bool(question.anonymous) and me["role"] != "teacher" and question.author_id != me["id"]
+    return {
+        "author_id": None if hidden else question.author_id,
+        "author_name": "Anonymous" if hidden else (name or f"User #{question.author_id}"),
+        "author_pic": "" if hidden or not picture or len(picture) > 1000 else picture,
+    }
+
+async def question_or_404(me: dict, question_id: int):
+    rows = await fetch_one_off(select(DBCollegeQuestion).where(DBCollegeQuestion.id == question_id, DBCollegeQuestion.college_key == me["key"]))
+    if not rows or not question_visible(rows[0][0], me):
+        raise HTTPException(status_code=404, detail="That question is gone.")
+    return rows[0][0]
+
+def qa_changed(key: str):
+    spawn_background(hub_push(key, {"type": "college_qa_changed"}))
+
+
+@app.get("/api/college-hub/questions")
+async def get_hub_questions(current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    votes = select(func.count()).where(DBCollegeQuestionVote.question_id == DBCollegeQuestion.id).correlate(DBCollegeQuestion).scalar_subquery()
+    answers = select(func.count()).where(DBCollegeAnswer.question_id == DBCollegeQuestion.id).correlate(DBCollegeQuestion).scalar_subquery()
+    mine = exists().where(DBCollegeQuestionVote.question_id == DBCollegeQuestion.id, DBCollegeQuestionVote.user_id == current_user_id)
+    rows = await fetch_one_off(
+        select(DBCollegeQuestion, DBUser.name, DBUser.profile_pic, votes.label("votes"), answers.label("answers"), mine.label("voted"))
+        .outerjoin(DBUser, DBUser.id == DBCollegeQuestion.author_id)
+        .where(DBCollegeQuestion.college_key == me["key"]).order_by(DBCollegeQuestion.id.desc()).limit(400)
+    )
+    return {"questions": [{
+        "id": question.id, "title": question.title or "", "body": question.body or "", "subject": question.subject or "",
+        "department": question.department or "", "division": question.division or "", "anonymous": bool(question.anonymous),
+        "mine": question.author_id == current_user_id, "accepted_answer_id": question.accepted_answer_id, "created_at": question.created_at or "",
+        "votes": vote_count or 0, "answers": answer_count or 0, "voted": bool(voted), **question_author(question, name, picture, me),
+    } for question, name, picture, vote_count, answer_count, voted in rows if question_visible(question, me)]}
+
+
+@app.get("/api/college-hub/questions/{question_id}")
+async def get_hub_question(question_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    question = await question_or_404(me, question_id)
+    asker, answers = await asyncio.gather(
+        fetch_one_off(select(DBUser.name, DBUser.profile_pic).where(DBUser.id == question.author_id)),
+        fetch_one_off(
+            select(DBCollegeAnswer, DBUser.name, DBUser.profile_pic, DBUser.teacher_of)
+            .outerjoin(DBUser, DBUser.id == DBCollegeAnswer.author_id)
+            .where(DBCollegeAnswer.question_id == question_id).order_by(DBCollegeAnswer.id)
+        ),
+    )
+    name, picture = (asker[0].name, asker[0].profile_pic) if asker else (None, None)
+    return {
+        "id": question.id, "title": question.title or "", "body": question.body or "", "subject": question.subject or "",
+        "department": question.department or "", "division": question.division or "", "anonymous": bool(question.anonymous),
+        "mine": question.author_id == current_user_id, "accepted_answer_id": question.accepted_answer_id, "created_at": question.created_at or "",
+        **question_author(question, name, picture, me),
+        "answers": [{
+            "id": answer.id, "author_id": answer.author_id, "author_name": answer_name or f"User #{answer.author_id}",
+            "author_pic": answer_pic if answer_pic and len(answer_pic) <= 1000 else "", "is_teacher": (teacher_of or "") == me["key"],
+            "body": answer.body or "", "created_at": answer.created_at or "",
+        } for answer, answer_name, answer_pic, teacher_of in answers],
+    }
+
+
+@app.post("/api/college-hub/questions")
+async def create_hub_question(body: HubQuestionBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    title = clean_text(body.title, 200, "question")
+    if not title:
+        raise HTTPException(status_code=400, detail="Write your question.")
+    to_class = bool(body.to_class) and me["role"] == "student" and bool(me["department"])
+    rows = await run_returning(DBCollegeQuestion.__table__.insert().values(
+        college_key=me["key"], author_id=current_user_id, anonymous=1 if body.anonymous and me["role"] == "student" else 0,
+        title=title, body=clean_text(body.body, 4000, "details"), subject=clean_text(body.subject, 80, "subject"),
+        department=me["department"] if to_class else "", division=me["division"] if to_class else "", created_at=utc_now_iso(),
+    ).returning(DBCollegeQuestion.id))
+    qa_changed(me["key"])
+    return {"id": rows[0][0]}
+
+
+@app.delete("/api/college-hub/questions/{question_id}")
+async def delete_hub_question(question_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    question = await question_or_404(me, question_id)
+    if me["role"] != "teacher" and question.author_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Only the person who asked, or a teacher, can delete a question.")
+    await asyncio.gather(
+        run_one_off(delete(DBCollegeQuestion).where(DBCollegeQuestion.id == question_id)),
+        run_one_off(delete(DBCollegeAnswer).where(DBCollegeAnswer.question_id == question_id)),
+        run_one_off(delete(DBCollegeQuestionVote).where(DBCollegeQuestionVote.question_id == question_id)),
+    )
+    qa_changed(me["key"])
+    return {"status": "deleted"}
+
+
+@app.post("/api/college-hub/questions/{question_id}/answers")
+async def answer_hub_question(question_id: int, body: HubAnswerBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    question = await question_or_404(me, question_id)
+    text_body = clean_text(body.body, 4000, "answer")
+    if not text_body:
+        raise HTTPException(status_code=400, detail="Write your answer.")
+    rows = await run_returning(DBCollegeAnswer.__table__.insert().values(question_id=question_id, author_id=current_user_id, body=text_body, created_at=utc_now_iso()).returning(DBCollegeAnswer.id))
+    if question.author_id != current_user_id:
+        who = "A teacher" if me["role"] == "teacher" else me["name"] or "Someone"
+        spawn_background(notify_many([question.author_id], "college", f"{who} answered your question: {question.title[:80]}", "college-hub.html?tab=qa"))
+    qa_changed(me["key"])
+    return {"id": rows[0][0]}
+
+
+@app.delete("/api/college-hub/answers/{answer_id}")
+async def delete_hub_answer(answer_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    rows = await fetch_one_off(
+        select(DBCollegeAnswer.author_id, DBCollegeAnswer.question_id).join(DBCollegeQuestion, DBCollegeQuestion.id == DBCollegeAnswer.question_id)
+        .where(DBCollegeAnswer.id == answer_id, DBCollegeQuestion.college_key == me["key"])
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="That answer is gone.")
+    if me["role"] != "teacher" and rows[0].author_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Only the person who wrote it, or a teacher, can delete an answer.")
+    await asyncio.gather(
+        run_one_off(delete(DBCollegeAnswer).where(DBCollegeAnswer.id == answer_id)),
+        run_one_off(update(DBCollegeQuestion).where(DBCollegeQuestion.id == rows[0].question_id, DBCollegeQuestion.accepted_answer_id == answer_id).values(accepted_answer_id=None)),
+    )
+    qa_changed(me["key"])
+    return {"status": "deleted"}
+
+
+@app.post("/api/college-hub/questions/{question_id}/accept")
+async def accept_hub_answer(question_id: int, body: HubAccept, current_user_id: int = Depends(get_current_user_id)):
+    """The asker or a teacher marks the answer that solved it; no answer_id clears the mark."""
+    me = await require_hub_member(current_user_id)
+    question = await question_or_404(me, question_id)
+    if me["role"] != "teacher" and question.author_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Only the person who asked, or a teacher, can mark the best answer.")
+    if body.answer_id is not None:
+        found = await fetch_one_off(select(DBCollegeAnswer.author_id).where(DBCollegeAnswer.id == body.answer_id, DBCollegeAnswer.question_id == question_id))
+        if not found:
+            raise HTTPException(status_code=404, detail="That answer is gone.")
+        if found[0][0] != current_user_id:
+            spawn_background(notify_many([found[0][0]], "college", f"Your answer was marked as the best one: {question.title[:80]}", "college-hub.html?tab=qa"))
+    await run_one_off(update(DBCollegeQuestion).where(DBCollegeQuestion.id == question_id).values(accepted_answer_id=body.answer_id))
+    qa_changed(me["key"])
+    return {"id": question_id, "accepted_answer_id": body.answer_id}
+
+
+@app.post("/api/college-hub/questions/{question_id}/vote")
+async def vote_hub_question(question_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """'I have this question too'."""
+    me = await require_hub_member(current_user_id)
+    await question_or_404(me, question_id)
+    await run_one_off(pg_insert(DBCollegeQuestionVote).values(question_id=question_id, user_id=current_user_id).on_conflict_do_nothing(index_elements=["question_id", "user_id"]))
+    qa_changed(me["key"])
+    return {"id": question_id, "voted": True}
+
+
+@app.delete("/api/college-hub/questions/{question_id}/vote")
+async def unvote_hub_question(question_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await require_hub_member(current_user_id)
+    await run_one_off(delete(DBCollegeQuestionVote).where(DBCollegeQuestionVote.question_id == question_id, DBCollegeQuestionVote.user_id == current_user_id))
+    qa_changed(me["key"])
+    return {"id": question_id, "voted": False}

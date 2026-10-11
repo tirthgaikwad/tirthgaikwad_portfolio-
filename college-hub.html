@@ -46,7 +46,11 @@
 <div aria-label="College Hub sections" class="ch-tabs ch-hidden" id="hubTabs" role="tablist">
 <button aria-selected="true" class="ch-tab" data-tab="board" role="tab" type="button"><span class="material-symbols-outlined ch-ico">campaign</span>Notice board</button>
 <button aria-selected="false" class="ch-tab" data-tab="groups" role="tab" type="button"><span class="material-symbols-outlined ch-ico">groups</span>Groups</button>
+<button aria-selected="false" class="ch-tab" data-tab="calendar" role="tab" type="button"><span class="material-symbols-outlined ch-ico">calendar_month</span>Calendar</button>
 <button aria-selected="false" class="ch-tab" data-tab="chat" role="tab" type="button"><span class="material-symbols-outlined ch-ico">forum</span>Chat<span class="ch-dot ch-hidden" id="chatUnread"></span></button>
+<button aria-selected="false" class="ch-tab" data-tab="resources" role="tab" type="button"><span class="material-symbols-outlined ch-ico">menu_book</span>Resources</button>
+<button aria-selected="false" class="ch-tab" data-tab="qa" role="tab" type="button"><span class="material-symbols-outlined ch-ico">live_help</span>Q&amp;A</button>
+<button aria-selected="false" class="ch-tab" data-tab="attendance" role="tab" type="button"><span class="material-symbols-outlined ch-ico">fact_check</span>Attendance</button>
 <button aria-selected="false" class="ch-tab" data-tab="students" role="tab" type="button"><span class="material-symbols-outlined ch-ico">badge</span>Students</button>
 </div>
 </div>
@@ -84,6 +88,26 @@
 </div>
 </section>
 <!-- Section 5: Students -->
+<section class="ch-hidden" data-panel="calendar" id="panel-calendar">
+<div class="ch-bar" id="calendarBar"></div>
+<div id="calendarBody"></div>
+</section>
+
+<section class="ch-hidden" data-panel="resources" id="panel-resources">
+<div class="ch-bar" id="resourceBar"></div>
+<div class="ch-resources" id="resourceList"></div>
+</section>
+
+<section class="ch-hidden" data-panel="qa" id="panel-qa">
+<div class="ch-bar" id="qaBar"></div>
+<div class="ch-qa" id="qaList"></div>
+</section>
+
+<section class="ch-hidden" data-panel="attendance" id="panel-attendance">
+<div class="ch-bar" id="attendanceBar"></div>
+<div id="attendanceBody"></div>
+</section>
+
 <section class="ch-hidden" data-panel="students" id="panel-students">
 <div class="ch-bar" id="studentBar"></div>
 <div id="studentList"></div>
@@ -116,6 +140,9 @@
     </div>
 </div>
 <script src="chat-common.js"></script>
+<script src="college-hub-work.js"></script>
+<script src="college-hub-calendar.js"></script>
+<script src="college-hub-learn.js"></script>
 <script src="college-hub.js"></script>
 </body>
 </html>

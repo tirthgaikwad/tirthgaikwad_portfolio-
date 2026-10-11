@@ -1,13 +1,15 @@
 // ==========================================
 // COLLEGE-HUB.JS — The College Hub page: a college's notice board, its groups, its chat rooms and its students
-// Loaded after shared.js and chat-common.js (api, caches, toast, el, norm, avatars, time formats, linkify, live socket).
+// Loaded after shared.js and chat-common.js (api, caches, toast, el, norm, avatars, time formats, linkify, live socket),
+// and after college-hub-work.js (polls, read confirmation, handed-in work, check-ins), college-hub-calendar.js
+// (calendar, attendance) and college-hub-learn.js (resources, Q&A), whose functions this file calls.
 // A group here is an ordinary team that belongs to the college, so its own chat lives on the My Teams page.
 // ==========================================
 
 const HUB_REFRESH_MS = 60000;
 const HUB_COLLEGE_ROOM = 'college';
 const HUB_MAX_GROUP_SIZE = 50;      // the server's limit for a group that belongs to no activity
-const HUB_TABS = ['board', 'groups', 'chat', 'students'];
+const HUB_TABS = ['board', 'groups', 'calendar', 'chat', 'resources', 'qa', 'attendance', 'students'];
 
 let hub = null;                     // what /api/college-hub returned, or null before the first load
 let hubLoading = false;
@@ -164,6 +166,10 @@ function renderHub() {
   if (view.tab === 'board') renderBoard();
   if (view.tab === 'groups') renderGroups();
   if (view.tab === 'students') renderStudents();
+  if (view.tab === 'calendar') renderCalendar();
+  if (view.tab === 'resources') renderResources();
+  if (view.tab === 'qa') renderQa();
+  if (view.tab === 'attendance') renderAttendance();
   if (view.tab === 'chat') {
     renderChat();
     if (!roomState(chat.room).loaded) openRoom(chat.room);   // the page was opened straight on the chat tab
@@ -235,7 +241,7 @@ function renderBoard() {
         <p>${allowed ? 'On. Students can make groups that belong to no activity. Each activity has its own setting.' : 'Off. Only teachers make groups that belong to no activity. Each activity has its own setting.'}</p></div>
       </div>
     </div>` : '';
-  el('boardSide').innerHTML = `${teacherPanels}
+  el('boardSide').innerHTML = `${thisWeekPanelHtml()}${teacherPanels}
     <div class="ch-panel">
       <h3>How groups work</h3>
       <ul class="ch-howto">
@@ -298,6 +304,9 @@ function postHtml(post) {
       <h3>${escapeHtml(post.title)}</h3>
       ${post.body ? `<div class="ch-post-body">${linkify(post.body)}</div>` : ''}
       ${details}
+      ${activity ? workHtml(post) + checkinSummaryHtml(post) : ''}
+      ${pollHtml(post)}
+      ${ackHtml(post)}
       ${actions || manage ? `<div class="ch-post-actions">${actions}${manage}</div>` : ''}
     </article>`;
 }
@@ -370,7 +379,8 @@ function groupHtml(group) {
   const tags = `${group.teacher_managed ? `<span class="ch-chip navy">${icon('lock')}Set by teachers</span>` : ''}
     ${group.open_to_join && !group.teacher_managed ? `<span class="ch-chip green">${icon('door_open')}Open to join</span>` : ''}
     ${group.topic ? `<span class="ch-chip indigo">${icon('topic')}${escapeHtml(group.topic)}</span>` : ''}
-    ${needs ? `<span class="ch-chip warn">Needs ${needs} more</span>` : ''}`;
+    ${needs ? `<span class="ch-chip warn">Needs ${needs} more</span>` : ''}
+    ${groupWorkChip(group, activity)}`;
 
   const members = group.members.map(member => {
     const person = peopleById.get(member.id);
@@ -406,6 +416,7 @@ function groupHtml(group) {
       ${activity ? `<div class="ch-meter"><i style="width:${Math.min(100, Math.round(ids.length / limit * 100))}%"></i></div>` : ''}
       ${tags.trim() ? `<div class="ch-group-tags">${tags}</div>` : ''}
       <div class="ch-members">${members}</div>
+      ${groupCheckinHtml(group, activity)}
       <div class="ch-group-foot">${foot}</div>
     </article>`;
 }
@@ -637,6 +648,10 @@ function handleHubEvent(data) {
   }
   if (data.type === 'college_hub_changed') return queueHubReload();
   if (data.type === 'college_chat' && data.message) return addChatMessage(data.message);
+  if (data.type === 'college_poll') return applyPollEvent(data);
+  if (data.type === 'college_ack') return applyAckEvent(data);
+  if (data.type === 'college_qa_changed') return applyQaEvent();
+  if (data.type === 'college_resources_changed') { if (learn.resources) loadResources(); return; }
   if (data.type === 'college_chat_deleted') {
     const state = roomState(data.room);
     state.messages = state.messages.filter(message => message.id !== data.id);
@@ -647,9 +662,11 @@ function handleHubEvent(data) {
 // ==========================================
 // 9. THE POP-UP AND THE STUDENT PICKER
 // ==========================================
-function openHubModal({ title, body, confirmText, onConfirm, onOpen }) {
+function openHubModal({ title, body, confirmText, onConfirm, onOpen, wide }) {
   el('hubModalTitle').textContent = title;
+  el('hubModalBody').onclick = null;
   el('hubModalBody').innerHTML = body;
+  el('hubModal').querySelector('.ch-modal').classList.toggle('ch-modal-wide', Boolean(wide));
   el('hubModalConfirm').textContent = confirmText || 'Save';
   el('hubModalConfirm').disabled = false;
   showModalError('');
@@ -757,6 +774,8 @@ function openPostForm(post) {
   let kind = editing ? post.kind : 'notice';
   const value = (field, fallback) => escapeHtml(editing ? post[field] : fallback);
   const divisionOptions = (dept) => optionsOf('division', editing ? norm(post.division) : '', students().filter(person => norm(person.department) === dept));
+  const pollOptions = editing ? post.poll_options || [] : [];
+  const pollLocked = editing && post.poll_total > 0;
   openHubModal({
     title: editing ? 'Edit post' : 'New post',
     confirmText: editing ? 'Save changes' : 'Post',
@@ -778,11 +797,24 @@ function openPostForm(post) {
           <label>Form groups by <small>(optional)</small><input class="ch-input" id="postDeadline" type="date" value="${value('deadline', '')}"></label>
         </div>
         <label>Topics <small>(optional, one per line; each can be taken by one group)</small><textarea class="ch-textarea" id="postTopics" placeholder="Renewable energy&#10;Smart cities&#10;Water management">${escapeHtml(editing ? post.topics.join('\n') : '')}</textarea></label>
+        <label class="ch-check"><input type="checkbox" id="postWork" ${editing && post.accepts_work ? 'checked' : ''}>Groups hand in their work here</label>
+        <div id="postWorkFields" class="ch-row2 ${editing && post.accepts_work ? '' : 'ch-hidden'}">
+          <label>Hand in by <small>(optional)</small><input class="ch-input" id="postSubmitBy" type="date" value="${value('submit_by', '')}"></label>
+          <label>Marks out of <small>(0 = feedback only)</small><input class="ch-input" id="postMarks" type="number" min="0" max="1000" value="${editing ? post.max_marks : 10}"></label>
+        </div>
+        <label class="ch-check"><input type="checkbox" id="postCheckins" ${editing && post.weekly_checkins ? 'checked' : ''}>Groups write a short check-in every week</label>
         <label>Who forms the groups<select class="ch-select" id="postWho">
           <option value="students" ${!editing ? (hub.settings.students_can_form_groups ? 'selected' : '') : (post.students_form_groups ? 'selected' : '')}>Students form their own groups</option>
           <option value="teachers" ${!editing ? (hub.settings.students_can_form_groups ? '' : 'selected') : (post.students_form_groups ? '' : 'selected')}>Teachers form the groups</option>
         </select></label>
       </div>
+      <label class="ch-check"><input type="checkbox" id="postPoll" ${pollOptions.length ? 'checked' : ''} ${pollLocked ? 'disabled' : ''}>Add a poll</label>
+      <div id="postPollFields" class="ch-form ${pollOptions.length ? '' : 'ch-hidden'}">
+        <label>Choices <small>(one per line, 2 to 10)</small><textarea class="ch-textarea" id="postPollOptions" ${pollLocked ? 'disabled' : ''} placeholder="Monday&#10;Wednesday&#10;Friday">${escapeHtml(pollOptions.join('\n'))}</textarea></label>
+        <label class="ch-check"><input type="checkbox" id="postPollMulti" ${editing && post.poll_multi ? 'checked' : ''} ${pollLocked ? 'disabled' : ''}>Students may pick more than one</label>
+        ${pollLocked ? '<p class="ch-muted">Students have already voted, so the choices stay as they are.</p>' : ''}
+      </div>
+      <label class="ch-check"><input type="checkbox" id="postAck" ${editing && post.needs_ack ? 'checked' : ''}>Ask students to confirm they have read it</label>
       <label class="ch-check"><input type="checkbox" id="postPinned" ${editing && post.pinned ? 'checked' : ''}>Pin to the top of the board</label>`,
     onOpen: () => {
       el('postKind').addEventListener('click', (e) => {
@@ -795,6 +827,8 @@ function openPostForm(post) {
       el('postDept').addEventListener('change', (e) => {
         el('postDivision').innerHTML = '<option value="">All divisions</option>' + (e.target.value ? divisionOptions(e.target.value) : '');
       });
+      el('postPoll').addEventListener('change', (e) => el('postPollFields').classList.toggle('ch-hidden', !e.target.checked));
+      el('postWork').addEventListener('change', (e) => el('postWorkFields').classList.toggle('ch-hidden', !e.target.checked));
     },
     onConfirm: async () => {
       const labelOf = (select) => (select.value ? select.options[select.selectedIndex].textContent : '');
@@ -803,9 +837,15 @@ function openPostForm(post) {
         department: labelOf(el('postDept')), division: labelOf(el('postDivision')), pinned: el('postPinned').checked,
         group_min: Number(el('postMin').value) || 1, group_max: Number(el('postMax').value) || 1,
         deadline: el('postDeadline').value, topics: el('postTopics').value.split('\n').map(line => line.trim()).filter(Boolean),
-        students_form_groups: el('postWho').value === 'students'
+        students_form_groups: el('postWho').value === 'students',
+        poll_options: pollLocked ? pollOptions : (el('postPoll').checked ? el('postPollOptions').value.split('\n').map(line => line.trim()).filter(Boolean) : []),
+        poll_multi: pollLocked ? post.poll_multi : el('postPollMulti').checked,
+        needs_ack: el('postAck').checked,
+        accepts_work: el('postWork').checked, submit_by: el('postSubmitBy').value, max_marks: Number(el('postMarks').value) || 0,
+        weekly_checkins: el('postCheckins').checked
       };
       if (!body.title.trim()) throw new Error('Give the post a title.');
+      if (el('postPoll').checked && !pollLocked && body.poll_options.length < 2) throw new Error('A poll needs at least two choices, one per line.');
       if (editing) await api(`/api/college-hub/posts/${post.id}`, { method: 'PUT', body });
       else await api('/api/college-hub/posts', { method: 'POST', body });
       showToast(editing ? 'Post updated.' : 'Posted to the board.');
@@ -996,6 +1036,7 @@ function onHubClick(e) {
   const button = e.target.closest('[data-act]');
   if (!button) return;
   const act = button.dataset.act;
+  if (hubActions[act]) return hubActions[act](button);
   const post = button.dataset.id ? hub.posts.find(item => item.id === Number(button.dataset.id)) : null;
   const group = button.dataset.group ? hub.groups.find(item => item.id === Number(button.dataset.group)) : null;
 
@@ -1005,7 +1046,7 @@ function onHubClick(e) {
   if (act === 'edit-post' && post) return openPostForm(post);
   if (act === 'pin-post' && post) return run(() => api(`/api/college-hub/posts/${post.id}`, { method: 'PUT', body: { ...post, pinned: !post.pinned } }), post.pinned ? 'Unpinned.' : 'Pinned to the top.');
   if (act === 'delete-post' && post) {
-    return confirmThen('Delete this post?', post.kind === 'activity' ? 'The activity is removed from the board. Its groups are kept, as groups of no activity.' : 'The notice is removed from the board.', 'Delete',
+    return confirmThen('Delete this post?', post.kind === 'activity' ? 'The activity is removed from the board, with any work handed in for it. Its groups are kept, as groups of no activity.' : 'The notice is removed from the board, with its poll votes.', 'Delete',
       () => run(() => api(`/api/college-hub/posts/${post.id}`, { method: 'DELETE' }), 'Post deleted.'));
   }
   if (act === 'toggle-switch') {
@@ -1047,6 +1088,7 @@ function onHubClick(e) {
 
 function onHubChange(e) {
   const target = e.target;
+  if (hubChangeHandlers.some(handler => handler(target))) return;
   if (target.id === 'groupActivity') { view.activity = target.value; writeUrl(); return renderGroups(); }
   if (target.id === 'groupDept') { view.dept = target.value; return renderGroups(); }
   if (target.id === 'groupDivision') { view.division = target.value; return renderGroups(); }
@@ -1083,6 +1125,7 @@ async function requestTeacherAccess() {
 function bindHub() {
   document.querySelector('main').addEventListener('click', onHubClick);
   document.querySelector('main').addEventListener('change', onHubChange);
+  bindLearn();
   el('studentBar').addEventListener('input', (e) => {
     if (e.target.id !== 'rosterSearch') return;
     view.rosterQuery = e.target.value;
