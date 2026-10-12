@@ -99,6 +99,10 @@
 .app-mobile { position: absolute; top: 100%; left: 0; right: 0; max-height: calc(100vh - 64px); overflow-y: auto; background: #fff; border-bottom: 1px solid var(--h-line); box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12); padding: 8px 16px 16px; }
 .app-mobile h4 { margin: 14px 10px 4px; padding: 0; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--h-ink-3); }
 
+@media (max-width: 1279px) {
+  /* No room for one more link: the logo already opens Home */
+  .app-nav > a[href="home.html"] { display: none; }
+}
 @media (max-width: 1180px) {
   .app-search { width: 170px; }
   .app-brand { margin-right: 8px; }

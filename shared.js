@@ -56,12 +56,14 @@ const HEADER_ICONS = {
     check: '<path d="M12 3.5l7 2.5v5.5c0 4.3-2.8 7.6-7 9-4.2-1.4-7-4.7-7-9V6z"/><path d="M9 12l2.2 2.2L15.2 10"/>',
     chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
     target: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M11 8v6M8 11h6"/>',
-    plus: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>'
+    plus: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
+    home: '<path d="M4 11l8-6.5 8 6.5v7.5a1.5 1.5 0 01-1.5 1.5H5.5A1.5 1.5 0 014 18.5z"/><path d="M9.5 20v-5.5h5V20"/>'
 };
 const headerIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${HEADER_ICONS[name]}</svg>`;
 
 // The pages behind each item of the bar. A group is shown as current when one of its pages is open.
 const HEADER_NAV = [
+    { label: 'Home', href: 'home.html', icon: 'home', text: 'What is waiting for you today' },
     { label: 'Discover', href: 'search.html', icon: 'compass', text: 'Find people by skill' },
     { label: 'Professionals', href: 'professionals.html', icon: 'briefcase', text: 'Everyone, by profession' },
     { label: 'Opportunities', href: 'board.html', icon: 'board', text: 'Open roles and project ideas' },
@@ -111,7 +113,7 @@ window.renderAppHeader = function() {
     const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
     header.innerHTML = `
         <div class="app-header-inner">
-            <a class="app-brand" href="index.html" aria-label="Connect2Minds home"><img alt="" src="${HEADER_LOGO}"><span>Connect2Minds</span></a>
+            <a class="app-brand" href="home.html" aria-label="Connect2Minds home"><img alt="" src="${HEADER_LOGO}"><span>Connect2Minds</span></a>
             <nav class="app-nav" aria-label="Main">${nav}</nav>
             <div class="app-actions">
                 <button class="app-search" type="button" data-header-search aria-label="Search people">${headerIcon('search')}<span>Search people</span><kbd>${shortcut}</kbd></button>
@@ -147,9 +149,10 @@ window.renderAppHeader = function() {
 };
 
 // Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
+// Opportunities is not a tab of its own: Home shows the newest ones and links to the board
 const TABBAR_ITEMS = [
+    { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html'] },
     { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html', 'department.html', 'global.html', 'followers.html'] },
-    { label: 'Opportunities', href: 'board.html', icon: 'briefcase', also: [] },
     { label: 'Messages', href: 'inbox.html', icon: 'chat', also: [] },
     { label: 'College Hub', href: 'college-hub.html', icon: 'campus', also: ['team.html', 'project_management.html', 'research.html'] },
     { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'billing.html', 'pricing.html'] }
@@ -379,6 +382,16 @@ window.openAddToTeamModal = async function(targetUserId) {
 // ==========================================
 window.logout = function() {
     const leave = async () => {
+        // This device stops getting the account's notifications (they were switched on from Home)
+        try {
+            const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+            const subscription = registration ? await registration.pushManager.getSubscription() : null;
+            if (subscription) {
+                await fetch(`${API_BASE}/api/push/unsubscribe`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+                                                                  body: JSON.stringify({ endpoint: subscription.endpoint }) });
+                await subscription.unsubscribe();
+            }
+        } catch(e) { /* proceed anyway */ }
         try {
             await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
         } catch(e) { /* proceed anyway */ }

@@ -87,7 +87,7 @@
       (data) => {
         localStorage.setItem('currentUserId', data.user_id);
         localStorage.setItem('userRole', data.is_admin ? 'admin' : 'user');
-        return 'inbox.html';
+        return 'home.html';
       });
   });
 

@@ -9,13 +9,22 @@ import asyncio
 import urllib.request
 import urllib.error
 import httpx
+import html
+import struct
+import smtplib
+from email.message import EmailMessage
+from urllib.parse import urlparse
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import bcrypt
@@ -85,6 +94,9 @@ class DBUser(Base):
     # Section 18: the best active personal plan and its last day, kept here for badges and limits
     plan = Column(String, default="")
     plan_until = Column(String, default="")
+    # Section 21: the weekly email (1 = send it) and when the last one went out
+    digest_on = Column(Integer, default=1)
+    last_digest_at = Column(String, default="")
 
 class DBAdminRequest(Base):
     __tablename__ = "admin_requests"
@@ -455,6 +467,8 @@ SCHEMA_UPGRADES = [
     "ALTER TABLE board_posts ADD COLUMN IF NOT EXISTS winners_announced INTEGER DEFAULT 0",
     "UPDATE admin_requests SET status = lower(status) WHERE status IN ('Pending', 'Approved', 'Rejected')",
     "CREATE INDEX IF NOT EXISTS ix_subscriptions_owner ON subscriptions (user_id, status, ends_at)",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS digest_on INTEGER DEFAULT 1",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_digest_at VARCHAR DEFAULT ''",
 ]
 
 async def backfill_cleared_chats():
@@ -484,6 +498,7 @@ async def startup_event():
     spawn_background(keep_pool_warm())
     spawn_background(subscription_watch())
     spawn_background(move_id_cards_to_files())
+    spawn_background(digest_watch())
 
 async def keep_pool_warm():
     """The database is far away and new connections are slow to open, so keep a few open and fresh."""
@@ -1968,6 +1983,7 @@ async def create_notification(user_id: int, notif_type: str, content: str, times
             "link": link,
             "is_read": 0
         }), user_id)
+        spawn_background(push_notify([user_id], notif_type, content, link))
     except Exception as e:
         print("Error creating notification:", e)
 
@@ -5113,6 +5129,7 @@ async def notify_many(user_ids, notif_type: str, content: str, link: str):
             await notification_manager.send_personal_message(json.dumps({
                 "id": notif_id, "type": notif_type, "content": content, "timestamp": now_iso, "link": link, "is_read": 0
             }), user_id)
+        spawn_background(push_notify(user_ids, notif_type, content, link))
     except Exception as e:
         print("Error creating notifications:", e)
 
@@ -8962,3 +8979,529 @@ async def founder_sponsored(founder_id: int = Depends(require_founder)):
     return {"challenges": [{"id": p.id, "title": p.title or "", "kind": p.kind or "", "tier": p.sponsor_tier or "", "sponsor": p.sponsor_name or "", "prize": p.prize or "",
                             "deadline": p.deadline or "", "sponsored_until": p.sponsored_until or "", "winners_announced": bool(p.winners_announced),
                             "author": name or "", "submissions": count or 0} for p, name, count in rows]}
+
+
+# ==========================================
+# 21. HOME ("TODAY"), PUSH NOTIFICATIONS AND THE WEEKLY EMAIL
+# ==========================================
+# Home answers "why open the site today": what is waiting for me, what is new for me, how my week went.
+# Push and the weekly email carry the same things to people who do not have the site open.
+class DBPushSubscription(Base):
+    """One browser or phone that agreed to receive notifications."""
+    __tablename__ = "push_subscriptions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    endpoint = Column(String, unique=True, index=True)
+    p256dh = Column(String)
+    auth = Column(String)
+    created_at = Column(String)
+
+
+HOME_WEEK_DAYS = 7
+HOME_OPPORTUNITIES = 4
+HOME_CHALLENGES = 2
+HOME_PEOPLE = 6
+HOME_POST_AGE_DAYS = 30      # a notice older than this no longer asks to be read or voted on from Home
+HOME_OVERDUE_DAYS = 14       # work that is this late stops being listed
+HOME_FOLLOW_GOAL = 5
+HOME_SKILL_GOAL = 3
+
+
+def home_item(kind: str, title: str, detail: str, link: str, due: str = "", urgent: bool = False) -> dict:
+    return {"kind": kind, "title": title, "detail": detail, "link": link, "due": due, "urgent": urgent}
+
+async def home_hub_items(me: dict, today) -> tuple:
+    """What College Hub is waiting on this person for, and what came back for them (marks). One round of reads."""
+    key, user_id, student = me["key"], me["id"], me["role"] == "student"
+    attended = func.sum(case((DBAttendanceMark.status.in_(("present", "late")), 1), else_=0))
+    posts, extras, groups, attendance = await asyncio.gather(
+        fetch_one_off(select(DBCollegePost).where(DBCollegePost.college_key == key).order_by(DBCollegePost.id.desc()).limit(200)),
+        hub_extras(key, me),
+        fetch_one_off(select(DBTeam.id, DBTeam.name, DBTeam.activity_id).join(DBTeamMember, DBTeamMember.team_id == DBTeam.id)
+                      .where(DBTeam.college_key == key, DBTeamMember.user_id == user_id)),
+        fetch_one_off(select(func.count(), attended).select_from(DBAttendanceMark)
+                      .join(DBAttendanceSession, DBAttendanceSession.id == DBAttendanceMark.session_id)
+                      .where(DBAttendanceSession.college_key == key, DBAttendanceMark.user_id == user_id)),
+    )
+    today_text, tomorrow = today.isoformat(), (today + timedelta(days=1)).isoformat()
+    soon = lambda day: bool(day) and day <= tomorrow
+    recent_from = (today - timedelta(days=HOME_POST_AGE_DAYS)).isoformat()
+    overdue_from = (today - timedelta(days=HOME_OVERDUE_DAYS)).isoformat()
+    week_ago = (today - timedelta(days=HOME_WEEK_DAYS)).isoformat()
+    group_of = {activity_id: (group_id, name or "your group") for group_id, name, activity_id in groups if activity_id}
+    handed_in = {(row["activity_id"], row["group_id"]): row for row in extras["submissions"]}
+    checked_in = {row["group_id"] for row in extras["checkins"] if row["week_start"] == this_week()}
+    needs, news = [], []
+
+    for (post,) in posts:
+        if not post_is_for(post, me):
+            continue
+        card = with_post_extras(serialize_hub_post(post), extras, me)
+        title = card["title"]
+        if not student:
+            continue
+        if (card["created_at"] or "")[:10] >= recent_from:
+            if card["needs_ack"] and not card.get("acked"):
+                needs.append(home_item("ack", f"Read and confirm: {title}", "Your teacher asked everyone to confirm this notice.", "college-hub.html?tab=board"))
+            if card["poll_options"] and not card.get("my_votes"):
+                voted = card.get("poll_total", 0)
+                needs.append(home_item("poll", f"Vote: {title}", f"{voted} {'person has' if voted == 1 else 'people have'} voted so far.", "college-hub.html?tab=board"))
+        if card["kind"] != "activity":
+            continue
+        link = f"college-hub.html?tab=groups&activity={card['id']}"
+        group = group_of.get(card["id"])
+        if not group:
+            if card["students_form_groups"] and not deadline_passed(card["deadline"]):
+                needs.append(home_item("group", f"Join or form a group: {title}", f"Groups of {card['group_min']} to {card['group_max']}.",
+                                       link, card["deadline"], soon(card["deadline"])))
+            continue
+        work = handed_in.get((card["id"], group[0]))
+        submit_by = card["submit_by"]
+        if card["accepts_work"] and not work and (not submit_by or submit_by >= overdue_from):
+            late = deadline_passed(submit_by)
+            needs.append(home_item("work", f"{'Overdue' if late else 'Hand in'}: {title}", f"For your group, {group[1]}.", link, submit_by, soon(submit_by)))
+        if work and work["graded"] and (work["graded_at"] or "")[:10] >= week_ago:
+            marks = f"{work['marks']} out of {card['max_marks']}" if work["marks"] is not None and card["max_marks"] else "Your teacher left feedback."
+            news.append(home_item("marks", f"Marks are in: {title}", marks, link))
+        if card["weekly_checkins"] and group[0] not in checked_in and not deadline_passed(submit_by or card["deadline"]):
+            needs.append(home_item("checkin", f"This week's check-in: {title}", f"A short progress note from {group[1]}.", link))
+
+    for event in extras["events"]:
+        if event["date"] in (today_text, tomorrow) and addressed_to(event["department"], event["division"], me):
+            when = " · ".join(part for part in (event["start_time"], event["location"]) if part)
+            needs.append(home_item("event", f"{'Today' if event['date'] == today_text else 'Tomorrow'}: {event['title']}", when, "college-hub.html?tab=calendar", event["date"]))
+
+    if student and attendance:
+        total, came = attendance[0][0] or 0, attendance[0][1] or 0
+        if total >= HUB_ATTENDANCE_MIN_SESSIONS and came * 100 < HUB_ATTENDANCE_LOW * total:
+            needs.append(home_item("attendance", f"Your attendance is {round(came * 100 / total)}%", f"{came} of {total} classes. The line is {HUB_ATTENDANCE_LOW}%.",
+                                   "college-hub.html?tab=attendance", urgent=True))
+    if not student:
+        waiting = sum(1 for row in extras["submissions"] if not row["graded"])
+        if waiting:
+            needs.append(home_item("grade", f"{waiting} {'piece' if waiting == 1 else 'pieces'} of work waiting for marks", "Handed in by your students' groups.", "college-hub.html?tab=board"))
+    return needs, news
+
+
+def home_opportunity(card: dict, match: list) -> dict:
+    return {
+        "id": card["id"], "title": card["title"], "category": card["category"], "description": card["description"][:160],
+        "skills_required": card["skills_required"], "author_name": card["author_name"], "created_at": card["created_at"],
+        "applicant_count": card["applicant_count"], "is_urgent": card["is_urgent"], "is_sponsored": card["is_sponsored"],
+        "sponsor_name": card["sponsor_name"], "prize": card["prize"], "deadline": card["deadline"], "match": match,
+    }
+
+async def build_home(user_id: int) -> dict:
+    """Everything the Home page shows. Also what the weekly email is written from."""
+    today = datetime.now().date()
+    since = (datetime.now(timezone.utc) - timedelta(days=HOME_WEEK_DAYS)).isoformat()
+    i_follow = select(DBFollow.followed_id).where(DBFollow.follower_id == user_id)
+    my_posts = select(DBBoardPost.id).where(DBBoardPost.author_id == user_id)
+
+    def count_of(model, *conditions):
+        return select(func.count()).select_from(model).where(*conditions).scalar_subquery()
+
+    numbers = select(
+        count_of(DBFollow, DBFollow.follower_id == user_id).label("following"),
+        count_of(DBFollow, DBFollow.followed_id == user_id, DBFollow.timestamp >= since).label("new_followers"),
+        count_of(DBTeamMember, DBTeamMember.user_id == user_id).label("teams"),
+        select(func.count(func.distinct(DBNotification.content))).where(DBNotification.user_id == user_id, DBNotification.type == "view",
+                                                                        DBNotification.timestamp >= since).scalar_subquery().label("profile_views"),
+        count_of(DBBoardApplication, DBBoardApplication.user_id == user_id, DBBoardApplication.created_at >= since).label("applications"),
+        count_of(DBBoardApplication, DBBoardApplication.post_id.in_(my_posts), DBBoardApplication.created_at >= since).label("applicants"),
+        count_of(DBPushSubscription, DBPushSubscription.user_id == user_id).label("devices"),
+    )
+    # Unread messages the way the Messages page counts them: not from a cleared chat, a muted or a blocked person
+    unread = (
+        select(func.count(), func.count(func.distinct(DBMessage.sender_id))).select_from(DBMessage)
+        .outerjoin(DBClearedChat, and_(DBClearedChat.user_id == user_id, DBClearedChat.cleared_with_user_id == DBMessage.sender_id))
+        .where(DBMessage.receiver_id == user_id, or_(DBMessage.message_status.is_(None), DBMessage.message_status != "read"),
+               DBMessage.id > func.coalesce(DBClearedChat.cleared_up_to_id, 0),
+               ~exists().where(DBMutedUser.user_id == user_id, DBMutedUser.muted_user_id == DBMessage.sender_id),
+               ~exists().where(DBBlockedUser.user_id == user_id, DBBlockedUser.blocked_user_id == DBMessage.sender_id))
+    )
+    me, me_rows, number_rows, unread_rows, post_rows, people_rows = await asyncio.gather(
+        hub_identity(user_id),
+        fetch_one_off(select(DBUser.skills, DBUser.bio, DBUser.email, DBUser.account_status, DBUser.digest_on,
+                             (func.length(func.coalesce(DBUser.profile_pic, "")) > 0).label("has_photo")).where(DBUser.id == user_id)),
+        fetch_one_off(numbers),
+        fetch_one_off(unread),
+        fetch_one_off(board_posts_query(user_id).limit(80)),
+        fetch_one_off(person_cards_query(user_id, DBUser.id.not_in(i_follow)).order_by(DBUser.id.desc()).limit(200)),
+    )
+    row, counts = me_rows[0], number_rows[0]
+    needs, news = await home_hub_items(me, today) if me["role"] != "none" else ([], [])
+
+    unread_count, unread_people = unread_rows[0][0] or 0, unread_rows[0][1] or 0
+    if unread_count:
+        needs.insert(0, home_item("message", f"{unread_count} unread {'message' if unread_count == 1 else 'messages'}",
+                                  f"From {unread_people} {'person' if unread_people == 1 else 'people'}.", "inbox.html"))
+    if counts.applicants:
+        news.append(home_item("applicants", f"{counts.applicants} {'person' if counts.applicants == 1 else 'people'} applied to your posts this week",
+                              "See who they are on the Opportunities board.", "board.html"))
+    needs.sort(key=lambda item: (not item["urgent"], item["due"] or "9999"))
+
+    # Opportunities: the ones that ask for a skill I list come first, the newest fill the rest
+    my_skills = skill_keys(row.skills)
+    opportunities, challenges = [], []
+    for post in post_rows:
+        card = board_card(post)
+        if card["author_id"] == user_id or card["has_applied"]:
+            continue
+        match = [skill.strip() for skill in card["skills_required"].split(",") if skill.strip().lower() in my_skills]
+        if card["is_sponsored"] and (not card["deadline"] or card["deadline"] >= today.isoformat()) and not card["winners_announced"]:
+            challenges.append(home_opportunity(card, match))
+        else:
+            opportunities.append(home_opportunity(card, match))
+    opportunities.sort(key=lambda card: (-len(card["match"]), -card["id"]))
+
+    # People: same college, skills in common, or already following me
+    my_college = college_key_of(me["college"])
+    people = []
+    for person_row in people_rows:
+        card = person_card(person_row)
+        card["same_college"] = bool(my_college) and college_key_of(card["college_name"]) == my_college
+        card["shared_skills"] = [skill.strip() for skill in (card["skills"] or "").split(",") if skill.strip().lower() in my_skills][:3]
+        card["score"] = 3 * card["same_college"] + len(card["shared_skills"]) + 2 * card["follows_me"]
+        people.append(card)
+    people.sort(key=lambda card: (-card["score"], -card["id"]))
+    suggested = [card for card in people if card["score"] > 0][:HOME_PEOPLE] or people[:3]
+
+    skills_listed = len(my_skills)
+    checklist = [
+        {"key": "photo", "label": "Add a profile photo", "link": "profile.html", "done": bool(row.has_photo)},
+        {"key": "bio", "label": "Write a line about yourself", "link": "profile.html", "done": bool((row.bio or "").strip())},
+        {"key": "skills", "label": f"List {HOME_SKILL_GOAL} skills", "link": "profile.html", "done": skills_listed >= HOME_SKILL_GOAL,
+         "progress": f"{min(skills_listed, HOME_SKILL_GOAL)} of {HOME_SKILL_GOAL}"},
+        {"key": "follow", "label": f"Follow {HOME_FOLLOW_GOAL} people", "link": "search.html", "done": counts.following >= HOME_FOLLOW_GOAL,
+         "progress": f"{min(counts.following, HOME_FOLLOW_GOAL)} of {HOME_FOLLOW_GOAL}"},
+        {"key": "team", "label": "Join or start a team", "link": "team.html", "done": counts.teams > 0},
+    ]
+    return {
+        "me": {"name": me["name"], "role": me["role"], "college": me["college"], "account_status": row.account_status or "",
+               "has_email": bool((row.email or "").strip()), "digest_on": (row.digest_on if row.digest_on is not None else 1) == 1},
+        "today": today.isoformat(),
+        "needs": needs, "news": news,
+        "opportunities": opportunities[:HOME_OPPORTUNITIES], "challenges": challenges[:HOME_CHALLENGES],
+        "people": suggested,
+        "week": {"profile_views": counts.profile_views or 0, "new_followers": counts.new_followers or 0,
+                 "applications": counts.applications or 0, "unread": unread_count},
+        "checklist": [] if all(step["done"] for step in checklist) else checklist,
+        "push": {"available": bool(VAPID_PUBLIC), "devices": counts.devices or 0},
+        "email_ready": bool(SMTP_HOST),
+        "online_user_ids": all_online_user_ids(),
+    }
+
+
+@app.get("/api/home")
+async def get_home(current_user_id: int = Depends(get_current_user_id)):
+    """Everything the Home page shows, in one request."""
+    return await build_home(current_user_id)
+
+
+class HomeSettings(BaseModel):
+    digest: Optional[bool] = None
+    email: Optional[str] = None
+
+@app.post("/api/home/settings")
+async def save_home_settings(body: HomeSettings, current_user_id: int = Depends(get_current_user_id)):
+    """The weekly email switch, and an email address for an account that has none yet."""
+    values = {}
+    if body.digest is not None:
+        values["digest_on"] = 1 if body.digest else 0
+    if body.email is not None:
+        email = body.email.strip().lower()
+        if len(email) > 254 or not EMAIL_PATTERN.match(email):
+            raise HTTPException(status_code=400, detail="Enter a valid email address.")
+        rows = await fetch_one_off(select(DBUser.email, exists().where(func.lower(DBUser.email) == email, DBUser.id != current_user_id)).where(DBUser.id == current_user_id))
+        if not rows:
+            raise HTTPException(status_code=401, detail="User account no longer exists.")
+        if (rows[0][0] or "").strip():
+            raise HTTPException(status_code=400, detail="Your account already has an email address.")
+        if rows[0][1]:
+            raise HTTPException(status_code=400, detail="That email address is used by another account.")
+        values["email"] = email
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+    try:
+        await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(**values))
+    except Exception:
+        raise HTTPException(status_code=400, detail="That email address is used by another account.")
+    return {"digest_on": values.get("digest_on"), "has_email": True if "email" in values else None}
+
+
+# ---------- push: the server's key, the message format (RFC 8291), sending ----------
+VAPID_KEY_FILE = os.path.join("private_uploads", "vapid_private.pem")
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:noreply@connect2minds.invalid")
+# The only places a push may be sent to: the push services of the browsers. Anything else is refused,
+# so a made-up subscription cannot make this server call an address of someone's choosing.
+PUSH_HOSTS = ("fcm.googleapis.com", ".push.services.mozilla.com", ".notify.windows.com", ".push.apple.com")
+PUSH_TITLES = {"message": "New message", "view": "Someone looked at your profile", "college": "College Hub",
+               "board_reply": "Opportunities", "account": "Your account"}
+PUSH_MESSAGE_GAP = 300        # seconds between two "new message" pushes about the same conversation
+
+def b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+def b64url_decode(value: str) -> bytes:
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+def load_vapid_key():
+    """This server's key pair for Web Push: VAPID_PRIVATE_KEY (PEM) if set, else a key made once and kept in private_uploads."""
+    try:
+        pem = os.getenv("VAPID_PRIVATE_KEY", "").replace("\\n", "\n").encode()
+        if not pem and os.path.exists(VAPID_KEY_FILE):
+            with open(VAPID_KEY_FILE, "rb") as key_file:
+                pem = key_file.read()
+        if pem:
+            return serialization.load_pem_private_key(pem, password=None)
+        key = ec.generate_private_key(ec.SECP256R1())
+        os.makedirs(os.path.dirname(VAPID_KEY_FILE), exist_ok=True)
+        with open(VAPID_KEY_FILE, "wb") as key_file:
+            key_file.write(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+        return key
+    except Exception as e:
+        print("Push notifications are off:", e)
+        return None
+
+def raw_public_key(key) -> bytes:
+    return key.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+
+VAPID_KEY = load_vapid_key()
+VAPID_PUBLIC = b64url(raw_public_key(VAPID_KEY)) if VAPID_KEY else ""
+
+def push_endpoint_ok(endpoint: str) -> bool:
+    try:
+        parts = urlparse(endpoint)
+    except ValueError:
+        return False
+    host = parts.hostname or ""
+    return parts.scheme == "https" and any(host == allowed or (allowed.startswith(".") and host.endswith(allowed)) for allowed in PUSH_HOSTS)
+
+def encrypt_push(payload: bytes, p256dh: str, auth: str) -> bytes:
+    """The body of a push message, encrypted for one browser (aes128gcm, RFC 8291)."""
+    browser_public = b64url_decode(p256dh)
+    sender = ec.generate_private_key(ec.SECP256R1())
+    sender_public = raw_public_key(sender)
+    shared = sender.exchange(ec.ECDH(), ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), browser_public))
+    secret = HKDF(hashes.SHA256(), 32, b64url_decode(auth), b"WebPush: info\x00" + browser_public + sender_public).derive(shared)
+    salt = os.urandom(16)
+    content_key = HKDF(hashes.SHA256(), 16, salt, b"Content-Encoding: aes128gcm\x00").derive(secret)
+    nonce = HKDF(hashes.SHA256(), 12, salt, b"Content-Encoding: nonce\x00").derive(secret)
+    return salt + struct.pack(">IB", 4096, len(sender_public)) + sender_public + AESGCM(content_key).encrypt(nonce, payload + b"\x02", None)
+
+def vapid_header(endpoint: str) -> str:
+    parts = urlparse(endpoint)
+    claims = {"aud": f"{parts.scheme}://{parts.netloc}", "exp": int(datetime.now(timezone.utc).timestamp()) + 12 * 3600, "sub": VAPID_SUBJECT}
+    return f"vapid t={jwt.encode(claims, VAPID_KEY, algorithm='ES256')}, k={VAPID_PUBLIC}"
+
+async def send_push(user_ids: list, payload: dict) -> int:
+    """Send one notification to every device of these people. Devices the push service no longer knows are forgotten."""
+    if not VAPID_KEY or not user_ids:
+        return 0
+    rows = await fetch_one_off(select(DBPushSubscription.id, DBPushSubscription.endpoint, DBPushSubscription.p256dh, DBPushSubscription.auth)
+                               .where(DBPushSubscription.user_id.in_(user_ids)).limit(3000))
+    if not rows:
+        return 0
+    body, gone, sent = json.dumps(payload).encode(), [], 0
+    async with httpx.AsyncClient(timeout=10) as client:
+        async def deliver(row) -> bool:
+            try:
+                answer = await client.post(row.endpoint, content=encrypt_push(body, row.p256dh, row.auth), headers={
+                    "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", "TTL": "86400", "Urgency": "normal",
+                    "Authorization": vapid_header(row.endpoint)})
+            except Exception as e:
+                print("Push could not be sent:", e)
+                return False
+            if answer.status_code in (404, 410):
+                gone.append(row.id)
+            elif answer.status_code >= 300:
+                print("Push refused:", answer.status_code, answer.text[:200])
+            return answer.status_code < 300
+        sent = sum(await asyncio.gather(*(deliver(row) for row in rows)))
+    if gone:
+        await run_one_off(delete(DBPushSubscription).where(DBPushSubscription.id.in_(gone)))
+    return sent
+
+push_users: Optional[set] = None    # ids of people with at least one device, so everyone else costs no database read
+push_recent: dict = {}              # (user, link) -> when a "new message" push last went out
+
+async def push_notify(user_ids, notif_type: str, content: str, link: str):
+    """A bell notification, also sent to the devices of people who do not have the site open. Meant to run in the background."""
+    global push_users
+    try:
+        if not VAPID_KEY:
+            return
+        if push_users is None:
+            push_users = {row[0] for row in await fetch_one_off(select(DBPushSubscription.user_id).distinct())}
+        away = [user_id for user_id in user_ids
+                if user_id in push_users and not notification_manager.is_online(user_id) and not chat_manager.is_online(user_id)]
+        if notif_type == "message":
+            now = datetime.now(timezone.utc).timestamp()
+            away = [user_id for user_id in away if now - push_recent.get((user_id, link), 0) > PUSH_MESSAGE_GAP]
+            if len(push_recent) > 20000:
+                push_recent.clear()
+            for user_id in away:
+                push_recent[(user_id, link)] = now
+            content = "You have a new message."
+        if away:
+            await send_push(away, {"title": PUSH_TITLES.get(notif_type, "Connect2Minds"), "body": (content or "")[:180],
+                                   "link": link or "home.html", "tag": f"{notif_type}:{link}"})
+    except Exception as e:
+        print("Error sending a push notification:", e)
+
+
+class PushSubscribeBody(BaseModel):
+    endpoint: str
+    keys: dict
+
+class PushEndpointBody(BaseModel):
+    endpoint: str
+
+@app.get("/api/push/key")
+async def get_push_key(current_user_id: int = Depends(get_current_user_id)):
+    return {"key": VAPID_PUBLIC}
+
+@app.post("/api/push/subscribe")
+async def push_subscribe(body: PushSubscribeBody, current_user_id: int = Depends(get_current_user_id)):
+    """Remember this browser. A browser belongs to whoever switched notifications on in it last."""
+    if not VAPID_KEY:
+        raise HTTPException(status_code=503, detail="Notifications are not set up on this server.")
+    p256dh, auth = str(body.keys.get("p256dh") or ""), str(body.keys.get("auth") or "")
+    try:
+        valid = len(b64url_decode(p256dh)) == 65 and len(b64url_decode(auth)) == 16
+    except Exception:
+        valid = False
+    if not valid or len(body.endpoint) > 1000 or not push_endpoint_ok(body.endpoint):
+        raise HTTPException(status_code=400, detail="This browser's notification address was not accepted.")
+    await run_one_off(
+        pg_insert(DBPushSubscription).values(user_id=current_user_id, endpoint=body.endpoint, p256dh=p256dh, auth=auth, created_at=utc_now_iso())
+        .on_conflict_do_update(index_elements=["endpoint"], set_={"user_id": current_user_id, "p256dh": p256dh, "auth": auth})
+    )
+    if push_users is not None:
+        push_users.add(current_user_id)
+    return {"subscribed": True}
+
+@app.post("/api/push/unsubscribe")
+async def push_unsubscribe(body: PushEndpointBody, current_user_id: int = Depends(get_current_user_id)):
+    await run_one_off(delete(DBPushSubscription).where(DBPushSubscription.endpoint == body.endpoint, DBPushSubscription.user_id == current_user_id))
+    return {"subscribed": False}
+
+push_test_at: dict = {}
+
+@app.post("/api/push/test")
+async def push_test(current_user_id: int = Depends(get_current_user_id)):
+    """Send a test notification to the caller's own devices."""
+    now = datetime.now(timezone.utc).timestamp()
+    if now - push_test_at.get(current_user_id, 0) < 20:
+        raise HTTPException(status_code=429, detail="Wait a few seconds before sending another test.")
+    push_test_at[current_user_id] = now
+    sent = await send_push([current_user_id], {"title": "Connect2Minds", "body": "Notifications are on. This is what one looks like.",
+                                               "link": "home.html", "tag": "test"})
+    return {"sent": sent}
+
+
+# ---------- the weekly email ----------
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587") or 587)
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "") or SMTP_USER
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:5500").rstrip("/")
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
+DIGEST_EVERY_DAYS = 7
+DIGEST_BATCH = 100
+
+def digest_token(user_id: int) -> str:
+    return hmac.new(SECRET_KEY.encode(), f"digest-off:{user_id}".encode(), "sha256").hexdigest()[:32]
+
+def digest_lines(home: dict) -> list:
+    """(text, page) pairs worth writing to someone about. Empty means: send nothing this week."""
+    lines = [(item["title"], item["link"]) for item in (home["needs"] + home["news"])[:6]]
+    matching = [card for card in home["opportunities"] + home["challenges"] if card["match"]]
+    if matching:
+        count = len(matching)
+        lines.append((f"{count} {'opportunity matches' if count == 1 else 'opportunities match'} your skills, such as \"{matching[0]['title']}\"", "board.html"))
+    week = home["week"]
+    if week["profile_views"]:
+        lines.append((f"{week['profile_views']} {'person' if week['profile_views'] == 1 else 'people'} looked at your profile this week", "profile.html"))
+    if week["new_followers"]:
+        lines.append((f"{week['new_followers']} new {'follower' if week['new_followers'] == 1 else 'followers'} this week", "network.html"))
+    return lines
+
+def digest_email(home: dict, user_id: int) -> Optional[tuple]:
+    """(subject, plain text, HTML) of this week's email, or None when there is nothing to say."""
+    lines = digest_lines(home)
+    if not lines:
+        return None
+    first_name = (home["me"]["name"] or "there").split()[0]
+    off_link = f"{API_URL}/api/digest/off?u={user_id}&t={digest_token(user_id)}"
+    subject = f"{first_name}, {len(lines)} {'thing' if len(lines) == 1 else 'things'} for you on Connect2Minds"
+    plain = "\n".join([f"Hi {first_name},", "", "Here is what is waiting for you:", ""]
+                      + [f"- {line}\n  {SITE_URL}/{page}" for line, page in lines]
+                      + ["", f"Open your Home page: {SITE_URL}/home.html", "", f"Stop these weekly emails: {off_link}"])
+    rows = "".join(f'<li style="margin:0 0 10px;"><a href="{html.escape(f"{SITE_URL}/{page}")}" style="color:#3525cd;text-decoration:none;font-weight:600;">{html.escape(line)}</a></li>'
+                   for line, page in lines)
+    page_html = (f'<div style="font-family:Arial,sans-serif;color:#0b1c30;max-width:520px;margin:0 auto;padding:24px;">'
+                 f'<h2 style="margin:0 0 6px;">Hi {html.escape(first_name)},</h2><p style="color:#464555;margin:0 0 18px;">Here is what is waiting for you on Connect2Minds.</p>'
+                 f'<ul style="padding-left:18px;margin:0 0 22px;">{rows}</ul>'
+                 f'<a href="{html.escape(SITE_URL)}/home.html" style="display:inline-block;background:#3525cd;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Open Home</a>'
+                 f'<p style="color:#777587;font-size:12px;margin:26px 0 0;">You get this once a week. <a href="{html.escape(off_link)}" style="color:#777587;">Stop these emails</a>.</p></div>')
+    return subject, plain, page_html
+
+def send_email_now(to: str, subject: str, plain: str, page_html: str):
+    message = EmailMessage()
+    message["From"], message["To"], message["Subject"] = SMTP_FROM, to, subject
+    message.set_content(plain)
+    message.add_alternative(page_html, subtype="html")
+    server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) if SMTP_PORT == 465 else smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
+    with server:
+        if SMTP_PORT != 465:
+            server.starttls()
+        if SMTP_USER:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(message)
+
+async def digest_watch():
+    """Every few hours: write to the people whose last weekly email is a week old. Does nothing until SMTP_HOST is set."""
+    while True:
+        full_batch = False
+        try:
+            if SMTP_HOST and SMTP_FROM:
+                cutoff = (datetime.now(timezone.utc) - timedelta(days=DIGEST_EVERY_DAYS)).isoformat()
+                due = await fetch_one_off(
+                    select(DBUser.id, DBUser.email)
+                    .where(func.coalesce(DBUser.digest_on, 1) == 1, DBUser.email.like("%@%"), func.coalesce(DBUser.last_digest_at, "") < cutoff,
+                           or_(DBUser.account_status.is_(None), DBUser.account_status != "rejected"))
+                    .order_by(DBUser.id).limit(DIGEST_BATCH))
+                full_batch = len(due) == DIGEST_BATCH
+                for user_id, email in due:
+                    try:
+                        mail = digest_email(await build_home(user_id), user_id)
+                        if mail:
+                            await asyncio.to_thread(send_email_now, email.strip(), *mail)
+                    except Exception as e:
+                        print("Weekly email failed for account", user_id, ":", e)
+                    # Marked either way: a quiet week is checked again next week, not every few hours
+                    await run_one_off(update(DBUser).where(DBUser.id == user_id).values(last_digest_at=utc_now_iso()))
+                    await asyncio.sleep(1)
+        except Exception as e:
+            print("Error sending weekly emails:", e)
+        await asyncio.sleep(600 if full_batch else 6 * 3600)
+
+
+@app.get("/api/home/digest-preview")
+async def digest_preview(current_user_id: int = Depends(get_current_user_id)):
+    """This week's email for the caller, as it would be written now. Nothing is sent."""
+    mail = digest_email(await build_home(current_user_id), current_user_id)
+    return {"would_send": bool(mail), "subject": mail[0] if mail else "", "text": mail[1] if mail else "", "email_ready": bool(SMTP_HOST and SMTP_FROM)}
+
+@app.get("/api/digest/off")
+async def digest_off(u: int, t: str):
+    """The 'stop these emails' link in the weekly email. Works without logging in; the link itself is the proof."""
+    if not hmac.compare_digest(t.encode(), digest_token(u).encode()):
+        raise HTTPException(status_code=400, detail="This link is not valid.")
+    await run_one_off(update(DBUser).where(DBUser.id == u).values(digest_on=0))
+    return HTMLResponse('<div style="font-family:Arial,sans-serif;max-width:460px;margin:80px auto;text-align:center;color:#0b1c30;">'
+                        '<h2>Weekly emails are off</h2><p style="color:#464555;">You can switch them back on from your Home page.</p>'
+                        f'<p><a href="{html.escape(SITE_URL)}/home.html" style="color:#3525cd;">Open Connect2Minds</a></p></div>')
