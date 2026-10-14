@@ -5,6 +5,29 @@
 
 const API_BASE = `${window.location.protocol}//${window.location.hostname || '127.0.0.1'}:8000`;
 
+// Opened inside the call dock (call-dock.js) of a page that holds a call: hide the phone tab bar and footer there
+const IN_CALL_DOCK = !!(window.frameElement && window.frameElement.id === 'dockFrame');
+if (IN_CALL_DOCK) {
+    document.documentElement.classList.add('in-dock');
+    // A link to the page that holds the call shows the call again, instead of opening a second copy of that page here
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest && e.target.closest('a[href]');
+        if (!link || link.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        const host = window.top.location.pathname.split('/').pop();
+        const page = new URL(link.href, location.href).pathname.split('/').pop();
+        if (page && page === host && window.top.CallDock) {
+            e.preventDefault();
+            window.top.CallDock.backToCall();
+        }
+    }, true);
+}
+
+// Going to the login page from inside the dock leaves the whole site page, ending the call properly
+window.goToLogin = function() {
+    if (IN_CALL_DOCK && window.top.CallDock) return window.top.CallDock.leaveTo('login.html');
+    window.location.href = 'login.html';
+};
+
 // Escape user-supplied text before placing it in innerHTML or an HTML attribute
 window.escapeHtml = function(value) {
     if (value === null || value === undefined) return '';
@@ -408,7 +431,7 @@ window.logout = function() {
         } catch(e) { /* proceed anyway */ }
         localStorage.removeItem(`c2m:${localStorage.getItem('currentUserId')}:me`);
         localStorage.removeItem('currentUserId');
-        window.location.href = "login.html";
+        window.goToLogin();
     };
     // A few older pages do not carry the modal markup
     if (!document.getElementById('systemModal')) {
@@ -498,7 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Only redirect if not already on login/join page
             const page = window.location.pathname.split('/').pop();
             if (!PUBLIC_PAGES.includes(page)) {
-                window.location.href = 'login.html';
+                window.goToLogin();
             }
             return;
         }

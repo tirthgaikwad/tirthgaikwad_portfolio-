@@ -4,7 +4,7 @@
 // ==========================================
 
 const currentUserId = parseInt(localStorage.getItem('currentUserId'));
-if (!currentUserId) { window.location.href = 'login.html'; }
+if (!currentUserId) { window.goToLogin(); }
 
 const PAGE_SIZE = 50;
 const CACHE_PREFIX = `c2m:${currentUserId}:`;
@@ -84,7 +84,10 @@ async function api(path, { method = 'GET', body, timeout = 20000 } = {}) {
       window.upgradePrompt(data && typeof data.detail === 'string' ? data.detail : '');
     }
     if (!res.ok) {
-      throw new ApiError(res.status, data && typeof data.detail === 'string' ? data.detail : 'Something went wrong. Please try again.');
+      // A detail may be a plain message, or { message, ... } with more for the page (for example the newer version on a 409)
+      const detail = data && data.detail;
+      const message = typeof detail === 'string' ? detail : (detail && typeof detail.message === 'string' ? detail.message : 'Something went wrong. Please try again.');
+      throw Object.assign(new ApiError(res.status, message), { data: detail });
     }
     return data;
   } catch (err) {
@@ -98,7 +101,7 @@ async function api(path, { method = 'GET', body, timeout = 20000 } = {}) {
 
 function handleLoggedOut() {
   localStorage.removeItem('currentUserId');
-  window.location.href = 'login.html';
+  window.goToLogin();
 }
 
 function cacheGet(key) {

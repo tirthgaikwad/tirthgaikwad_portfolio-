@@ -120,7 +120,11 @@ function safeFileName(text) {
 // 2. LOADING
 // ==========================================
 async function initHub() {
-  hubTab = cacheGet('hub-tab') || 'kanban';
+  // A link (for example "Plan together" from a call) may name the workspace and the tool to open
+  const params = new URLSearchParams(window.location.search);
+  const linkedTeam = parseInt(params.get('team'), 10) || null;
+  hubTab = params.get('tab') || cacheGet('hub-tab') || 'kanban';
+  if (!hubTabExists(hubTab)) hubTab = 'kanban';
   switchHubTab(hubTab, true);
   el('task-form').addEventListener('submit', saveTask);
   el('settings-form').addEventListener('submit', saveHubSettings);
@@ -142,7 +146,7 @@ async function initHub() {
   // 1. What we knew last time, straight away
   hubTeams = cacheGet('teams') || [];
   renderTeamPicker();
-  const remembered = cacheGet('hub-last-team');
+  const remembered = linkedTeam || cacheGet('hub-last-team');
   const first = hubTeams.find(t => t.id === remembered) || hubTeams[0];
   if (first) openHubTeam(first.id);
 
@@ -158,7 +162,8 @@ async function initHub() {
   }
   renderTeamPicker();
   if (hubTeams.length === 0) return showNoWorkspace();
-  if (!hubTeams.some(t => t.id === hubTeamId)) openHubTeam(hubTeams[0].id);
+  if (linkedTeam && hubTeamId !== linkedTeam && hubTeams.some(t => t.id === linkedTeam)) openHubTeam(linkedTeam);
+  else if (!hubTeams.some(t => t.id === hubTeamId)) openHubTeam(hubTeams[0].id);
 }
 
 function showHubProblem(icon, title, text, actionsHtml) {
@@ -258,23 +263,47 @@ function saveHubCache() {
 
 function renderHub() {
   if (!hub) return;
+  normalizeHub();
   document.body.classList.toggle('is-admin', hubIsAdmin());
   renderHubHeader();
   renderBoard();
-  renderCanvas();
-  renderIntegrations();
+  renderActiveTool();
+  paintTimerChip();
+}
+
+// Boards saved before the planning tools existed lack their parts
+function normalizeHub() {
+  hub.sprints = hub.sprints || [];
+  hub.items = hub.items || [];
+  hub.comment_counts = hub.comment_counts || {};
+  hub.time = hub.time || [];
 }
 
 function switchHubTab(tab, quiet) {
+  if (!HUB_TABS.includes(tab)) tab = 'kanban';
   hubTab = tab;
-  ['kanban', 'canvas', 'integrations'].forEach(name => {
-    el(`view-${name}`).classList.toggle('hidden', name !== tab);
-    el(`view-${name}`).classList.toggle('flex', name === tab);
-    el(`tab-${name}`).classList.toggle('is-active', name === tab);
+  HUB_TABS.forEach(name => {
+    const view = document.getElementById(`view-${name}`);
+    if (!view) return;
+    view.classList.toggle('hidden', name !== tab);
+    view.classList.toggle('flex', name === tab);
   });
+  paintHubNav();
   if (!quiet) cacheSet('hub-tab', tab);
-  if (tab === 'canvas') renderCanvas();
-  if (tab === 'integrations') renderIntegrations();
+  sendHubView();
+  renderActiveTool();
+}
+
+// Draws whichever tool is open. The board is always kept current, the others only while they are shown.
+function renderActiveTool() {
+  if (!hub) return;
+  if (hubTab === 'kanban') return;      // renderBoard() runs on every change anyway
+  if (hubTab === 'canvas') return renderCanvas();
+  if (hubTab === 'integrations') return renderIntegrations();
+  const tool = hubTools[hubTab];
+  if (tool) {
+    try { tool.render(); } catch (err) { console.error('Project Hub tool failed to draw:', hubTab, err); }
+  }
 }
 
 // ==========================================
@@ -303,6 +332,11 @@ function renderHubHeader() {
   }
   if (hub.board.figma_url) {
     chips.push(`<button type="button" onclick="switchHubTab('integrations')" class="inline-flex items-center gap-1 text-primary font-medium bg-primary-fixed/30 px-2 py-0.5 rounded border border-primary-fixed-dim/40 hover:bg-primary-fixed/50 transition-colors"><span class="material-symbols-outlined text-[14px]">draw</span>Figma file linked</button>`);
+  }
+  if (hub.tasks.length === 0 && hubIsAdmin()) {
+    chips.push(`<button type="button" onclick="openTemplatePicker()" class="inline-flex items-center gap-1 text-primary font-semibold bg-primary-fixed/40 px-2 py-0.5 rounded border border-primary-fixed-dim/50 hover:bg-primary-fixed/60 transition-colors"><span class="material-symbols-outlined text-[14px]">auto_awesome</span>Start from a template</button>`);
+  } else if (hubIsAdmin()) {
+    chips.push(`<button type="button" onclick="openTemplatePicker()" class="inline-flex items-center gap-1 text-on-surface-variant font-medium px-2 py-0.5 rounded hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[14px]">auto_awesome</span>Templates</button>`);
   }
   if (hub.board.updated_at) {
     chips.push(`<span class="text-secondary font-body-sm text-body-sm flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span>Updated ${escapeHtml(relativeTime(hub.board.updated_at))}</span>`);
@@ -353,13 +387,14 @@ function taskCardHtml(task) {
   const overdue = task.due_date && task.column !== 'done' && task.due_date < todayIso();
   const priorityClass = { high: 'text-error', medium: 'text-secondary', low: 'text-on-surface-variant' }[task.priority];
   return `
-    <div class="task-card group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col gap-2" draggable="true" data-task-id="${task.id}" onclick="openTaskModal(${task.id})" ondragstart="onTaskDragStart(event, ${task.id})" ondragend="onTaskDragEnd(event)">
+    <div class="task-card group bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col gap-2" draggable="true" data-task-id="${task.id}" onclick="openTaskDrawer(${task.id})" ondragstart="onTaskDragStart(event, ${task.id})" ondragend="onTaskDragEnd(event)">
       <div class="flex items-center justify-between gap-2 min-h-[20px]">
         ${task.tag ? `<span class="font-skill-pill text-skill-pill font-semibold px-2 py-0.5 rounded tracking-wider uppercase truncate ${tagStyle(task.tag)}">${escapeHtml(task.tag)}</span>` : '<span></span>'}
         <button type="button" class="material-symbols-outlined text-[18px] text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity card-menu-btn" title="Task actions" onclick="event.stopPropagation(); openCardMenu(event, ${task.id})">more_horiz</button>
       </div>
       <h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug break-words">${escapeHtml(task.title)}</h3>
       ${task.description ? `<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 break-words">${escapeHtml(task.description)}</p>` : ''}
+      ${taskBadgesHtml(task)}
       <div class="pt-2 mt-1 border-t border-outline-variant/20 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 font-label-sm text-label-sm">
           <span class="flex items-center gap-0.5 ${priorityClass} font-medium" title="Priority: ${task.priority}"><span class="material-symbols-outlined text-[14px]">flag</span>${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>
@@ -523,6 +558,8 @@ function removeTaskLocally(taskId) {
   hub.tasks = hub.tasks.filter(t => t.id !== taskId);
   renderBoard();
   touchBoardUpdated();
+  renderActiveTool();
+  hubTaskChanged(taskId, true);
 }
 
 // ===== NEW / EDIT TASK =====
@@ -592,6 +629,8 @@ function applyTask(task) {
   if (index === -1) hub.tasks.push(task); else hub.tasks[index] = task;
   renderBoard();
   touchBoardUpdated();
+  renderActiveTool();
+  hubTaskChanged(task.id);
 }
 
 function deleteTaskFromModal() {
@@ -915,6 +954,7 @@ function openHubSocket(teamId) {
   socket.onopen = () => {
     hubSocketRetry = 1000;
     el('hub-connection').classList.add('hidden');
+    sendHubView();
     // Changes may have been made while we were disconnected
     if (hubSocketWasOpen && hubTeamId === teamId) refreshHubBoard(teamId);
     hubSocketWasOpen = true;
@@ -995,8 +1035,18 @@ function handleHubEvent(teamId, data) {
       return renderTeamPicker();
     }
 
+    case 'hub_presence':
+      hubViewers = data.viewers || [];
+      return renderHubHere();
+
     case 'team_deleted':
       return dropHubTeam(teamId, 'This workspace was deleted.');
+
+    case 'board_reload':
+      return refreshHubBoard(teamId);
+
+    default:
+      return hubToolsEvent(data);       // sprints, plan entries, comments, time (hub-tools.js)
 
     case 'evicted':
       return dropHubTeam(teamId, data.reason === 'removed' ? 'You were removed from that workspace.' : '');
@@ -1487,4 +1537,35 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initHub);
 } else {
   initHub();
+}
+
+// ==========================================
+// 9. WHO IS HERE (teammates with Project Hub open, and on which tool)
+// ==========================================
+let hubViewers = [];
+
+function hubTabExists(tab) {
+  return HUB_TABS.includes(tab);
+}
+
+function hubTabLabel(tab) {
+  const found = HUB_TAB_LIST.find(t => t.name === tab);
+  return found ? found.label : tab;
+}
+
+function sendHubView() {
+  if (hubSocket && hubSocket.readyState === WebSocket.OPEN) {
+    try { hubSocket.send(JSON.stringify({ type: 'hub_view', tab: hubTab })); } catch (e) { /* reconnects by itself */ }
+  }
+}
+
+function renderHubHere() {
+  const box = el('hub-here');
+  if (!box) return;
+  const others = hubViewers.filter(v => v.user_id !== currentUserId);
+  box.classList.toggle('hidden', others.length === 0);
+  box.classList.toggle('flex', others.length > 0);
+  box.innerHTML = others.length === 0 ? '' : `<span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-60 animate-ping"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-tertiary"></span></span>
+    <span class="hidden sm:inline">Here now</span>
+    <span class="flex -space-x-2">${others.slice(0, 5).map(v => `<button type="button" class="rounded-full ring-2 ring-surface-container-lowest" onclick="switchHubTab('${escapeHtml(v.tab)}')" title="${escapeHtml(v.name)} · ${escapeHtml(hubTabLabel(v.tab))}">${memberAvatarHtml({ user_id: v.user_id, user_name: v.name, user_profile_pic: v.profile_pic }, 'h-7 w-7', 'text-[11px]')}</button>`).join('')}</span>`;
 }

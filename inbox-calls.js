@@ -117,13 +117,14 @@ function onCallConnected() {
   setCallStatus('Connected');
   updateCallVideoLayout();
   call.timerInterval = setInterval(() => {
-    if (call) el('call-timer').textContent = formatDuration((Date.now() - call.startedAt) / 1000).padStart(5, '0');
+    if (call) { el('call-timer').textContent = formatDuration((Date.now() - call.startedAt) / 1000).padStart(5, '0'); if (call.minimized || CallDock.mode !== 'call') CallDock.refresh(); }
   }, 1000);
 }
 
 // ===== CALL WINDOW =====
 function setCallStatus(text) {
   el('call-status').textContent = text;
+  CallDock.refresh();
 }
 
 function setCallButton(buttonId, icon, isOff, title) {
@@ -196,6 +197,7 @@ async function startCall(media) {
   const callId = newTempId();
   call = createCall({ id: callId, peerId, media, role: 'caller', stream });
   showCallWindow();
+  CallDock.activate(directCallSession());
   setCallStatus('Calling...');
   startTone('ringback');
 
@@ -273,6 +275,7 @@ async function acceptIncomingCall() {
   call = createCall({ id: offer.id, peerId: offer.from, media: offer.media, role: 'callee', stream });
   call.state = 'connecting';
   showCallWindow();
+  CallDock.activate(directCallSession());
   setCallStatus('Connecting...');
   wsSend({ type: 'call_taken', to: currentUserId, call_id: offer.id });
 
@@ -364,6 +367,7 @@ function endCall({ notifyPeer, reason, note = true }) {
   stopStream(ended.localStream);
   stopStream(ended.screenStream);
   hideCallWindow();
+  CallDock.deactivate();
 
   const seconds = ended.startedAt ? Math.round((Date.now() - ended.startedAt) / 1000) : 0;
   showToast(reason || (ended.startedAt ? `Call ended · ${formatDuration(seconds)}` : 'Call ended.'));
@@ -436,8 +440,46 @@ async function stopScreenShare() {
   }
 }
 
-// Leaving the page ends the call for the other person too
-window.addEventListener('beforeunload', () => {
+// Leaving the page ends the call for the other person too. 'pagehide' fires only once the page is really left
+// ('beforeunload' also fires when the person is asked "leave this page?" and stays).
+window.addEventListener('pagehide', () => {
   if (call) wsSend({ type: 'call_end', to: call.peerId, call_id: call.id });
   if (incomingCall) wsSend({ type: 'call_decline', to: incomingCall.from, call_id: incomingCall.id });
 });
+
+// ===== STAYING IN THE CALL WHILE USING OTHER PAGES (call-dock.js) =====
+// The call window can step aside: the call goes on, with a small bar to bring it back
+function minimizeCallWindow() {
+  if (!call) return;
+  el('call-modal').classList.remove('active');
+  call.minimized = true;
+  CallDock.refresh();
+}
+
+function restoreCallWindow() {
+  if (!call) return;
+  call.minimized = false;
+  el('call-modal').classList.add('active');
+  updateCallVideoLayout();
+  CallDock.refresh();
+}
+
+function directCallSession() {
+  const audioOn = () => { const t = call && call.localStream.getAudioTracks()[0]; return !t || t.enabled; };
+  return {
+    title: () => (call && contacts[call.peerId] ? contacts[call.peerId].name : 'Call'),
+    subtitle: () => (!call ? '' : call.state === 'connected' ? `${call.media === 'video' ? 'Video' : 'Voice'} call · ${el('call-timer').textContent}` : el('call-status').textContent),
+    controls: () => !call ? [] : [
+      { icon: audioOn() ? 'mic' : 'mic_off', off: !audioOn(), title: audioOn() ? 'Mute microphone' : 'Unmute microphone', onClick: toggleCallMute },
+      ...(call.media === 'video' && call.cameraTrack ? [{ icon: call.cameraTrack.enabled ? 'videocam' : 'videocam_off', off: !call.cameraTrack.enabled, title: 'Camera', onClick: toggleCallCamera }] : []),
+      ...(call.media === 'video' && navigator.mediaDevices.getDisplayMedia ? [{ icon: call.screenStream ? 'stop_screen_share' : 'screen_share', on: !!call.screenStream, phoneHidden: true, title: call.screenStream ? 'Stop sharing' : 'Share screen', onClick: toggleScreenShare }] : []),
+      { icon: 'call_end', danger: true, title: 'End call', onClick: hangUpCall },
+    ],
+    isCallViewOpen: () => el('call-modal').classList.contains('active'),
+    showCall: restoreCallWindow,
+    hideCall: minimizeCallWindow,
+    minimized: () => !!(call && call.minimized),
+    end: hangUpCall,
+    pipElement: () => (call && call.media === 'video' ? el('call-remote-video') : null),
+  };
+}

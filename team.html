@@ -143,6 +143,7 @@
   }
 </style>
 <link href="header.css" rel="stylesheet"/>
+<link href="call-dock.css" rel="stylesheet"/>
 <script src="shared.js"></script>
 </head>
 <body class="h-full flex flex-col overflow-hidden font-sans select-none">
@@ -252,6 +253,9 @@
             </button>
             <button type="button" onclick="openCallView()" class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors" title="Open call view">
               <span class="material-symbols-outlined text-[16px]">open_in_full</span>
+            </button>
+            <button type="button" onclick="CallDock.open(teamCallSession().plan.url(), 'split')" class="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-slate-100 rounded transition-colors" title="Plan together: Project Hub beside the call">
+              <span class="material-symbols-outlined text-[16px]">view_kanban</span>
             </button>
             <button type="button" onclick="leaveVoice()" class="p-1.5 text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors" title="Leave">
               <span class="material-symbols-outlined text-[16px]">call_end</span>
@@ -428,9 +432,17 @@
 <div id="call-overlay" class="call-overlay">
   <div class="h-12 flex-none flex items-center justify-between px-5 text-white">
     <p class="text-sm font-bold truncate" id="call-title"></p>
-    <button type="button" onclick="closeCallView()" class="p-1.5 rounded-lg hover:bg-white/10" title="Back to chat (stay in the call)">
-      <span class="material-symbols-outlined">close_fullscreen</span>
-    </button>
+    <div class="flex items-center gap-1">
+      <button type="button" onclick="CallDock.open(teamCallSession().plan.url(), 'split')" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20" title="Open Project Hub beside the call">
+        <span class="material-symbols-outlined text-[18px]">view_kanban</span>Plan together
+      </button>
+      <button type="button" onclick="CallDock.open('home.html')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20" title="Use the rest of the site without leaving the call">
+        <span class="material-symbols-outlined text-[18px]">open_in_new</span><span class="hidden sm:inline">Open another page</span>
+      </button>
+      <button type="button" onclick="closeCallView()" class="p-1.5 rounded-lg hover:bg-white/10" title="Back to chat (stay in the call)">
+        <span class="material-symbols-outlined">close_fullscreen</span>
+      </button>
+    </div>
   </div>
   <div class="flex-1 flex items-center justify-center p-4 overflow-auto">
     <div class="grid gap-3 w-full max-w-5xl" id="video-grid"></div>
@@ -622,6 +634,7 @@
 <!-- Scripts -->
 <script src="chat-common.js"></script>
 <script src="team.js"></script>
+<script src="call-dock.js"></script>
 <script src="team-calls.js"></script>
 </body>
 </html>

@@ -1,0 +1,76 @@
+/* Call dock (call-dock.js): other pages open beside or over the call, which keeps running. */
+:root { --dock-w: 0px; }
+
+.cd-dock { position: fixed; inset: 0; z-index: 9500; display: flex; flex-direction: column; background: #f8f9ff; }
+.cd-dock[hidden], .cd-bar[hidden], .cd-splitter[hidden], .cd-menu[hidden], .cd-bar [hidden] { display: none !important; }
+.cd-dock.is-split { left: auto; width: var(--dock-w); border-left: 1px solid #c7c4d8; box-shadow: -8px 0 24px rgba(11,28,48,0.08); }
+.cd-dock iframe { flex: 1; width: 100%; border: 0; background: #f8f9ff; }
+.cd-frame-bar { flex: none; height: 40px; display: flex; align-items: center; gap: 4px; padding: 0 8px; background: #0b1c30; color: #fff; font: 600 13px Inter, system-ui, sans-serif; }
+.cd-frame-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; }
+
+.cd-icon { width: 32px; height: 32px; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.cd-icon:hover { background: rgba(255,255,255,0.12); }
+.cd-icon .material-symbols-outlined, .cd-ctl .material-symbols-outlined, .cd-pill .material-symbols-outlined { font-size: 19px; width: 1em; height: 1em; overflow: hidden; line-height: 1; }
+
+/* Side by side: the calling page gives up the right-hand part of the screen */
+.cd-splitter { position: fixed; top: 0; bottom: 0; right: var(--dock-w); width: 8px; margin-right: -4px; z-index: 9600; cursor: col-resize; }
+.cd-splitter::after { content: ''; position: absolute; top: 50%; left: 2px; width: 4px; height: 44px; margin-top: -22px; border-radius: 4px; background: #c7c4d8; }
+.cd-splitter:hover::after { background: #4f46e5; }
+body.dock-split { margin-right: var(--dock-w) !important; }
+body.dock-split .app-header, body.dock-split .call-overlay, body.dock-split .modal-overlay, body.dock-split .app-tabbar { right: var(--dock-w) !important; width: auto !important; }
+body.dock-split .chat-toast { left: calc((100vw - var(--dock-w)) / 2); }
+body.cd-resizing, body.cd-resizing * { user-select: none !important; }
+body.cd-resizing iframe { pointer-events: none; }     /* the frame would swallow the drag */
+
+/* The floating call bar */
+.cd-bar { position: fixed; right: 16px; bottom: 16px; z-index: 10010; display: flex; align-items: center; gap: 4px; max-width: calc(100vw - 32px);
+  padding: 6px 8px; border-radius: 16px; background: #0b1c30; color: #fff; box-shadow: 0 10px 30px rgba(11,28,48,0.35); font: 13px Inter, system-ui, sans-serif; }
+.cd-bar.is-placed { right: auto; bottom: auto; }
+.cd-grip { display: inline-flex; color: #8e8ba3; cursor: grab; }
+.cd-live { width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex: none; box-shadow: 0 0 0 3px rgba(16,185,129,0.25); }
+.cd-bar.is-ended .cd-live { background: #8e8ba3; box-shadow: none; }
+.cd-bar-text { display: flex; flex-direction: column; min-width: 0; max-width: 180px; padding: 0 6px; line-height: 1.2; }
+.cd-bar-text strong { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-bar-text small { font-size: 11px; color: #c3c0ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-bar-controls { display: flex; align-items: center; gap: 4px; }
+.cd-ctl { width: 36px; height: 36px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center; background: #213145; color: #fff; cursor: pointer; }
+.cd-ctl:hover { background: #2d3f57; }
+.cd-ctl.is-off { background: #ba1a1a; }
+.cd-ctl.is-on { background: #047857; }
+.cd-ctl.is-danger { background: #ba1a1a; width: 44px; border-radius: 18px; }
+.cd-ctl.is-danger:hover { background: #93000a; }
+.cd-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 4px; }
+.cd-pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 17px; border: 0; background: #3525cd; color: #fff; font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.cd-pill:hover { background: #4f46e5; }
+.cd-pill.is-quiet { background: #213145; }
+
+.cd-menu-wrap { position: relative; }
+.cd-menu { position: absolute; bottom: calc(100% + 10px); right: -40px; min-width: 240px; padding: 6px; border-radius: 12px; background: #fff; color: #0b1c30; box-shadow: 0 12px 32px rgba(11,28,48,0.25); border: 1px solid #c7c4d8; }
+.cd-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: inherit; font: 500 13px Inter, system-ui, sans-serif; text-align: left; cursor: pointer; }
+.cd-menu button:hover { background: #eff4ff; color: #3525cd; }
+.cd-menu .material-symbols-outlined { font-size: 18px; color: #3525cd; }
+
+.cd-bar.is-strip { position: static; flex: none; max-width: none; border-radius: 0; box-shadow: none; padding: 4px 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+.cd-bar.is-strip .cd-grip { display: none; }
+.cd-bar.is-strip .cd-bar-text { flex: 1; max-width: none; }
+.cd-bar.is-strip .cd-menu { bottom: auto; top: calc(100% + 6px); right: 0; }
+.cd-bar.is-strip [data-cd="mode"] { display: none; }     /* the title strip above has the same button */
+
+/* "Plan together" invitation from someone in the call */
+.cd-invite { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 10020; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px;
+  border-radius: 14px; background: #fff; color: #0b1c30; border: 1px solid #c7c4d8; box-shadow: 0 12px 32px rgba(11,28,48,0.2); font: 13px Inter, system-ui, sans-serif; max-width: calc(100vw - 32px); }
+.cd-invite .cd-pill.is-quiet { background: #eff4ff; color: #3525cd; }
+
+/* Popped-out video window */
+body.cd-pip { margin: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+body.cd-pip #video-grid { width: 100%; padding: 6px; }
+
+@media (max-width: 767px) {
+  .cd-desktop { display: none !important; }
+  .cd-bar { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); max-width: none; justify-content: space-between; }
+  .cd-grip { display: none; }
+  .cd-bar-text { max-width: 110px; }
+  .cd-pill span:last-child { display: none; }
+  .cd-pill { padding: 0 10px; }
+  .cd-menu { right: -90px; }
+}

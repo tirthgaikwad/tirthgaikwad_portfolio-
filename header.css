@@ -146,3 +146,7 @@
 .c2m-badge.plan { background: #eef2ff; color: #3525cd; box-shadow: inset 0 0 0 1px #c7d2fe; }
 .c2m-badge + .c2m-badge { margin-left: 3px; }
 .app-user-head strong .c2m-badge { margin-left: 4px; }
+
+/* A page opened inside the call dock (call-dock.js): the calling page around it has its own call bar */
+html.in-dock .app-tabbar, html.in-dock footer { display: none !important; }
+html.in-dock body.has-tabbar { padding-bottom: 0 !important; }

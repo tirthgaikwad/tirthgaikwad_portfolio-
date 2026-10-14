@@ -1320,7 +1320,7 @@ function handleTeamEvent(teamId, data) {
       return;
   }
 
-  if (data.type && (data.type.startsWith('voice_') || data.type === 'rtc')) {
+  if (data.type && (data.type.startsWith('voice_') || data.type === 'rtc' || data.type === 'plan_invite')) {
     if (typeof handleVoiceEvent === 'function') handleVoiceEvent(teamId, data);
   }
 }

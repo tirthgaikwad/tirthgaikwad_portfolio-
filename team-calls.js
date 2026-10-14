@@ -75,6 +75,10 @@ function handleVoiceEvent(teamId, data) {
     case 'rtc':
       if (voice && voice.room === data.room) handleRtc(data.from, data.data || {});
       return;
+
+    case 'plan_invite':
+      showPlanInvite({ ...data, team_id: teamId });
+      return;
   }
 }
 
@@ -146,6 +150,7 @@ async function joinRoom(channelId, options) {
     wantVideo: !!options.video, openView: !!options.openView
   };
   updateVoiceUi();
+  CallDock.activate(teamCallSession());
   if (!teamSocketSend({ type: 'voice_join', channel_id: channelId })) {
     teardownVoice();
     showToast('Not connected right now. Try again in a moment.');
@@ -171,6 +176,7 @@ function teardownVoice() {
   el('video-grid').innerHTML = '';
   closeCallView();
   updateVoiceUi();
+  CallDock.deactivate();
 }
 
 // ==========================================
@@ -350,10 +356,12 @@ function openCallView() {
   el('call-title').textContent = !channel ? 'Call' : (channel.channel_type === 'voice' ? `🔊 ${channel.name}` : `📞 Call in #${channel.name}`);
   el('call-overlay').classList.add('active');
   renderCallTiles();
+  CallDock.refresh();
 }
 
 function closeCallView() {
   el('call-overlay').classList.remove('active');
+  CallDock.refresh();
 }
 
 // ==========================================
@@ -387,6 +395,7 @@ function updateVoiceUi() {
   renderVoiceChannels();
   renderCallBanner();
   if (voice) renderCallTiles();
+  CallDock.refresh();
 }
 
 function renderVoiceChannels() {
@@ -531,4 +540,62 @@ function startSpeakingMeter() {
       Object.entries(voice.peers).forEach(([peerId, peer]) => mark(peerId, levelOf(peer, peer.stream) > 12));
     } catch (e) { /* a stream ended between ticks */ }
   }, 250);
+}
+
+// ==========================================
+// 6. STAYING IN THE CALL WHILE USING OTHER PAGES (call-dock.js)
+// ==========================================
+function voiceChannelName() {
+  if (!voice) return 'Call';
+  const channel = (workspaces[voice.teamId] || { channels: [] }).channels.find(c => c.id === voice.channelId);
+  if (!channel) return 'Call';
+  return channel.channel_type === 'voice' ? channel.name : `Call in #${channel.name}`;
+}
+
+function teamCallSession() {
+  return {
+    title: voiceChannelName,
+    subtitle: () => {
+      if (!voice || !voice.room) return 'Connecting…';
+      const count = roomParticipants(voice.room).length;
+      const team = workspaces[voice.teamId];
+      return `${count} in the call${team && team.team ? ` · ${team.team.name}` : ''}`;
+    },
+    controls: () => !voice ? [] : [
+      { icon: voice.muted ? 'mic_off' : 'mic', off: voice.muted, title: voice.muted ? 'Unmute microphone' : 'Mute microphone', onClick: toggleVoiceMute },
+      { icon: voice.cameraTrack ? 'videocam' : 'videocam_off', off: !voice.cameraTrack, title: voice.cameraTrack ? 'Turn camera off' : 'Turn camera on', onClick: toggleVoiceCamera },
+      { icon: voice.screenStream ? 'stop_screen_share' : 'screen_share', on: !!voice.screenStream, phoneHidden: true, title: voice.screenStream ? 'Stop sharing' : 'Share screen', onClick: toggleVoiceScreenShare },
+      { icon: 'call_end', danger: true, title: 'Leave the call', onClick: leaveVoice },
+    ],
+    isCallViewOpen: () => el('call-overlay').classList.contains('active'),
+    showCall: openCallView,
+    hideCall: closeCallView,
+    minimized: () => false,     // the Teams page shows its own voice panel when the call view is closed
+    end: leaveVoice,
+    pipElement: () => (voice && el('video-grid').children.length ? el('video-grid') : null),
+    plan: {
+      label: 'Plan together in Project Hub',
+      url: () => `project_management.html?team=${voice ? voice.teamId : activeTeamId}`,
+      invite: () => teamSocketSend({ type: 'plan_invite', tab: '' }),
+    },
+  };
+}
+
+// Someone in the call asked everyone to open Project Hub
+function showPlanInvite(data) {
+  if (!voice || voice.teamId !== data.team_id) return;
+  document.querySelector('.cd-invite')?.remove();
+  const box = document.createElement('div');
+  box.className = 'cd-invite';
+  box.innerHTML = `<span><strong>${escapeHtml(data.name)}</strong> is planning in Project Hub. Open it side by side?</span>
+    <button type="button" class="cd-pill" data-act="open">Open</button><button type="button" class="cd-pill is-quiet" data-act="no">Not now</button>`;
+  box.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    box.remove();
+    if (act.dataset.act === 'open') CallDock.open(`project_management.html?team=${data.team_id}${data.tab ? `&tab=${encodeURIComponent(data.tab)}` : ''}`, 'split');
+  });
+  document.body.appendChild(box);
+  playTone(880, 0.12, 0.05);
+  setTimeout(() => box.remove(), 20000);
 }

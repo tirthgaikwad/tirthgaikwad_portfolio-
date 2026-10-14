@@ -330,6 +330,14 @@ class DBTeamTask(Base):
     created_by = Column(Integer)
     created_at = Column(String)
     updated_at = Column(String)
+    # Section 27: planning
+    start_date = Column(String, default="")       # YYYY-MM-DD or empty
+    estimate_hours = Column(Float, nullable=True)
+    sprint_id = Column(Integer, nullable=True, index=True)   # empty: in the backlog
+    is_milestone = Column(Integer, default=0)
+    depends_on = Column(String, default="[]")      # JSON list of task ids this one waits for
+    checklist = Column(String, default="[]")       # JSON [{id, text, done}]
+    done_at = Column(String, default="")           # when it last moved to Done (for the burndown)
 
 class DBTeamBoard(Base):
     __tablename__ = "team_boards"
@@ -474,6 +482,15 @@ SCHEMA_UPGRADES = [
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_digest_at VARCHAR DEFAULT ''",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS delete_after VARCHAR DEFAULT ''",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS status_before_delete VARCHAR DEFAULT ''",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS start_date VARCHAR DEFAULT ''",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS estimate_hours DOUBLE PRECISION",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS sprint_id INTEGER",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS is_milestone INTEGER DEFAULT 0",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS depends_on VARCHAR DEFAULT '[]'",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS checklist VARCHAR DEFAULT '[]'",
+    "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS done_at VARCHAR DEFAULT ''",
+    "CREATE INDEX IF NOT EXISTS ix_team_tasks_sprint_id ON team_tasks (sprint_id)",
+    "UPDATE team_tasks SET done_at = updated_at WHERE status = 'done' AND COALESCE(done_at, '') = ''",
 ]
 
 async def backfill_cleared_chats():
@@ -609,6 +626,14 @@ class TeamHub:
 
     def user_ids(self) -> set:
         return {user["id"] for connections in self.teams.values() for user in connections.values()}
+
+    def hub_viewers(self, team_id: int) -> list:
+        """Who has Project Hub open for this team, and on which tool (sent by the page, never stored)."""
+        seen = {}
+        for user in self.teams.get(team_id, {}).values():
+            if user.get("view"):
+                seen[user["id"]] = {"user_id": user["id"], "name": user["name"], "profile_pic": user["profile_pic"], "tab": user["view"]}
+        return list(seen.values())
 
     def sockets_of(self, team_id: int, user_id: int) -> list:
         return [ws for ws, user in self.teams.get(team_id, {}).items() if user["id"] == user_id]
@@ -4029,6 +4054,25 @@ async def team_websocket_endpoint(websocket: WebSocket, team_id: int, user_id: i
                                 member[key] = bool(msg[key])
                         await team_hub.broadcast(team_id, {"type": "voice_state", "voice": team_hub.voice_state(team_id)})
 
+                elif msg_type == "plan_invite":
+                    # "Plan together": everyone else in the caller's room is asked to open Project Hub
+                    room = team_hub.room_of(websocket)
+                    if room:
+                        payload = json.dumps({"type": "plan_invite", "from": user_id, "name": user["name"], "tab": str(msg.get("tab") or "")[:30]})
+                        for other_id, member in list(team_hub.rooms.get(room, {}).items()):
+                            if other_id != user_id:
+                                try:
+                                    await member["ws"].send_text(payload)
+                                except Exception:
+                                    pass
+
+                elif msg_type == "hub_view":
+                    # Project Hub tells which tool this person is looking at, so teammates see who is where
+                    tab = str(msg.get("tab") or "")[:30]
+                    if user.get("view") != tab:
+                        user["view"] = tab
+                        await team_hub.broadcast(team_id, {"type": "hub_presence", "viewers": team_hub.hub_viewers(team_id)})
+
                 elif msg_type == "rtc":
                     # WebRTC set-up messages go only to another person in the same room
                     room = team_hub.room_of(websocket)
@@ -4048,6 +4092,8 @@ async def team_websocket_endpoint(websocket: WebSocket, team_id: int, user_id: i
     finally:
         await leave_voice_room(team_id, websocket, user)
         team_hub.disconnect(team_id, websocket)
+        if user.get("view"):
+            await team_hub.broadcast(team_id, {"type": "hub_presence", "viewers": team_hub.hub_viewers(team_id)})
         if not is_user_online(user_id):
             await broadcast_presence(user_id, False)
 
@@ -4088,6 +4134,13 @@ class TaskCreate(BaseModel):
     priority: Optional[str] = "medium"
     assignee_id: Optional[int] = None
     due_date: Optional[str] = ""
+    # Section 27
+    start_date: Optional[str] = None
+    estimate_hours: Optional[float] = None
+    sprint_id: Optional[int] = None
+    is_milestone: Optional[bool] = None
+    depends_on: Optional[List[int]] = None
+    checklist: Optional[list] = None
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -4099,6 +4152,15 @@ class TaskUpdate(BaseModel):
     assignee_id: Optional[int] = None
     clear_assignee: Optional[bool] = False
     due_date: Optional[str] = None
+    # Section 27
+    start_date: Optional[str] = None
+    estimate_hours: Optional[float] = None
+    clear_estimate: Optional[bool] = False
+    sprint_id: Optional[int] = None
+    to_backlog: Optional[bool] = False
+    is_milestone: Optional[bool] = None
+    depends_on: Optional[List[int]] = None
+    checklist: Optional[list] = None
 
 class BoardUpdate(BaseModel):
     name: Optional[str] = None
@@ -4125,7 +4187,8 @@ def serialize_task(task) -> dict:
         "due_date": task.due_date or "",
         "created_by": task.created_by,
         "created_at": task.created_at,
-        "updated_at": task.updated_at
+        "updated_at": task.updated_at,
+        **task_extra_fields(task),
     }
 
 def serialize_board(board, team_name: str) -> dict:
@@ -4186,11 +4249,15 @@ async def touch_board(team_id: int, **values):
 @app.get("/api/teams/{team_id}/board")
 async def get_team_board(team_id: int, current_user_id: int = Depends(get_current_user_id)):
     """Everything Project Hub needs for one workspace, with the reads running side by side."""
-    team_rows, member_rows, task_rows, board_rows = await asyncio.gather(
+    team_rows, member_rows, task_rows, board_rows, sprint_rows, item_rows, comment_rows, time_rows = await asyncio.gather(
         fetch_one_off(select(DBTeam.id, DBTeam.name, DBTeam.description, DBTeam.created_by).filter(DBTeam.id == team_id)),
         fetch_one_off(members_query(team_id)),
         fetch_one_off(select(DBTeamTask).filter(DBTeamTask.team_id == team_id).order_by(DBTeamTask.position.asc(), DBTeamTask.id.asc())),
         fetch_one_off(select(DBTeamBoard).filter(DBTeamBoard.team_id == team_id)),
+        fetch_one_off(select(DBTeamSprint).where(DBTeamSprint.team_id == team_id).order_by(DBTeamSprint.start_date, DBTeamSprint.id)),
+        fetch_one_off(select(DBProjectItem).where(DBProjectItem.team_id == team_id).order_by(DBProjectItem.kind, DBProjectItem.position, DBProjectItem.id)),
+        fetch_one_off(select(DBTaskComment.task_id, func.count()).where(DBTaskComment.team_id == team_id).group_by(DBTaskComment.task_id)),
+        fetch_one_off(select(DBTimeEntry).where(DBTimeEntry.team_id == team_id).order_by(DBTimeEntry.id.desc()).limit(3000)),
     )
     if not team_rows:
         raise HTTPException(status_code=404, detail="Team not found.")
@@ -4210,7 +4277,11 @@ async def get_team_board(team_id: int, current_user_id: int = Depends(get_curren
         "members": members,
         "board": serialize_board(board, team.name),
         "tasks": [serialize_task(task) for (task,) in task_rows],
-        "canvas": canvas
+        "canvas": canvas,
+        "sprints": [serialize_sprint(sprint) for (sprint,) in sprint_rows],
+        "items": [serialize_item(item) for (item,) in item_rows],
+        "comment_counts": {str(task_id): count for task_id, count in comment_rows},
+        "time": [serialize_time(entry) for (entry,) in time_rows],
     }
 
 
@@ -4250,6 +4321,15 @@ async def create_task(team_id: int, data: TaskCreate, db: AsyncSession = Depends
     values = clean_task_fields(data, partial=False)
     values.setdefault("status", "todo")
     await check_assignee(db, team_id, data.assignee_id)
+    values.update(clean_task_extras(data, partial=False))
+    check_dates_order(values.get("start_date", ""), values.get("due_date", ""))
+    await check_sprint(db, team_id, data.sprint_id)
+    if data.sprint_id is not None:
+        values["sprint_id"] = data.sprint_id
+    if data.depends_on:
+        values["depends_on"] = json.dumps(await check_dependencies(db, team_id, None, data.depends_on))
+    if values["status"] == "done":
+        values["done_at"] = utc_now_iso()
 
     now_iso = utc_now_iso()
     # New tasks go to the bottom of their column
@@ -4267,6 +4347,7 @@ async def create_task(team_id: int, data: TaskCreate, db: AsyncSession = Depends
     task = serialize_task(result.first())
     await team_hub.broadcast(team_id, {"type": "task_created", "task": task, "by": current_user_id})
     spawn_background(touch_board(team_id))
+    spawn_background(record_activity(team_id, task["id"], current_user_id, [("created", "created the task")]))
     return task
 
 
@@ -4299,8 +4380,20 @@ async def update_task(task_id: int, data: TaskUpdate, db: AsyncSession = Depends
     elif data.assignee_id is not None:
         await check_assignee(db, task.team_id, data.assignee_id)
         values["assignee_id"] = data.assignee_id
+    values.update(clean_task_extras(data, partial=True))
+    check_dates_order(values.get("start_date", task.start_date or ""), values.get("due_date", task.due_date or ""))
+    if data.to_backlog:
+        values["sprint_id"] = None
+    elif data.sprint_id is not None:
+        await check_sprint(db, task.team_id, data.sprint_id)
+        values["sprint_id"] = data.sprint_id
+    if data.depends_on is not None:
+        values["depends_on"] = json.dumps(await check_dependencies(db, task.team_id, task_id, data.depends_on))
+    if "status" in values and values["status"] != (task.status or "todo"):
+        values["done_at"] = utc_now_iso() if values["status"] == "done" else ""
     if not values:
         raise HTTPException(status_code=400, detail="Nothing to change.")
+    history = describe_task_change(task, values, await team_member_names(task.team_id) if "assignee_id" in values else {})
 
     values["updated_at"] = utc_now_iso()
     result = await db.execute(update(DBTeamTask).where(DBTeamTask.id == task_id).values(**values).returning(*DBTeamTask.__table__.c))
@@ -4310,6 +4403,8 @@ async def update_task(task_id: int, data: TaskUpdate, db: AsyncSession = Depends
     updated = serialize_task(row)
     await team_hub.broadcast(task.team_id, {"type": "task_updated", "task": updated, "by": current_user_id})
     spawn_background(touch_board(task.team_id))
+    # A plain move within a column is not worth a history line
+    spawn_background(record_activity(task.team_id, task_id, current_user_id, history))
     return updated
 
 
@@ -4319,6 +4414,11 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_fast_db), cur
     if role != "Admin" and current_user_id not in (task.created_by, task.assignee_id):
         raise HTTPException(status_code=403, detail="Only the person who created it, the assignee or an Admin can delete this task.")
     await db.execute(delete(DBTeamTask).where(DBTeamTask.id == task_id))
+    await asyncio.gather(
+        run_one_off(delete(DBTaskComment).where(DBTaskComment.task_id == task_id)),
+        run_one_off(delete(DBTaskActivity).where(DBTaskActivity.task_id == task_id)),
+        run_one_off(update(DBTimeEntry).where(DBTimeEntry.task_id == task_id).values(task_id=None)),   # the hours were still worked
+    )
     await team_hub.broadcast(task.team_id, {"type": "task_deleted", "id": task_id, "by": current_user_id})
     spawn_background(touch_board(task.team_id))
     return {"status": "deleted"}
@@ -4433,6 +4533,11 @@ async def purge_team(db: AsyncSession, team_id: int):
         run_one_off(delete(DBTeam).where(DBTeam.id == team_id)),
         run_one_off(delete(DBCollegeSubmission).where(DBCollegeSubmission.group_id == team_id)),
         run_one_off(delete(DBGroupCheckin).where(DBGroupCheckin.group_id == team_id)),
+        run_one_off(delete(DBTeamSprint).where(DBTeamSprint.team_id == team_id)),
+        run_one_off(delete(DBTaskComment).where(DBTaskComment.team_id == team_id)),
+        run_one_off(delete(DBTaskActivity).where(DBTaskActivity.team_id == team_id)),
+        run_one_off(delete(DBTimeEntry).where(DBTimeEntry.team_id == team_id)),
+        run_one_off(delete(DBProjectItem).where(DBProjectItem.team_id == team_id)),
     )
 
 
@@ -10938,6 +11043,10 @@ USER_DATA_KEPT = {
     "note_votes": ("user_id",),
     "note_reports": ("user_id",),
     "practice_questions": ("created_by",),
+    "task_comments": ("user_id",),
+    "task_activity": ("user_id",),
+    "time_entries": ("user_id",),
+    "project_items": ("created_by", "updated_by"),
     # other people's own settings and decisions about this person: kept, and not part of the download
     "cleared_chats": ("cleared_with_user_id",),
     "archived_chats": ("archived_user_id",),
@@ -10948,9 +11057,6 @@ NOT_EXPORTED = {("cleared_chats", "cleared_with_user_id"), ("archived_chats", "a
                 ("admin_requests", "decided_by"), ("teacher_requests", "decided_by")}
 PROFILE_NOT_EXPORTED = {"hashed_password", "id_card_image", "invite_code", "status_before_delete"}
 
-for _table, _columns in list(USER_DATA_ERASED.items()) + list(USER_DATA_KEPT.items()):
-    for _column in _columns:
-        assert _column in Base.metadata.tables[_table].c, f"USER_DATA names {_table}.{_column}, which does not exist"
 
 def export_columns() -> dict:
     """table -> the columns whose rows belong in a person's download."""
@@ -11167,3 +11273,842 @@ async def account_delete_watch():
         except Exception as e:
             print("Error checking account deletions:", e)
         await asyncio.sleep(3600)
+
+
+# ==========================================
+# 27. PROJECT HUB PLANNING TOOLS
+# ==========================================
+# Project Hub (project_management.html) plans a Teams workspace. Section 12 holds the task board itself;
+# this section adds what a project plan needs around it:
+#   tasks: start dates, estimates, sprints, milestones, dependencies, checklists, comments and a history
+#   sprints: time boxes with a goal; finishing one moves what is left to the next sprint or the backlog
+#   items: one table for the document-like tools (brief, risks, decisions, docs, meeting notes, ideas, mind maps, roles)
+#   time: a running timer per person, or hours logged by hand
+#   templates: a ready-made plan for common kinds of student projects
+# Every change is sent to the workspace's open pages over the Teams socket (team_hub), like the board already was.
+class DBTeamSprint(Base):
+    __tablename__ = "team_sprints"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    name = Column(String)
+    goal = Column(String, default="")
+    start_date = Column(String, default="")        # YYYY-MM-DD
+    end_date = Column(String, default="")
+    status = Column(String, default="planned")     # planned, active, done
+    created_at = Column(String)
+    completed_at = Column(String, default="")
+
+class DBTaskComment(Base):
+    __tablename__ = "task_comments"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, index=True)
+    team_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    body = Column(String)
+    attachment = Column(String, default="")        # an uploaded file's address (chat-file upload)
+    created_at = Column(String)
+
+class DBTaskActivity(Base):
+    __tablename__ = "task_activity"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, index=True)
+    team_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    action = Column(String)                        # created, moved, assigned, dated, edited, commented, ...
+    detail = Column(String, default="")
+    at = Column(String)
+
+class DBTimeEntry(Base):
+    __tablename__ = "time_entries"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    task_id = Column(Integer, nullable=True, index=True)
+    user_id = Column(Integer, index=True)
+    started_at = Column(String)
+    ended_at = Column(String, default="")          # empty while the timer runs
+    minutes = Column(Integer, default=0)
+    note = Column(String, default="")
+    day = Column(String, default="")               # YYYY-MM-DD the time counts for
+
+class DBProjectItem(Base):
+    __tablename__ = "project_items"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    kind = Column(String, index=True)              # see PROJECT_ITEM_SCHEMA
+    title = Column(String, default="")
+    data = Column(String, default="{}")            # JSON, shaped by the kind's schema
+    position = Column(Float, default=0)
+    created_by = Column(Integer)
+    updated_by = Column(Integer, nullable=True)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+Index("ix_time_entries_running", DBTimeEntry.user_id, DBTimeEntry.ended_at)
+Index("ix_project_items_team_kind", DBProjectItem.team_id, DBProjectItem.kind)
+
+MAX_CHECKLIST_ITEMS = 50
+MAX_DEPENDENCIES = 20
+SPRINT_STATUSES = ("planned", "active", "done")
+
+
+def json_array(value) -> list:
+    try:
+        parsed = json.loads(value) if isinstance(value, str) else (value or [])
+    except ValueError:
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+def json_object(value) -> dict:
+    try:
+        parsed = json.loads(value) if isinstance(value, str) else (value or {})
+    except ValueError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+def clean_date(value, what: str) -> str:
+    value = (value or "").strip()
+    if value:
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"The {what} must look like 2026-12-31.")
+    return value
+
+
+# ---------- tasks: the extra fields ----------
+def clean_task_extras(data, partial: bool) -> dict:
+    """The section 27 task fields that were sent, checked. Dependencies are checked separately (they need the team's tasks)."""
+    values = {}
+    if data.start_date is not None:
+        values["start_date"] = clean_date(data.start_date, "start date")
+    if data.estimate_hours is not None:
+        if not math.isfinite(data.estimate_hours) or not (0 <= data.estimate_hours <= 1000):
+            raise HTTPException(status_code=400, detail="The estimate must be between 0 and 1000 hours.")
+        values["estimate_hours"] = round(data.estimate_hours, 2)
+    if getattr(data, "clear_estimate", False):
+        values["estimate_hours"] = None
+    if data.is_milestone is not None:
+        values["is_milestone"] = 1 if data.is_milestone else 0
+    if data.checklist is not None:
+        if len(data.checklist) > MAX_CHECKLIST_ITEMS:
+            raise HTTPException(status_code=400, detail=f"A checklist can have up to {MAX_CHECKLIST_ITEMS} items.")
+        items = []
+        for entry in data.checklist:
+            if not isinstance(entry, dict):
+                continue
+            text_ = str(entry.get("text") or "").strip()[:200]
+            if text_:
+                items.append({"id": str(entry.get("id") or uuid.uuid4().hex[:8])[:20], "text": text_, "done": bool(entry.get("done"))})
+        values["checklist"] = json.dumps(items)
+    return values
+
+def check_dates_order(start: str, due: str):
+    if start and due and start > due:
+        raise HTTPException(status_code=400, detail="The start date must be on or before the due date.")
+
+async def check_dependencies(db: AsyncSession, team_id: int, task_id: Optional[int], depends_on: list) -> list:
+    """Only tasks of the same workspace, never the task itself, and no loop (A waits for B waits for A)."""
+    wanted = list(dict.fromkeys(int(x) for x in depends_on if isinstance(x, (int, float)) and not isinstance(x, bool)))
+    if len(wanted) > MAX_DEPENDENCIES:
+        raise HTTPException(status_code=400, detail=f"A task can wait for up to {MAX_DEPENDENCIES} other tasks.")
+    if not wanted:
+        return []
+    if task_id in wanted:
+        raise HTTPException(status_code=400, detail="A task cannot wait for itself.")
+    rows = (await db.execute(select(DBTeamTask.id, DBTeamTask.depends_on).where(DBTeamTask.team_id == team_id))).all()
+    graph = {row.id: [int(x) for x in json_array(row.depends_on) if isinstance(x, int)] for row in rows}
+    missing = [x for x in wanted if x not in graph]
+    if missing:
+        raise HTTPException(status_code=400, detail="A task can only wait for tasks of this workspace.")
+    if task_id is not None:
+        graph[task_id] = wanted
+        # Walk from each dependency: reaching the task again means a loop
+        seen, stack = set(), list(wanted)
+        while stack:
+            current = stack.pop()
+            if current == task_id:
+                raise HTTPException(status_code=400, detail="That would make the tasks wait for each other in a loop.")
+            if current in seen:
+                continue
+            seen.add(current)
+            stack.extend(graph.get(current, []))
+    return wanted
+
+async def check_sprint(db: AsyncSession, team_id: int, sprint_id: Optional[int]):
+    if sprint_id is None:
+        return
+    found = (await db.execute(select(DBTeamSprint.id).where(DBTeamSprint.id == sprint_id, DBTeamSprint.team_id == team_id))).first()
+    if not found:
+        raise HTTPException(status_code=400, detail="That sprint is not part of this workspace.")
+
+def task_extra_fields(task) -> dict:
+    return {
+        "start_date": getattr(task, "start_date", "") or "",
+        "estimate_hours": getattr(task, "estimate_hours", None),
+        "sprint_id": getattr(task, "sprint_id", None),
+        "is_milestone": bool(getattr(task, "is_milestone", 0)),
+        "depends_on": [x for x in json_array(getattr(task, "depends_on", "[]")) if isinstance(x, int)],
+        "checklist": json_array(getattr(task, "checklist", "[]")),
+        "done_at": getattr(task, "done_at", "") or "",
+    }
+
+COLUMN_NAMES = {"todo": "To Do", "inprogress": "In Progress", "review": "Review", "done": "Done"}
+
+def describe_task_change(before, values: dict, members: dict) -> list:
+    """Short lines for the task's history, one per thing that changed."""
+    lines = []
+    if "status" in values and values["status"] != (before.status or "todo"):
+        lines.append(("moved", f"moved it to {COLUMN_NAMES.get(values['status'], values['status'])}"))
+    if "assignee_id" in values and values["assignee_id"] != before.assignee_id:
+        lines.append(("assigned", f"assigned it to {members.get(values['assignee_id'], 'someone')}" if values["assignee_id"] else "removed the assignee"))
+    if ("due_date" in values and values["due_date"] != (before.due_date or "")) or ("start_date" in values and values["start_date"] != (before.start_date or "")):
+        lines.append(("dated", f"set the dates to {values.get('start_date', before.start_date or '') or '…'} → {values.get('due_date', before.due_date or '') or '…'}"))
+    if "sprint_id" in values and values["sprint_id"] != before.sprint_id:
+        lines.append(("sprint", "moved it to the backlog" if values["sprint_id"] is None else "moved it to a sprint"))
+    if "title" in values and values["title"] != (before.title or ""):
+        lines.append(("edited", f"renamed it to “{values['title'][:80]}”"))
+    if "priority" in values and values["priority"] != (before.priority or "medium"):
+        lines.append(("edited", f"set the priority to {values['priority']}"))
+    if "estimate_hours" in values and values["estimate_hours"] != before.estimate_hours:
+        lines.append(("edited", f"estimated {values['estimate_hours']} h" if values["estimate_hours"] is not None else "removed the estimate"))
+    if "is_milestone" in values and values["is_milestone"] != (before.is_milestone or 0):
+        lines.append(("edited", "made it a milestone" if values["is_milestone"] else "made it a normal task"))
+    if "depends_on" in values and values["depends_on"] != (before.depends_on or "[]"):
+        lines.append(("edited", "changed what it waits for"))
+    if "description" in values and values["description"] != (before.description or ""):
+        lines.append(("edited", "edited the description"))
+    if "checklist" in values and values["checklist"] != (before.checklist or "[]"):
+        lines.append(("checklist", "updated the checklist"))
+    return lines
+
+async def record_activity(team_id: int, task_id: int, user_id: int, lines: list):
+    if not lines:
+        return
+    now_iso = utc_now_iso()
+    try:
+        await run_one_off(DBTaskActivity.__table__.insert().values([
+            {"task_id": task_id, "team_id": team_id, "user_id": user_id, "action": action, "detail": detail[:300], "at": now_iso} for action, detail in lines]))
+    except Exception as e:
+        print("Could not record task history:", e)
+
+async def team_member_names(team_id: int) -> dict:
+    rows = await fetch_one_off(select(DBTeamMember.user_id, DBUser.name).join(DBUser, DBUser.id == DBTeamMember.user_id).where(DBTeamMember.team_id == team_id))
+    return {row[0]: row[1] or "Member" for row in rows}
+
+
+@app.get("/api/tasks/{task_id}")
+async def get_task_detail(task_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """One task with its comments, history and logged time (the task drawer)."""
+    task, _ = await get_task_for_member(db, task_id, current_user_id)
+    comments, activity, time_rows = await asyncio.gather(
+        fetch_one_off(select(DBTaskComment, DBUser.name, DBUser.profile_pic).outerjoin(DBUser, DBUser.id == DBTaskComment.user_id)
+                      .where(DBTaskComment.task_id == task_id).order_by(DBTaskComment.id)),
+        fetch_one_off(select(DBTaskActivity, DBUser.name).outerjoin(DBUser, DBUser.id == DBTaskActivity.user_id)
+                      .where(DBTaskActivity.task_id == task_id).order_by(DBTaskActivity.id.desc()).limit(60)),
+        fetch_one_off(select(DBTimeEntry).where(DBTimeEntry.task_id == task_id).order_by(DBTimeEntry.id.desc()).limit(200)),
+    )
+    return {
+        "task": serialize_task(task),
+        "comments": [serialize_comment(c, name, pic) for c, name, pic in comments],
+        "activity": [{"id": a.id, "user_id": a.user_id, "name": name or "Someone", "action": a.action, "detail": a.detail, "at": a.at} for a, name in activity],
+        "time": [serialize_time(t) for (t,) in time_rows],
+    }
+
+
+# ---------- comments ----------
+class CommentBody(BaseModel):
+    body: str = ""
+    attachment: Optional[str] = ""
+    mentions: Optional[List[int]] = None
+
+def serialize_comment(comment, name, picture) -> dict:
+    return {"id": comment.id, "task_id": comment.task_id, "user_id": comment.user_id, "name": name or "Deleted user",
+            "profile_pic": picture if picture and len(picture) < 1000 else "", "body": comment.body or "",
+            "attachment": comment.attachment or "", "created_at": comment.created_at}
+
+@app.post("/api/tasks/{task_id}/comments")
+async def add_task_comment(task_id: int, body: CommentBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    task, _ = await get_task_for_member(db, task_id, current_user_id)
+    text_ = clean_text(body.body, 3000, "comment")
+    attachment = (body.attachment or "").strip()[:500]
+    if attachment and not re.match(r"^https?://[^\s]+/static/uploads/chat/[\w.\-]+$", attachment):
+        raise HTTPException(status_code=400, detail="Attach a file uploaded here.")
+    if not text_ and not attachment:
+        raise HTTPException(status_code=400, detail="Write something first.")
+    row = (await db.execute(DBTaskComment.__table__.insert().values(task_id=task_id, team_id=task.team_id, user_id=current_user_id, body=text_,
+                                                                  attachment=attachment, created_at=utc_now_iso()).returning(*DBTaskComment.__table__.c))).first()
+    me = (await db.execute(select(DBUser.name, DBUser.profile_pic).where(DBUser.id == current_user_id))).first()
+    comment = serialize_comment(row, me[0] if me else "", me[1] if me else "")
+    await team_hub.broadcast(task.team_id, {"type": "comment_added", "comment": comment, "by": current_user_id})
+    spawn_background(record_activity(task.team_id, task_id, current_user_id, [("commented", text_[:120] or "attached a file")]))
+    # @mentions: only members of the workspace, never the writer
+    members = await team_member_names(task.team_id)
+    mentioned = [uid for uid in (body.mentions or [])[:20] if uid in members and uid != current_user_id]
+    if mentioned:
+        spawn_background(notify_many(mentioned, "mention", f"{comment['name']} mentioned you on “{(task.title or '')[:60]}”",
+                                     f"project_management.html?team={task.team_id}&task={task_id}"))
+    return comment
+
+@app.delete("/api/comments/{comment_id}")
+async def delete_task_comment(comment_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    row = (await db.execute(select(DBTaskComment).where(DBTaskComment.id == comment_id))).scalars().first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    _, role = await get_team_role(db, row.team_id, current_user_id)
+    if row.user_id != current_user_id and role != "Admin":
+        raise HTTPException(status_code=403, detail="Only the writer or an Admin can delete this comment.")
+    await db.execute(delete(DBTaskComment).where(DBTaskComment.id == comment_id))
+    await team_hub.broadcast(row.team_id, {"type": "comment_deleted", "id": comment_id, "task_id": row.task_id})
+    return {"status": "deleted"}
+
+
+# ---------- sprints ----------
+class SprintBody(BaseModel):
+    name: Optional[str] = None
+    goal: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    status: Optional[str] = None
+
+class SprintCompleteBody(BaseModel):
+    move_to: Optional[int] = None          # another sprint, or nothing for the backlog
+
+def serialize_sprint(sprint) -> dict:
+    return {"id": sprint.id, "team_id": sprint.team_id, "name": sprint.name or "", "goal": sprint.goal or "", "start_date": sprint.start_date or "",
+            "end_date": sprint.end_date or "", "status": sprint.status or "planned", "created_at": sprint.created_at, "completed_at": sprint.completed_at or ""}
+
+def clean_sprint(body: SprintBody, partial: bool) -> dict:
+    values = {}
+    if body.name is not None or not partial:
+        values["name"] = clean_required(body.name, 60, "sprint name")
+    if body.goal is not None:
+        values["goal"] = clean_text(body.goal, 300, "sprint goal")
+    if body.start_date is not None:
+        values["start_date"] = clean_date(body.start_date, "start date")
+    if body.end_date is not None:
+        values["end_date"] = clean_date(body.end_date, "end date")
+    if values.get("start_date") and values.get("end_date") and values["start_date"] > values["end_date"]:
+        raise HTTPException(status_code=400, detail="The sprint must end on or after its first day.")
+    return values
+
+async def sprint_for_member(db: AsyncSession, sprint_id: int, user_id: int):
+    sprint = (await db.execute(select(DBTeamSprint).where(DBTeamSprint.id == sprint_id))).scalars().first()
+    if not sprint:
+        raise HTTPException(status_code=404, detail="Sprint not found.")
+    _, role = await get_team_role(db, sprint.team_id, user_id)
+    return sprint, role
+
+@app.post("/api/teams/{team_id}/sprints")
+async def create_sprint(team_id: int, body: SprintBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    await get_team_role(db, team_id, current_user_id)
+    values = clean_sprint(body, partial=False)
+    row = (await db.execute(DBTeamSprint.__table__.insert().values(team_id=team_id, status="planned", created_at=utc_now_iso(), **values)
+                            .returning(*DBTeamSprint.__table__.c))).first()
+    sprint = serialize_sprint(row)
+    await team_hub.broadcast(team_id, {"type": "sprint_saved", "sprint": sprint, "by": current_user_id})
+    return sprint
+
+@app.patch("/api/sprints/{sprint_id}")
+async def update_sprint(sprint_id: int, body: SprintBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    sprint, _ = await sprint_for_member(db, sprint_id, current_user_id)
+    values = clean_sprint(body, partial=True)
+    start, end = values.get("start_date", sprint.start_date or ""), values.get("end_date", sprint.end_date or "")
+    if start and end and start > end:
+        raise HTTPException(status_code=400, detail="The sprint must end on or after its first day.")
+    if body.status is not None:
+        if body.status not in ("planned", "active"):
+            raise HTTPException(status_code=400, detail="Start a sprint, or put it back to planned. Finishing one has its own button.")
+        if body.status == "active" and sprint.status != "active":
+            running = (await db.execute(select(DBTeamSprint.name).where(DBTeamSprint.team_id == sprint.team_id, DBTeamSprint.status == "active",
+                                                                       DBTeamSprint.id != sprint_id))).first()
+            if running:
+                raise HTTPException(status_code=409, detail=f"“{running[0]}” is still running. Finish it first.")
+            values.setdefault("start_date", sprint.start_date or today_iso())
+        values["status"] = body.status
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+    row = (await db.execute(update(DBTeamSprint).where(DBTeamSprint.id == sprint_id).values(**values).returning(*DBTeamSprint.__table__.c))).first()
+    saved = serialize_sprint(row)
+    await team_hub.broadcast(sprint.team_id, {"type": "sprint_saved", "sprint": saved, "by": current_user_id})
+    return saved
+
+@app.post("/api/sprints/{sprint_id}/complete")
+async def complete_sprint(sprint_id: int, body: SprintCompleteBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    """Finish a sprint. Tasks that are not done move to the chosen sprint, or back to the backlog."""
+    sprint, _ = await sprint_for_member(db, sprint_id, current_user_id)
+    if sprint.status == "done":
+        raise HTTPException(status_code=400, detail="This sprint is already finished.")
+    if body.move_to is not None:
+        if body.move_to == sprint_id:
+            raise HTTPException(status_code=400, detail="Pick another sprint for the unfinished tasks.")
+        target = (await db.execute(select(DBTeamSprint.status).where(DBTeamSprint.id == body.move_to, DBTeamSprint.team_id == sprint.team_id))).first()
+        if not target or target[0] == "done":
+            raise HTTPException(status_code=400, detail="Unfinished tasks can only move to a sprint of this workspace that is not finished.")
+    moved = (await db.execute(update(DBTeamTask).where(DBTeamTask.sprint_id == sprint_id, func.coalesce(DBTeamTask.status, "todo") != "done")
+                              .values(sprint_id=body.move_to, updated_at=utc_now_iso()).returning(DBTeamTask.id))).all()
+    row = (await db.execute(update(DBTeamSprint).where(DBTeamSprint.id == sprint_id).values(status="done", completed_at=utc_now_iso())
+                            .returning(*DBTeamSprint.__table__.c))).first()
+    saved = serialize_sprint(row)
+    await team_hub.broadcast(sprint.team_id, {"type": "sprint_saved", "sprint": saved, "by": current_user_id})
+    await team_hub.broadcast(sprint.team_id, {"type": "board_reload", "by": current_user_id})
+    return {"sprint": saved, "moved": len(moved)}
+
+@app.delete("/api/sprints/{sprint_id}")
+async def delete_sprint(sprint_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    sprint, role = await sprint_for_member(db, sprint_id, current_user_id)
+    if role != "Admin":
+        raise HTTPException(status_code=403, detail="Only Admins can delete a sprint. Its tasks go back to the backlog.")
+    await db.execute(update(DBTeamTask).where(DBTeamTask.sprint_id == sprint_id).values(sprint_id=None))
+    await db.execute(delete(DBTeamSprint).where(DBTeamSprint.id == sprint_id))
+    await team_hub.broadcast(sprint.team_id, {"type": "sprint_deleted", "id": sprint_id, "by": current_user_id})
+    await team_hub.broadcast(sprint.team_id, {"type": "board_reload", "by": current_user_id})
+    return {"status": "deleted"}
+
+
+# ---------- items: brief, risks, decisions, docs, meetings, ideas, mind maps, roles ----------
+# Each kind lists its fields: (type, limit). Types: text (one line), long (many lines), date, int range,
+# enum, words (list of short texts), member / members (workspace member ids), and a few kind-specific shapes.
+PROJECT_ITEM_SCHEMA = {
+    "brief": {"problem": ("long", 3000), "audience": ("long", 1000), "goals": ("words", (12, 300)), "scope_in": ("words", (20, 300)),
+              "scope_out": ("words", (20, 300)), "deliverables": ("words", (20, 300)), "success": ("words", (12, 300)),
+              "deadline": ("date", None), "stakeholders": ("words", (12, 160)), "notes": ("long", 4000)},
+    "risk": {"description": ("long", 2000), "likelihood": ("int", (1, 3)), "impact": ("int", (1, 3)), "owner_id": ("member", None),
+             "mitigation": ("long", 2000), "status": ("enum", ("open", "watching", "mitigated", "closed"))},
+    "decision": {"context": ("long", 3000), "decision": ("long", 3000), "reasons": ("long", 3000), "alternatives": ("long", 2000),
+                 "owner_id": ("member", None), "date": ("date", None), "status": ("enum", ("proposed", "decided", "reversed"))},
+    "doc": {"body": ("long", 60000), "pinned": ("bool", None), "icon": ("text", 4)},
+    "meeting": {"date": ("date", None), "time": ("text", 5), "attendees": ("members", None), "agenda": ("long", 4000), "notes": ("long", 20000),
+                "actions": ("actions", None)},
+    "idea": {"details": ("long", 1500), "column": ("text", 40), "color": ("enum", ("yellow", "blue", "green", "pink", "purple")), "task_id": ("int", (0, 2**31 - 1))},
+    "mindmap": {"nodes": ("nodes", None)},
+    "role": {"raci": ("raci", None), "notes": ("long", 500)},
+}
+ITEM_TITLE_LIMIT = 160
+MAX_ITEMS_PER_TEAM = 2000
+
+def clean_item_data(kind: str, data: dict, members: set, old: Optional[dict] = None) -> dict:
+    """Keep only the kind's fields, each checked and trimmed. Fields not sent keep their old value."""
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="That is not a valid entry.")
+    out = dict(old or {})
+    for field, (kind_of, limit) in PROJECT_ITEM_SCHEMA[kind].items():
+        if field not in data:
+            continue
+        value = data[field]
+        if kind_of == "text":
+            out[field] = str(value or "").strip()[:limit]
+        elif kind_of == "long":
+            out[field] = str(value or "")[:limit]
+        elif kind_of == "bool":
+            out[field] = bool(value)
+        elif kind_of == "date":
+            out[field] = clean_date(str(value or ""), field.replace("_", " "))
+        elif kind_of == "int":
+            low, high = limit
+            try:
+                number = int(value) if value not in (None, "") else None
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail=f"{field.replace('_', ' ').capitalize()} must be a number.")
+            if number is not None and not (low <= number <= high):
+                raise HTTPException(status_code=400, detail=f"{field.replace('_', ' ').capitalize()} must be between {low} and {high}.")
+            out[field] = number
+        elif kind_of == "enum":
+            if value not in limit:
+                raise HTTPException(status_code=400, detail=f"Pick one of: {', '.join(limit)}.")
+            out[field] = value
+        elif kind_of == "words":
+            most, each = limit
+            words = [str(w).strip()[:each] for w in (value if isinstance(value, list) else []) if str(w).strip()]
+            out[field] = words[:most]
+        elif kind_of == "member":
+            out[field] = int(value) if isinstance(value, int) and value in members else None
+        elif kind_of == "members":
+            out[field] = [int(v) for v in dict.fromkeys(value if isinstance(value, list) else []) if isinstance(v, int) and v in members][:50]
+        elif kind_of == "actions":
+            actions = []
+            for a in (value if isinstance(value, list) else [])[:60]:
+                if not isinstance(a, dict) or not str(a.get("text") or "").strip():
+                    continue
+                actions.append({"id": str(a.get("id") or uuid.uuid4().hex[:8])[:20], "text": str(a["text"]).strip()[:300],
+                                "owner_id": a.get("owner_id") if a.get("owner_id") in members else None,
+                                "due": clean_date(str(a.get("due") or ""), "action due date"),
+                                "done": bool(a.get("done")), "task_id": a.get("task_id") if isinstance(a.get("task_id"), int) else None})
+            out[field] = actions
+        elif kind_of == "nodes":
+            nodes, ids = [], set()
+            for n in (value if isinstance(value, list) else [])[:300]:
+                if not isinstance(n, dict):
+                    continue
+                node_id = str(n.get("id") or "")[:20]
+                if not node_id or node_id in ids:
+                    continue
+                ids.add(node_id)
+                nodes.append({"id": node_id, "text": str(n.get("text") or "").strip()[:120], "parent": str(n.get("parent") or "")[:20] or None,
+                              "color": n.get("color") if n.get("color") in ("indigo", "emerald", "amber", "rose", "slate") else "indigo",
+                              "collapsed": bool(n.get("collapsed"))})
+            # A parent that does not exist (or a loop) puts the node under the root
+            parents = {n["id"]: n["parent"] for n in nodes}
+            root = nodes[0]["id"] if nodes else None
+            for n in nodes:
+                seen, current = set(), n["parent"]
+                while current and current not in seen:
+                    seen.add(current)
+                    current = parents.get(current) if current in parents else None
+                if n["id"] == root:
+                    n["parent"] = None
+                elif not n["parent"] or n["parent"] not in parents or n["id"] in seen:
+                    n["parent"] = root
+            out[field] = nodes
+        elif kind_of == "raci":
+            raci = {}
+            for key, letter in (value.items() if isinstance(value, dict) else []):
+                try:
+                    uid = int(key)
+                except (TypeError, ValueError):
+                    continue
+                if uid in members and letter in ("R", "A", "C", "I"):
+                    raci[str(uid)] = letter
+            out[field] = raci
+    return out
+
+def serialize_item(item) -> dict:
+    return {"id": item.id, "team_id": item.team_id, "kind": item.kind, "title": item.title or "", "data": json_object(item.data),
+            "position": item.position or 0, "created_by": item.created_by, "updated_by": item.updated_by,
+            "created_at": item.created_at, "updated_at": item.updated_at}
+
+class ItemBody(BaseModel):
+    kind: Optional[str] = None
+    title: Optional[str] = None
+    data: Optional[dict] = None
+    position: Optional[float] = None
+    base_updated_at: Optional[str] = None     # the version the editor started from; a newer one on the server gives 409
+
+async def team_member_ids(db: AsyncSession, team_id: int) -> set:
+    return {row[0] for row in (await db.execute(select(DBTeamMember.user_id).where(DBTeamMember.team_id == team_id))).all()}
+
+@app.post("/api/teams/{team_id}/items")
+async def create_project_item(team_id: int, body: ItemBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    await get_team_role(db, team_id, current_user_id)
+    if body.kind not in PROJECT_ITEM_SCHEMA:
+        raise HTTPException(status_code=400, detail="Unknown kind of entry.")
+    count = (await db.execute(select(func.count()).select_from(DBProjectItem).where(DBProjectItem.team_id == team_id))).scalar() or 0
+    if count >= MAX_ITEMS_PER_TEAM:
+        raise HTTPException(status_code=400, detail="This workspace has reached its limit of plan entries.")
+    if body.kind == "brief":
+        existing = (await db.execute(select(DBProjectItem).where(DBProjectItem.team_id == team_id, DBProjectItem.kind == "brief"))).scalars().first()
+        if existing:
+            raise HTTPException(status_code=409, detail="This workspace already has a brief.")
+    title = clean_text(body.title, ITEM_TITLE_LIMIT, "title") or {"brief": "Project brief", "doc": "Untitled page", "mindmap": "Mind map"}.get(body.kind, "")
+    if not title and body.kind not in ("idea",):
+        raise HTTPException(status_code=400, detail="Give it a title.")
+    data = clean_item_data(body.kind, body.data or {}, await team_member_ids(db, team_id))
+    if body.kind == "idea":
+        data["votes"] = []
+    now_iso = utc_now_iso()
+    position = body.position if body.position is not None and math.isfinite(body.position) else \
+        (await db.execute(select(func.coalesce(func.max(DBProjectItem.position), 0) + 1).where(DBProjectItem.team_id == team_id, DBProjectItem.kind == body.kind))).scalar()
+    row = (await db.execute(DBProjectItem.__table__.insert().values(team_id=team_id, kind=body.kind, title=title, data=json.dumps(data), position=position,
+                                                                  created_by=current_user_id, updated_by=current_user_id, created_at=now_iso, updated_at=now_iso)
+                            .returning(*DBProjectItem.__table__.c))).first()
+    item = serialize_item(row)
+    await team_hub.broadcast(team_id, {"type": "item_saved", "item": item, "by": current_user_id})
+    return item
+
+@app.patch("/api/items/{item_id}")
+async def update_project_item(item_id: int, body: ItemBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    item = (await db.execute(select(DBProjectItem).where(DBProjectItem.id == item_id))).scalars().first()
+    if not item:
+        raise HTTPException(status_code=404, detail="That entry was deleted.")
+    await get_team_role(db, item.team_id, current_user_id)
+    values = {}
+    if body.title is not None:
+        title = clean_text(body.title, ITEM_TITLE_LIMIT, "title")
+        if not title and item.kind != "idea":
+            raise HTTPException(status_code=400, detail="Give it a title.")
+        values["title"] = title
+    if body.data is not None:
+        old = json_object(item.data)
+        data = clean_item_data(item.kind, body.data, await team_member_ids(db, item.team_id), old)
+        if item.kind == "idea":
+            data["votes"] = old.get("votes", [])       # votes only change through the vote button
+        values["data"] = json.dumps(data)
+    if body.position is not None and math.isfinite(body.position):
+        values["position"] = body.position
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+    values.update(updated_by=current_user_id, updated_at=utc_now_iso())
+    statement = update(DBProjectItem).where(DBProjectItem.id == item_id)
+    if body.base_updated_at:
+        statement = statement.where(DBProjectItem.updated_at == body.base_updated_at)
+    row = (await db.execute(statement.values(**values).returning(*DBProjectItem.__table__.c))).first()
+    if not row:
+        # Someone else saved first: hand back their version so the page can offer to reload or overwrite
+        current = (await db.execute(select(DBProjectItem, DBUser.name).outerjoin(DBUser, DBUser.id == DBProjectItem.updated_by)
+                                    .where(DBProjectItem.id == item_id))).first()
+        if not current:
+            raise HTTPException(status_code=404, detail="That entry was deleted.")
+        raise HTTPException(status_code=409, detail={"message": f"{current[1] or 'A teammate'} changed this while you were editing.", "item": serialize_item(current[0])})
+    saved = serialize_item(row)
+    await team_hub.broadcast(item.team_id, {"type": "item_saved", "item": saved, "by": current_user_id})
+    return saved
+
+@app.delete("/api/items/{item_id}")
+async def delete_project_item(item_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    item = (await db.execute(select(DBProjectItem).where(DBProjectItem.id == item_id))).scalars().first()
+    if not item:
+        return {"status": "deleted"}
+    _, role = await get_team_role(db, item.team_id, current_user_id)
+    if item.created_by != current_user_id and role != "Admin":
+        raise HTTPException(status_code=403, detail="Only the person who added it or an Admin can delete this.")
+    await db.execute(delete(DBProjectItem).where(DBProjectItem.id == item_id))
+    await team_hub.broadcast(item.team_id, {"type": "item_deleted", "id": item_id, "kind": item.kind, "by": current_user_id})
+    return {"status": "deleted"}
+
+@app.post("/api/items/{item_id}/vote")
+async def vote_on_idea(item_id: int, db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    """Vote for an idea, or take the vote back. The row is locked so two votes at once both count."""
+    item = (await db.execute(select(DBProjectItem).where(DBProjectItem.id == item_id).with_for_update())).scalars().first()
+    if not item or item.kind != "idea":
+        raise HTTPException(status_code=404, detail="That idea was deleted.")
+    await get_team_role(db, item.team_id, current_user_id)
+    data = json_object(item.data)
+    votes = [v for v in data.get("votes", []) if isinstance(v, int)]
+    voted = current_user_id not in votes
+    data["votes"] = votes + [current_user_id] if voted else [v for v in votes if v != current_user_id]
+    item.data = json.dumps(data)
+    item.updated_at = utc_now_iso()
+    await db.commit()
+    saved = serialize_item(item)
+    await team_hub.broadcast(item.team_id, {"type": "item_saved", "item": saved, "by": current_user_id})
+    return {"voted": voted, "item": saved}
+
+
+# ---------- time ----------
+class TimerBody(BaseModel):
+    task_id: Optional[int] = None
+    note: Optional[str] = ""
+
+class TimeLogBody(BaseModel):
+    task_id: Optional[int] = None
+    minutes: int
+    day: Optional[str] = ""
+    note: Optional[str] = ""
+
+MAX_TIMER_MINUTES = 12 * 60     # a timer left running overnight counts as at most 12 hours
+
+def serialize_time(entry) -> dict:
+    return {"id": entry.id, "team_id": entry.team_id, "task_id": entry.task_id, "user_id": entry.user_id, "started_at": entry.started_at,
+            "ended_at": entry.ended_at or "", "minutes": entry.minutes or 0, "note": entry.note or "", "day": entry.day or ""}
+
+async def check_task_in_team(db: AsyncSession, team_id: int, task_id: Optional[int]):
+    if task_id is None:
+        return
+    if not (await db.execute(select(DBTeamTask.id).where(DBTeamTask.id == task_id, DBTeamTask.team_id == team_id))).first():
+        raise HTTPException(status_code=400, detail="That task is not part of this workspace.")
+
+async def stop_running_timer(db: AsyncSession, user_id: int) -> Optional[dict]:
+    running = (await db.execute(select(DBTimeEntry).where(DBTimeEntry.user_id == user_id, DBTimeEntry.ended_at == "").with_for_update())).scalars().all()
+    stopped = None
+    for entry in running:
+        started = parse_timestamp(entry.started_at)
+        minutes = max(0, min(MAX_TIMER_MINUTES, round((datetime.now(timezone.utc) - started).total_seconds() / 60)))
+        entry.ended_at = utc_now_iso()
+        entry.minutes = minutes
+        stopped = entry
+    return stopped
+
+@app.post("/api/teams/{team_id}/time/start")
+async def start_timer(team_id: int, body: TimerBody, db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    """Start a timer. A person has one running timer at a time, so any other one stops first."""
+    await get_team_role(db, team_id, current_user_id)
+    await check_task_in_team(db, team_id, body.task_id)
+    stopped = await stop_running_timer(db, current_user_id)
+    now = datetime.now(timezone.utc)
+    entry = DBTimeEntry(team_id=team_id, task_id=body.task_id, user_id=current_user_id, started_at=now.isoformat(), ended_at="", minutes=0,
+                        note=clean_text(body.note, 200, "note"), day=site_now().date().isoformat())
+    db.add(entry)
+    await db.commit()
+    if stopped:
+        await team_hub.broadcast(stopped.team_id, {"type": "time_changed", "entry": serialize_time(stopped), "by": current_user_id})
+    started = serialize_time(entry)
+    await team_hub.broadcast(team_id, {"type": "time_changed", "entry": started, "by": current_user_id})
+    return {"running": started, "stopped": serialize_time(stopped) if stopped else None}
+
+@app.post("/api/time/stop")
+async def stop_timer(db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    stopped = await stop_running_timer(db, current_user_id)
+    await db.commit()
+    if not stopped:
+        return {"stopped": None}
+    entry = serialize_time(stopped)
+    await team_hub.broadcast(stopped.team_id, {"type": "time_changed", "entry": entry, "by": current_user_id})
+    return {"stopped": entry}
+
+@app.post("/api/teams/{team_id}/time")
+async def log_time(team_id: int, body: TimeLogBody, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    await get_team_role(db, team_id, current_user_id)
+    await check_task_in_team(db, team_id, body.task_id)
+    if not (1 <= body.minutes <= 24 * 60):
+        raise HTTPException(status_code=400, detail="Log between 1 minute and 24 hours.")
+    day = clean_date(body.day, "day") or site_now().date().isoformat()
+    now_iso = utc_now_iso()
+    row = (await db.execute(DBTimeEntry.__table__.insert().values(team_id=team_id, task_id=body.task_id, user_id=current_user_id, started_at=now_iso,
+                                                                ended_at=now_iso, minutes=body.minutes, note=clean_text(body.note, 200, "note"), day=day)
+                            .returning(*DBTimeEntry.__table__.c))).first()
+    entry = serialize_time(row)
+    await team_hub.broadcast(team_id, {"type": "time_changed", "entry": entry, "by": current_user_id})
+    return entry
+
+@app.delete("/api/time/{entry_id}")
+async def delete_time(entry_id: int, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
+    entry = (await db.execute(select(DBTimeEntry).where(DBTimeEntry.id == entry_id))).scalars().first()
+    if not entry:
+        return {"status": "deleted"}
+    if entry.user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own time.")
+    await db.execute(delete(DBTimeEntry).where(DBTimeEntry.id == entry_id))
+    await team_hub.broadcast(entry.team_id, {"type": "time_deleted", "id": entry_id, "by": current_user_id})
+    return {"status": "deleted"}
+
+
+# ---------- templates ----------
+# Offsets are days from today. Tasks name their sprint (1, 2 ...) or None for the backlog, and may wait for earlier tasks (by index).
+PROJECT_TEMPLATES = {
+    "college": {
+        "name": "College project", "description": "A semester project with a report, a working demo and a viva.",
+        "brief": {"problem": "", "goals": ["A working prototype that solves the problem", "A clear report and presentation", "Every member can explain every part"],
+                  "deliverables": ["Synopsis", "Working prototype", "Project report", "Presentation and viva"],
+                  "success": ["Guide approves the synopsis", "Demo runs without help", "Report submitted on time"], "deadline_days": 90},
+        "sprints": [("Sprint 1 · Research", 14, "Pick the problem and get the synopsis approved"), ("Sprint 2 · Build", 28, "A first working version"),
+                    ("Sprint 3 · Polish", 21, "Testing, report and presentation")],
+        "tasks": [("Pick the problem statement and title", 1, 0, 3, "Research", None), ("Read 5 related papers or projects", 1, 2, 7, "Research", [0]),
+                  ("Write and submit the synopsis", 1, 7, 12, "Docs", [1]), ("Synopsis approved", 1, 14, 14, "Docs", [2], True),
+                  ("Design the system (diagrams, database)", 2, 15, 20, "Design", [3]), ("Build the core features", 2, 18, 38, "Backend", [4]),
+                  ("Build the screens", 2, 20, 40, "Frontend", [4]), ("First working demo", 2, 42, 42, "Docs", [5, 6], True),
+                  ("Test and fix bugs", 3, 43, 52, "QA", [7]), ("Write the project report", 3, 43, 58, "Docs", [7]),
+                  ("Make the presentation", 3, 55, 60, "Docs", [9]), ("Final submission and viva", 3, 63, 63, "Docs", [8, 10], True)],
+        "risks": [("A member is busy with exams", 3, 2, "Plan around the exam timetable; keep a buffer week before each deadline."),
+                  ("Guide changes the scope late", 2, 3, "Get the synopsis signed; write down every scope change in Decisions.")],
+        "docs": [("Meeting notes with the guide", "## What the guide said\n\n- \n\n## What we must change\n\n- ")],
+    },
+    "hackathon": {
+        "name": "Hackathon", "description": "A 24 to 48 hour build with a demo at the end.",
+        "brief": {"goals": ["A demo that works live", "A clear 3-minute pitch"], "deliverables": ["Working demo", "Pitch deck", "Repository with a README"],
+                  "success": ["Demo works on stage", "Judges understand the idea in one minute"], "deadline_days": 2},
+        "sprints": [("Hackathon", 2, "Ship the demo")],
+        "tasks": [("Agree on the idea and the one main feature", 1, 0, 0, "Idea", None), ("Set up the repository and deploy a hello world", 1, 0, 0, "DevOps", [0]),
+                  ("Build the main feature", 1, 0, 1, "Backend", [1]), ("Build the screen people will see", 1, 0, 1, "Frontend", [1]),
+                  ("Feature freeze", 1, 1, 1, "Idea", [2, 3], True), ("Make the pitch deck", 1, 1, 1, "Docs", [0]),
+                  ("Rehearse the demo twice", 1, 1, 2, "Docs", [4, 5]), ("Submit", 1, 2, 2, "Docs", [6], True)],
+        "risks": [("The live demo breaks on stage", 2, 3, "Record a backup video of the demo; freeze features early.")],
+        "docs": [("Pitch outline", "## Problem\n\n## Our solution\n\n## Demo\n\n## Why it matters\n\n## Team")],
+    },
+    "startup": {
+        "name": "Startup MVP", "description": "From an idea to the first users in about two months.",
+        "brief": {"goals": ["Talk to 20 possible users", "Launch an MVP", "Get the first 50 users"], "deliverables": ["User interview notes", "MVP", "Landing page"],
+                  "success": ["10 people use it every week", "Users would be disappointed without it"], "deadline_days": 60},
+        "sprints": [("Sprint 1 · Discover", 14, "Learn what users really need"), ("Sprint 2 · Build", 21, "The smallest product worth using"),
+                    ("Sprint 3 · Launch", 14, "First users and their feedback")],
+        "tasks": [("Write down the problem and who has it", 1, 0, 2, "Research", None), ("Interview 20 possible users", 1, 2, 12, "Research", [0]),
+                  ("Decide the one feature to build first", 1, 12, 14, "Product", [1], True), ("Design the screens", 2, 15, 19, "Design", [2]),
+                  ("Build the MVP", 2, 18, 33, "Backend", [3]), ("Make a landing page", 2, 25, 30, "Frontend", [2]),
+                  ("MVP ready", 2, 35, 35, "Product", [4], True), ("Invite the first users", 3, 36, 42, "Growth", [6]),
+                  ("Collect feedback and fix the top 3 issues", 3, 40, 48, "Product", [7]), ("Decide what to build next", 3, 49, 49, "Product", [8], True)],
+        "risks": [("Nobody really needs it", 2, 3, "Interview before building; decide on evidence, not opinions."),
+                  ("The build takes longer than planned", 3, 2, "Cut features, not quality. Keep the scope list in the brief.")],
+        "docs": [("Interview questions", "## Ask\n\n1. Tell me about the last time you had this problem.\n2. What did you do about it?\n3. What did that cost you?\n\n## Never ask\n\n- Would you use my app?")],
+    },
+    "research": {
+        "name": "Research paper", "description": "A literature review, an experiment and a paper ready to submit.",
+        "brief": {"goals": ["A clear research question", "Results that answer it", "A paper ready for a journal or conference"],
+                  "deliverables": ["Literature review", "Experiment and data", "Paper draft", "Final paper"], "success": ["Supervisor approves the draft", "Paper submitted"], "deadline_days": 120},
+        "sprints": [("Sprint 1 · Literature", 28, "Know what has been done"), ("Sprint 2 · Experiment", 42, "Results"), ("Sprint 3 · Writing", 35, "A paper to submit")],
+        "tasks": [("Write the research question", 1, 0, 5, "Research", None), ("Collect and read 20 papers", 1, 3, 24, "Research", [0]),
+                  ("Write the literature review", 1, 18, 28, "Writing", [1], ), ("Research question approved", 1, 28, 28, "Research", [2], True),
+                  ("Design the experiment", 2, 29, 36, "Method", [3]), ("Collect the data", 2, 36, 60, "Method", [4]), ("Analyse the results", 2, 55, 70, "Analysis", [5]),
+                  ("Write the first draft", 3, 70, 90, "Writing", [6]), ("Supervisor feedback", 3, 92, 95, "Writing", [7], True),
+                  ("Revise and format for the venue", 3, 95, 103, "Writing", [8]), ("Submit the paper", 3, 105, 105, "Writing", [9], True)],
+        "risks": [("Not enough data", 2, 3, "Plan a smaller backup experiment; ask the supervisor early.")],
+        "docs": [("Reading list", "## Papers\n\n| Paper | Year | Key idea | Useful for |\n|---|---|---|---|\n")],
+    },
+}
+
+class TemplateBody(BaseModel):
+    template: str
+
+@app.get("/api/project-templates")
+async def list_project_templates(current_user_id: int = Depends(get_current_user_id)):
+    return {"templates": [{"key": key, "name": t["name"], "description": t["description"], "tasks": len(t["tasks"]), "sprints": len(t["sprints"]),
+                           "milestones": sum(1 for task in t["tasks"] if len(task) > 6 and task[6]), "task_titles": [task[0] for task in t["tasks"]]}
+                          for key, t in PROJECT_TEMPLATES.items()]}
+
+@app.post("/api/teams/{team_id}/apply-template")
+async def apply_project_template(team_id: int, body: TemplateBody, db: AsyncSession = Depends(get_db), current_user_id: int = Depends(get_current_user_id)):
+    """Fill the workspace's plan from a template: brief, sprints, tasks with dates and dependencies, risks and a doc. Admins only."""
+    await require_team_admin(db, team_id, current_user_id)
+    template = PROJECT_TEMPLATES.get(body.template)
+    if not template:
+        raise HTTPException(status_code=400, detail="Unknown template.")
+    today = site_now().date()
+    day = lambda offset: (today + timedelta(days=offset)).isoformat()
+    now_iso = utc_now_iso()
+
+    # Sprints follow each other from today
+    sprint_ids, start = [], 0
+    for index, (name, length, goal) in enumerate(template["sprints"]):
+        sprint = DBTeamSprint(team_id=team_id, name=name, goal=goal, start_date=day(start), end_date=day(start + length - 1),
+                              status="active" if index == 0 else "planned", created_at=now_iso)
+        if index == 0 and (await db.execute(select(DBTeamSprint.id).where(DBTeamSprint.team_id == team_id, DBTeamSprint.status == "active"))).first():
+            sprint.status = "planned"
+        db.add(sprint)
+        await db.flush()
+        sprint_ids.append(sprint.id)
+        start += length
+
+    # A task never starts before what it waits for is due (same day is fine); its due date moves along if needed
+    starts, dues = [], []
+    for task in template["tasks"]:
+        waits = task[5] if len(task) > 5 and task[5] else []
+        start_day = max([task[2]] + [dues[i] for i in waits])
+        starts.append(start_day)
+        dues.append(max(task[3], start_day))
+
+    # Tasks, then their dependencies once every id is known
+    base = (await db.execute(select(func.coalesce(func.max(DBTeamTask.position), 0)).where(DBTeamTask.team_id == team_id, DBTeamTask.status == "todo"))).scalar() or 0
+    task_ids = []
+    for index, task in enumerate(template["tasks"]):
+        title, sprint_no, start_day, due_day, tag = task[0], task[1], starts[index], dues[index], task[4]
+        row = DBTeamTask(team_id=team_id, title=title, description="", status="todo", position=base + index + 1, tag=tag[:30], priority="medium",
+                         due_date=day(due_day), start_date=day(start_day), sprint_id=sprint_ids[sprint_no - 1] if sprint_no else None,
+                         is_milestone=1 if len(task) > 6 and task[6] else 0, depends_on="[]", checklist="[]", done_at="",
+                         created_by=current_user_id, created_at=now_iso, updated_at=now_iso)
+        db.add(row)
+        await db.flush()
+        task_ids.append(row.id)
+    for index, task in enumerate(template["tasks"]):
+        waits = task[5] if len(task) > 5 and task[5] else []
+        if waits:
+            await db.execute(update(DBTeamTask).where(DBTeamTask.id == task_ids[index]).values(depends_on=json.dumps([task_ids[i] for i in waits])))
+
+    # The brief (only if there is none yet), risks and docs
+    brief = dict(template["brief"])
+    deadline = day(brief.pop("deadline_days", 60))
+    if not (await db.execute(select(DBProjectItem.id).where(DBProjectItem.team_id == team_id, DBProjectItem.kind == "brief"))).first():
+        db.add(DBProjectItem(team_id=team_id, kind="brief", title="Project brief", data=json.dumps({**brief, "deadline": deadline}), position=1,
+                             created_by=current_user_id, updated_by=current_user_id, created_at=now_iso, updated_at=now_iso))
+    for index, (title, likelihood, impact, mitigation) in enumerate(template.get("risks", [])):
+        db.add(DBProjectItem(team_id=team_id, kind="risk", title=title, position=index + 1, created_by=current_user_id, updated_by=current_user_id,
+                             created_at=now_iso, updated_at=now_iso,
+                             data=json.dumps({"description": "", "likelihood": likelihood, "impact": impact, "owner_id": None, "mitigation": mitigation, "status": "open"})))
+    for index, (title, doc_body) in enumerate(template.get("docs", [])):
+        db.add(DBProjectItem(team_id=team_id, kind="doc", title=title, position=index + 1, created_by=current_user_id, updated_by=current_user_id,
+                             created_at=now_iso, updated_at=now_iso, data=json.dumps({"body": doc_body, "pinned": False, "icon": ""})))
+    await db.commit()
+    await team_hub.broadcast(team_id, {"type": "board_reload", "by": current_user_id})
+    return {"tasks": len(task_ids), "sprints": len(sprint_ids)}
+
+
+# Every column USER_DATA names (section 26) must exist; checked here, once every table above is defined
+for _table, _columns in list(USER_DATA_ERASED.items()) + list(USER_DATA_KEPT.items()):
+    for _column in _columns:
+        assert _column in Base.metadata.tables[_table].c, f"USER_DATA names {_table}.{_column}, which does not exist"
