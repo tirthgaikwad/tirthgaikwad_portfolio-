@@ -146,3 +146,4 @@ a.hm-step:hover span:nth-child(2) { color: #3525cd; }
   .hm-opp, .hm-bar i, .hm-switch i, .hm-switch i::after { transition: none; }
   .hm-opp:hover { transform: none; }
 }
+.hm-practice { margin-top: 10px; }

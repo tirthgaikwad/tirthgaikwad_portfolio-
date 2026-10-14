@@ -65,8 +65,13 @@ const headerIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${HEAD
 const HEADER_NAV = [
     { label: 'Home', href: 'home.html', icon: 'home', text: 'What is waiting for you today' },
     { label: 'Discover', href: 'search.html', icon: 'compass', text: 'Find people by skill' },
-    { label: 'Professionals', href: 'professionals.html', icon: 'briefcase', text: 'Everyone, by profession' },
     { label: 'Opportunities', href: 'board.html', icon: 'board', text: 'Open roles and project ideas' },
+    { label: 'Study', pages: [
+        { label: 'My Study', href: 'study.html', icon: 'book', text: 'Timetable, attendance, planner, grades, timer' },
+        { label: 'Notes and papers', href: 'notes.html', icon: 'board', text: 'Shared notes and previous-year papers' },
+        { label: 'Daily practice', href: 'practice.html', icon: 'target', text: 'Two placement questions a day, with a streak' },
+        { label: 'Resume builder', href: 'resume.html', icon: 'card', text: 'A one-page resume from your profile' }
+    ] },
     { label: 'Workspace', pages: [
         { label: 'My Teams', href: 'team.html', icon: 'teams', text: 'Channels, chat and calls' },
         { label: 'Project Hub', href: 'project_management.html', icon: 'kanban', text: 'Task board and planning canvas' },
@@ -75,6 +80,7 @@ const HEADER_NAV = [
     { label: 'Network', pages: [
         { label: 'Campus Network', href: 'college.html', icon: 'campus', text: 'People at your college' },
         { label: 'College Hub', href: 'college-hub.html', icon: 'board', text: 'Groups, notices and class chat' },
+        { label: 'Professionals', href: 'professionals.html', icon: 'briefcase', text: 'Everyone, by profession' },
         { label: 'My Network', href: 'network.html', icon: 'network', text: 'Followers and following' },
         { label: 'Saved Profiles', href: 'saved.html', icon: 'bookmark', text: 'People you bookmarked' }
     ] }
@@ -149,13 +155,13 @@ window.renderAppHeader = function() {
 };
 
 // Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
-// Opportunities is not a tab of its own: Home shows the newest ones and links to the board
+// Opportunities and College Hub are not tabs of their own: Home shows what is new in both and links to them
 const TABBAR_ITEMS = [
-    { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html'] },
+    { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html'] },
+    { label: 'Study', href: 'study.html', icon: 'book', also: ['notes.html', 'practice.html', 'resume.html'] },
     { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html', 'department.html', 'global.html', 'followers.html'] },
     { label: 'Messages', href: 'inbox.html', icon: 'chat', also: [] },
-    { label: 'College Hub', href: 'college-hub.html', icon: 'campus', also: ['team.html', 'project_management.html', 'research.html'] },
-    { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'billing.html', 'pricing.html'] }
+    { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'billing.html', 'pricing.html', 'team.html', 'project_management.html', 'research.html'] }
 ];
 
 function renderAppTabbar(currentPage) {

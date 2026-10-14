@@ -499,6 +499,8 @@ async def startup_event():
     spawn_background(subscription_watch())
     spawn_background(move_id_cards_to_files())
     spawn_background(digest_watch())
+    spawn_background(study_watch())
+    spawn_background(seed_practice_bank())
 
 async def keep_pool_warm():
     """The database is far away and new connections are slow to open, so keep a few open and fresh."""
@@ -9130,7 +9132,12 @@ async def build_home(user_id: int) -> dict:
         fetch_one_off(person_cards_query(user_id, DBUser.id.not_in(i_follow)).order_by(DBUser.id.desc()).limit(200)),
     )
     row, counts = me_rows[0], number_rows[0]
-    needs, news = await home_hub_items(me, today) if me["role"] != "none" else ([], [])
+    (needs, news), study, practice = await asyncio.gather(
+        home_hub_items(me, today) if me["role"] != "none" else asyncio.sleep(0, ([], [])),
+        home_study(user_id),
+        practice_glance(user_id),
+    )
+    needs = study["needs"] + needs
 
     unread_count, unread_people = unread_rows[0][0] or 0, unread_rows[0][1] or 0
     if unread_count:
@@ -9182,10 +9189,13 @@ async def build_home(user_id: int) -> dict:
                "has_email": bool((row.email or "").strip()), "digest_on": (row.digest_on if row.digest_on is not None else 1) == 1},
         "today": today.isoformat(),
         "needs": needs, "news": news,
+        "classes": study["classes"],
         "opportunities": opportunities[:HOME_OPPORTUNITIES], "challenges": challenges[:HOME_CHALLENGES],
         "people": suggested,
         "week": {"profile_views": counts.profile_views or 0, "new_followers": counts.new_followers or 0,
-                 "applications": counts.applications or 0, "unread": unread_count},
+                 "applications": counts.applications or 0, "unread": unread_count,
+                 "study_minutes": study["week_minutes"], "study_streak": study["streak"]},
+        "practice": practice,
         "checklist": [] if all(step["done"] for step in checklist) else checklist,
         "push": {"available": bool(VAPID_PUBLIC), "devices": counts.devices or 0},
         "email_ready": bool(SMTP_HOST),
@@ -9237,7 +9247,7 @@ VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:noreply@connect2minds.invalid
 # so a made-up subscription cannot make this server call an address of someone's choosing.
 PUSH_HOSTS = ("fcm.googleapis.com", ".push.services.mozilla.com", ".notify.windows.com", ".push.apple.com")
 PUSH_TITLES = {"message": "New message", "view": "Someone looked at your profile", "college": "College Hub",
-               "board_reply": "Opportunities", "account": "Your account"}
+               "board_reply": "Opportunities", "account": "Your account", "study": "My Study"}
 PUSH_MESSAGE_GAP = 300        # seconds between two "new message" pushes about the same conversation
 
 def b64url(data: bytes) -> str:
@@ -9505,3 +9515,1306 @@ async def digest_off(u: int, t: str):
     return HTMLResponse('<div style="font-family:Arial,sans-serif;max-width:460px;margin:80px auto;text-align:center;color:#0b1c30;">'
                         '<h2>Weekly emails are off</h2><p style="color:#464555;">You can switch them back on from your Home page.</p>'
                         f'<p><a href="{html.escape(SITE_URL)}/home.html" style="color:#3525cd;">Open Connect2Minds</a></p></div>')
+
+
+# ==========================================
+# 22. MY STUDY: TIMETABLE, ATTENDANCE, PLANNER, GRADES, FOCUS TIMER, REMINDERS
+# ==========================================
+# Everything here is private to one student: nobody else can read it. The one shared piece is a class
+# timetable a teacher publishes, which students of that class copy into their own.
+class DBStudySubject(Base):
+    __tablename__ = "study_subjects"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    name = Column(String)
+    code = Column(String, default="")
+    credits = Column(Float, nullable=True)
+    goal = Column(Integer, default=75)             # attendance the student wants to stay above, per cent
+    base_attended = Column(Integer, default=0)     # classes before the student started marking here
+    base_total = Column(Integer, default=0)
+    archived = Column(Integer, default=0)
+    created_at = Column(String)
+
+class DBStudySlot(Base):
+    """One class in the week."""
+    __tablename__ = "study_slots"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    subject_id = Column(Integer, index=True)
+    weekday = Column(Integer)                      # 0 = Monday
+    start_time = Column(String)                    # HH:MM
+    end_time = Column(String)
+    room = Column(String, default="")
+    kind = Column(String, default="lecture")       # lecture, lab, tutorial
+
+class DBStudyAttendance(Base):
+    __tablename__ = "study_attendance"
+    __table_args__ = (UniqueConstraint("user_id", "subject_id", "date", "slot_id", name="ux_study_attendance"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    subject_id = Column(Integer, index=True)
+    date = Column(String)                          # YYYY-MM-DD
+    slot_id = Column(Integer, default=0)           # 0: an extra class that is not on the timetable
+    status = Column(String)                        # present, absent, cancelled
+
+class DBStudyTask(Base):
+    __tablename__ = "study_tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    subject_id = Column(Integer, nullable=True)
+    title = Column(String)
+    kind = Column(String, default="assignment")    # assignment, practical, exam, other
+    due_date = Column(String, default="")
+    due_time = Column(String, default="")
+    notes = Column(String, default="")
+    done = Column(Integer, default=0)
+    done_at = Column(String, default="")
+    created_at = Column(String)
+
+class DBStudyGrade(Base):
+    __tablename__ = "study_grades"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    semester = Column(Integer)
+    subject = Column(String)
+    credits = Column(Float)
+    points = Column(Float)                         # grade point, 0 to 10
+    grade = Column(String, default="")             # the letter, if the student typed one
+
+class DBStudySession(Base):
+    """One finished stretch of the focus timer."""
+    __tablename__ = "study_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    subject_id = Column(Integer, nullable=True)
+    day = Column(String, index=True)
+    minutes = Column(Integer)
+    created_at = Column(String)
+
+class DBStudySetting(Base):
+    __tablename__ = "study_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, index=True)
+    target_cgpa = Column(Float, nullable=True)
+    focus_minutes = Column(Integer, default=25)
+    break_minutes = Column(Integer, default=5)
+    remind_classes = Column(Integer, default=0)
+    remind_tasks = Column(Integer, default=1)
+    remind_practice = Column(Integer, default=1)
+
+class DBClassTimetableSlot(Base):
+    """A teacher's classes for one class of a college, published for its students to copy."""
+    __tablename__ = "class_timetable_slots"
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    department = Column(String, index=True)        # lower-cased, like college_key
+    division = Column(String, default="")
+    teacher_id = Column(Integer, index=True)
+    subject = Column(String)
+    code = Column(String, default="")
+    weekday = Column(Integer)
+    start_time = Column(String)
+    end_time = Column(String)
+    room = Column(String, default="")
+    kind = Column(String, default="lecture")
+
+class DBStudyReminder(Base):
+    """A reminder that has gone out, so the same one is never sent twice."""
+    __tablename__ = "study_reminders"
+    __table_args__ = (UniqueConstraint("user_id", "key", name="ux_study_reminders"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    key = Column(String)
+    sent_at = Column(String)
+
+
+STUDY_MAX_SUBJECTS = 40
+STUDY_MAX_SLOTS = 120
+STUDY_MAX_TASKS = 400
+STUDY_MAX_SEMESTERS = 14
+STUDY_MAX_SESSION_MINUTES = 180
+STUDY_SLOT_KINDS = ("lecture", "lab", "tutorial")
+STUDY_TASK_KINDS = ("assignment", "practical", "exam", "other")
+STUDY_MARKS = ("present", "absent", "cancelled")
+STUDY_MIN_CLASSES = 4          # an attendance warning needs at least this many classes to mean something
+STUDY_STREAK_DAYS = 370
+# The site's own clock for "today" and "now": India unless SITE_UTC_OFFSET_MINUTES says otherwise.
+SITE_UTC_OFFSET = int(os.getenv("SITE_UTC_OFFSET_MINUTES", "330") or 330)
+
+def site_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=SITE_UTC_OFFSET)
+
+def attendance_state(present: int, absent: int, goal: int) -> dict:
+    """Where a subject stands against its goal: how many more classes can be missed, or must be attended."""
+    total = present + absent
+    state = {"present": present, "total": total, "percent": round(present * 100 / total) if total else None, "can_miss": 0, "need": 0}
+    if not total or goal <= 0:
+        return state
+    if present * 100 >= goal * total:
+        state["can_miss"] = (present * 100 - goal * total) // goal
+    elif goal < 100:
+        state["need"] = -((present * 100 - goal * total) // (100 - goal))    # rounded up
+    else:
+        state["need"] = None       # 100% can no longer be reached
+    return state
+
+def day_streak(days: set, today) -> int:
+    """Days in a row with something done, ending today (or yesterday, so the streak is not lost before tonight)."""
+    day = today if today.isoformat() in days else today - timedelta(days=1)
+    streak = 0
+    while day.isoformat() in days:
+        streak += 1
+        day -= timedelta(days=1)
+    return streak
+
+
+class StudySubjectBody(BaseModel):
+    name: str
+    code: Optional[str] = ""
+    credits: Optional[float] = None
+    goal: Optional[int] = 75
+    base_attended: Optional[int] = 0
+    base_total: Optional[int] = 0
+    archived: Optional[bool] = False
+
+class StudySlotBody(BaseModel):
+    subject_id: int
+    weekday: int
+    start_time: str
+    end_time: str
+    room: Optional[str] = ""
+    kind: Optional[str] = "lecture"
+
+class StudyMarkBody(BaseModel):
+    subject_id: int
+    date: str
+    slot_id: Optional[int] = 0
+    status: str                    # present, absent, cancelled, or "" to take the mark back
+
+class StudyTaskBody(BaseModel):
+    title: str
+    kind: Optional[str] = "assignment"
+    subject_id: Optional[int] = None
+    due_date: Optional[str] = ""
+    due_time: Optional[str] = ""
+    notes: Optional[str] = ""
+    done: Optional[bool] = False
+
+class StudyGradeRow(BaseModel):
+    subject: str
+    credits: float
+    points: float
+    grade: Optional[str] = ""
+
+class StudyGradesBody(BaseModel):
+    rows: List[StudyGradeRow]
+
+class StudySessionBody(BaseModel):
+    minutes: int
+    subject_id: Optional[int] = None
+
+class StudySettingsBody(BaseModel):
+    target_cgpa: Optional[float] = None
+    clear_target: Optional[bool] = False
+    focus_minutes: Optional[int] = None
+    break_minutes: Optional[int] = None
+    remind_classes: Optional[bool] = None
+    remind_tasks: Optional[bool] = None
+    remind_practice: Optional[bool] = None
+
+class ClassPublishBody(BaseModel):
+    department: str
+    division: Optional[str] = ""
+
+
+def subject_card(subject: DBStudySubject) -> dict:
+    return {"id": subject.id, "name": subject.name or "", "code": subject.code or "", "credits": subject.credits,
+            "goal": subject.goal if subject.goal is not None else 75, "base_attended": subject.base_attended or 0,
+            "base_total": subject.base_total or 0, "archived": bool(subject.archived)}
+
+def slot_card(slot) -> dict:
+    return {"id": slot.id, "subject_id": slot.subject_id, "weekday": slot.weekday, "start_time": slot.start_time or "",
+            "end_time": slot.end_time or "", "room": slot.room or "", "kind": slot.kind or "lecture"}
+
+def task_card(task: DBStudyTask) -> dict:
+    return {"id": task.id, "title": task.title or "", "kind": task.kind or "assignment", "subject_id": task.subject_id,
+            "due_date": task.due_date or "", "due_time": task.due_time or "", "notes": task.notes or "",
+            "done": bool(task.done), "done_at": task.done_at or ""}
+
+def settings_card(row) -> dict:
+    return {"target_cgpa": row.target_cgpa if row else None, "focus_minutes": (row.focus_minutes if row else None) or 25,
+            "break_minutes": (row.break_minutes if row else None) or 5,
+            "remind_classes": bool(row.remind_classes) if row else False,
+            "remind_tasks": bool(row.remind_tasks) if row and row.remind_tasks is not None else True,
+            "remind_practice": bool(row.remind_practice) if row and row.remind_practice is not None else True}
+
+def clean_subject(body: StudySubjectBody) -> dict:
+    goal = body.goal if body.goal is not None else 75
+    attended, total = body.base_attended or 0, body.base_total or 0
+    if not (0 <= goal <= 100):
+        raise HTTPException(status_code=400, detail="The attendance goal is a percentage from 0 to 100.")
+    if not (0 <= attended <= total <= 2000):
+        raise HTTPException(status_code=400, detail="Classes attended so far cannot be more than classes held.")
+    if body.credits is not None and not (0 <= body.credits <= 40):
+        raise HTTPException(status_code=400, detail="Credits must be between 0 and 40.")
+    return {"name": clean_required(body.name, 80, "subject name"), "code": clean_text(body.code, 20, "subject code"), "credits": body.credits,
+            "goal": goal, "base_attended": attended, "base_total": total, "archived": 1 if body.archived else 0}
+
+def clean_slot_times(weekday: int, start_time: str, end_time: str, kind: str):
+    if not (0 <= weekday <= 6):
+        raise HTTPException(status_code=400, detail="Pick a day of the week.")
+    if not HUB_TIME_PATTERN.match(start_time or "") or not HUB_TIME_PATTERN.match(end_time or "") or start_time > "23:59" or end_time > "23:59":
+        raise HTTPException(status_code=400, detail="Give the start and end time of the class.")
+    if end_time <= start_time:
+        raise HTTPException(status_code=400, detail="The class must end after it starts.")
+    if kind not in STUDY_SLOT_KINDS:
+        raise HTTPException(status_code=400, detail="A class is a lecture, a lab or a tutorial.")
+
+async def require_own_subject(user_id: int, subject_id: int):
+    rows = await fetch_one_off(select(DBStudySubject.id).where(DBStudySubject.id == subject_id, DBStudySubject.user_id == user_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That subject is not in your list.")
+
+def class_keys(me: dict) -> tuple:
+    return college_key_of(me["department"]), college_key_of(me["division"])
+
+def class_slots_query(key: str, department: str, division: str):
+    """The published classes a student of this class should see: the ones for the whole department and for their division."""
+    return select(DBClassTimetableSlot).where(DBClassTimetableSlot.college_key == key, DBClassTimetableSlot.department == department,
+                                              DBClassTimetableSlot.division.in_(("", division)))
+
+
+@app.get("/api/study")
+async def get_study(current_user_id: int = Depends(get_current_user_id)):
+    """Everything the My Study page shows, in one request. All of it belongs to the caller."""
+    now = site_now()
+    today = now.date()
+    since = (today - timedelta(days=STUDY_STREAK_DAYS)).isoformat()
+    devices = select(func.count()).select_from(DBPushSubscription).where(DBPushSubscription.user_id == current_user_id).scalar_subquery()
+    me, setting_rows, subjects, slots, marks, tasks, grades, sessions = await asyncio.gather(
+        hub_identity(current_user_id),
+        fetch_one_off(select(devices)),
+        fetch_one_off(select(DBStudySubject).where(DBStudySubject.user_id == current_user_id).order_by(DBStudySubject.name)),
+        fetch_one_off(select(DBStudySlot).where(DBStudySlot.user_id == current_user_id).order_by(DBStudySlot.weekday, DBStudySlot.start_time)),
+        fetch_one_off(select(DBStudyAttendance.subject_id, DBStudyAttendance.date, DBStudyAttendance.slot_id, DBStudyAttendance.status)
+                      .where(DBStudyAttendance.user_id == current_user_id).order_by(DBStudyAttendance.date.desc()).limit(6000)),
+        fetch_one_off(select(DBStudyTask).where(DBStudyTask.user_id == current_user_id).order_by(DBStudyTask.done, DBStudyTask.due_date, DBStudyTask.id).limit(STUDY_MAX_TASKS)),
+        fetch_one_off(select(DBStudyGrade).where(DBStudyGrade.user_id == current_user_id).order_by(DBStudyGrade.semester, DBStudyGrade.id)),
+        fetch_one_off(select(DBStudySession.day, DBStudySession.subject_id, func.sum(DBStudySession.minutes))
+                      .where(DBStudySession.user_id == current_user_id, DBStudySession.day >= since).group_by(DBStudySession.day, DBStudySession.subject_id)),
+    )
+    # Second round: the settings row, and what the college adds for people who have one
+    department, division = class_keys(me)
+    in_hub = me["role"] != "none"
+    student = me["role"] == "student"
+    attended = func.sum(case((DBAttendanceMark.status.in_(("present", "late")), 1), else_=0))
+    settings_rows, practice, hub, class_rows, official, class_list, mine_published = await asyncio.gather(
+        fetch_one_off(select(DBStudySetting).where(DBStudySetting.user_id == current_user_id)),
+        practice_glance(current_user_id),
+        home_hub_items(me, datetime.now().date()) if in_hub else asyncio.sleep(0, ([], [])),
+        fetch_one_off(class_slots_query(me["key"], department, division)) if student and department else asyncio.sleep(0, []),
+        fetch_one_off(select(func.count(), attended).select_from(DBAttendanceMark)
+                      .join(DBAttendanceSession, DBAttendanceSession.id == DBAttendanceMark.session_id)
+                      .where(DBAttendanceSession.college_key == me["key"], DBAttendanceMark.user_id == current_user_id)) if student else asyncio.sleep(0, []),
+        fetch_one_off(select(func.trim(DBUser.department), func.trim(func.coalesce(DBUser.division, ""))).where(hub_student_clause(me["key"]), func.trim(func.coalesce(DBUser.department, "")) != "")
+                      .distinct().limit(300)) if me["role"] == "teacher" else asyncio.sleep(0, []),
+        fetch_one_off(select(DBClassTimetableSlot.department, DBClassTimetableSlot.division, func.count())
+                      .where(DBClassTimetableSlot.teacher_id == current_user_id).group_by(DBClassTimetableSlot.department, DBClassTimetableSlot.division)) if me["role"] == "teacher" else asyncio.sleep(0, []),
+    )
+
+    counts: dict = {}
+    for subject_id, _, _, mark in marks:
+        counts.setdefault(subject_id, {"present": 0, "absent": 0, "cancelled": 0})[mark] = counts.get(subject_id, {}).get(mark, 0) + 1
+    recent_from = (today - timedelta(days=45)).isoformat()
+    by_day: dict = {}
+    by_subject: dict = {}
+    week_from = (today - timedelta(days=6)).isoformat()
+    for day, subject_id, minutes in sessions:
+        by_day[day] = by_day.get(day, 0) + int(minutes or 0)
+        if day >= week_from:
+            by_subject[str(subject_id or 0)] = by_subject.get(str(subject_id or 0), 0) + int(minutes or 0)
+    official_total, official_came = (official[0][0] or 0, official[0][1] or 0) if official else (0, 0)
+    teachers = {row.teacher_id for (row,) in class_rows}
+    return {
+        "me": {"role": me["role"], "college": me["college"], "department": me["department"], "division": me["division"]},
+        "today": today.isoformat(), "weekday": today.weekday(), "now": now.strftime("%H:%M"),
+        "settings": settings_card(settings_rows[0][0] if settings_rows else None),
+        "push_devices": setting_rows[0][0] or 0,
+        "subjects": [{**subject_card(subject), **counts.get(subject.id, {"present": 0, "absent": 0, "cancelled": 0})} for (subject,) in subjects],
+        "slots": [slot_card(slot) for (slot,) in slots],
+        "marks": [{"subject_id": subject_id, "date": date, "slot_id": slot_id or 0, "status": mark} for subject_id, date, slot_id, mark in marks if date >= recent_from],
+        "tasks": [task_card(task) for (task,) in tasks],
+        "hub_deadlines": [item for item in hub[0] if item["kind"] in ("work", "group", "checkin", "ack", "poll")],
+        "grades": [{"id": grade.id, "semester": grade.semester, "subject": grade.subject or "", "credits": grade.credits or 0,
+                    "points": grade.points or 0, "grade": grade.grade or ""} for (grade,) in grades],
+        "timer": {"by_day": {day: minutes for day, minutes in by_day.items() if day >= (today - timedelta(days=34)).isoformat()},
+                  "week_by_subject": by_subject, "streak": day_streak(set(by_day), today), "today": by_day.get(today.isoformat(), 0)},
+        "class_timetable": {"slots": len(class_rows), "teachers": len(teachers)},
+        "practice": practice,
+        "official_attendance": {"total": official_total, "attended": official_came} if official_total else None,
+        "teacher": {"classes": sorted({(dept, div) for dept, div in class_list}),
+                    "published": [{"department": dept, "division": div, "slots": count} for dept, div, count in mine_published]} if me["role"] == "teacher" else None,
+    }
+
+
+# ---------- subjects and the timetable ----------
+@app.post("/api/study/subjects")
+async def create_study_subject(body: StudySubjectBody, current_user_id: int = Depends(get_current_user_id)):
+    values = clean_subject(body)
+    existing = await fetch_one_off(select(func.count()).select_from(DBStudySubject).where(DBStudySubject.user_id == current_user_id))
+    if existing[0][0] >= STUDY_MAX_SUBJECTS:
+        raise HTTPException(status_code=400, detail=f"You can keep up to {STUDY_MAX_SUBJECTS} subjects. Remove an old one first.")
+    rows = await run_returning(DBStudySubject.__table__.insert().values(user_id=current_user_id, created_at=utc_now_iso(), **values).returning(DBStudySubject.id))
+    return {"id": rows[0][0], **values, "archived": bool(values["archived"]), "present": 0, "absent": 0, "cancelled": 0}
+
+@app.put("/api/study/subjects/{subject_id}")
+async def update_study_subject(subject_id: int, body: StudySubjectBody, current_user_id: int = Depends(get_current_user_id)):
+    values = clean_subject(body)
+    rows = await run_returning(update(DBStudySubject).where(DBStudySubject.id == subject_id, DBStudySubject.user_id == current_user_id).values(**values).returning(DBStudySubject.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That subject is not in your list.")
+    return {"id": subject_id, **values, "archived": bool(values["archived"])}
+
+@app.delete("/api/study/subjects/{subject_id}")
+async def delete_study_subject(subject_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Removes a subject with its classes and attendance. Its tasks stay, without a subject."""
+    rows = await run_returning(delete(DBStudySubject).where(DBStudySubject.id == subject_id, DBStudySubject.user_id == current_user_id).returning(DBStudySubject.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That subject is not in your list.")
+    await asyncio.gather(
+        run_one_off(delete(DBStudySlot).where(DBStudySlot.subject_id == subject_id, DBStudySlot.user_id == current_user_id)),
+        run_one_off(delete(DBStudyAttendance).where(DBStudyAttendance.subject_id == subject_id, DBStudyAttendance.user_id == current_user_id)),
+        run_one_off(update(DBStudyTask).where(DBStudyTask.subject_id == subject_id, DBStudyTask.user_id == current_user_id).values(subject_id=None)),
+        run_one_off(update(DBStudySession).where(DBStudySession.subject_id == subject_id, DBStudySession.user_id == current_user_id).values(subject_id=None)),
+    )
+    return {"deleted": subject_id}
+
+def clean_slot(body: StudySlotBody) -> dict:
+    kind = body.kind or "lecture"
+    clean_slot_times(body.weekday, body.start_time, body.end_time, kind)
+    return {"subject_id": body.subject_id, "weekday": body.weekday, "start_time": body.start_time, "end_time": body.end_time,
+            "room": clean_text(body.room, 40, "room"), "kind": kind}
+
+@app.post("/api/study/slots")
+async def create_study_slot(body: StudySlotBody, current_user_id: int = Depends(get_current_user_id)):
+    values = clean_slot(body)
+    await require_own_subject(current_user_id, body.subject_id)
+    existing = await fetch_one_off(select(func.count()).select_from(DBStudySlot).where(DBStudySlot.user_id == current_user_id))
+    if existing[0][0] >= STUDY_MAX_SLOTS:
+        raise HTTPException(status_code=400, detail="Your timetable is full. Remove a class first.")
+    rows = await run_returning(DBStudySlot.__table__.insert().values(user_id=current_user_id, **values).returning(DBStudySlot.id))
+    return {"id": rows[0][0], **values}
+
+@app.put("/api/study/slots/{slot_id}")
+async def update_study_slot(slot_id: int, body: StudySlotBody, current_user_id: int = Depends(get_current_user_id)):
+    values = clean_slot(body)
+    await require_own_subject(current_user_id, body.subject_id)
+    rows = await run_returning(update(DBStudySlot).where(DBStudySlot.id == slot_id, DBStudySlot.user_id == current_user_id).values(**values).returning(DBStudySlot.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That class is not on your timetable.")
+    return {"id": slot_id, **values}
+
+@app.delete("/api/study/slots/{slot_id}")
+async def delete_study_slot(slot_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Takes a class off the timetable. Attendance already marked for it is kept."""
+    rows = await run_returning(delete(DBStudySlot).where(DBStudySlot.id == slot_id, DBStudySlot.user_id == current_user_id).returning(DBStudySlot.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That class is not on your timetable.")
+    return {"deleted": slot_id}
+
+
+# ---------- attendance ----------
+@app.post("/api/study/attendance")
+async def mark_study_attendance(body: StudyMarkBody, current_user_id: int = Depends(get_current_user_id)):
+    """One tap: present, absent or cancelled for one class on one day. An empty status takes the mark back."""
+    today = site_now().date()
+    if not HUB_DATE_PATTERN.match(body.date or "") or body.date > today.isoformat() or body.date < (today - timedelta(days=366)).isoformat():
+        raise HTTPException(status_code=400, detail="Attendance can be marked for today or a past day.")
+    slot_id = body.slot_id or 0
+    mine = (DBStudyAttendance.user_id == current_user_id, DBStudyAttendance.subject_id == body.subject_id,
+            DBStudyAttendance.date == body.date, DBStudyAttendance.slot_id == slot_id)
+    if body.status == "":
+        await run_one_off(delete(DBStudyAttendance).where(*mine))
+        return {"subject_id": body.subject_id, "date": body.date, "slot_id": slot_id, "status": ""}
+    if body.status not in STUDY_MARKS:
+        raise HTTPException(status_code=400, detail="A class is present, absent or cancelled.")
+    # Written only if the subject is the caller's own: the row is built from the subject itself
+    source = select(literal(current_user_id), DBStudySubject.id, literal(body.date), literal(slot_id), literal(body.status)).where(
+        DBStudySubject.id == body.subject_id, DBStudySubject.user_id == current_user_id)
+    rows = await run_returning(
+        pg_insert(DBStudyAttendance).from_select(["user_id", "subject_id", "date", "slot_id", "status"], source)
+        .on_conflict_do_update(index_elements=["user_id", "subject_id", "date", "slot_id"], set_={"status": body.status})
+        .returning(DBStudyAttendance.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That subject is not in your list.")
+    return {"subject_id": body.subject_id, "date": body.date, "slot_id": slot_id, "status": body.status}
+
+
+# ---------- planner ----------
+async def clean_task(body: StudyTaskBody, user_id: int) -> dict:
+    kind = body.kind or "assignment"
+    if kind not in STUDY_TASK_KINDS:
+        raise HTTPException(status_code=400, detail="Pick what kind of work this is.")
+    due_date, due_time = (body.due_date or "").strip(), (body.due_time or "").strip()
+    if due_date and not HUB_DATE_PATTERN.match(due_date):
+        raise HTTPException(status_code=400, detail="Pick the date from the calendar.")
+    if due_time and (not HUB_TIME_PATTERN.match(due_time) or not due_date):
+        raise HTTPException(status_code=400, detail="A time needs a date with it.")
+    if body.subject_id:
+        await require_own_subject(user_id, body.subject_id)
+    return {"title": clean_required(body.title, 140, "title"), "kind": kind, "subject_id": body.subject_id or None, "due_date": due_date,
+            "due_time": due_time, "notes": clean_text(body.notes, 1000, "note"), "done": 1 if body.done else 0,
+            "done_at": utc_now_iso() if body.done else ""}
+
+@app.post("/api/study/tasks")
+async def create_study_task(body: StudyTaskBody, current_user_id: int = Depends(get_current_user_id)):
+    values = await clean_task(body, current_user_id)
+    existing = await fetch_one_off(select(func.count()).select_from(DBStudyTask).where(DBStudyTask.user_id == current_user_id))
+    if existing[0][0] >= STUDY_MAX_TASKS:
+        raise HTTPException(status_code=400, detail="Your planner is full. Remove finished work first.")
+    rows = await run_returning(DBStudyTask.__table__.insert().values(user_id=current_user_id, created_at=utc_now_iso(), **values).returning(DBStudyTask.id))
+    return {"id": rows[0][0], **values, "done": bool(values["done"])}
+
+@app.put("/api/study/tasks/{task_id}")
+async def update_study_task(task_id: int, body: StudyTaskBody, current_user_id: int = Depends(get_current_user_id)):
+    values = await clean_task(body, current_user_id)
+    rows = await run_returning(update(DBStudyTask).where(DBStudyTask.id == task_id, DBStudyTask.user_id == current_user_id).values(**values).returning(DBStudyTask.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That is not in your planner.")
+    return {"id": task_id, **values, "done": bool(values["done"])}
+
+@app.delete("/api/study/tasks/{task_id}")
+async def delete_study_task(task_id: int, current_user_id: int = Depends(get_current_user_id)):
+    rows = await run_returning(delete(DBStudyTask).where(DBStudyTask.id == task_id, DBStudyTask.user_id == current_user_id).returning(DBStudyTask.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That is not in your planner.")
+    return {"deleted": task_id}
+
+
+# ---------- grades ----------
+@app.put("/api/study/grades/{semester}")
+async def save_study_grades(semester: int, body: StudyGradesBody, current_user_id: int = Depends(get_current_user_id)):
+    """Replaces one semester's subjects. An empty list removes the semester."""
+    if not (1 <= semester <= STUDY_MAX_SEMESTERS):
+        raise HTTPException(status_code=400, detail=f"Semesters are numbered 1 to {STUDY_MAX_SEMESTERS}.")
+    if len(body.rows) > 20:
+        raise HTTPException(status_code=400, detail="A semester holds up to 20 subjects.")
+    rows = []
+    for row in body.rows:
+        if not (0 < row.credits <= 40):
+            raise HTTPException(status_code=400, detail="Every subject needs its credits (more than 0).")
+        if not (0 <= row.points <= 10):
+            raise HTTPException(status_code=400, detail="Grade points go from 0 to 10.")
+        rows.append({"user_id": current_user_id, "semester": semester, "subject": clean_required(row.subject, 80, "subject name"),
+                     "credits": row.credits, "points": row.points, "grade": clean_text(row.grade, 4, "grade")})
+    async with AutocommitSession() as db:
+        await db.execute(delete(DBStudyGrade).where(DBStudyGrade.user_id == current_user_id, DBStudyGrade.semester == semester))
+        if rows:
+            await db.execute(DBStudyGrade.__table__.insert().values(rows))
+    return {"semester": semester, "rows": [{key: row[key] for key in ("subject", "credits", "points", "grade")} for row in rows]}
+
+
+# ---------- focus timer ----------
+@app.post("/api/study/sessions")
+async def log_study_session(body: StudySessionBody, current_user_id: int = Depends(get_current_user_id)):
+    """A finished stretch of the timer. Counts for today on the site's clock."""
+    if not (1 <= body.minutes <= STUDY_MAX_SESSION_MINUTES):
+        raise HTTPException(status_code=400, detail=f"One sitting is 1 to {STUDY_MAX_SESSION_MINUTES} minutes.")
+    if body.subject_id:
+        await require_own_subject(current_user_id, body.subject_id)
+    day = site_now().date().isoformat()
+    await run_one_off(DBStudySession.__table__.insert().values(user_id=current_user_id, subject_id=body.subject_id or None, day=day,
+                                                               minutes=body.minutes, created_at=utc_now_iso()))
+    return {"day": day, "minutes": body.minutes, "subject_id": body.subject_id or None}
+
+
+@app.put("/api/study/settings")
+async def save_study_settings(body: StudySettingsBody, current_user_id: int = Depends(get_current_user_id)):
+    values = {}
+    if body.clear_target:
+        values["target_cgpa"] = None
+    elif body.target_cgpa is not None:
+        if not (0 < body.target_cgpa <= 10):
+            raise HTTPException(status_code=400, detail="A target CGPA is between 0 and 10.")
+        values["target_cgpa"] = body.target_cgpa
+    for field, low, high in (("focus_minutes", 5, 120), ("break_minutes", 1, 60)):
+        value = getattr(body, field)
+        if value is not None:
+            if not (low <= value <= high):
+                raise HTTPException(status_code=400, detail=f"That length must be between {low} and {high} minutes.")
+            values[field] = value
+    for field in ("remind_classes", "remind_tasks", "remind_practice"):
+        if getattr(body, field) is not None:
+            values[field] = 1 if getattr(body, field) else 0
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+    await run_one_off(pg_insert(DBStudySetting).values(user_id=current_user_id, **values).on_conflict_do_update(index_elements=["user_id"], set_=values))
+    rows = await fetch_one_off(select(DBStudySetting).where(DBStudySetting.user_id == current_user_id))
+    return settings_card(rows[0][0])
+
+
+# ---------- a class timetable: a teacher publishes theirs, students copy it ----------
+@app.post("/api/study/class-timetable/publish")
+async def publish_class_timetable(body: ClassPublishBody, current_user_id: int = Depends(get_current_user_id)):
+    """Copies the teacher's own timetable to one class of their college, replacing what they published for it before."""
+    me = await require_hub_teacher(current_user_id)
+    department, division = clean_audience(body.department, body.division)
+    if not department:
+        raise HTTPException(status_code=400, detail="Pick the class this timetable is for.")
+    rows = await fetch_one_off(select(DBStudySlot, DBStudySubject.name, DBStudySubject.code).join(DBStudySubject, DBStudySubject.id == DBStudySlot.subject_id)
+                               .where(DBStudySlot.user_id == current_user_id))
+    if not rows:
+        raise HTTPException(status_code=400, detail="Add your classes to your own timetable first, then publish it.")
+    department, division = college_key_of(department), college_key_of(division)
+    copies = [{"college_key": me["key"], "department": department, "division": division, "teacher_id": current_user_id, "subject": name or "",
+               "code": code or "", "weekday": slot.weekday, "start_time": slot.start_time, "end_time": slot.end_time, "room": slot.room or "",
+               "kind": slot.kind or "lecture"} for slot, name, code in rows]
+    async with AutocommitSession() as db:
+        await db.execute(delete(DBClassTimetableSlot).where(DBClassTimetableSlot.teacher_id == current_user_id, DBClassTimetableSlot.college_key == me["key"],
+                                                            DBClassTimetableSlot.department == department, DBClassTimetableSlot.division == division))
+        await db.execute(DBClassTimetableSlot.__table__.insert().values(copies))
+    return {"department": department, "division": division, "slots": len(copies)}
+
+@app.post("/api/study/class-timetable/unpublish")
+async def unpublish_class_timetable(body: ClassPublishBody, current_user_id: int = Depends(get_current_user_id)):
+    await run_one_off(delete(DBClassTimetableSlot).where(DBClassTimetableSlot.teacher_id == current_user_id,
+                                                         DBClassTimetableSlot.department == college_key_of(body.department),
+                                                         DBClassTimetableSlot.division == college_key_of(body.division)))
+    return {"slots": 0}
+
+@app.post("/api/study/class-timetable/import")
+async def import_class_timetable(current_user_id: int = Depends(get_current_user_id)):
+    """Copies the classes teachers published for the caller's class into their own timetable. Running it again adds only what is new."""
+    me = await hub_identity(current_user_id)
+    department, division = class_keys(me)
+    if me["role"] != "student" or not department:
+        raise HTTPException(status_code=400, detail="A class timetable is for students with a college and department on their profile.")
+    published, subjects, slots = await asyncio.gather(
+        fetch_one_off(class_slots_query(me["key"], department, division)),
+        fetch_one_off(select(DBStudySubject.id, DBStudySubject.name).where(DBStudySubject.user_id == current_user_id)),
+        fetch_one_off(select(DBStudySlot.subject_id, DBStudySlot.weekday, DBStudySlot.start_time).where(DBStudySlot.user_id == current_user_id)),
+    )
+    if not published:
+        raise HTTPException(status_code=404, detail="No teacher has published a timetable for your class yet.")
+    subject_ids = {(name or "").strip().lower(): subject_id for subject_id, name in subjects}
+    new_names = list(dict.fromkeys(row.subject.strip() for (row,) in published if row.subject.strip().lower() not in subject_ids))
+    if len(subject_ids) + len(new_names) > STUDY_MAX_SUBJECTS:
+        raise HTTPException(status_code=400, detail="There is no room for these subjects. Remove old ones first.")
+    codes = {row.subject.strip().lower(): row.code or "" for (row,) in published}
+    if new_names:
+        created = await run_returning(DBStudySubject.__table__.insert().values([
+            {"user_id": current_user_id, "name": name, "code": codes.get(name.lower(), ""), "goal": 75, "base_attended": 0, "base_total": 0,
+             "archived": 0, "created_at": utc_now_iso()} for name in new_names]).returning(DBStudySubject.id, DBStudySubject.name))
+        subject_ids.update({name.strip().lower(): subject_id for subject_id, name in created})
+    have = {(subject_id, weekday, start_time) for subject_id, weekday, start_time in slots}
+    fresh = []
+    for (row,) in published:
+        subject_id = subject_ids[row.subject.strip().lower()]
+        if (subject_id, row.weekday, row.start_time) not in have:
+            have.add((subject_id, row.weekday, row.start_time))
+            fresh.append({"user_id": current_user_id, "subject_id": subject_id, "weekday": row.weekday, "start_time": row.start_time,
+                          "end_time": row.end_time, "room": row.room or "", "kind": row.kind or "lecture"})
+    if len(slots) + len(fresh) > STUDY_MAX_SLOTS:
+        raise HTTPException(status_code=400, detail="Your timetable is full. Remove a class first.")
+    if fresh:
+        await run_one_off(DBStudySlot.__table__.insert().values(fresh))
+    return {"subjects_added": len(new_names), "classes_added": len(fresh)}
+
+
+# ---------- what Home shows from all this, in one round trip ----------
+STUDY_HOME_SQL = text("""
+SELECT
+  (SELECT coalesce(json_agg(json_build_object('id', s.id, 'name', s.name, 'goal', coalesce(s.goal, 75),
+       'base_attended', coalesce(s.base_attended, 0), 'base_total', coalesce(s.base_total, 0))), '[]')
+     FROM study_subjects s WHERE s.user_id = :me AND coalesce(s.archived, 0) = 0) AS subjects,
+  (SELECT coalesce(json_agg(json_build_object('id', l.id, 'subject_id', l.subject_id, 'start_time', l.start_time, 'end_time', l.end_time,
+       'room', l.room, 'kind', l.kind) ORDER BY l.start_time), '[]')
+     FROM study_slots l WHERE l.user_id = :me AND l.weekday = :weekday) AS slots,
+  (SELECT coalesce(json_agg(json_build_array(a.subject_id, a.status, a.n)), '[]')
+     FROM (SELECT subject_id, status, count(*) AS n FROM study_attendance WHERE user_id = :me GROUP BY subject_id, status) a) AS counts,
+  (SELECT coalesce(json_agg(json_build_array(a.subject_id, a.slot_id, a.status)), '[]')
+     FROM study_attendance a WHERE a.user_id = :me AND a.date = :today) AS marked,
+  (SELECT coalesce(json_agg(json_build_object('id', t.id, 'title', t.title, 'kind', t.kind, 'due_date', t.due_date, 'due_time', t.due_time) ORDER BY t.due_date), '[]')
+     FROM study_tasks t WHERE t.user_id = :me AND coalesce(t.done, 0) = 0 AND t.due_date <> '' AND t.due_date <= :soon AND t.due_date >= :floor) AS tasks,
+  (SELECT coalesce(json_agg(json_build_array(d.day, d.minutes)), '[]')
+     FROM (SELECT day, sum(minutes) AS minutes FROM study_sessions WHERE user_id = :me AND day >= :since GROUP BY day) d) AS days
+""")
+
+async def home_study(user_id: int) -> dict:
+    """Today's classes, what is due, attendance warnings and the study streak, for Home and the reminders."""
+    now = site_now()
+    today = now.date()
+    rows = await fetch_one_off(STUDY_HOME_SQL.bindparams(
+        me=user_id, weekday=today.weekday(), today=today.isoformat(), soon=(today + timedelta(days=1)).isoformat(),
+        floor=(today - timedelta(days=HOME_OVERDUE_DAYS)).isoformat(), since=(today - timedelta(days=STUDY_STREAK_DAYS)).isoformat()))
+    subjects, slots, counts, marked, tasks, days = [json.loads(value) if isinstance(value, str) else (value or []) for value in rows[0]]
+    names = {subject["id"]: subject for subject in subjects}
+    marks = {(subject_id, slot_id): mark for subject_id, slot_id, mark in marked}
+    clock = now.strftime("%H:%M")
+    needs = []
+
+    classes = [{"slot_id": slot["id"], "subject_id": slot["subject_id"], "subject": names[slot["subject_id"]]["name"], "start_time": slot["start_time"],
+                "end_time": slot["end_time"], "room": slot["room"] or "", "kind": slot["kind"] or "lecture",
+                "status": marks.get((slot["subject_id"], slot["id"]), "")} for slot in slots if slot["subject_id"] in names]
+    unmarked = [entry for entry in classes if not entry["status"] and entry["end_time"] <= clock]
+    if unmarked:
+        needs.append(home_item("mark", f"Mark today's attendance ({len(unmarked)} {'class' if len(unmarked) == 1 else 'classes'})",
+                               ", ".join(dict.fromkeys(entry["subject"] for entry in unmarked))[:120], "study.html?tab=attendance"))
+    for task in tasks:
+        late = task["due_date"] < today.isoformat()
+        label = {"exam": "Exam", "practical": "Practical", "assignment": "Due", "other": "Due"}.get(task["kind"], "Due")
+        needs.append(home_item("task", f"{'Overdue' if late else label}: {task['title']}", task["due_time"] or "", "study.html?tab=planner", task["due_date"], True))
+
+    tally: dict = {}
+    for subject_id, mark, count in counts:
+        tally.setdefault(subject_id, {})[mark] = count
+    for subject in subjects:
+        own = tally.get(subject["id"], {})
+        present = subject["base_attended"] + own.get("present", 0)
+        absent = (subject["base_total"] - subject["base_attended"]) + own.get("absent", 0)
+        state = attendance_state(present, absent, subject["goal"])
+        if state["total"] >= STUDY_MIN_CLASSES and state["percent"] is not None and present * 100 < subject["goal"] * state["total"]:
+            detail = (f"Attend the next {state['need']} {'class' if state['need'] == 1 else 'classes'} to reach {subject['goal']}%."
+                      if state["need"] else f"{present} of {state['total']} classes.")
+            needs.append(home_item("attendance", f"{subject['name']} attendance is {state['percent']}%", detail, "study.html?tab=attendance", urgent=True))
+
+    minutes = {day: int(total or 0) for day, total in days}
+    week_from = (today - timedelta(days=6)).isoformat()
+    return {"needs": needs, "classes": classes, "streak": day_streak(set(minutes), today),
+            "week_minutes": sum(total for day, total in minutes.items() if day >= week_from), "today_minutes": minutes.get(today.isoformat(), 0)}
+
+
+# ---------- reminders ----------
+STUDY_WATCH_SECONDS = 300
+STUDY_CLASS_LEAD = 10            # minutes before a class the reminder aims for
+STUDY_EVENING_HOUR = 18          # "due tomorrow" goes out from this hour
+
+async def claim_reminders(pairs: list) -> set:
+    """Marks (user, key) reminders as sent and returns the ones that had not gone out before."""
+    if not pairs:
+        return set()
+    rows = await run_returning(
+        pg_insert(DBStudyReminder).values([{"user_id": user_id, "key": key, "sent_at": utc_now_iso()} for user_id, key in pairs])
+        .on_conflict_do_nothing(index_elements=["user_id", "key"]).returning(DBStudyReminder.user_id, DBStudyReminder.key))
+    return {(user_id, key) for user_id, key in rows}
+
+async def study_reminders_pass(send=None) -> int:
+    """One look for reminders that are due. send(user_ids, payload) defaults to a real push. Returns how many went out."""
+    send = send or send_push
+    now = site_now()
+    today = now.date()
+    sent = 0
+    has_device = select(DBPushSubscription.user_id)
+
+    # A class that starts in the next few minutes, for people who asked for class reminders
+    window_from = now.strftime("%H:%M")
+    window_to = (now + timedelta(minutes=STUDY_CLASS_LEAD + STUDY_WATCH_SECONDS // 60)).strftime("%H:%M")
+    if window_to > window_from:      # not across midnight
+        rows = await fetch_one_off(
+            select(DBStudySlot.id, DBStudySlot.user_id, DBStudySlot.start_time, DBStudySlot.room, DBStudySubject.name)
+            .join(DBStudySubject, DBStudySubject.id == DBStudySlot.subject_id)
+            .join(DBStudySetting, DBStudySetting.user_id == DBStudySlot.user_id)
+            .where(DBStudySlot.weekday == today.weekday(), DBStudySlot.start_time > window_from, DBStudySlot.start_time <= window_to,
+                   DBStudySetting.remind_classes == 1, DBStudySlot.user_id.in_(has_device)).limit(5000))
+        fresh = await claim_reminders([(row.user_id, f"class:{row.id}:{today.isoformat()}") for row in rows])
+        for row in rows:
+            if (row.user_id, f"class:{row.id}:{today.isoformat()}") in fresh:
+                sent += await send([row.user_id], {"title": f"{row.name} at {row.start_time}", "body": f"Room {row.room}" if row.room else "Your next class.",
+                                                   "link": "study.html", "tag": f"class:{row.id}"})
+
+    # Work due tomorrow, told once in the evening (the bell gets it too)
+    if now.hour >= STUDY_EVENING_HOUR:
+        tomorrow = (today + timedelta(days=1)).isoformat()
+        rows = await fetch_one_off(
+            select(DBStudyTask.id, DBStudyTask.user_id, DBStudyTask.title, DBStudyTask.kind)
+            .outerjoin(DBStudySetting, DBStudySetting.user_id == DBStudyTask.user_id)
+            .where(DBStudyTask.due_date == tomorrow, func.coalesce(DBStudyTask.done, 0) == 0, func.coalesce(DBStudySetting.remind_tasks, 1) == 1).limit(5000))
+        fresh = await claim_reminders([(row.user_id, f"task:{row.id}:{tomorrow}") for row in rows])
+        for row in rows:
+            if (row.user_id, f"task:{row.id}:{tomorrow}") in fresh:
+                await create_notification(row.user_id, "study", f"{'Exam' if row.kind == 'exam' else 'Due'} tomorrow: {row.title}", utc_now_iso(), "study.html?tab=planner")
+                sent += 1
+
+    # Daily practice: one evening nudge for people who answered yesterday and not yet today (a streak they would lose)
+    if now.hour >= PRACTICE_NUDGE_HOUR:
+        yesterday = (today - timedelta(days=1)).isoformat()
+        done_today = select(DBPracticeAnswer.user_id).where(DBPracticeAnswer.day == today.isoformat())
+        rows = await fetch_one_off(
+            select(DBPracticeAnswer.user_id).distinct()
+            .outerjoin(DBStudySetting, DBStudySetting.user_id == DBPracticeAnswer.user_id)
+            .where(DBPracticeAnswer.day == yesterday, DBPracticeAnswer.user_id.not_in(done_today), DBPracticeAnswer.user_id.in_(has_device),
+                   func.coalesce(DBStudySetting.remind_practice, 1) == 1).limit(5000))
+        fresh = await claim_reminders([(row[0], f"practice:{today.isoformat()}") for row in rows])
+        for user_id, _ in fresh:
+            sent += await send([user_id], {"title": "Keep your streak", "body": "Today's practice questions are waiting. It takes two minutes.",
+                                           "link": "practice.html", "tag": "practice"})
+    return sent
+
+async def study_watch():
+    """Every few minutes: class and deadline reminders. Old 'already sent' marks are cleared once a day."""
+    last_cleanup = ""
+    while True:
+        try:
+            await study_reminders_pass()
+            today = site_now().date().isoformat()
+            if today != last_cleanup:
+                last_cleanup = today
+                await run_one_off(delete(DBStudyReminder).where(DBStudyReminder.sent_at < (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()))
+        except Exception as e:
+            print("Error sending study reminders:", e)
+        await asyncio.sleep(STUDY_WATCH_SECONDS)
+
+
+# ==========================================
+# 23. NOTES AND PAST PAPERS: STUDENTS SHARE STUDY MATERIAL
+# ==========================================
+# Anyone logged in can read and upload. A file is always one the uploader sent through /api/upload/note-file.
+# A note with several reports is hidden until a teacher of its college or the founder has looked at it.
+class DBNote(Base):
+    __tablename__ = "notes"
+    id = Column(Integer, primary_key=True, index=True)
+    uploader_id = Column(Integer, index=True)
+    college_key = Column(String, index=True)       # the uploader's college when it was shared
+    college_name = Column(String, default="")
+    title = Column(String)
+    kind = Column(String, default="notes")         # notes, paper, lab, book
+    subject = Column(String, default="")
+    department = Column(String, default="")
+    semester = Column(Integer, nullable=True)
+    year = Column(Integer, nullable=True)          # the exam year of a past paper
+    description = Column(String, default="")
+    file_url = Column(String)
+    file_name = Column(String, default="")
+    file_size = Column(Integer, default=0)
+    downloads = Column(Integer, default=0)
+    removed = Column(Integer, default=0)           # 1: taken down by a moderator
+    created_at = Column(String)
+
+class DBNoteVote(Base):
+    __tablename__ = "note_votes"
+    __table_args__ = (UniqueConstraint("note_id", "user_id", name="ux_note_votes"),)
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+
+class DBNoteSave(Base):
+    __tablename__ = "note_saves"
+    __table_args__ = (UniqueConstraint("note_id", "user_id", name="ux_note_saves"),)
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+
+class DBNoteReport(Base):
+    __tablename__ = "note_reports"
+    __table_args__ = (UniqueConstraint("note_id", "user_id", name="ux_note_reports"),)
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    reason = Column(String, default="")
+    created_at = Column(String)
+
+
+NOTE_KINDS = ("notes", "paper", "lab", "book")
+NOTE_FILE_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt", "jpg", "jpeg", "png", "zip"}
+NOTE_MAX_BYTES = 25 * 1024 * 1024
+NOTE_LIST_LIMIT = 1500
+NOTE_UPLOADS_PER_DAY = 20
+NOTE_REPORTS_TO_HIDE = 3
+NOTE_FILE_PATTERN = r"/(static/uploads/notes/note_{user_id}_[0-9a-f]{{12}}\.[a-z0-9.]+)$"
+
+class NoteBody(BaseModel):
+    title: str
+    kind: Optional[str] = "notes"
+    subject: Optional[str] = ""
+    department: Optional[str] = ""
+    semester: Optional[int] = None
+    year: Optional[int] = None
+    description: Optional[str] = ""
+    file_url: Optional[str] = ""
+    file_name: Optional[str] = ""
+    may_share: Optional[bool] = False
+
+class NoteReportBody(BaseModel):
+    reason: Optional[str] = ""
+
+
+@app.post("/api/upload/note-file")
+async def upload_note_file(request: Request, file: UploadFile = File(...), current_user_id: int = Depends(get_current_user_id)):
+    """The file of a note or past paper. Documents, slides, pictures and zip files up to 25 MB."""
+    file_location = save_upload(file, "static/uploads/notes", f"note_{current_user_id}_{uuid.uuid4().hex[:12]}", NOTE_FILE_EXTENSIONS, NOTE_MAX_BYTES)
+    return {"url": upload_url(request, file_location), "filename": file.filename, "size": os.path.getsize(file_location)}
+
+def clean_note(body: NoteBody) -> dict:
+    kind = body.kind or "notes"
+    if kind not in NOTE_KINDS:
+        raise HTTPException(status_code=400, detail="Pick what this is: notes, a past paper, a lab manual or a book.")
+    if body.semester is not None and not (1 <= body.semester <= STUDY_MAX_SEMESTERS):
+        raise HTTPException(status_code=400, detail=f"Semesters are numbered 1 to {STUDY_MAX_SEMESTERS}.")
+    this_year = site_now().year
+    if body.year is not None and not (1990 <= body.year <= this_year + 1):
+        raise HTTPException(status_code=400, detail=f"The year must be between 1990 and {this_year + 1}.")
+    return {"title": clean_required(body.title, 140, "title"), "kind": kind, "subject": clean_required(body.subject, 80, "subject"),
+            "department": clean_text(body.department, 120, "branch"), "semester": body.semester, "year": body.year,
+            "description": clean_text(body.description, 600, "description")}
+
+async def note_moderator(user_id: int) -> tuple:
+    """(is founder, the college key this person teaches at or '')."""
+    rows = await fetch_one_off(select(DBUser.is_founder, DBUser.teacher_of).where(DBUser.id == user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    return (rows[0][0] or 0) == 1, (rows[0][1] or "").strip()
+
+
+@app.get("/api/notes")
+async def get_notes(current_user_id: int = Depends(get_current_user_id)):
+    """Every shared note and paper, in one request. Searching, filtering and sorting happen in the browser."""
+    votes = select(func.count()).select_from(DBNoteVote).where(DBNoteVote.note_id == DBNote.id).scalar_subquery()
+    reports = select(func.count()).select_from(DBNoteReport).where(DBNoteReport.note_id == DBNote.id).scalar_subquery()
+    rows, me = await asyncio.gather(
+        fetch_one_off(
+            select(DBNote, DBUser.name, votes.label("votes"), reports.label("reports"),
+                   exists().where(DBNoteVote.note_id == DBNote.id, DBNoteVote.user_id == current_user_id).label("voted"),
+                   exists().where(DBNoteSave.note_id == DBNote.id, DBNoteSave.user_id == current_user_id).label("saved"),
+                   exists().where(DBNoteReport.note_id == DBNote.id, DBNoteReport.user_id == current_user_id).label("reported"))
+            .outerjoin(DBUser, DBUser.id == DBNote.uploader_id)
+            .where(func.coalesce(DBNote.removed, 0) == 0).order_by(DBNote.id.desc()).limit(NOTE_LIST_LIMIT)),
+        fetch_one_off(select(DBUser.college_name, DBUser.department, DBUser.is_founder, DBUser.teacher_of).where(DBUser.id == current_user_id)),
+    )
+    if not me:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    founder, teaches = (me[0].is_founder or 0) == 1, (me[0].teacher_of or "").strip()
+    my_college = teaches or college_key_of(me[0].college_name)
+    notes = []
+    for note, uploader, vote_count, report_count, voted, saved, reported in rows:
+        mine = note.uploader_id == current_user_id
+        moderates = founder or (bool(teaches) and teaches == note.college_key)
+        hidden = (report_count or 0) >= NOTE_REPORTS_TO_HIDE
+        if hidden and not (mine or moderates):
+            continue
+        notes.append({
+            "id": note.id, "title": note.title or "", "kind": note.kind or "notes", "subject": note.subject or "", "department": note.department or "",
+            "semester": note.semester, "year": note.year, "description": note.description or "", "file_url": note.file_url or "",
+            "file_name": note.file_name or "", "file_size": note.file_size or 0, "downloads": note.downloads or 0, "created_at": note.created_at or "",
+            "college": note.college_name or "", "same_college": bool(my_college) and note.college_key == my_college,
+            "uploader_id": note.uploader_id, "uploader": uploader or "Someone", "votes": vote_count or 0, "voted": bool(voted), "saved": bool(saved),
+            "reported": bool(reported), "mine": mine, "can_remove": mine or moderates, "hidden": hidden,
+            "reports": (report_count or 0) if moderates else 0,
+        })
+    return {"notes": notes, "me": {"college": (me[0].college_name or "").strip(), "department": (me[0].department or "").strip(), "has_college": bool(my_college)}}
+
+
+@app.post("/api/notes")
+async def create_note(body: NoteBody, current_user_id: int = Depends(get_current_user_id)):
+    values = clean_note(body)
+    if not body.may_share:
+        raise HTTPException(status_code=400, detail="Confirm that you are allowed to share this file.")
+    match = re.search(NOTE_FILE_PATTERN.format(user_id=current_user_id), body.file_url or "")
+    if not match or not os.path.isfile(match.group(1)):
+        raise HTTPException(status_code=400, detail="Attach the file by uploading it here.")
+    day_ago = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    me, recent = await asyncio.gather(
+        fetch_one_off(select(DBUser.college_name, DBUser.name, DBUser.teacher_of).where(DBUser.id == current_user_id)),
+        fetch_one_off(select(func.count()).select_from(DBNote).where(DBNote.uploader_id == current_user_id, DBNote.created_at >= day_ago)),
+    )
+    if recent[0][0] >= NOTE_UPLOADS_PER_DAY:
+        raise HTTPException(status_code=429, detail=f"You can share {NOTE_UPLOADS_PER_DAY} files a day. Come back tomorrow.")
+    college = (me[0].college_name or "").strip()
+    values.update(uploader_id=current_user_id, college_key=(me[0].teacher_of or "").strip() or college_key_of(college), college_name=college,
+                  file_url=body.file_url, file_name=clean_text(body.file_name, 200, "file name") or "file", file_size=os.path.getsize(match.group(1)),
+                  downloads=0, removed=0, created_at=utc_now_iso())
+    rows = await run_returning(DBNote.__table__.insert().values(**values).returning(DBNote.id))
+    spawn_background(log_activity_later(current_user_id, "Shared Notes", f"You shared: {values['title']}."))
+    return {"id": rows[0][0]}
+
+@app.put("/api/notes/{note_id}")
+async def update_note(note_id: int, body: NoteBody, current_user_id: int = Depends(get_current_user_id)):
+    """The uploader corrects the details. The file itself stays."""
+    rows = await run_returning(update(DBNote).where(DBNote.id == note_id, DBNote.uploader_id == current_user_id).values(**clean_note(body)).returning(DBNote.id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="Only the person who shared this can edit it.")
+    return {"id": note_id}
+
+@app.delete("/api/notes/{note_id}")
+async def delete_note(note_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """The uploader deletes their note with its file. A teacher of that college or the founder takes it down."""
+    rows, (founder, teaches) = await asyncio.gather(
+        fetch_one_off(select(DBNote.uploader_id, DBNote.college_key, DBNote.file_url, DBNote.title).where(DBNote.id == note_id)),
+        note_moderator(current_user_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That is no longer here.")
+    uploader_id, college, file_url, title = rows[0]
+    if uploader_id != current_user_id:
+        if not (founder or (teaches and teaches == college)):
+            raise HTTPException(status_code=403, detail="Only the person who shared this, a teacher of that college or the founder can remove it.")
+        await run_one_off(update(DBNote).where(DBNote.id == note_id).values(removed=1))
+        spawn_background(create_notification(uploader_id, "study", f"A moderator took down your shared file: {(title or '')[:80]}", utc_now_iso(), "notes.html"))
+        return {"removed": note_id}
+    await run_one_off(delete(DBNote).where(DBNote.id == note_id))
+    await asyncio.gather(*(run_one_off(delete(model).where(model.note_id == note_id)) for model in (DBNoteVote, DBNoteSave, DBNoteReport)))
+    match = re.search(NOTE_FILE_PATTERN.format(user_id=uploader_id), file_url or "")
+    if match and os.path.isfile(match.group(1)):
+        os.remove(match.group(1))
+    return {"deleted": note_id}
+
+async def toggle_note_mark(model, note_id: int, user_id: int) -> bool:
+    """Adds the caller's vote or save if it is not there, removes it if it is. Returns whether it is there now."""
+    found = await fetch_one_off(select(exists().where(DBNote.id == note_id, func.coalesce(DBNote.removed, 0) == 0)))
+    if not found[0][0]:
+        raise HTTPException(status_code=404, detail="That is no longer here.")
+    gone = await run_returning(delete(model).where(model.note_id == note_id, model.user_id == user_id).returning(model.id))
+    if gone:
+        return False
+    await run_one_off(pg_insert(model).values(note_id=note_id, user_id=user_id).on_conflict_do_nothing(index_elements=["note_id", "user_id"]))
+    return True
+
+@app.post("/api/notes/{note_id}/vote")
+async def vote_note(note_id: int, current_user_id: int = Depends(get_current_user_id)):
+    voted = await toggle_note_mark(DBNoteVote, note_id, current_user_id)
+    count = await fetch_one_off(select(func.count()).select_from(DBNoteVote).where(DBNoteVote.note_id == note_id))
+    return {"voted": voted, "votes": count[0][0]}
+
+@app.post("/api/notes/{note_id}/save")
+async def save_note(note_id: int, current_user_id: int = Depends(get_current_user_id)):
+    return {"saved": await toggle_note_mark(DBNoteSave, note_id, current_user_id)}
+
+@app.post("/api/notes/{note_id}/download")
+async def count_note_download(note_id: int, current_user_id: int = Depends(get_current_user_id)):
+    rows = await run_returning(update(DBNote).where(DBNote.id == note_id).values(downloads=func.coalesce(DBNote.downloads, 0) + 1).returning(DBNote.downloads))
+    return {"downloads": rows[0][0] if rows else 0}
+
+@app.post("/api/notes/{note_id}/report")
+async def report_note(note_id: int, body: NoteReportBody, current_user_id: int = Depends(get_current_user_id)):
+    """Tell the moderators something is wrong with a file (wrong subject, not theirs to share, spam)."""
+    rows = await fetch_one_off(select(DBNote.uploader_id, DBNote.title).where(DBNote.id == note_id, func.coalesce(DBNote.removed, 0) == 0))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That is no longer here.")
+    if rows[0][0] == current_user_id:
+        raise HTTPException(status_code=400, detail="This is your own file. You can delete it instead.")
+    added = await run_returning(pg_insert(DBNoteReport).values(note_id=note_id, user_id=current_user_id, reason=clean_text(body.reason, 300, "reason"), created_at=utc_now_iso())
+                                .on_conflict_do_nothing(index_elements=["note_id", "user_id"]).returning(DBNoteReport.id))
+    if added:
+        spawn_background(notify_founders("study", f"A shared file was reported: {(rows[0][1] or '')[:80]}", "notes.html?show=reported"))
+    return {"reported": True}
+
+@app.post("/api/notes/{note_id}/keep")
+async def keep_note(note_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """A moderator looked at a reported file and found nothing wrong: its reports are cleared."""
+    rows, (founder, teaches) = await asyncio.gather(
+        fetch_one_off(select(DBNote.college_key).where(DBNote.id == note_id)), note_moderator(current_user_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That is no longer here.")
+    if not (founder or (teaches and teaches == rows[0][0])):
+        raise HTTPException(status_code=403, detail="Only a teacher of that college or the founder can do this.")
+    await run_one_off(delete(DBNoteReport).where(DBNoteReport.note_id == note_id))
+    return {"kept": note_id}
+
+
+# ==========================================
+# 24. DAILY PRACTICE: ONE APTITUDE AND ONE CODING QUESTION A DAY, STREAKS AND A COLLEGE LEADERBOARD
+# ==========================================
+# The questions come from practice_bank.json (loaded once into an empty table) plus any the founder adds.
+# Each day every track shows the next question of its list; when the list ends it starts again.
+class DBPracticeQuestion(Base):
+    __tablename__ = "practice_questions"
+    id = Column(Integer, primary_key=True, index=True)
+    track = Column(String, index=True)             # aptitude, coding
+    topic = Column(String, default="")
+    question = Column(String)
+    code = Column(String, default="")              # a code listing shown under the question, if any
+    options = Column(String)                       # JSON list of strings
+    answer = Column(Integer)                       # index into options
+    explanation = Column(String, default="")
+    active = Column(Integer, default=1)
+    created_by = Column(Integer, nullable=True)
+    created_at = Column(String)
+
+class DBPracticeAnswer(Base):
+    __tablename__ = "practice_answers"
+    __table_args__ = (UniqueConstraint("user_id", "question_id", "day", name="ux_practice_answers"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    question_id = Column(Integer, index=True)
+    day = Column(String, index=True, default="")   # the day it was the daily question; empty for practice on an earlier one
+    chosen = Column(Integer)
+    correct = Column(Integer, default=0)
+    points = Column(Integer, default=0)
+    answered_at = Column(String)
+
+
+PRACTICE_TRACKS = (("aptitude", "Aptitude"), ("coding", "Coding and CS"))
+PRACTICE_EPOCH = datetime(2026, 1, 5).date()
+PRACTICE_POINTS_RIGHT = 10
+PRACTICE_POINTS_TRIED = 2
+PRACTICE_ARCHIVE_DAYS = 14
+PRACTICE_BANK_FILE = "practice_bank.json"
+PRACTICE_NUDGE_HOUR = 19
+practice_cache: dict = {"at": 0.0, "by_track": {}, "by_id": {}}
+
+class PracticeAnswerBody(BaseModel):
+    question_id: int
+    chosen: int
+
+class PracticeQuestionBody(BaseModel):
+    track: str
+    topic: Optional[str] = ""
+    question: str
+    code: Optional[str] = ""
+    options: List[str]
+    answer: int
+    explanation: Optional[str] = ""
+
+
+async def seed_practice_bank():
+    """Fills an empty question table from practice_bank.json. Runs at startup."""
+    try:
+        count = await fetch_one_off(select(func.count()).select_from(DBPracticeQuestion))
+        if count[0][0] or not os.path.exists(PRACTICE_BANK_FILE):
+            return
+        with open(PRACTICE_BANK_FILE, encoding="utf-8") as bank_file:
+            bank = json.load(bank_file)
+        now_iso = utc_now_iso()
+        rows = [{"track": item["track"], "topic": item.get("topic", ""), "question": item["q"], "code": item.get("code", ""),
+                 "options": json.dumps(item["options"]), "answer": item["answer"], "explanation": item.get("why", ""), "active": 1, "created_at": now_iso}
+                for item in bank if item["track"] in dict(PRACTICE_TRACKS) and 0 <= item["answer"] < len(item["options"])]
+        if rows:
+            await run_one_off(DBPracticeQuestion.__table__.insert().values(rows))
+        practice_cache["at"] = 0.0
+        print(f"Practice questions loaded: {len(rows)}")
+    except Exception as e:
+        print("Could not load the practice questions:", e)
+
+async def practice_questions() -> dict:
+    """Every active question, kept in memory for ten minutes (they rarely change)."""
+    now = datetime.now(timezone.utc).timestamp()
+    if now - practice_cache["at"] > 600 or not practice_cache["by_id"]:
+        rows = await fetch_one_off(select(DBPracticeQuestion).where(func.coalesce(DBPracticeQuestion.active, 1) == 1).order_by(DBPracticeQuestion.id))
+        by_track: dict = {track: [] for track, _ in PRACTICE_TRACKS}
+        for (question,) in rows:
+            if question.track in by_track:
+                by_track[question.track].append(question)
+        practice_cache.update(at=now, by_track=by_track, by_id={question.id: question for (question,) in rows})
+    return practice_cache
+
+def daily_question(cache: dict, track: str, day):
+    """The question a track shows on a day: the lists are walked one a day and start again at the end."""
+    questions = cache["by_track"].get(track) or []
+    return questions[(day - PRACTICE_EPOCH).days % len(questions)] if questions else None
+
+def practice_card(question: DBPracticeQuestion, answer_row=None) -> dict:
+    """A question as the browser gets it. The right answer and the explanation are added only once it has been answered."""
+    card = {"id": question.id, "track": question.track, "topic": question.topic or "", "question": question.question or "",
+            "code": question.code or "", "options": json_list(question.options), "mine": None}
+    if answer_row is not None:
+        card["mine"] = {"chosen": answer_row.chosen, "correct": bool(answer_row.correct), "points": answer_row.points or 0,
+                        "answer": question.answer, "explanation": question.explanation or ""}
+    return card
+
+async def practice_glance(user_id: int) -> dict:
+    """The practice streak and how much of today is done, for Home and My Study. One read."""
+    today = site_now().date()
+    rows, cache = await asyncio.gather(
+        fetch_one_off(select(DBPracticeAnswer.day, func.count()).where(DBPracticeAnswer.user_id == user_id, DBPracticeAnswer.day != "").group_by(DBPracticeAnswer.day)),
+        practice_questions())
+    done = dict(rows)
+    return {"streak": day_streak(set(done), today), "done_today": done.get(today.isoformat(), 0),
+            "total_today": sum(1 for track, _ in PRACTICE_TRACKS if cache["by_track"].get(track))}
+
+
+@app.get("/api/practice")
+async def get_practice(current_user_id: int = Depends(get_current_user_id)):
+    """Today's questions, the last two weeks to catch up on, the caller's streak and points, and their college's leaderboard."""
+    today = site_now().date()
+    week_from = (today - timedelta(days=6)).isoformat()
+    college = select(USER_COLLEGE_KEY).where(DBUser.id == current_user_id).scalar_subquery()
+    picture = case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic)
+
+    def board(*conditions):
+        points = func.sum(DBPracticeAnswer.points)
+        return (select(DBUser.id, DBUser.name, picture, points.label("points"))
+                .join(DBPracticeAnswer, DBPracticeAnswer.user_id == DBUser.id)
+                .where(USER_COLLEGE_KEY == college, *conditions).group_by(DBUser.id, DBUser.name, DBUser.profile_pic)
+                .having(points > 0).order_by(points.desc(), DBUser.id).limit(10))
+
+    cache, answers, me, week_board, all_board = await asyncio.gather(
+        practice_questions(),
+        fetch_one_off(select(DBPracticeAnswer).where(DBPracticeAnswer.user_id == current_user_id).order_by(DBPracticeAnswer.id.desc()).limit(3000)),
+        fetch_one_off(select(DBUser.college_name, DBUser.is_founder).where(DBUser.id == current_user_id)),
+        fetch_one_off(board(DBPracticeAnswer.day >= week_from)),
+        fetch_one_off(board()),
+    )
+    mine: dict = {}
+    for (row,) in answers:
+        mine.setdefault((row.question_id, row.day), row)
+    latest: dict = {}
+    for (row,) in reversed(answers):
+        latest[row.question_id] = row          # the newest answer to a question, whatever day it counted for
+
+    daily = []
+    for track, label in PRACTICE_TRACKS:
+        question = daily_question(cache, track, today)
+        if question:
+            daily.append({**practice_card(question, mine.get((question.id, today.isoformat()))), "track_label": label})
+    archive = []
+    for back in range(1, PRACTICE_ARCHIVE_DAYS + 1):
+        day = today - timedelta(days=back)
+        for track, label in PRACTICE_TRACKS:
+            question = daily_question(cache, track, day)
+            if question:
+                answered = mine.get((question.id, day.isoformat())) or mine.get((question.id, "")) or latest.get(question.id)
+                archive.append({**practice_card(question, answered), "track_label": label, "day": day.isoformat()})
+    daily_days = {row.day for (row,) in answers if row.day}
+    as_board = lambda rows: [{"id": user_id, "name": name or "Someone", "profile_pic": pic or "", "points": int(points or 0), "me": user_id == current_user_id}
+                             for user_id, name, pic, points in rows]
+    return {
+        "today": today.isoformat(), "daily": daily, "archive": archive,
+        "stats": {"streak": day_streak(daily_days, today), "points": sum(row.points or 0 for (row,) in answers),
+                  "week_points": sum(row.points or 0 for (row,) in answers if row.day >= week_from),
+                  "answered": len(answers), "correct": sum(1 for (row,) in answers if row.correct)},
+        "college": (me[0].college_name or "").strip() if me else "",
+        "leaderboard": {"week": as_board(week_board), "all": as_board(all_board)},
+        "founder": bool(me) and (me[0].is_founder or 0) == 1,
+        "bank": {track: len(cache["by_track"].get(track) or []) for track, _ in PRACTICE_TRACKS},
+    }
+
+
+@app.post("/api/practice/answer")
+async def answer_practice(body: PracticeAnswerBody, current_user_id: int = Depends(get_current_user_id)):
+    """One answer per question per day. Today's question earns points and keeps the streak; an earlier one is practice."""
+    cache = await practice_questions()
+    question = cache["by_id"].get(body.question_id)
+    today = site_now().date()
+    if not question:
+        raise HTTPException(status_code=404, detail="That question is no longer here.")
+    # Only questions that have already been shown can be answered, so nobody can read ahead
+    shown_on = [today - timedelta(days=back) for back in range(0, PRACTICE_ARCHIVE_DAYS + 1)
+                if daily_question(cache, question.track, today - timedelta(days=back)).id == question.id]
+    if not shown_on:
+        raise HTTPException(status_code=403, detail="That question has not come up yet.")
+    options = json_list(question.options)
+    if not (0 <= body.chosen < len(options)):
+        raise HTTPException(status_code=400, detail="Pick one of the choices.")
+    is_today = shown_on[0] == today
+    correct = body.chosen == question.answer
+    points = (PRACTICE_POINTS_RIGHT if correct else PRACTICE_POINTS_TRIED) if is_today else 0
+    day = today.isoformat() if is_today else ""
+    saved = await run_returning(
+        pg_insert(DBPracticeAnswer).values(user_id=current_user_id, question_id=question.id, day=day, chosen=body.chosen, correct=1 if correct else 0,
+                                           points=points, answered_at=utc_now_iso())
+        .on_conflict_do_nothing(index_elements=["user_id", "question_id", "day"]).returning(DBPracticeAnswer.id))
+    if not saved:
+        raise HTTPException(status_code=409, detail="You have already answered this one.")
+    glance = await practice_glance(current_user_id)
+    return {"question_id": question.id, "correct": correct, "answer": question.answer, "explanation": question.explanation or "",
+            "points": points, "daily": is_today, "streak": glance["streak"]}
+
+
+@app.post("/api/founder/practice-questions")
+async def add_practice_question(body: PracticeQuestionBody, founder_id: int = Depends(require_founder)):
+    """The founder adds a question to the end of a track's list."""
+    if body.track not in dict(PRACTICE_TRACKS):
+        raise HTTPException(status_code=400, detail="Pick the track: aptitude or coding.")
+    options = [clean_required(option, 300, "choice") for option in body.options]
+    if not (2 <= len(options) <= 5) or len(set(options)) != len(options):
+        raise HTTPException(status_code=400, detail="Give 2 to 5 different choices.")
+    if not (0 <= body.answer < len(options)):
+        raise HTTPException(status_code=400, detail="Mark which choice is right.")
+    rows = await run_returning(DBPracticeQuestion.__table__.insert().values(
+        track=body.track, topic=clean_text(body.topic, 60, "topic"), question=clean_required(body.question, 1200, "question"),
+        code=(body.code or "").rstrip()[:3000], options=json.dumps(options), answer=body.answer, explanation=clean_text(body.explanation, 1500, "explanation"),
+        active=1, created_by=founder_id, created_at=utc_now_iso()).returning(DBPracticeQuestion.id))
+    practice_cache["at"] = 0.0
+    return {"id": rows[0][0]}
+
+
+# ==========================================
+# 25. RESUME BUILDER
+# ==========================================
+# The resume itself is laid out in the browser (resume.js). The server keeps one saved copy per person
+# and hands over what the first draft is filled from: the profile, the projects and the CGPA from My Study.
+class DBResume(Base):
+    __tablename__ = "resumes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, index=True)
+    data = Column(String)                          # JSON, shaped by resume.js
+    updated_at = Column(String)
+
+
+RESUME_TEMPLATES = ("classic", "modern")
+RESUME_TEXT_FIELDS = {"name": 80, "headline": 120, "email": 160, "phone": 30, "city": 80, "summary": 700}
+# The lists of a resume: how many entries each may hold and the fields of one entry with their length limits
+RESUME_LISTS = {
+    "links": (6, {"label": 40, "url": 300}),
+    "education": (6, {"school": 140, "degree": 140, "years": 40, "score": 40}),
+    "projects": (8, {"title": 120, "tech": 160, "description": 500, "link": 300}),
+    "experience": (8, {"role": 120, "org": 140, "years": 40, "description": 500}),
+}
+RESUME_WORD_LISTS = {"skills": (40, 40), "achievements": (10, 200)}     # entries, characters each
+
+class ResumeBody(BaseModel):
+    data: dict
+
+def clean_resume(data: dict) -> dict:
+    """Keeps only what a resume is made of, trimmed to its limits. Anything else that was sent is dropped."""
+    def words(value, limit) -> str:
+        return str(value if value is not None else "").strip()[:limit]
+    clean = {"template": data.get("template") if data.get("template") in RESUME_TEMPLATES else "classic", "show_cgpa": bool(data.get("show_cgpa"))}
+    for field, limit in RESUME_TEXT_FIELDS.items():
+        clean[field] = words(data.get(field), limit)
+    for field, (most, shape) in RESUME_LISTS.items():
+        entries = data.get(field) if isinstance(data.get(field), list) else []
+        clean[field] = [{key: words(entry.get(key), limit) for key, limit in shape.items()} for entry in entries[:most] if isinstance(entry, dict)]
+        clean[field] = [entry for entry in clean[field] if any(entry.values())]
+    for field, (most, limit) in RESUME_WORD_LISTS.items():
+        entries = data.get(field) if isinstance(data.get(field), list) else []
+        clean[field] = [text_ for text_ in (words(entry, limit) for entry in entries[:most] if isinstance(entry, (str, int, float))) if text_]
+    for entry in clean["links"] + clean["projects"]:
+        key = "url" if "url" in entry else "link"
+        if entry[key] and not HUB_LINK_PATTERN.match(entry[key]):
+            raise HTTPException(status_code=400, detail="Links must start with http:// or https://")
+    if not clean["name"]:
+        raise HTTPException(status_code=400, detail="A resume needs your name.")
+    return clean
+
+
+@app.get("/api/resume")
+async def get_resume(current_user_id: int = Depends(get_current_user_id)):
+    """The caller's saved resume (if any) and what a first draft is filled from."""
+    saved, profile, projects, grades = await asyncio.gather(
+        fetch_one_off(select(DBResume.data, DBResume.updated_at).where(DBResume.user_id == current_user_id)),
+        fetch_one_off(select(DBUser.name, DBUser.email, DBUser.college_name, DBUser.department, DBUser.city, DBUser.skills, DBUser.bio,
+                             DBUser.github_username, DBUser.portfolio_link, DBUser.profession, DBUser.experience_years).where(DBUser.id == current_user_id)),
+        fetch_one_off(select(DBProject).where(DBProject.user_id == current_user_id).order_by(DBProject.id.desc()).limit(12)),
+        fetch_one_off(select(func.sum(DBStudyGrade.credits), func.sum(DBStudyGrade.credits * DBStudyGrade.points)).where(DBStudyGrade.user_id == current_user_id)),
+    )
+    if not profile:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    row = profile[0]
+    credits, earned = (grades[0][0] or 0, grades[0][1] or 0) if grades else (0, 0)
+    data = None
+    if saved:
+        try:
+            data = json.loads(saved[0][0])
+        except (ValueError, TypeError):
+            data = None
+    return {
+        "saved": data, "updated_at": saved[0][1] if saved else "",
+        "profile": {"name": row.name or "", "email": row.email or "", "college_name": (row.college_name or "").strip(), "department": (row.department or "").strip(),
+                    "city": (row.city or "").strip(), "skills": row.skills or "", "bio": row.bio or "", "github_username": row.github_username or "",
+                    "portfolio_link": row.portfolio_link or "", "profession": row.profession or "", "experience_years": row.experience_years},
+        "projects": [serialize_project(project) for (project,) in projects],
+        "cgpa": round(earned / credits, 2) if credits else None,
+    }
+
+@app.put("/api/resume")
+async def save_resume(body: ResumeBody, current_user_id: int = Depends(get_current_user_id)):
+    data = clean_resume(body.data)
+    now_iso = utc_now_iso()
+    await run_one_off(pg_insert(DBResume).values(user_id=current_user_id, data=json.dumps(data), updated_at=now_iso)
+                      .on_conflict_do_update(index_elements=["user_id"], set_={"data": json.dumps(data), "updated_at": now_iso}))
+    return {"saved": data, "updated_at": now_iso}
+
+@app.delete("/api/resume")
+async def delete_resume(current_user_id: int = Depends(get_current_user_id)):
+    """Forget the saved resume. The next visit starts again from the profile."""
+    await run_one_off(delete(DBResume).where(DBResume.user_id == current_user_id))
+    return {"saved": None}

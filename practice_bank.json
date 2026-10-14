@@ -1,0 +1,1581 @@
+[
+ {
+  "track": "aptitude",
+  "topic": "Percentages",
+  "q": "A shirt priced at ₹800 is sold at a 15% discount. What is the selling price?",
+  "options": [
+   "₹650",
+   "₹680",
+   "₹700",
+   "₹720"
+  ],
+  "answer": 1,
+  "why": "15% of 800 is 120, and 800 − 120 = 680."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Interest",
+  "q": "The difference between compound and simple interest on ₹8,000 for 2 years at 5% a year is:",
+  "options": [
+   "₹10",
+   "₹20",
+   "₹40",
+   "₹80"
+  ],
+  "answer": 1,
+  "why": "For 2 years the difference is P × (r/100)² = 8000 × 0.0025 = 20."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Family relations",
+  "q": "Pointing to a boy, Asha says: 'He is the son of my mother's only daughter.' How is the boy related to Asha?",
+  "options": [
+   "Her brother",
+   "Her nephew",
+   "Her son",
+   "Her cousin"
+  ],
+  "answer": 2,
+  "why": "Her mother's only daughter is Asha herself, so the boy is her son."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Speed and distance",
+  "q": "A train 150 m long passes a pole in 10 seconds. Its speed in km/h is:",
+  "options": [
+   "45",
+   "54",
+   "60",
+   "72"
+  ],
+  "answer": 1,
+  "why": "150 ÷ 10 = 15 m/s, and 15 × 18/5 = 54 km/h."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Arrangements",
+  "q": "In how many ways can a committee of 2 be chosen from 6 people?",
+  "options": [
+   "12",
+   "15",
+   "30",
+   "36"
+  ],
+  "answer": 1,
+  "why": "6 × 5 ÷ 2 = 15. The order of the two people does not matter."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Numbers",
+  "q": "How many prime numbers are there between 10 and 30?",
+  "options": [
+   "5",
+   "6",
+   "7",
+   "8"
+  ],
+  "answer": 1,
+  "why": "They are 11, 13, 17, 19, 23 and 29: six of them."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Averages",
+  "q": "The average age of 30 students is 15 years. When the teacher is included, it becomes 16. The teacher's age is:",
+  "options": [
+   "40",
+   "45",
+   "46",
+   "61"
+  ],
+  "answer": 2,
+  "why": "31 × 16 = 496 and 30 × 15 = 450. The teacher is 496 − 450 = 46."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Clocks",
+  "q": "What is the angle between the hour and minute hands at 6:30?",
+  "options": [
+   "0°",
+   "15°",
+   "30°",
+   "45°"
+  ],
+  "answer": 1,
+  "why": "The minute hand is at 180°. The hour hand has moved half an hour past 6: 180° + 15° = 195°. The gap is 15°."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Profit and loss",
+  "q": "A shopkeeper marks an item 25% above cost and then gives a 10% discount. His profit percent is:",
+  "options": [
+   "10%",
+   "12.5%",
+   "15%",
+   "17.5%"
+  ],
+  "answer": 1,
+  "why": "1.25 × 0.90 = 1.125, so he sells at 12.5% above cost."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Number series",
+  "q": "Find the next number: 5, 11, 23, 47, ?",
+  "options": [
+   "91",
+   "94",
+   "95",
+   "96"
+  ],
+  "answer": 2,
+  "why": "Each number is double the one before, plus 1: 47 × 2 + 1 = 95."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Logic",
+  "q": "All roses are flowers. Some flowers fade quickly. Which conclusion must be true?",
+  "options": [
+   "All roses fade quickly",
+   "Some roses fade quickly",
+   "No rose fades quickly",
+   "None of these must be true"
+  ],
+  "answer": 3,
+  "why": "The flowers that fade quickly may or may not include roses, so nothing about roses follows for certain."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Speed and distance",
+  "q": "A boat goes 24 km downstream in 2 hours and comes back in 3 hours. The speed of the stream is:",
+  "options": [
+   "1 km/h",
+   "2 km/h",
+   "3 km/h",
+   "4 km/h"
+  ],
+  "answer": 1,
+  "why": "Downstream 12 km/h, upstream 8 km/h. The stream is half the difference: 2 km/h."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Probability",
+  "q": "A bag has 3 red and 5 blue balls. One ball is drawn at random. The probability that it is red is:",
+  "options": [
+   "3/5",
+   "3/8",
+   "5/8",
+   "1/3"
+  ],
+  "answer": 1,
+  "why": "3 red balls out of 8 in all."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Seating",
+  "q": "Five friends sit in a row. A is somewhere to the left of B, C is to the right of B, D sits between A and B, and E is at the right end. Who sits in the middle?",
+  "options": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "answer": 1,
+  "why": "The only order that fits is A, D, B, C, E. The middle seat is B's."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Interest",
+  "q": "At what yearly rate of simple interest does a sum of money double in 8 years?",
+  "options": [
+   "8%",
+   "10%",
+   "12.5%",
+   "16%"
+  ],
+  "answer": 2,
+  "why": "The interest must equal the sum: rate × 8 = 100, so the rate is 12.5%."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Directions",
+  "q": "Meena is facing east. She turns 90° to her left and then turns right around (180°). Which way is she facing now?",
+  "options": [
+   "North",
+   "South",
+   "East",
+   "West"
+  ],
+  "answer": 1,
+  "why": "Left of east is north. Turning right around from north gives south."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Time and work",
+  "q": "A pipe fills a tank in 6 hours and a leak empties it in 12 hours. With both open, the tank fills in:",
+  "options": [
+   "9 hours",
+   "10 hours",
+   "12 hours",
+   "18 hours"
+  ],
+  "answer": 2,
+  "why": "Each hour the tank gains 1/6 − 1/12 = 1/12, so it takes 12 hours."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Arrangements",
+  "q": "How many different 3-digit numbers can be formed from the digits 1, 2, 3, 4, 5 without repeating a digit?",
+  "options": [
+   "60",
+   "125",
+   "20",
+   "15"
+  ],
+  "answer": 0,
+  "why": "5 choices for the first digit, 4 for the second, 3 for the third: 5 × 4 × 3 = 60."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Numbers",
+  "q": "What is the last digit of 7⁴?",
+  "options": [
+   "1",
+   "3",
+   "7",
+   "9"
+  ],
+  "answer": 0,
+  "why": "7⁴ = 2401, which ends in 1."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Averages",
+  "q": "The average of five numbers is 28. When one number is removed, the average becomes 25. The removed number is:",
+  "options": [
+   "35",
+   "38",
+   "40",
+   "43"
+  ],
+  "answer": 2,
+  "why": "The total was 140 and is now 100, so the number removed is 40."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Clocks",
+  "q": "What is the angle between the hands of a clock at 3:00?",
+  "options": [
+   "60°",
+   "75°",
+   "90°",
+   "120°"
+  ],
+  "answer": 2,
+  "why": "Each hour mark is 30° apart, and the hands are 3 marks apart: 90°."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Profit and loss",
+  "q": "An article bought for ₹500 is sold for ₹575. What is the profit percent?",
+  "options": [
+   "12%",
+   "15%",
+   "17.5%",
+   "20%"
+  ],
+  "answer": 1,
+  "why": "The profit is 75, and 75 ÷ 500 = 15%."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Number series",
+  "q": "Find the missing number: 1, 4, 9, 16, ?, 36",
+  "options": [
+   "20",
+   "24",
+   "25",
+   "30"
+  ],
+  "answer": 2,
+  "why": "These are the squares 1², 2², 3², 4², 5², 6². The missing one is 25."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Codes",
+  "q": "In a certain code 2 + 3 = 10 and 4 + 5 = 36. In the same code, 3 + 4 = ?",
+  "options": [
+   "12",
+   "21",
+   "28",
+   "49"
+  ],
+  "answer": 1,
+  "why": "The rule is (first + second) × first: (2 + 3) × 2 = 10, (4 + 5) × 4 = 36, so (3 + 4) × 3 = 21."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Speed and distance",
+  "q": "A man walks to his office at 4 km/h and walks back at 6 km/h. His average speed for the whole trip is:",
+  "options": [
+   "4.8 km/h",
+   "5 km/h",
+   "5.2 km/h",
+   "4.5 km/h"
+  ],
+  "answer": 0,
+  "why": "For equal distances the average speed is 2ab/(a + b) = 48/10 = 4.8 km/h. It is not the plain average of 4 and 6."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Probability",
+  "q": "Two fair coins are tossed. The probability of getting at least one head is:",
+  "options": [
+   "1/4",
+   "1/2",
+   "3/4",
+   "1"
+  ],
+  "answer": 2,
+  "why": "Of the four outcomes HH, HT, TH, TT, only TT has no head: 3/4."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Geometry",
+  "q": "A rectangle is 12 m long and 5 m wide. How long is its diagonal?",
+  "options": [
+   "13 m",
+   "15 m",
+   "17 m",
+   "60 m"
+  ],
+  "answer": 0,
+  "why": "√(12² + 5²) = √169 = 13 m."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Interest",
+  "q": "₹10,000 is invested at 10% a year, compounded yearly. The amount after 2 years is:",
+  "options": [
+   "₹12,000",
+   "₹12,100",
+   "₹12,210",
+   "₹11,000"
+  ],
+  "answer": 1,
+  "why": "10,000 × 1.1 × 1.1 = 12,100."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Directions",
+  "q": "Ravi walks 5 km north, turns right and walks 3 km, then turns right and walks 5 km. How far is he from where he started?",
+  "options": [
+   "3 km",
+   "5 km",
+   "8 km",
+   "13 km"
+  ],
+  "answer": 0,
+  "why": "The two 5 km stretches cancel out (north, then south). He is 3 km east of the start."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Time and work",
+  "q": "8 workers build a wall in 15 days. How many days will 10 workers take at the same rate?",
+  "options": [
+   "10",
+   "12",
+   "13",
+   "18.75"
+  ],
+  "answer": 1,
+  "why": "The job is 8 × 15 = 120 worker-days, and 120 ÷ 10 = 12."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Arrangements",
+  "q": "In how many ways can the letters of the word CAT be arranged?",
+  "options": [
+   "3",
+   "6",
+   "9",
+   "27"
+  ],
+  "answer": 1,
+  "why": "Three different letters can be arranged in 3 × 2 × 1 = 6 ways."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Numbers",
+  "q": "The HCF of 36 and 84 is:",
+  "options": [
+   "6",
+   "12",
+   "18",
+   "24"
+  ],
+  "answer": 1,
+  "why": "36 = 12 × 3 and 84 = 12 × 7, and 3 and 7 share no factor."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Ratio",
+  "q": "A 60 litre mixture has milk and water in the ratio 2 : 1. How much water must be added to make the ratio 1 : 1?",
+  "options": [
+   "10 litres",
+   "15 litres",
+   "20 litres",
+   "30 litres"
+  ],
+  "answer": 2,
+  "why": "There are 40 litres of milk and 20 of water. Water must reach 40, so add 20."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Ages",
+  "q": "The ages of A and B add up to 55. Five years ago A was twice as old as B. How old is A now?",
+  "options": [
+   "30",
+   "35",
+   "40",
+   "25"
+  ],
+  "answer": 1,
+  "why": "A − 5 = 2(B − 5) and A + B = 55 give A = 35 and B = 20. Check: five years ago they were 30 and 15."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Percentages",
+  "q": "A number is increased by 20% and then decreased by 20%. The net change is:",
+  "options": [
+   "No change",
+   "4% increase",
+   "4% decrease",
+   "2% decrease"
+  ],
+  "answer": 2,
+  "why": "1.2 × 0.8 = 0.96, which is 4% less than where it started."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Number series",
+  "q": "Find the next number: 3, 9, 27, 81, ?",
+  "options": [
+   "162",
+   "243",
+   "324",
+   "729"
+  ],
+  "answer": 1,
+  "why": "Each number is 3 times the one before: 81 × 3 = 243."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Codes",
+  "q": "If CAT is written as DBU in a code, how is DOG written?",
+  "options": [
+   "EPH",
+   "CNF",
+   "EPG",
+   "DPH"
+  ],
+  "answer": 0,
+  "why": "Each letter moves one place forward: D→E, O→P, G→H."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Speed and distance",
+  "q": "Two trains 120 m and 180 m long run towards each other at 54 km/h and 36 km/h. They cross each other in:",
+  "options": [
+   "10 seconds",
+   "12 seconds",
+   "15 seconds",
+   "20 seconds"
+  ],
+  "answer": 1,
+  "why": "They close at 90 km/h = 25 m/s and must cover 120 + 180 = 300 m: 300 ÷ 25 = 12 s."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Probability",
+  "q": "A fair die is rolled once. The probability of getting a number greater than 4 is:",
+  "options": [
+   "1/6",
+   "1/3",
+   "1/2",
+   "2/3"
+  ],
+  "answer": 1,
+  "why": "Only 5 and 6 are greater than 4: 2 out of 6, which is 1/3."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Geometry",
+  "q": "The area of a circle of radius 7 cm (take π = 22/7) is:",
+  "options": [
+   "44 cm²",
+   "154 cm²",
+   "308 cm²",
+   "49 cm²"
+  ],
+  "answer": 1,
+  "why": "πr² = 22/7 × 49 = 154 cm². (44 cm is its circumference.)"
+ },
+ {
+  "track": "aptitude",
+  "topic": "Interest",
+  "q": "The simple interest on ₹5,000 at 8% a year for 3 years is:",
+  "options": [
+   "₹1,000",
+   "₹1,200",
+   "₹1,260",
+   "₹1,500"
+  ],
+  "answer": 1,
+  "why": "5000 × 8 × 3 ÷ 100 = 1200."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Calendars",
+  "q": "How many days are there from 1 March to 31 May, counting both?",
+  "options": [
+   "90",
+   "91",
+   "92",
+   "93"
+  ],
+  "answer": 2,
+  "why": "March 31 + April 30 + May 31 = 92."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Time and work",
+  "q": "A can finish a job in 12 days and B in 18 days. Working together they finish it in:",
+  "options": [
+   "6 days",
+   "7.2 days",
+   "7.5 days",
+   "15 days"
+  ],
+  "answer": 1,
+  "why": "In one day they do 1/12 + 1/18 = 5/36 of the job, so it takes 36/5 = 7.2 days."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Number series",
+  "q": "Find the odd one out: 8, 27, 64, 100, 125",
+  "options": [
+   "27",
+   "64",
+   "100",
+   "125"
+  ],
+  "answer": 2,
+  "why": "8, 27, 64 and 125 are cubes (2³, 3³, 4³, 5³). 100 is not."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Numbers",
+  "q": "What is the smallest number that can be divided exactly by 12, 15 and 20?",
+  "options": [
+   "60",
+   "120",
+   "180",
+   "240"
+  ],
+  "answer": 0,
+  "why": "The LCM of 12, 15 and 20 is 60."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Ratio",
+  "q": "If a : b = 2 : 3 and b : c = 4 : 5, then a : c is:",
+  "options": [
+   "8 : 15",
+   "2 : 5",
+   "6 : 20",
+   "10 : 12"
+  ],
+  "answer": 0,
+  "why": "Make b the same in both: a : b : c = 8 : 12 : 15, so a : c = 8 : 15."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Ages",
+  "q": "A father is 30 years older than his son. In 5 years he will be 3 times as old as his son. How old is the son now?",
+  "options": [
+   "8",
+   "10",
+   "12",
+   "15"
+  ],
+  "answer": 1,
+  "why": "If the son is s: s + 35 = 3(s + 5), so s = 10. Check: in 5 years they are 45 and 15."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Percentages",
+  "q": "If 40% of a number is 96, what is the number?",
+  "options": [
+   "220",
+   "240",
+   "260",
+   "384"
+  ],
+  "answer": 1,
+  "why": "96 ÷ 0.40 = 240."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Number series",
+  "q": "Find the next number: 2, 6, 12, 20, 30, ?",
+  "options": [
+   "36",
+   "40",
+   "42",
+   "44"
+  ],
+  "answer": 2,
+  "why": "The gaps are 4, 6, 8, 10, so the next gap is 12: 30 + 12 = 42."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Family relations",
+  "q": "A is B's sister. C is B's mother. D is C's father. How is A related to D?",
+  "options": [
+   "Daughter",
+   "Granddaughter",
+   "Niece",
+   "Sister"
+  ],
+  "answer": 1,
+  "why": "C is A's mother too, and D is C's father, so A is D's granddaughter."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Speed and distance",
+  "q": "A car covers 240 km in 4 hours. To cover the same distance in 3 hours, it must go faster by:",
+  "options": [
+   "15 km/h",
+   "20 km/h",
+   "25 km/h",
+   "30 km/h"
+  ],
+  "answer": 1,
+  "why": "It goes 60 km/h now and needs 80 km/h, which is 20 more."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Arrangements",
+  "q": "In how many ways can 4 people sit in a row of 4 chairs?",
+  "options": [
+   "16",
+   "24",
+   "12",
+   "4"
+  ],
+  "answer": 1,
+  "why": "4 × 3 × 2 × 1 = 24."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Numbers",
+  "q": "The sum of the first 20 natural numbers is:",
+  "options": [
+   "190",
+   "200",
+   "210",
+   "220"
+  ],
+  "answer": 2,
+  "why": "n(n + 1)/2 = 20 × 21 ÷ 2 = 210."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Averages",
+  "q": "The average of the first 10 natural numbers is:",
+  "options": [
+   "5",
+   "5.5",
+   "6",
+   "10"
+  ],
+  "answer": 1,
+  "why": "Their sum is 55, and 55 ÷ 10 = 5.5."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Calendars",
+  "q": "If 1 January of a non-leap year is a Monday, what day is 31 December of that year?",
+  "options": [
+   "Sunday",
+   "Monday",
+   "Tuesday",
+   "Wednesday"
+  ],
+  "answer": 1,
+  "why": "31 December is 364 days after 1 January, which is exactly 52 weeks, so it is the same day: Monday."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Profit and loss",
+  "q": "Selling an item at ₹450 gives a loss of 10%. What was the cost price?",
+  "options": [
+   "₹495",
+   "₹500",
+   "₹405",
+   "₹480"
+  ],
+  "answer": 1,
+  "why": "450 is 90% of the cost, so the cost is 450 ÷ 0.9 = 500."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Number series",
+  "q": "Find the next number: 1, 1, 2, 3, 5, 8, ?",
+  "options": [
+   "11",
+   "12",
+   "13",
+   "15"
+  ],
+  "answer": 2,
+  "why": "Each number is the sum of the two before it: 5 + 8 = 13."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Logic",
+  "q": "All engineers are graduates. Ravi is an engineer. Therefore:",
+  "options": [
+   "Ravi is a graduate",
+   "All graduates are engineers",
+   "Ravi is not a graduate",
+   "Some engineers are not graduates"
+  ],
+  "answer": 0,
+  "why": "Ravi is one of the engineers, and every engineer is a graduate."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Ratio",
+  "q": "₹720 is divided between A and B in the ratio 5 : 7. B gets:",
+  "options": [
+   "₹300",
+   "₹400",
+   "₹420",
+   "₹450"
+  ],
+  "answer": 2,
+  "why": "B gets 7 parts of 12: 720 × 7/12 = 420."
+ },
+ {
+  "track": "aptitude",
+  "topic": "Probability",
+  "q": "A card is drawn from a pack of 52. The probability that it is a king is:",
+  "options": [
+   "1/52",
+   "1/26",
+   "1/13",
+   "4/13"
+  ],
+  "answer": 2,
+  "why": "There are 4 kings in 52 cards: 4/52 = 1/13."
+ },
+ {
+  "track": "coding",
+  "topic": "Complexity",
+  "q": "What is the time complexity of binary search on a sorted array of n elements?",
+  "options": [
+   "O(1)",
+   "O(log n)",
+   "O(n)",
+   "O(n log n)"
+  ],
+  "answer": 1,
+  "why": "Each step halves the part still to be searched."
+ },
+ {
+  "track": "coding",
+  "topic": "OOP",
+  "q": "Which of these is NOT a feature of object-oriented programming?",
+  "options": [
+   "Encapsulation",
+   "Inheritance",
+   "Polymorphism",
+   "Compilation"
+  ],
+  "answer": 3,
+  "why": "Compilation is how code is turned into a program. The other three are the pillars of OOP."
+ },
+ {
+  "track": "coding",
+  "topic": "Number systems",
+  "q": "The binary number 1011 is which decimal number?",
+  "options": [
+   "9",
+   "10",
+   "11",
+   "13"
+  ],
+  "answer": 2,
+  "why": "8 + 0 + 2 + 1 = 11."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "6",
+   "9",
+   "15",
+   "8"
+  ],
+  "answer": 1,
+  "why": "a[::2] takes every second item: 1, 3 and 5, which add up to 9.",
+  "code": "a = [1, 2, 3, 4, 5]\nprint(sum(a[::2]))"
+ },
+ {
+  "track": "coding",
+  "topic": "DBMS",
+  "q": "In the ACID properties of a transaction, what does the I stand for?",
+  "options": [
+   "Integrity",
+   "Isolation",
+   "Indexing",
+   "Idempotence"
+  ],
+  "answer": 1,
+  "why": "Atomicity, Consistency, Isolation, Durability."
+ },
+ {
+  "track": "coding",
+  "topic": "Scope",
+  "q": "What does this print?",
+  "options": [
+   "5",
+   "10",
+   "Error",
+   "None"
+  ],
+  "answer": 0,
+  "why": "The x inside the function is a separate, local variable. The outer x is untouched.",
+  "code": "x = 5\n\ndef change():\n    x = 10\n\nchange()\nprint(x)"
+ },
+ {
+  "track": "coding",
+  "topic": "Data structures",
+  "q": "Inserting a node at the head of a singly linked list takes:",
+  "options": [
+   "O(1)",
+   "O(log n)",
+   "O(n)",
+   "O(n²)"
+  ],
+  "answer": 0,
+  "why": "Only the new node's link and the head pointer change."
+ },
+ {
+  "track": "coding",
+  "topic": "Networks",
+  "q": "Which protocol gives a reliable, connection-oriented service?",
+  "options": [
+   "UDP",
+   "TCP",
+   "IP",
+   "ICMP"
+  ],
+  "answer": 1,
+  "why": "TCP sets up a connection, numbers the data and resends what is lost."
+ },
+ {
+  "track": "coding",
+  "topic": "Sorting",
+  "q": "Which of these sorting algorithms takes O(n log n) time even in the worst case?",
+  "options": [
+   "Bubble sort",
+   "Insertion sort",
+   "Merge sort",
+   "Quicksort"
+  ],
+  "answer": 2,
+  "why": "Merge sort always splits in half and merges in linear time. Quicksort can fall to O(n²)."
+ },
+ {
+  "track": "coding",
+  "topic": "SQL",
+  "q": "Which SQL clause filters groups after GROUP BY has been applied?",
+  "options": [
+   "WHERE",
+   "HAVING",
+   "ORDER BY",
+   "DISTINCT"
+  ],
+  "answer": 1,
+  "why": "WHERE filters rows before grouping. HAVING filters the groups."
+ },
+ {
+  "track": "coding",
+  "topic": "Bit operations",
+  "q": "What does this print?",
+  "options": [
+   "4",
+   "8",
+   "16",
+   "5"
+  ],
+  "answer": 2,
+  "why": "Shifting 1 left by 4 places multiplies it by 2 four times.",
+  "code": "print(1 << 4)"
+ },
+ {
+  "track": "coding",
+  "topic": "Loops",
+  "q": "How many times does the body of this loop run?",
+  "options": [
+   "6",
+   "7",
+   "8",
+   "100"
+  ],
+  "answer": 1,
+  "why": "i takes the values 1, 2, 4, 8, 16, 32, 64 while it is under 100: seven times.",
+  "code": "i = 1\nwhile i < 100:\n    i = i * 2"
+ },
+ {
+  "track": "coding",
+  "topic": "Operating systems",
+  "q": "Which of these is NOT one of the four conditions needed for a deadlock?",
+  "options": [
+   "Mutual exclusion",
+   "Hold and wait",
+   "Preemption",
+   "Circular wait"
+  ],
+  "answer": 2,
+  "why": "The fourth condition is NO preemption: a resource cannot be taken away from the process holding it."
+ },
+ {
+  "track": "coding",
+  "topic": "Algorithms",
+  "q": "Which technique solves a problem by storing the answers to overlapping subproblems?",
+  "options": [
+   "Greedy",
+   "Divide and conquer",
+   "Dynamic programming",
+   "Backtracking"
+  ],
+  "answer": 2,
+  "why": "Each subproblem is solved once and its answer is reused."
+ },
+ {
+  "track": "coding",
+  "topic": "Recursion",
+  "q": "What does f(6) return?",
+  "options": [
+   "5",
+   "8",
+   "13",
+   "6"
+  ],
+  "answer": 1,
+  "why": "This is the Fibonacci sequence 0, 1, 1, 2, 3, 5, 8: f(6) = 8.",
+  "code": "def f(n):\n    if n < 2:\n        return n\n    return f(n - 1) + f(n - 2)"
+ },
+ {
+  "track": "coding",
+  "topic": "Web",
+  "q": "Which HTTP status code means 'Not Found'?",
+  "options": [
+   "200",
+   "301",
+   "404",
+   "500"
+  ],
+  "answer": 2,
+  "why": "200 is OK, 301 is a redirect, 500 is a server error."
+ },
+ {
+  "track": "coding",
+  "topic": "Recursion",
+  "q": "What does this print?",
+  "options": [
+   "24",
+   "120",
+   "25",
+   "15"
+  ],
+  "answer": 1,
+  "why": "The function works out the factorial: 5 × 4 × 3 × 2 × 1 = 120.",
+  "code": "def f(n):\n    if n <= 1:\n        return 1\n    return n * f(n - 1)\n\nprint(f(5))"
+ },
+ {
+  "track": "coding",
+  "topic": "SQL",
+  "q": "Which join returns only the rows that have a match in both tables?",
+  "options": [
+   "INNER JOIN",
+   "LEFT JOIN",
+   "FULL OUTER JOIN",
+   "CROSS JOIN"
+  ],
+  "answer": 0,
+  "why": "The outer joins also keep rows without a match."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "ababab",
+   "ab3",
+   "aaabbb",
+   "Error"
+  ],
+  "answer": 0,
+  "why": "Multiplying a string repeats it.",
+  "code": "print(\"ab\" * 3)"
+ },
+ {
+  "track": "coding",
+  "topic": "Trees",
+  "q": "Which traversal of a binary search tree visits the keys in sorted order?",
+  "options": [
+   "Preorder",
+   "Inorder",
+   "Postorder",
+   "Level order"
+  ],
+  "answer": 1,
+  "why": "Inorder visits the left subtree, then the node, then the right subtree."
+ },
+ {
+  "track": "coding",
+  "topic": "Networks",
+  "q": "Which layer of the OSI model is responsible for routing packets between networks?",
+  "options": [
+   "Data link",
+   "Network",
+   "Transport",
+   "Session"
+  ],
+  "answer": 1,
+  "why": "The network layer (layer 3) handles addressing and routing. IP works at this layer."
+ },
+ {
+  "track": "coding",
+  "topic": "Sorting",
+  "q": "What is the worst-case time complexity of quicksort?",
+  "options": [
+   "O(n)",
+   "O(n log n)",
+   "O(n²)",
+   "O(log n)"
+  ],
+  "answer": 2,
+  "why": "With a bad pivot every time (for example on already sorted input), each split removes only one element."
+ },
+ {
+  "track": "coding",
+  "topic": "Java",
+  "q": "In Java, which keyword stops a class from being subclassed?",
+  "options": [
+   "static",
+   "final",
+   "private",
+   "abstract"
+  ],
+  "answer": 1,
+  "why": "A final class cannot be extended."
+ },
+ {
+  "track": "coding",
+  "topic": "Bit operations",
+  "q": "What does this print?",
+  "options": [
+   "1",
+   "7",
+   "6",
+   "8"
+  ],
+  "answer": 0,
+  "why": "5 is 101 and 3 is 011. Only the last bit is 1 in both.",
+  "code": "print(5 & 3)"
+ },
+ {
+  "track": "coding",
+  "topic": "Loops",
+  "q": "What does this print?",
+  "options": [
+   "1 4 7",
+   "1 4 7 10",
+   "1 3 6 9",
+   "0 3 6 9"
+  ],
+  "answer": 0,
+  "why": "range(1, 10, 3) starts at 1, goes up in steps of 3 and stops before 10.",
+  "code": "for i in range(1, 10, 3):\n    print(i, end=\" \")"
+ },
+ {
+  "track": "coding",
+  "topic": "Operating systems",
+  "q": "Two processes each wait for a resource the other one holds. This is called:",
+  "options": [
+   "Starvation",
+   "Deadlock",
+   "Thrashing",
+   "Paging"
+  ],
+  "answer": 1,
+  "why": "Neither can go on until the other lets go, so both wait forever."
+ },
+ {
+  "track": "coding",
+  "topic": "Algorithms",
+  "q": "Which algorithm finds the shortest paths from one vertex in a graph whose edge weights are not negative?",
+  "options": [
+   "Kruskal's",
+   "Dijkstra's",
+   "Prim's",
+   "Depth-first search"
+  ],
+  "answer": 1,
+  "why": "Kruskal's and Prim's build minimum spanning trees, which is a different problem."
+ },
+ {
+  "track": "coding",
+  "topic": "Expressions",
+  "q": "The postfix form of the expression (A + B) * C is:",
+  "options": [
+   "AB+C*",
+   "ABC+*",
+   "A+BC*",
+   "*+ABC"
+  ],
+  "answer": 0,
+  "why": "A and B are added first (AB+), and the result is multiplied by C."
+ },
+ {
+  "track": "coding",
+  "topic": "Networks",
+  "q": "How many bits are there in an IPv4 address?",
+  "options": [
+   "16",
+   "32",
+   "64",
+   "128"
+  ],
+  "answer": 1,
+  "why": "Four numbers of 8 bits each. IPv6 addresses are 128 bits."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "hel",
+   "ell",
+   "ello",
+   "el"
+  ],
+  "answer": 1,
+  "why": "A slice starts at index 1 and stops before index 4: the letters e, l, l.",
+  "code": "s = \"hello\"\nprint(s[1:4])"
+ },
+ {
+  "track": "coding",
+  "topic": "DBMS",
+  "q": "Which normal form removes partial dependency on a composite key?",
+  "options": [
+   "1NF",
+   "2NF",
+   "3NF",
+   "BCNF"
+  ],
+  "answer": 1,
+  "why": "In 2NF every non-key column depends on the whole key, not just a part of it."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "3",
+   "4",
+   "5",
+   "2"
+  ],
+  "answer": 1,
+  "why": "After sorting the list is [1, 2, 3]. The first item plus the last is 1 + 3.",
+  "code": "nums = [3, 1, 2]\nnums.sort()\nprint(nums[0] + nums[-1])"
+ },
+ {
+  "track": "coding",
+  "topic": "Trees",
+  "q": "What is the largest number of nodes a binary tree of height 3 can have (the root alone is height 1)?",
+  "options": [
+   "6",
+   "7",
+   "8",
+   "15"
+  ],
+  "answer": 1,
+  "why": "1 + 2 + 4 = 7, which is 2³ − 1."
+ },
+ {
+  "track": "coding",
+  "topic": "Operating systems",
+  "q": "A semaphore is used to:",
+  "options": [
+   "speed up the CPU",
+   "control access to a shared resource",
+   "store files",
+   "translate addresses"
+  ],
+  "answer": 1,
+  "why": "It lets only a set number of processes into a critical section at a time."
+ },
+ {
+  "track": "coding",
+  "topic": "Data structures",
+  "q": "Which data structure is used for a breadth-first search of a graph?",
+  "options": [
+   "Stack",
+   "Queue",
+   "Heap",
+   "Hash table"
+  ],
+  "answer": 1,
+  "why": "BFS visits vertices in the order they were discovered, which is what a queue gives."
+ },
+ {
+  "track": "coding",
+  "topic": "OOP",
+  "q": "Two methods in the same class with the same name but different parameters are an example of:",
+  "options": [
+   "Overriding",
+   "Overloading",
+   "Encapsulation",
+   "Inheritance"
+  ],
+  "answer": 1,
+  "why": "Overloading is the same name with different parameters. Overriding replaces a parent's method in a subclass."
+ },
+ {
+  "track": "coding",
+  "topic": "Number systems",
+  "q": "The two's complement of the 4-bit number 0101 is:",
+  "options": [
+   "1010",
+   "1011",
+   "0101",
+   "1101"
+  ],
+  "answer": 1,
+  "why": "Flip the bits (1010) and add 1: 1011."
+ },
+ {
+  "track": "coding",
+  "topic": "C",
+  "q": "Which of these correctly declares a pointer to an integer in C?",
+  "options": [
+   "int p*;",
+   "int *p;",
+   "ptr int p;",
+   "int &p;"
+  ],
+  "answer": 1,
+  "why": "The star goes before the name: int *p;"
+ },
+ {
+  "track": "coding",
+  "topic": "Operating systems",
+  "q": "Which scheduling algorithm can leave long processes waiting forever (starvation)?",
+  "options": [
+   "First Come First Served",
+   "Round Robin",
+   "Shortest Job First",
+   "None of these"
+  ],
+  "answer": 2,
+  "why": "If short jobs keep arriving, a long job never gets its turn."
+ },
+ {
+  "track": "coding",
+  "topic": "Git",
+  "q": "Which Git command downloads changes from a remote and merges them into your branch?",
+  "options": [
+   "git fetch",
+   "git pull",
+   "git clone",
+   "git push"
+  ],
+  "answer": 1,
+  "why": "git pull is git fetch followed by a merge."
+ },
+ {
+  "track": "coding",
+  "topic": "Data structures",
+  "q": "Which data structure is the usual choice for a priority queue?",
+  "options": [
+   "Stack",
+   "Queue",
+   "Heap",
+   "Hash table"
+  ],
+  "answer": 2,
+  "why": "A heap gives the smallest (or largest) item in O(1) and inserts in O(log n)."
+ },
+ {
+  "track": "coding",
+  "topic": "Networks",
+  "q": "Which protocol turns a domain name into an IP address?",
+  "options": [
+   "DHCP",
+   "DNS",
+   "ARP",
+   "FTP"
+  ],
+  "answer": 1,
+  "why": "DNS is the phone book of the internet."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "3 1",
+   "3.33 1",
+   "3 0",
+   "4 1"
+  ],
+  "answer": 0,
+  "why": "// is whole-number division and % is the remainder: 10 = 3 × 3 + 1.",
+  "code": "print(10 // 3, 10 % 3)"
+ },
+ {
+  "track": "coding",
+  "topic": "DBMS",
+  "q": "A primary key:",
+  "options": [
+   "can hold NULL values",
+   "must be unique and not NULL",
+   "can repeat within the table",
+   "must be a number"
+  ],
+  "answer": 1,
+  "why": "It identifies each row, so it has to be present and different for every row."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "int",
+   "float",
+   "str",
+   "double"
+  ],
+  "answer": 1,
+  "why": "In Python 3 the / operator always gives a float, here 1.5.",
+  "code": "print(type(3 / 2).__name__)"
+ },
+ {
+  "track": "coding",
+  "topic": "Complexity",
+  "q": "What is the time complexity of this code?",
+  "options": [
+   "O(1)",
+   "O(log n)",
+   "O(n)",
+   "O(n²)"
+  ],
+  "answer": 1,
+  "why": "i is halved every turn, so the loop runs about log₂ n times.",
+  "code": "i = n\nwhile i > 1:\n    i = i // 2"
+ },
+ {
+  "track": "coding",
+  "topic": "Operating systems",
+  "q": "What is thrashing?",
+  "options": [
+   "A CPU running at full speed",
+   "A system spending most of its time swapping pages instead of doing work",
+   "A disk that is failing",
+   "A process stuck in an infinite loop"
+  ],
+  "answer": 1,
+  "why": "With too little memory, pages are swapped in and out so often that little real work gets done."
+ },
+ {
+  "track": "coding",
+  "topic": "Data structures",
+  "q": "Which data structure works on the Last In, First Out principle?",
+  "options": [
+   "Queue",
+   "Stack",
+   "Linked list",
+   "Heap"
+  ],
+  "answer": 1,
+  "why": "A stack gives back the item that was put in most recently."
+ },
+ {
+  "track": "coding",
+  "topic": "OOP",
+  "q": "A class that cannot be instantiated and is meant to be inherited from is called:",
+  "options": [
+   "a final class",
+   "an abstract class",
+   "a static class",
+   "a singleton"
+  ],
+  "answer": 1,
+  "why": "An abstract class leaves some methods for its subclasses to fill in."
+ },
+ {
+  "track": "coding",
+  "topic": "Number systems",
+  "q": "What is the decimal number 255 in hexadecimal?",
+  "options": [
+   "EF",
+   "FF",
+   "F0",
+   "100"
+  ],
+  "answer": 1,
+  "why": "15 × 16 + 15 = 255, and 15 is written F."
+ },
+ {
+  "track": "coding",
+  "topic": "C",
+  "q": "What does this C code print?",
+  "options": [
+   "3",
+   "3.5",
+   "4",
+   "Error"
+  ],
+  "answer": 0,
+  "why": "Both numbers are integers, so the division drops the fraction.",
+  "code": "int x = 7;\nprintf(\"%d\", x / 2);"
+ },
+ {
+  "track": "coding",
+  "topic": "SQL",
+  "q": "What does this query return?",
+  "options": [
+   "The names of students with marks over 60",
+   "The number of students with marks over 60",
+   "The total of all marks over 60",
+   "The highest mark over 60"
+  ],
+  "answer": 1,
+  "why": "COUNT(*) counts the rows that pass the WHERE condition.",
+  "code": "SELECT COUNT(*) FROM students WHERE marks > 60;"
+ },
+ {
+  "track": "coding",
+  "topic": "Git",
+  "q": "Which Git command records your staged changes in the local repository?",
+  "options": [
+   "git push",
+   "git commit",
+   "git add",
+   "git pull"
+  ],
+  "answer": 1,
+  "why": "git add stages changes, git commit records them, git push sends them to the remote."
+ },
+ {
+  "track": "coding",
+  "topic": "Data structures",
+  "q": "On average, how long does it take to look up a key in a hash table with a good hash function?",
+  "options": [
+   "O(1)",
+   "O(log n)",
+   "O(n)",
+   "O(n log n)"
+  ],
+  "answer": 0,
+  "why": "The hash takes you straight to the bucket."
+ },
+ {
+  "track": "coding",
+  "topic": "Networks",
+  "q": "What is the default port of HTTPS?",
+  "options": [
+   "21",
+   "80",
+   "443",
+   "8080"
+  ],
+  "answer": 2,
+  "why": "HTTP uses 80 and HTTPS uses 443."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "3",
+   "4",
+   "Error",
+   "1"
+  ],
+  "answer": 1,
+  "why": "y is another name for the same list, so the append is seen through x as well.",
+  "code": "x = [1, 2, 3]\ny = x\ny.append(4)\nprint(len(x))"
+ },
+ {
+  "track": "coding",
+  "topic": "SQL",
+  "q": "Which SQL command removes all the rows of a table but keeps the table itself?",
+  "options": [
+   "DROP",
+   "TRUNCATE",
+   "ALTER",
+   "REMOVE"
+  ],
+  "answer": 1,
+  "why": "DROP removes the table too. TRUNCATE empties it."
+ },
+ {
+  "track": "coding",
+  "topic": "Python",
+  "q": "What does this print?",
+  "options": [
+   "0",
+   "None",
+   "Error",
+   "c"
+  ],
+  "answer": 0,
+  "why": "get returns its second argument when the key is not in the dictionary.",
+  "code": "d = {\"a\": 1, \"b\": 2}\nprint(d.get(\"c\", 0))"
+ },
+ {
+  "track": "coding",
+  "topic": "Complexity",
+  "q": "What is the time complexity of this code?",
+  "options": [
+   "O(n)",
+   "O(n log n)",
+   "O(n²)",
+   "O(2ⁿ)"
+  ],
+  "answer": 2,
+  "why": "The inner loop runs n times for each of the n turns of the outer loop.",
+  "code": "for i in range(n):\n    for j in range(n):\n        count += 1"
+ },
+ {
+  "track": "coding",
+  "topic": "Operating systems",
+  "q": "Virtual memory lets a system:",
+  "options": [
+   "run programs larger than its physical memory",
+   "run without a hard disk",
+   "make the CPU faster",
+   "avoid using RAM"
+  ],
+  "answer": 0,
+  "why": "Parts of a program that are not in use are kept on disk and brought in when needed."
+ }
+]

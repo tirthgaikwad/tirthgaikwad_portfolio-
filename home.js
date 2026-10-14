@@ -9,7 +9,8 @@ const HOME_REFRESH_MS = 60000;
 const HOME_EVENTS = ['college_hub_changed', 'college_poll', 'board_post_added', 'board_post_updated', 'board_post_removed', 'follow_changed'];
 const HOME_ICONS = {
   message: 'chat', ack: 'mark_email_read', poll: 'how_to_vote', group: 'group_add', work: 'upload_file', checkin: 'edit_note',
-  event: 'event', attendance: 'warning', grade: 'grading', marks: 'workspace_premium', applicants: 'person_search'
+  event: 'event', attendance: 'warning', grade: 'grading', marks: 'workspace_premium', applicants: 'person_search',
+  mark: 'how_to_reg', task: 'assignment'
 };
 
 let home = null;                  // what /api/home returned, or null before the first load
@@ -67,6 +68,7 @@ function setHome(data) {
   onlineUserIds = new Set(data.online_user_ids || []);
   renderGreeting();
   renderNeeds();
+  renderClasses();
   renderNews();
   renderOpportunities();
   renderPeople();
@@ -124,6 +126,29 @@ function renderNeeds() {
          <span><strong>You are all caught up</strong><small>${home.me.role === 'none' ? 'New messages and replies will show up here.' : 'Notices, work to hand in and messages will show up here.'}</small></span></div>`;
   el('homeNeeds').innerHTML = `
     <div class="hm-head"><h2>Waiting for you${needs.length ? `<span class="hm-count">${needs.length}</span>` : ''}</h2></div>${body}`;
+}
+
+// Today's classes from My Study, with the next one marked. Attendance is marked on the Study page.
+function renderClasses() {
+  const box = el('homeClasses');
+  const classes = home.classes || [];
+  box.hidden = classes.length === 0;
+  if (box.hidden) return;
+  const now = new Date();
+  const nowText = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const clock = (time) => { const [h, m] = time.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+  const next = classes.find(entry => entry.start_time > nowText);
+  const marks = { present: 'Present', absent: 'Absent', cancelled: 'No class' };
+  box.innerHTML = `<div class="hm-head"><h2>Today's classes</h2><a href="study.html">My Study</a></div><div class="hm-list">${classes.map(entry => {
+    const on = entry.start_time <= nowText && nowText < entry.end_time;
+    const tag = entry.status ? marks[entry.status] : (on ? 'Now' : (entry === next ? 'Next' : ''));
+    return `
+      <a class="hm-row" href="study.html">
+        <span class="hm-icon${entry.status === 'present' ? ' is-good' : ''}">${icon(entry.kind === 'lab' ? 'science' : 'menu_book')}</span>
+        <span class="hm-row-text"><strong>${escapeHtml(entry.subject)}</strong><small>${clock(entry.start_time)} – ${clock(entry.end_time)}${entry.room ? ` · Room ${escapeHtml(entry.room)}` : ''}</small></span>
+        ${tag ? `<span class="hm-due">${tag}</span>` : ''}
+      </a>`;
+  }).join('')}</div>`;
 }
 
 function renderNews() {
@@ -206,7 +231,22 @@ function renderWeek() {
       ${stat(week.new_followers, week.new_followers === 1 ? 'new follower' : 'new followers', 'network.html')}
       ${stat(week.applications, week.applications === 1 ? 'application sent' : 'applications sent', 'board.html')}
       ${stat(week.unread, week.unread === 1 ? 'unread message' : 'unread messages', 'inbox.html')}
-    </div>`;
+      ${stat(week.study_streak || 0, 'day study streak', 'study.html?tab=timer')}
+      ${stat(week.study_minutes >= 60 ? `${Math.round(week.study_minutes / 6) / 10} h` : `${week.study_minutes || 0} min`, 'studied this week', 'study.html?tab=timer')}
+    </div>
+    ${practiceRowHtml(home.practice)}`;
+}
+
+// One line about the daily practice questions: how many are done today and the streak
+function practiceRowHtml(practice) {
+  if (!practice || !practice.total_today) return '';
+  const done = practice.done_today >= practice.total_today;
+  return `
+    <a class="hm-row hm-practice" href="practice.html">
+      <span class="hm-icon${done ? ' is-good' : ''}">${icon(done ? 'task_alt' : 'quiz')}</span>
+      <span class="hm-row-text"><strong>Daily practice</strong><small>${done ? 'Done for today' : `${practice.done_today} of ${practice.total_today} done today`}${practice.streak ? ` · ${practice.streak} day streak` : ''}</small></span>
+      ${done ? '' : '<span class="hm-due">2 min</span>'}
+    </a>`;
 }
 
 function renderChecklist() {
