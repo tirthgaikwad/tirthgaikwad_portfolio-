@@ -28,6 +28,9 @@
 
         .login-foot { margin-top: 26px; text-align: center; font-size: 15px; color: var(--ink-2); }
         form .btn { margin-top: 26px; }
+        .remember { display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 15px; color: var(--ink-2); cursor: pointer; }
+        .remember input { width: 18px; height: 18px; margin: 0; accent-color: var(--indigo); cursor: pointer; }
+        .remember + .hint { margin-top: 4px; padding-left: 28px; }
     </style>
 
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -110,6 +113,11 @@
                         </div>
                         <p class="hint warn" id="passwordCaps" hidden>Caps Lock is on.</p>
                     </div>
+                    <label class="remember" for="rememberMe">
+                        <input type="checkbox" id="rememberMe" aria-describedby="rememberHint">
+                        <span>Keep me logged in for 30 days</span>
+                    </label>
+                    <p class="hint" id="rememberHint">Leave this off on a shared or college computer: you are logged out when the browser closes.</p>
                     <button type="submit" class="btn btn-primary btn-block"><span>Log in</span><svg class="icon icon-arrow"><use href="#i-arrow"/></svg></button>
                 </form>
 
@@ -140,6 +148,8 @@
             <p class="auth-foot">&copy; 2026 Connect2Minds</p>
         </main>
     </div>
+<link href="cookies.css" rel="stylesheet"/>
+<script src="cookies.js" defer></script>
 <link href="helpbot.css" rel="stylesheet"/>
 <script src="helpbot.js" defer></script>
 </body>

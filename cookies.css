@@ -1,0 +1,55 @@
+/* COOKIES.CSS — the cookie banner, Cookie settings and its toast (cookies.js). Sits above the helper button. */
+.ck-banner { position: fixed; left: 20px; bottom: 20px; z-index: 9450; width: min(460px, calc(100vw - 40px)); box-sizing: border-box; padding: 18px 18px 16px;
+  background: #fff; color: #0b1c30; border: 1px solid #c7c4d8; border-radius: 18px; box-shadow: 0 18px 48px rgba(11,28,48,0.22);
+  font: 14px/21px Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; animation: ckRise 0.3s ease both; }
+.ck-banner h2 { margin: 0 0 4px; font: 700 16px/22px 'Plus Jakarta Sans', Inter, system-ui, sans-serif; color: #0b1c30; }
+.ck-banner p { margin: 0; color: #464555; }
+.ck-banner a, .ck-dialog a { color: #3525cd; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.ck-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+.ck-btn { appearance: none; min-height: 40px; padding: 8px 16px; border-radius: 10px; border: 1px solid #c7c4d8; background: #fff; color: #0b1c30;
+  font: 600 14px/20px Inter, system-ui, sans-serif; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.ck-btn:hover { background: #eff4ff; }
+.ck-btn.is-primary { background: #3525cd; border-color: #3525cd; color: #fff; }
+.ck-btn.is-primary:hover { background: #2b1ea6; }
+.ck-btn.is-link { border-color: transparent; background: transparent; color: #3525cd; margin-right: auto; padding-left: 6px; padding-right: 6px; }
+.ck-btn.is-link:hover { background: #eff4ff; }
+.ck-btn:focus-visible, .ck-x:focus-visible, .ck-switch input:focus-visible + span { outline: 3px solid rgba(53,37,205,0.35); outline-offset: 2px; }
+
+.ck-dialog { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 0; border-radius: 20px; color: #0b1c30; background: #fff;
+  box-shadow: 0 24px 64px rgba(11,28,48,0.3); font: 14px/21px Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.ck-dialog::backdrop { background: rgba(11,28,48,0.5); }
+.ck-dialog form { padding: 22px 22px 18px; margin: 0; }
+.ck-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ck-head h2 { margin: 0; font: 700 20px/28px 'Plus Jakarta Sans', Inter, system-ui, sans-serif; }
+.ck-x { width: 36px; height: 36px; border-radius: 10px; border: 0; background: transparent; color: #464555; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.ck-x:hover { background: #eff4ff; }
+.ck-lead { margin: 6px 0 10px; color: #464555; }
+.ck-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid #e5e2f0; }
+.ck-row h3 { margin: 0 0 2px; font: 600 15px/22px Inter, system-ui, sans-serif; color: #0b1c30; }
+.ck-row p { margin: 0; color: #464555; font-size: 13px; line-height: 19px; }
+.ck-always { flex-shrink: 0; font: 600 12px/16px Inter, system-ui, sans-serif; color: #005338; background: #e3f7ee; padding: 6px 10px; border-radius: 999px; }
+.ck-switch { position: relative; flex-shrink: 0; width: 46px; height: 28px; margin-top: 2px; cursor: pointer; }
+.ck-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.ck-switch span { position: absolute; inset: 0; border-radius: 999px; background: #c7c4d8; transition: background 0.15s; pointer-events: none; }
+.ck-switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform 0.15s; }
+.ck-switch input:checked + span { background: #3525cd; }
+.ck-switch input:checked + span::after { transform: translateX(18px); }
+.ck-foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 14px; border-top: 1px solid #e5e2f0; }
+
+.ck-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 10003; background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px;
+  font: 13px/18px Inter, system-ui, sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+
+@keyframes ckRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 767px) {
+  .ck-banner { left: 8px; right: 8px; width: auto; bottom: 8px; padding: 16px 14px 14px; }
+  body.has-tabbar .ck-banner { bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .ck-actions .ck-btn:not(.is-link) { flex: 1 1 0; white-space: nowrap; }
+  .ck-actions .ck-btn.is-link { order: 3; flex: 1 0 100%; margin: 0; min-height: 36px; }
+  .ck-dialog form { padding: 18px 16px 14px; }
+  .ck-foot .ck-btn { flex: 1 1 0; }
+  .ck-toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+@media print { .ck-banner, .ck-toast { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ck-banner { animation: none; } .ck-btn, .ck-switch span, .ck-switch span::after { transition: none; } }

@@ -22,16 +22,20 @@ if (IN_CALL_DOCK) {
     }, true);
 }
 
-// The helper bot (helpbot.js) on every page that loads this file; not inside the call dock, whose outer page has it
-if (!IN_CALL_DOCK && !document.querySelector('script[src$="helpbot.js"]')) {
-    const helperCss = document.createElement('link');
-    helperCss.rel = 'stylesheet';
-    helperCss.href = 'helpbot.css';
-    document.head.appendChild(helperCss);
-    const helper = document.createElement('script');
-    helper.src = 'helpbot.js';
-    helper.defer = true;
-    document.head.appendChild(helper);
+// The cookie banner (cookies.js) and the helper bot (helpbot.js) on every page that loads this file; not inside the
+// call dock, whose outer page has them. In this order: cookies.js decides what the helper may keep in browser storage.
+if (!IN_CALL_DOCK) {
+    for (const name of ['cookies', 'helpbot']) {
+        if (document.querySelector(`script[src$="${name}.js"]`)) continue;
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = `${name}.css`;
+        document.head.appendChild(css);
+        const script = document.createElement('script');
+        script.src = `${name}.js`;
+        script.async = false;
+        document.head.appendChild(script);
+    }
 }
 
 // Going to the login page from inside the dock leaves the whole site page, ending the call properly
@@ -194,7 +198,7 @@ window.renderAppHeader = function() {
 // Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
 // Opportunities and College Hub are not tabs of their own: Home shows what is new in both and links to them
 // Pages anyone may read without logging in; an expired login does not send them to login.html
-const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html'];
+const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html', 'cookies.html'];
 
 const TABBAR_ITEMS = [
     { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html'] },

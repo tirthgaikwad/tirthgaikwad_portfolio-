@@ -21,7 +21,7 @@
   const MEMBER = !!UID;
   const STORE = `c2m:helpbot:${UID || 'guest'}`;
   const MAX_HISTORY = 30;
-  const MEMBER_PAGES_FREE = ['index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html', 'pricing.html'];
+  const MEMBER_PAGES_FREE = ['index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html', 'cookies.html', 'pricing.html'];
   const TAB_PAGES = { 'study.html': 'tab', 'project_management.html': 'tab', 'college-hub.html': 'tab' };
 
   let kb = null;
@@ -939,6 +939,11 @@
     const key = `c2m:${UID || 'guest'}:helpbotTourOffered`;
     if (load(key, false)) return;
     if (!(MEMBER ? PAGE === 'home.html' : PAGE === 'index.html')) return;
+    // The cookie banner comes first; the offer follows once it is answered
+    if (window.CookieConsent && !window.CookieConsent.chosen()) {
+      document.addEventListener('cookieconsent', offerTour, { once: true });
+      return;
+    }
     setTimeout(() => {
       if (!$('#helpbotPanel').hidden || load(key, false)) return;
       const offer = $('#hbOffer');

@@ -525,6 +525,7 @@ async def startup_event():
     spawn_background(seed_practice_bank())
     await load_closed_accounts()
     spawn_background(account_delete_watch())
+    spawn_background(visits_watch())
 
 async def keep_pool_warm():
     """The database is far away and new connections are slow to open, so keep a few open and fresh."""
@@ -777,6 +778,7 @@ class ProfileUpdate(BaseModel):
 class UserLogin(BaseModel):
     roll_no: str
     password: str
+    remember: bool = False      # "Keep me logged in"
 
 class ProfileResponse(BaseModel):
     id: int
@@ -1020,11 +1022,35 @@ async def hash_password_async(password: str) -> str:
 async def check_password_async(plain_password: str, hashed_password: str) -> bool:
     return await asyncio.to_thread(verify_password, plain_password, hashed_password)
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict, minutes: Optional[int] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=minutes or ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+# The login cookies. "Secure" keeps them off plain http once the site runs on https: it follows how the page was reached
+# (or the X-Forwarded-Proto header of a proxy in front), and COOKIE_SECURE=1 / 0 in .env forces it on or off.
+# "Keep me logged in" on login.html keeps a login for REMEMBER_ME_DAYS; without it the cookie ends when the browser
+# closes and the token itself stops working after SESSION_LOGIN_MINUTES. The cookie banner is section 29.
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "auto").strip().lower()
+REMEMBER_ME_DAYS = 30
+SESSION_LOGIN_MINUTES = 60 * 12
+
+def request_is_https(request) -> bool:
+    if COOKIE_SECURE in ("1", "true", "yes", "on"):
+        return True
+    if COOKIE_SECURE in ("0", "false", "no", "off"):
+        return False
+    forwarded = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    return (forwarded or request.url.scheme) == "https"
+
+def set_login_cookie(response: Response, request, key: str, token: str, max_age: Optional[int]):
+    """max_age None makes a cookie that ends when the browser closes."""
+    response.set_cookie(key=key, value=token, httponly=True, max_age=max_age, samesite="lax", secure=request_is_https(request), path="/")
+
+def clear_login_cookies(response: Response, request):
+    for key in ("authToken", "adminToken"):
+        response.delete_cookie(key=key, path="/", httponly=True, samesite="lax", secure=request_is_https(request))
 
 # Accounts waiting to be erased, or already erased (section 26). Their old login cookies stop working at once.
 # Kept in memory so the check costs no database read; filled at startup.
@@ -1115,7 +1141,7 @@ def is_professional_account(account_type: Optional[str], profession: Optional[st
 
 
 @app.post("/api/register", status_code=status.HTTP_201_CREATED)
-async def register_user(profile: ProfileRegister, response: Response, db: AsyncSession = Depends(get_db)):
+async def register_user(request: Request, profile: ProfileRegister, response: Response, db: AsyncSession = Depends(get_db)):
     # Auto-generate email if not provided
     user_email = profile.email.strip() if profile.email else ""
     if not user_email:
@@ -1188,16 +1214,7 @@ async def register_user(profile: ProfileRegister, response: Response, db: AsyncS
     await db.refresh(new_user)
 
     access_token = create_access_token(data={"sub": str(new_user.id)})
-    
-    response.set_cookie(
-        key="authToken",
-        value=access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False,
-        path="/"
-    )
+    set_login_cookie(response, request, "authToken", access_token, ACCESS_TOKEN_EXPIRE_MINUTES * 60)
     
     await log_user_activity(db, new_user.id, "Account Created", f"Welcome! Your status is: {initial_status}.")
     spawn_background(broadcast_directory({"type": "profile_added", "profile": directory_card(new_user)}))
@@ -1219,26 +1236,17 @@ async def login_user(request: Request, credentials: UserLogin, response: Respons
     if restored:
         await cancel_account_deletion(db, user)
         
-    access_token = create_access_token(data={"sub": str(user.id)})
-    
-    response.set_cookie(
-        key="authToken",
-        value=access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False,
-        path="/"
-    )
+    minutes = REMEMBER_ME_DAYS * 24 * 60 if credentials.remember else SESSION_LOGIN_MINUTES
+    access_token = create_access_token(data={"sub": str(user.id)}, minutes=minutes)
+    set_login_cookie(response, request, "authToken", access_token, minutes * 60 if credentials.remember else None)
     
     await log_user_activity(db, user.id, "Session Active", "You successfully logged into your account.")
     return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type, "is_admin": user.is_admin, "restored": restored}
 
 
 @app.post("/api/logout")
-async def logout_user(response: Response):
-    response.delete_cookie(key="authToken", path="/", httponly=True, samesite="lax")
-    response.delete_cookie(key="adminToken", path="/", httponly=True, samesite="lax")
+async def logout_user(request: Request, response: Response):
+    clear_login_cookies(response, request)
     return {"message": "Successfully logged out"}
 
 
@@ -4592,8 +4600,8 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
         access_token = create_access_token(data={"sub": str(founder_user.id)})
         admin_token = create_access_token(data={"sub": str(founder_user.id), "role": "founder"})
         
-        response.set_cookie(key="authToken", value=access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, samesite="lax", path="/")
-        response.set_cookie(key="adminToken", value=admin_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, samesite="lax", path="/")
+        set_login_cookie(response, request, "authToken", access_token, ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+        set_login_cookie(response, request, "adminToken", admin_token, ACCESS_TOKEN_EXPIRE_MINUTES * 60)
         
         # RETURN TOKEN DIRECTLY IN JSON FOR LOCALSTORAGE FALLBACK
         return {"message": "Founder Access Granted", "role": "founder", "user_id": founder_user.id, "token": admin_token}
@@ -4614,8 +4622,8 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
     access_token = create_access_token(data={"sub": str(admin_user.id)})
     admin_token = create_access_token(data={"sub": str(admin_user.id), "role": "admin"})
     
-    response.set_cookie(key="authToken", value=access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, samesite="lax", path="/")
-    response.set_cookie(key="adminToken", value=admin_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, samesite="lax", path="/")
+    set_login_cookie(response, request, "authToken", access_token, ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    set_login_cookie(response, request, "adminToken", admin_token, ACCESS_TOKEN_EXPIRE_MINUTES * 60)
     
     # RETURN TOKEN DIRECTLY IN JSON FOR LOCALSTORAGE FALLBACK
     return {"message": "Admin Access Granted", "role": "admin", "user_id": admin_user.id, "token": admin_token}
@@ -11179,8 +11187,7 @@ async def request_account_deletion(request: Request, body: AccountDeleteBody, re
     CLOSED_ACCOUNTS.add(current_user_id)
     if push_users is not None:
         push_users.discard(current_user_id)
-    response.delete_cookie(key="authToken", path="/", httponly=True, samesite="lax")
-    response.delete_cookie(key="adminToken", path="/", httponly=True, samesite="lax")
+    clear_login_cookies(response, request)
     spawn_background(log_activity_later(current_user_id, "Account Deletion Requested", f"Your account will be deleted after {DELETE_GRACE_DAYS} days unless you log in again."))
     spawn_background(close_account_sockets(current_user_id))
     spawn_background(broadcast_directory({"type": "profile_removed", "id": current_user_id}))
@@ -12408,3 +12415,84 @@ async def helpbot_chat(request: Request, body: HelpbotChat):
             yield helpbot_event({"type": "error", "code": "error"})
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ==========================================
+# 29. COOKIES AND VISIT COUNTS (cookies.js, cookies.html)
+# ==========================================
+# cookies.js asks every visitor once which optional cookies they allow and keeps the answer in the c2m_consent cookie,
+# "v1.p1.a0": preferences (remembered layout, helper history, cached pages; browser storage only, never sent here) and
+# analytics. The login cookies are essential and are set by set_login_cookie (section 3).
+# With analytics allowed, cookies.js gives the browser a random visitor id (the c2m_vid cookie) and reports each page it
+# opens to /api/visits. Only a keyed hash of that id is stored: not the id itself, the IP address or the account. One row
+# per day, page and visitor with a count; rows older than VISIT_KEEP_DAYS are deleted. The founder console shows the totals.
+VISIT_KEEP_DAYS = 180
+CONSENT_COOKIE, VISITOR_COOKIE = "c2m_consent", "c2m_vid"
+
+class DBPageVisit(Base):
+    __tablename__ = "page_visits"
+    __table_args__ = (UniqueConstraint("day", "page", "visitor", name="ux_page_visits"),)
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(String, index=True)                            # YYYY-MM-DD, site time
+    page = Column(String)                                       # e.g. home.html
+    visitor = Column(String)                                    # keyed hash of the c2m_vid cookie
+    member = Column(Integer, default=0)                         # 1 when the visit came with a login
+    count = Column(Integer, default=1)
+
+class VisitBody(BaseModel):
+    page: str
+
+def consent_allows(request: Request, kind: str) -> bool:
+    """kind "p" (preferences) or "a" (analytics), as cookies.js writes them."""
+    parts = (request.cookies.get(CONSENT_COOKIE) or "").split(".")
+    return len(parts) == 3 and parts[0] == "v1" and f"{kind}1" in parts[1:]
+
+@app.post("/api/visits", status_code=204)
+@limiter.limit("60/minute")
+async def record_visit(request: Request, body: VisitBody):
+    visitor = request.cookies.get(VISITOR_COOKIE) or ""
+    if not consent_allows(request, "a") or not re.fullmatch(r"[A-Za-z0-9_-]{16,64}", visitor):
+        return Response(status_code=204)                        # no consent, no count
+    page = (body.page or "").strip().lower()
+    if not re.fullmatch(r"[a-z0-9_-]{1,60}\.html", page) or not os.path.isfile(page):
+        raise HTTPException(status_code=400, detail="Unknown page.")
+    member = 1 if optional_user_id(request) else 0
+    digest = hmac.new(SECRET_KEY.encode(), visitor.encode(), "sha256").hexdigest()[:24]
+    await run_one_off(pg_insert(DBPageVisit).values(day=site_now().date().isoformat(), page=page, visitor=digest, member=member, count=1)
+                      .on_conflict_do_update(index_elements=["day", "page", "visitor"],
+                                             set_={"count": DBPageVisit.count + 1, "member": func.greatest(DBPageVisit.member, member)}))
+    return Response(status_code=204)
+
+@app.get("/api/founder/visits")
+async def founder_visits(founder_id: int = Depends(require_founder)):
+    """The last 30 days: visitors and page views per day, the most opened pages, and how many visitors were logged in."""
+    today = site_now().date()
+    start, week_start = (today - timedelta(days=29)).isoformat(), (today - timedelta(days=6)).isoformat()
+    distinct_since = lambda day, *more: select(func.count(func.distinct(DBPageVisit.visitor))).where(DBPageVisit.day >= day, *more).scalar_subquery()
+    daily, pages, totals = await asyncio.gather(
+        fetch_one_off(select(DBPageVisit.day, func.count(func.distinct(DBPageVisit.visitor)), func.sum(DBPageVisit.count))
+                      .where(DBPageVisit.day >= start).group_by(DBPageVisit.day)),
+        fetch_one_off(select(DBPageVisit.page, func.sum(DBPageVisit.count), func.count(func.distinct(DBPageVisit.visitor)))
+                      .where(DBPageVisit.day >= start).group_by(DBPageVisit.page).order_by(func.sum(DBPageVisit.count).desc()).limit(8)),
+        fetch_one_off(select(distinct_since(week_start), distinct_since(start), distinct_since(start, DBPageVisit.member == 1))),
+    )
+    by_day = {day: (visitors, int(views or 0)) for day, visitors, views in daily}
+    days = []
+    for back in range(29, -1, -1):
+        day = (today - timedelta(days=back)).isoformat()
+        visitors, views = by_day.get(day, (0, 0))
+        days.append({"day": day, "visitors": visitors, "views": views})
+    week, month, members = totals[0]
+    return {"days": days, "today": days[-1]["visitors"], "week": week or 0, "month": month or 0, "members_month": members or 0,
+            "views_month": sum(d["views"] for d in days), "keep_days": VISIT_KEEP_DAYS,
+            "top_pages": [{"page": page, "views": int(views or 0), "visitors": visitors} for page, views, visitors in pages]}
+
+async def visits_watch():
+    """Once a day: delete visit counts older than VISIT_KEEP_DAYS."""
+    while True:
+        try:
+            cutoff = (site_now().date() - timedelta(days=VISIT_KEEP_DAYS)).isoformat()
+            await run_one_off(delete(DBPageVisit).where(DBPageVisit.day < cutoff))
+        except Exception as e:
+            print("Error clearing old visit counts:", e)
+        await asyncio.sleep(24 * 3600)

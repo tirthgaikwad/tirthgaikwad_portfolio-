@@ -52,9 +52,14 @@
     "signin",
     "enter",
     "password",
-    "roll number"
+    "roll number",
+    "keep me logged in",
+    "remember me",
+    "stay logged in",
+    "logged out automatically",
+    "logged out when i close"
    ],
-   "answer": "Log in with your roll number (or ID) and your password on the Log in page. If you asked to delete your account in the last 14 days, logging in cancels the deletion."
+   "answer": "Log in with your roll number (or ID) and your password on the Log in page. Tick “Keep me logged in” to stay logged in for 30 days; leave it off on a shared computer and you are logged out when the browser closes. If you asked to delete your account in the last 14 days, logging in cancels the deletion."
   },
   {
    "id": "forgot-password",
@@ -1438,6 +1443,36 @@
     "is my data safe"
    ],
    "answer": "Logged-in members see your profile card (not your email, roll number or ID photo). Messages are only between the people in them. The privacy page explains everything that is stored and your choices."
+  },
+  {
+   "id": "cookies",
+   "title": "Cookies and cookie settings",
+   "audience": "all",
+   "page": "cookies.html",
+   "keywords": [
+    "cookie",
+    "cookies",
+    "cookie settings",
+    "cookie policy",
+    "cookie banner",
+    "tracking",
+    "analytics",
+    "visit counts",
+    "consent",
+    "accept cookies",
+    "reject cookies",
+    "change cookie choice",
+    "browser storage",
+    "local storage",
+    "remember my settings"
+   ],
+   "answer": "Essential cookies keep you logged in. With your OK the site also remembers your settings on this device (preferences) and counts visits with its own counter (visit counts, no IP address). Change your choice any time with Cookie settings on the Cookies page, linked at the bottom of every page.",
+   "highlight": [
+    {
+     "sel": "[data-cookie-settings]",
+     "text": "Change what this device may keep here."
+    }
+   ]
   },
   {
    "id": "terms",

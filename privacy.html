@@ -7,7 +7,7 @@
 (function () {
   if (!localStorage.getItem('currentUserId')) return;
   var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
-  window.__pagePrefetch = fetch(apiBase + 'C:/Program Files/Git/api/me', { credentials: 'include' })
+  window.__pagePrefetch = fetch(apiBase + '/api/me', { credentials: 'include' })
     .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
     .catch(function () { return null; });
 })();
@@ -48,7 +48,7 @@
 <h1 class="hm-title">What we keep about you, and why</h1>
 <p class="hm-sub">Connect2Minds helps students and professionals find each other, work in teams and study. This page says in plain words what that needs from you.</p>
 </div></section>
-<nav class="lg-links" aria-label="Legal pages"><a aria-current="page" href="privacy.html">Privacy</a><a href="terms.html">Terms &amp; honour code</a><a href="support.html">Support</a></nav>
+<nav class="lg-links" aria-label="Legal pages"><a aria-current="page" href="privacy.html">Privacy</a><a href="terms.html">Terms &amp; honour code</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
 <article class="hm-card lg-doc">
 <h2>What we keep</h2>
 <ul>
@@ -82,13 +82,16 @@
 <li><strong>Delete your account:</strong> from <a href="account.html">Account &amp; privacy</a>. You are logged out and hidden at once; after 14 days your information is erased. Logging in before then cancels it. Messages, posts and work other people rely on stay, shown as “Deleted user”, and payment records stay for tax law without your name.</li>
 </ul>
 
+<h2>Cookies</h2>
+<p>Essential cookies keep you logged in. With your OK we also remember your settings on this device and count visits with our own counter (no IP address, not linked to your account). The <a href="cookies.html">cookie policy</a> lists every one, and Cookie settings there lets you change your choice.</p>
+
 <h2>Keeping it safe</h2>
 <p>Passwords are hashed, logins use secure cookies, ID photos are kept outside the public folders, and we only collect what the features above need. No system is perfect: if you think your account was misused, change your password and <a href="support.html">tell us</a>.</p>
 
 <h2>Changes and questions</h2>
 <p>If this policy changes we will update the date above and tell you on the site. Questions go to <a href="support.html">Support</a>.</p>
 </article>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a></div></div></footer>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a></div></div></footer>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">

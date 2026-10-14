@@ -85,7 +85,7 @@
     e.preventDefault();
     const roll = byId('rollNumber'), password = byId('password');
     if (!requireAll([[roll, 'Enter your roll number or ID.'], [password, 'Enter your password.']])) return;
-    submitLogin(forms.user, '/api/login', { roll_no: roll.value.trim(), password: password.value },
+    submitLogin(forms.user, '/api/login', { roll_no: roll.value.trim(), password: password.value, remember: byId('rememberMe').checked },
       'That roll number or password is not right.',
       (data) => {
         localStorage.setItem('currentUserId', data.user_id);

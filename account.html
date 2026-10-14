@@ -7,7 +7,7 @@
 (function () {
   if (!localStorage.getItem('currentUserId')) return;
   var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
-  window.__pagePrefetch = fetch(apiBase + 'C:/Program Files/Git/api/me/account', { credentials: 'include' })
+  window.__pagePrefetch = fetch(apiBase + '/api/me/account', { credentials: 'include' })
     .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
     .catch(function () { return null; });
 })();
@@ -57,6 +57,13 @@
 <div class="ac-actions">
 <button class="hm-btn" data-act="export" id="exportBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">download</span>Download my data</button>
 <span aria-live="polite" class="ac-status" id="exportStatus"></span>
+</div>
+</section>
+<section class="hm-card ac-card" id="cookieCard">
+<div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">cookie</span>Cookies on this device</h2></div>
+<p class="ac-text">Essential cookies keep you logged in. You choose whether this browser also remembers your settings and helps us count visits. <a class="msg-link" href="cookies.html">Read the cookie policy</a></p>
+<div class="ac-actions">
+<button class="hm-btn is-quiet" data-cookie-settings type="button"><span aria-hidden="true" class="material-symbols-outlined">tune</span>Cookie settings</button>
 </div>
 </section>
 
@@ -112,7 +119,7 @@
 <p>You have been logged out. Everything will be erased on <strong id="deleteDate"></strong>. If you change your mind, log in again before then.</p>
 <a class="hm-btn" href="index.html">Go to the home page</a>
 </section>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a></div></div></footer>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a></div></div></footer>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">

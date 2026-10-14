@@ -55,6 +55,7 @@ async function renderOverview() {
         <div class="in-row"><span>People who used it today</span><b>${o.helpbot ? o.helpbot.people_today : 0}</b></div>
         ${o.helpbot && o.helpbot.ai ? '' : '<p class="ch-muted">To switch AI on, add ANTHROPIC_API_KEY to the .env file on the server. Each member gets up to 40 AI answers a day; after that the free built-in guide answers.</p>'}
       </section>
+      <section class="ch-panel in-card wide" id="fcVisits" aria-busy="true"><h3>Visitors</h3><div class="skeleton" style="height:120px"></div></section>
       <section class="ch-panel in-card"><h3>Active plans</h3>
         ${Object.keys(lines).map(line => `<div class="in-row"><span>${lines[line]}</span><b>${o.active_by_line[line] || 0}</b></div>`).join('')}
         <a class="msg-link" href="pricing.html">See the public pricing page</a>
@@ -63,6 +64,32 @@ async function renderOverview() {
         ${o.recent_payments.length ? paymentsTable(o.recent_payments, false) : '<p class="ch-muted">No payments yet.</p>'}
       </section>
     </div>`;
+  renderVisits();
+}
+
+// Visit counts (main.py section 29): only from people who allowed them in the cookie banner
+async function renderVisits() {
+  let v;
+  try { v = await api('/api/founder/visits'); } catch (err) { v = null; }
+  const box = el('fcVisits');
+  if (!box) return;
+  box.removeAttribute('aria-busy');
+  if (!v) { box.innerHTML = '<h3>Visitors</h3><p class="ch-muted">Could not load the visit counts.</p>'; return; }
+  const dayLabel = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const peak = Math.max(1, ...v.days.map(d => d.visitors));
+  const topViews = Math.max(1, ...v.top_pages.map(p => p.views));
+  const kpis = [[v.today, 'visitors today'], [v.week, 'in the last 7 days'], [v.month, 'in the last 30 days'], [v.views_month, 'pages opened (30 days)'], [v.members_month, 'of them logged in']];
+  box.innerHTML = `<h3>Visitors</h3>
+    <div class="fc-visit-kpis">${kpis.map(([n, label]) => `<div><b>${n}</b><span>${label}</span></div>`).join('')}</div>
+    ${v.views_month ? `
+      <div class="fc-visit-chart" role="img" aria-label="Visitors per day for the last 30 days; the busiest day had ${peak}.">
+        ${v.days.map(d => `<div class="fc-vbar" title="${dayLabel(d.day)}: ${d.visitors} visitor${d.visitors === 1 ? '' : 's'}, ${d.views} page${d.views === 1 ? '' : 's'} opened"><i style="height:${d.visitors ? Math.max(4, Math.round(d.visitors / peak * 100)) : 0}%"></i></div>`).join('')}
+      </div>
+      <div class="fc-visit-axis"><span>${dayLabel(v.days[0].day)}</span><span>Today</span></div>
+      <h4 class="fc-visit-sub">Most opened pages</h4>
+      ${v.top_pages.map(p => `<div class="in-row"><span>${escapeHtml(p.page)}</span><div class="ch-meter"><i style="width:${Math.round(p.views / topViews * 100)}%"></i></div><b>${p.views}</b></div>`).join('')}`
+    : '<p class="ch-muted">No visits counted yet.</p>'}
+    <p class="ch-muted fc-visit-note">Only people who allow visit counts in the cookie banner are counted, with our own counter: no IP addresses, not linked to accounts, deleted after ${v.keep_days} days.</p>`;
 }
 
 // ==========================================

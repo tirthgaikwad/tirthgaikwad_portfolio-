@@ -1,4 +1,4 @@
-/* Privacy, Terms and Support pages (privacy.html, terms.html, support.html). Builds on home.css (hm-*). */
+/* Privacy, Terms, Cookies and Support pages (privacy.html, terms.html, cookies.html, support.html). Builds on home.css (hm-*). */
 .lg-page { max-width: 860px; }
 .lg-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
 .lg-links a { font-size: 13px; font-weight: 600; color: #3525cd; text-decoration: none; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(199,196,216,0.9); background: #fff; }
@@ -40,7 +40,28 @@
 .lg-guest-bar nav .hm-btn { color: #fff; }
 .lg-guest-bar nav .hm-btn.is-quiet { color: #3525cd; }
 
+/* Cookie policy (cookies.html): the current choice, and the cookie tables (stacked cards on phones) */
+.lg-choice { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.lg-choice h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 22px; font-weight: 700; margin: 0 0 2px; color: #0b1c30; }
+.lg-choice p { margin: 0; font-size: 14px; line-height: 21px; color: #464555; }
+.lg-choice .hm-btn { flex-shrink: 0; color: #fff; }
+.lg-table { margin: 0 0 12px; border: 1px solid rgba(199,196,216,0.7); border-radius: 12px; overflow: hidden; }
+.lg-table table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 19px; color: #464555; }
+.lg-table th { text-align: left; font-weight: 600; color: #0b1c30; background: #eff4ff; padding: 9px 12px; }
+.lg-table td { padding: 10px 12px; border-top: 1px solid rgba(199,196,216,0.5); vertical-align: top; }
+.lg-table td:first-child { width: 24%; }
+.lg-table td:nth-child(2) { width: 15%; white-space: nowrap; }
+.lg-table code { font: 600 12px/18px ui-monospace, 'Cascadia Mono', Consolas, monospace; color: #0b1c30; word-break: break-word; }
+
 @media (max-width: 767px) {
   .lg-row { grid-template-columns: 1fr; }
+  .lg-choice { flex-direction: column; align-items: stretch; }
+  .lg-table thead { display: none; }
+  .lg-table table, .lg-table tbody, .lg-table tr, .lg-table td { display: block; width: auto !important; }
+  .lg-table tr + tr { border-top: 1px solid rgba(199,196,216,0.7); }
+  .lg-table td { border-top: 0; padding: 4px 12px; white-space: normal !important; }
+  .lg-table td:first-child { padding-top: 10px; }
+  .lg-table td:last-child { padding-bottom: 10px; }
+  .lg-table td::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #777587; }
   .lg-guest-bar { padding: 0 16px; }
 }

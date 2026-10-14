@@ -1,5 +1,5 @@
 // ==========================================
-// LEGAL.JS — Privacy, Terms and Support pages. They open for visitors who are not logged in too:
+// LEGAL.JS — Privacy, Terms, Cookies and Support pages. They open for visitors who are not logged in too:
 // those get a plain top bar with Log in and Sign up instead of the app's menus.
 // The Support form sends an enquiry of kind "support"; it shows in the founder console under Enquiries.
 // ==========================================
@@ -13,6 +13,26 @@ function initLegal() {
   }
   const form = document.getElementById('supportForm');
   if (form) initSupport(form);
+  const status = document.getElementById('ckStatus');
+  if (status) initCookieStatus(status);
+}
+
+// cookies.html: say what this device allows now; cookies.js arrives a moment after the page
+function initCookieStatus(status) {
+  const show = () => {
+    const consent = window.CookieConsent;
+    if (!consent) return false;
+    if (!consent.chosen()) {
+      status.textContent = 'You have not chosen yet, so only essential cookies are used.';
+      return true;
+    }
+    const on = [consent.allows('preferences') && 'preferences', consent.allows('analytics') && 'visit counts'].filter(Boolean);
+    status.textContent = on.length ? `Essential cookies, plus ${on.join(' and ')}.` : 'Essential cookies only.';
+    return true;
+  };
+  document.addEventListener('cookieconsent', show);
+  let tries = 0;
+  const wait = setInterval(() => { if (show() || ++tries > 40) clearInterval(wait); }, 150);
 }
 
 function initSupport(form) {
