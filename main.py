@@ -24,7 +24,7 @@ from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import bcrypt
@@ -8948,7 +8948,8 @@ class EnquiryUpdate(BaseModel):
 @app.get("/api/founder/overview")
 async def founder_overview(founder_id: int = Depends(require_founder)):
     month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
-    counts, statuses, subs, paid, recent = await asyncio.gather(
+    helpbot_today = select(func.coalesce(func.sum(DBUsageCounter.count), 0), func.count()).where(DBUsageCounter.metric == "helpbot", DBUsageCounter.period == site_now().date().isoformat())
+    counts, statuses, subs, paid, recent, helpbot_rows = await asyncio.gather(
         fetch_one_off(select(
             select(func.count()).select_from(DBUser).scalar_subquery(),
             select(func.count()).select_from(DBUser).where(DBUser.is_admin == 1, func.coalesce(DBUser.is_founder, 0) == 0).scalar_subquery(),
@@ -8964,6 +8965,7 @@ async def founder_overview(founder_id: int = Depends(require_founder)):
         fetch_one_off(select(func.coalesce(func.sum(DBPayment.amount_paise), 0), func.coalesce(func.sum(DBPayment.gst_paise), 0), func.count())
                       .where(DBPayment.status == "paid", DBPayment.paid_at >= month_start)),
         fetch_one_off(select(DBPayment, DBUser.name).outerjoin(DBUser, DBUser.id == DBPayment.user_id).where(DBPayment.status.in_(("paid", "refunded"))).order_by(DBPayment.id.desc()).limit(10)),
+        fetch_one_off(helpbot_today),
     )
     users, admins, teachers, admin_apps, teacher_apps, enquiries, unassigned = counts[0]
     status_counts: dict = {}
@@ -8985,6 +8987,7 @@ async def founder_overview(founder_id: int = Depends(require_founder)):
         "revenue_month_paise": revenue or 0, "revenue_month_gst_paise": revenue_gst or 0, "payments_month": payments or 0, "mrr_paise": round(mrr),
         "active_by_line": by_line, "payments_enabled": bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET),
         "recent_payments": [{**serialize_payment(p), "name": name or ""} for p, name in recent],
+        "helpbot": {"ai": helpbot_client() is not None, "answers_today": helpbot_rows[0][0] or 0, "people_today": helpbot_rows[0][1] or 0},
     }
 
 
@@ -12112,3 +12115,296 @@ async def apply_project_template(team_id: int, body: TemplateBody, db: AsyncSess
 for _table, _columns in list(USER_DATA_ERASED.items()) + list(USER_DATA_KEPT.items()):
     for _column in _columns:
         assert _column in Base.metadata.tables[_table].c, f"USER_DATA names {_table}.{_column}, which does not exist"
+
+
+# ==========================================
+# 28. HELPER BOT (helpbot.js)
+# ==========================================
+# The helper bot works in the browser without any of this: it answers from helpbot_kb.json, looks things up through
+# the person's own endpoints and asks before it changes anything. When ANTHROPIC_API_KEY is set in .env (and the
+# `anthropic` package is installed) it can also hold a real conversation through Claude, here. The same knowledge
+# base is the model's source of truth. The model only reads the person's own data; anything that would change
+# something comes back to the browser as a card the person confirms, and the browser then calls the normal endpoint.
+HELPBOT_MODEL = "claude-opus-5-5"
+HELPBOT_MEMBER_DAILY = 40           # AI answers per account per day (India time), then the built-in guide answers
+HELPBOT_VISITOR_DAILY = 10          # per internet address per day for people who are not logged in
+HELPBOT_MAX_TURNS = 12
+HELPBOT_MAX_ROUNDS = 5              # model calls per question (tool use)
+HELPBOT_KB_FILE = "helpbot_kb.json"
+helpbot_state = {"client": None, "kb": None, "kb_mtime": 0.0, "visitors": {}, "visitor_day": ""}
+
+
+def helpbot_client():
+    """The Claude client, or None when AI is not set up. A key added to .env later is picked up without a restart."""
+    load_dotenv(override=False)
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        return None
+    if helpbot_state["client"] is None:
+        try:
+            import anthropic
+        except ImportError:
+            return None
+        helpbot_state["client"] = anthropic.AsyncAnthropic(max_retries=2, timeout=60.0)
+    return helpbot_state["client"]
+
+def helpbot_kb() -> dict:
+    try:
+        mtime = os.path.getmtime(HELPBOT_KB_FILE)
+        if helpbot_state["kb"] is None or mtime != helpbot_state["kb_mtime"]:
+            with open(HELPBOT_KB_FILE, encoding="utf-8") as handle:
+                helpbot_state["kb"] = json.load(handle)
+            helpbot_state["kb_mtime"] = mtime
+    except (OSError, ValueError) as e:
+        print("Could not read the helper bot's knowledge base:", e)
+        helpbot_state["kb"] = helpbot_state["kb"] or {"articles": []}
+    return helpbot_state["kb"]
+
+def helpbot_system_text() -> str:
+    """The stable part of the instructions: who the helper is and everything it knows about the site. Cached."""
+    articles = helpbot_kb().get("articles", [])
+    lines = [f"[{a['id']}] {a['title']} (page: {a['page']}; for: {a['audience']}): {a['answer']}" for a in articles]
+    return (
+        "You are the Connect2Minds helper, a friendly guide inside the Connect2Minds website: a place where Indian college "
+        "students and professionals find teammates, chat and call, plan projects in teams (Project Hub), work with their "
+        "teachers (College Hub) and track their studies (My Study).\n\n"
+        "How to answer:\n"
+        "- Keep answers short: two to four sentences, plain words, no headings. **Bold** is fine for a button or page name.\n"
+        "- The site knowledge below is the truth about what the site can do. Do not invent features, prices or rules. "
+        "If something is not covered, say you are not sure and suggest the Support page (article id support).\n"
+        "- When a page or tool would help, call go_to with the matching article id; the person then gets a button that "
+        "opens it and highlights what to press. Mention that in one short phrase.\n"
+        "- For questions about the person's own things (what is due, classes, attendance, unread messages, project tasks, "
+        "people with a skill), use the lookup tools instead of guessing. Never show data that is not the person's own.\n"
+        "- You cannot change anything yourself. To add a planner task, mark attendance, start or stop a timer or create a "
+        "project task, call propose_action: the person sees a card and must confirm it. Say that they need to confirm; "
+        "never say it is done.\n"
+        "- Reply in the language the person writes in (English, Hindi or Hinglish).\n"
+        "- Gently decline requests unrelated to the site or studies, like writing whole assignments for someone (the "
+        "honour code asks students to do their own work); explaining a concept briefly is fine.\n\n"
+        "Site knowledge (article id, title, page, who it is for, facts):\n" + "\n".join(lines)
+    )
+
+HELPBOT_ACTION_TYPES = ["add_study_task", "mark_attendance", "start_timer", "stop_timer", "create_project_task"]
+
+def helpbot_tools(member: bool) -> list:
+    nullable = lambda kind, text: {"type": [kind, "null"], "description": text}
+    tools = [{
+        "name": "go_to",
+        "description": "Offer the person a button that opens the page or tool of one site-knowledge article and highlights what to press.",
+        "input_schema": {"type": "object", "properties": {"article_id": {"type": "string", "description": "An article id from the site knowledge."}},
+                         "required": ["article_id"], "additionalProperties": False},
+    }]
+    if member:
+        empty = {"type": "object", "properties": {}, "required": [], "additionalProperties": False}
+        tools += [
+            {"name": "my_today", "description": "What needs the person today: College Hub work, polls, unread messages, today's classes, the week's numbers.", "input_schema": empty},
+            {"name": "my_study", "description": "The person's My Study data: subjects with attendance and how many classes they can miss or must attend, today's classes and planner items due in the next two weeks.",
+             "input_schema": {"type": "object", "properties": {"subject": nullable("string", "Only this subject (part of its name), or null for all.")},
+                              "required": ["subject"], "additionalProperties": False}},
+            {"name": "my_unread", "description": "Who has sent the person messages they have not read yet.", "input_schema": empty},
+            {"name": "my_project_tasks", "description": "Project Hub tasks assigned to the person that are not done, across their teams, soonest due first.", "input_schema": empty},
+            {"name": "find_people", "description": "Find people on the site who list a skill (and optionally study at a college).",
+             "input_schema": {"type": "object", "properties": {"skill": {"type": "string"}, "college": nullable("string", "Part of a college name, or null.")},
+                              "required": ["skill", "college"], "additionalProperties": False}},
+            {"name": "propose_action", "description": "Show the person a card to confirm a change. Nothing changes until they press Confirm. Fill only the fields the action needs.",
+             "input_schema": {"type": "object", "additionalProperties": False,
+                              "required": ["type", "title", "due_date", "subject", "status", "team"],
+                              "properties": {
+                                  "type": {"type": "string", "enum": HELPBOT_ACTION_TYPES},
+                                  "title": nullable("string", "Task title (add_study_task, create_project_task)."),
+                                  "due_date": nullable("string", "YYYY-MM-DD (add_study_task, create_project_task)."),
+                                  "subject": nullable("string", "Subject name (mark_attendance, optional for add_study_task)."),
+                                  "status": nullable("string", "present, absent or cancelled (mark_attendance)."),
+                                  "team": nullable("string", "Team name (start_timer, create_project_task), or null for the person's only/last team."),
+                              }}},
+        ]
+    return [{**tool, "strict": True, "eager_input_streaming": True} for tool in tools]
+
+
+# ---------- what the lookup tools return (always the asking person's own data) ----------
+async def helpbot_my_today(user_id: int) -> dict:
+    home = await build_home(user_id)
+    return {"today": home["today"], "needs": [{"title": n["title"], "detail": n["detail"], "due": n.get("due", "")} for n in home["needs"][:12]],
+            "classes_today": home.get("classes", [])[:10], "week": home["week"]}
+
+async def helpbot_my_study(user_id: int, subject: Optional[str]) -> dict:
+    study = await get_study(current_user_id=user_id)
+    wanted = (subject or "").strip().lower()
+    names = {s["id"]: s["name"] for s in study["subjects"]}
+    subjects = []
+    for s in study["subjects"]:
+        if s["archived"] or (wanted and wanted not in s["name"].lower()):
+            continue
+        state = attendance_state(s["base_attended"] + s["present"], s["absent"] + (s["base_total"] - s["base_attended"]), s["goal"])
+        subjects.append({"subject": s["name"], "goal_percent": s["goal"], **state})
+    until = (datetime.fromisoformat(study["today"]) + timedelta(days=14)).date().isoformat()
+    return {
+        "today": study["today"],
+        "subjects": subjects,
+        "classes_today": [{"subject": names.get(slot["subject_id"], ""), "start": slot["start_time"], "end": slot["end_time"], "room": slot["room"]}
+                          for slot in study["slots"] if slot["weekday"] == study["weekday"]],
+        "due_soon": [{"title": t["title"], "kind": t["kind"], "due": t["due_date"], "subject": names.get(t["subject_id"], "")}
+                     for t in study["tasks"] if not t["done"] and t["due_date"] and t["due_date"] <= until][:15],
+        "college_deadlines": [{"title": d.get("title", ""), "due": d.get("due", "")} for d in study.get("hub_deadlines", [])][:10],
+    }
+
+async def helpbot_my_unread(user_id: int) -> dict:
+    rows = await fetch_one_off(select(DBUser.name, func.count()).join(DBUser, DBUser.id == DBMessage.sender_id)
+                               .where(DBMessage.receiver_id == user_id, func.coalesce(DBMessage.message_status, "sent") != "read")
+                               .group_by(DBUser.name).order_by(func.count().desc()).limit(10))
+    return {"unread": [{"from": name or "Someone", "messages": count} for name, count in rows], "total": sum(c for _, c in rows)}
+
+async def helpbot_my_project_tasks(user_id: int) -> dict:
+    rows = await fetch_one_off(select(DBTeamTask.title, DBTeamTask.status, DBTeamTask.due_date, DBTeam.name)
+                               .join(DBTeam, DBTeam.id == DBTeamTask.team_id)
+                               .join(DBTeamMember, and_(DBTeamMember.team_id == DBTeamTask.team_id, DBTeamMember.user_id == user_id))
+                               .where(DBTeamTask.assignee_id == user_id, func.coalesce(DBTeamTask.status, "todo") != "done")
+                               .order_by(func.coalesce(func.nullif(DBTeamTask.due_date, ""), "9999"), DBTeamTask.id).limit(20))
+    return {"tasks": [{"title": t, "status": COLUMN_NAMES.get(s or "todo", s), "due": d or "", "team": team} for t, s, d, team in rows]}
+
+async def helpbot_find_people(user_id: int, skill: str, college: Optional[str]) -> dict:
+    skill = (skill or "").strip().lower()[:40]
+    if not skill:
+        return {"people": []}
+    conditions = [func.lower(func.coalesce(DBUser.skills, "")).like(f"%{skill}%")]
+    if college and college.strip():
+        conditions.append(func.lower(func.coalesce(DBUser.college_name, "")).like(f"%{college.strip().lower()[:80]}%"))
+    rows = await fetch_one_off(person_cards_query(user_id, *conditions).limit(8))
+    return {"people": [{"name": r.name, "college": r.college_name or "", "skills": (r.skills or "")[:120], "profile": f"profile.html?id={r.id}"} for r in rows]}
+
+
+# ---------- the conversation ----------
+class HelpbotTurn(BaseModel):
+    role: str
+    text: str
+
+class HelpbotChat(BaseModel):
+    messages: List[HelpbotTurn]
+    page: Optional[str] = ""
+
+@app.get("/api/helpbot/status")
+async def helpbot_status():
+    return {"ai": helpbot_client() is not None}
+
+def helpbot_event(payload: dict) -> str:
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+async def helpbot_take_quota(request: Request, user_id: Optional[int]) -> bool:
+    """Counts one AI answer. False when today's allowance is used up (the browser then answers itself)."""
+    day = site_now().date().isoformat()
+    if user_id:
+        rows = await run_returning(pg_insert(DBUsageCounter).values(user_id=user_id, metric="helpbot", period=day, count=1)
+                                   .on_conflict_do_update(index_elements=["user_id", "metric", "period"], set_={"count": DBUsageCounter.count + 1})
+                                   .returning(DBUsageCounter.count))
+        return rows[0][0] <= HELPBOT_MEMBER_DAILY
+    if helpbot_state["visitor_day"] != day:
+        helpbot_state["visitor_day"], helpbot_state["visitors"] = day, {}
+    address = get_remote_address(request)
+    helpbot_state["visitors"][address] = helpbot_state["visitors"].get(address, 0) + 1
+    return helpbot_state["visitors"][address] <= HELPBOT_VISITOR_DAILY
+
+async def helpbot_run_tool(name: str, args, user_id: Optional[int], article_ids: set):
+    """Runs one tool. Returns (result for the model, event for the browser or None)."""
+    if not isinstance(args, dict):
+        return {"error": "The tool input was not readable."}, None
+    if name == "go_to":
+        article_id = args.get("article_id")
+        if article_id not in article_ids:
+            return {"error": f"There is no article {article_id!r}. Use an id from the site knowledge."}, None
+        return {"shown": "The person now has a button to open it."}, {"type": "navigate", "article": article_id}
+    if not user_id:
+        return {"error": "The person is not logged in, so their own data is not available. Suggest logging in or signing up."}, None
+    if name == "my_today":
+        return await helpbot_my_today(user_id), None
+    if name == "my_study":
+        subject = args.get("subject")
+        return await helpbot_my_study(user_id, subject if isinstance(subject, str) else None), None
+    if name == "my_unread":
+        return await helpbot_my_unread(user_id), None
+    if name == "my_project_tasks":
+        return await helpbot_my_project_tasks(user_id), None
+    if name == "find_people":
+        if not isinstance(args.get("skill"), str):
+            return {"error": "Give a skill to search for."}, None
+        return await helpbot_find_people(user_id, args["skill"], args.get("college") if isinstance(args.get("college"), str) else None), None
+    if name == "propose_action":
+        if args.get("type") not in HELPBOT_ACTION_TYPES:
+            return {"error": "Unknown action."}, None
+        card = {k: (str(v)[:160] if v is not None else None) for k, v in args.items() if k in ("type", "title", "due_date", "subject", "status", "team")}
+        return {"shown": "The person sees a card with Confirm and Cancel. Nothing has been changed yet."}, {"type": "action_card", "action": card}
+    return {"error": f"Unknown tool {name}."}, None
+
+@app.post("/api/helpbot/chat")
+@limiter.limit("12/minute", key_func=account_rate_key)
+async def helpbot_chat(request: Request, body: HelpbotChat):
+    client = helpbot_client()
+    if client is None:
+        raise HTTPException(status_code=503, detail="The AI helper is not switched on. The built-in guide answers instead.")
+    user_id = optional_user_id(request)
+    turns = [t for t in body.messages[-HELPBOT_MAX_TURNS:] if t.role in ("user", "assistant") and t.text.strip()]
+    while turns and turns[0].role != "user":
+        turns.pop(0)
+    if not turns or turns[-1].role != "user":
+        raise HTTPException(status_code=400, detail="Ask a question first.")
+    if not await helpbot_take_quota(request, user_id):
+        raise HTTPException(status_code=429, detail="The AI helper has answered a lot today. The built-in guide answers until tomorrow.")
+
+    name = ""
+    if user_id:
+        rows = await fetch_one_off(select(DBUser.name).where(DBUser.id == user_id))
+        name = rows[0][0] if rows else ""
+    context = (f"Right now: the person is on {str(body.page or 'a page')[:80]}; "
+               f"{'they are logged in as ' + name if user_id else 'they are a visitor, not logged in (no personal lookups or actions)'}; "
+               f"today is {site_now().strftime('%A %d %B %Y')} (India).")
+    messages = [{"role": t.role, "content": t.text.strip()[:2000]} for t in turns]
+    article_ids = {a["id"] for a in helpbot_kb().get("articles", [])}
+    params = {
+        "model": HELPBOT_MODEL,
+        "max_tokens": 4000,
+        "output_config": {"effort": "low"},          # short chat answers
+        "system": [{"type": "text", "text": helpbot_system_text(), "cache_control": {"type": "ephemeral"}},
+                   {"type": "text", "text": context}],
+        "tools": helpbot_tools(bool(user_id)),
+        "betas": ["server-side-fallback-2026-07-01"],
+        "fallbacks": "default",                       # a declined request is retried on Anthropic's recommended model
+    }
+
+    async def stream():
+        import anthropic
+        try:
+            for _ in range(HELPBOT_MAX_ROUNDS):
+                async with client.beta.messages.stream(messages=messages, **params) as reply:
+                    async for event in reply:
+                        if event.type == "text":
+                            yield helpbot_event({"type": "text", "text": event.text})
+                    message = await reply.get_final_message()
+                if message.stop_reason == "refusal":
+                    yield helpbot_event({"type": "text", "text": "\n\nI can't help with that one. Ask me about the site, or try the Support page."})
+                    break
+                tool_uses = [b for b in message.content if b.type == "tool_use"]
+                if not tool_uses or message.stop_reason == "max_tokens":
+                    break
+                results = []
+                for block in tool_uses:
+                    result, event = await helpbot_run_tool(block.name, block.input, user_id, article_ids)
+                    if event:
+                        yield helpbot_event(event)
+                    results.append({"type": "tool_result", "tool_use_id": block.id, "content": json.dumps(result, ensure_ascii=False, default=str)[:12000],
+                                    **({"is_error": True} if "error" in result else {})})
+                messages.append({"role": "assistant", "content": message.content})
+                messages.append({"role": "user", "content": results})
+            yield helpbot_event({"type": "done"})
+        except anthropic.RateLimitError:
+            yield helpbot_event({"type": "error", "code": "busy"})
+        except anthropic.AuthenticationError:
+            yield helpbot_event({"type": "error", "code": "ai_off"})
+        except anthropic.APIConnectionError:
+            yield helpbot_event({"type": "error", "code": "offline"})
+        except anthropic.APIStatusError as e:
+            print("Helper bot API error:", e.status_code, getattr(e, "message", e))
+            yield helpbot_event({"type": "error", "code": "error"})
+        except ValueError as e:      # a tool input the SDK could not parse at all
+            print("Helper bot could not read a tool call:", e)
+            yield helpbot_event({"type": "error", "code": "error"})
+
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

@@ -22,6 +22,18 @@ if (IN_CALL_DOCK) {
     }, true);
 }
 
+// The helper bot (helpbot.js) on every page that loads this file; not inside the call dock, whose outer page has it
+if (!IN_CALL_DOCK && !document.querySelector('script[src$="helpbot.js"]')) {
+    const helperCss = document.createElement('link');
+    helperCss.rel = 'stylesheet';
+    helperCss.href = 'helpbot.css';
+    document.head.appendChild(helperCss);
+    const helper = document.createElement('script');
+    helper.src = 'helpbot.js';
+    helper.defer = true;
+    document.head.appendChild(helper);
+}
+
 // Going to the login page from inside the dock leaves the whole site page, ending the call properly
 window.goToLogin = function() {
     if (IN_CALL_DOCK && window.top.CallDock) return window.top.CallDock.leaveTo('login.html');

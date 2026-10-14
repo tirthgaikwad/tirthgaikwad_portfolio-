@@ -49,6 +49,12 @@ async function renderOverview() {
       <section class="ch-panel in-card"><h3>Waiting for you</h3>
         ${openItems.map(([tab, n, label, ico]) => `<button class="fc-open${n ? ' has' : ''}" type="button" data-tab-go="${tab}">${icon(ico)}<b>${n}</b><span>${escapeHtml(label)}</span>${icon('chevron_right')}</button>`).join('')}
       </section>
+      <section class="ch-panel in-card"><h3>Helper bot</h3>
+        <div class="in-row"><span>AI answers</span><b>${o.helpbot && o.helpbot.ai ? 'On' : 'Off (built-in guide)'}</b></div>
+        <div class="in-row"><span>AI answers today</span><b>${o.helpbot ? o.helpbot.answers_today : 0}</b></div>
+        <div class="in-row"><span>People who used it today</span><b>${o.helpbot ? o.helpbot.people_today : 0}</b></div>
+        ${o.helpbot && o.helpbot.ai ? '' : '<p class="ch-muted">To switch AI on, add ANTHROPIC_API_KEY to the .env file on the server. Each member gets up to 40 AI answers a day; after that the free built-in guide answers.</p>'}
+      </section>
       <section class="ch-panel in-card"><h3>Active plans</h3>
         ${Object.keys(lines).map(line => `<div class="in-row"><span>${lines[line]}</span><b>${o.active_by_line[line] || 0}</b></div>`).join('')}
         <a class="msg-link" href="pricing.html">See the public pricing page</a>

@@ -1,0 +1,1651 @@
+{
+ "version": 1,
+ "articles": [
+  {
+   "id": "about",
+   "title": "What is Connect2Minds?",
+   "audience": "all",
+   "page": "index.html",
+   "keywords": [
+    "what is this",
+    "about",
+    "connect2minds",
+    "what can i do",
+    "purpose",
+    "website",
+    "site",
+    "platform",
+    "features",
+    "help me",
+    "overview",
+    "explain"
+   ],
+   "answer": "Connect2Minds helps students and professionals find the right people, build projects in teams and keep up with college. You can discover people by skill, chat and call, plan projects in Project Hub, use College Hub with your teachers, and track your studies in My Study."
+  },
+  {
+   "id": "signup",
+   "title": "Create an account",
+   "audience": "visitor",
+   "page": "register.html",
+   "keywords": [
+    "sign up",
+    "signup",
+    "register",
+    "create account",
+    "join",
+    "new account",
+    "make account",
+    "registration",
+    "start"
+   ],
+   "answer": "Press Sign up and fill four short steps: your account, your college background, your college ID (optional, it gets you verified faster) and your profile. A college email ending in .edu.in or .ac.in is verified straight away."
+  },
+  {
+   "id": "login",
+   "title": "Log in",
+   "audience": "visitor",
+   "page": "login.html",
+   "keywords": [
+    "login",
+    "log in",
+    "sign in",
+    "signin",
+    "enter",
+    "password",
+    "roll number"
+   ],
+   "answer": "Log in with your roll number (or ID) and your password on the Log in page. If you asked to delete your account in the last 14 days, logging in cancels the deletion."
+  },
+  {
+   "id": "forgot-password",
+   "title": "I forgot my password",
+   "audience": "all",
+   "page": "support.html",
+   "keywords": [
+    "forgot password",
+    "reset password",
+    "lost password",
+    "change password",
+    "cant login",
+    "can't log in",
+    "locked out",
+    "password reset"
+   ],
+   "answer": "There is no automatic reset yet. Send a message from the Support page with your roll number and the email on your account, and the team will help you get back in.",
+   "highlight": [
+    {
+     "sel": "#supportForm",
+     "text": "Pick “Logging in”, add your roll number and send."
+    }
+   ]
+  },
+  {
+   "id": "verification",
+   "title": "Getting verified",
+   "audience": "member",
+   "page": "profile.html",
+   "keywords": [
+    "verify",
+    "verified",
+    "verification",
+    "pending",
+    "id card",
+    "college id",
+    "blue tick",
+    "tick",
+    "approve my account",
+    "account pending",
+    "upload id",
+    "why pending",
+    "not verified"
+   ],
+   "answer": "Your account is checked by an admin for your college department. Add or replace your college ID card from your own profile; if the admin asks a question you will see it there. Verified people get a tick on their card.",
+   "highlight": [
+    {
+     "sel": "#profileActions",
+     "text": "Your profile actions, including adding your ID card."
+    }
+   ]
+  },
+  {
+   "id": "home",
+   "title": "Home: what needs you today",
+   "audience": "member",
+   "page": "home.html",
+   "keywords": [
+    "home",
+    "dashboard",
+    "today",
+    "what should i do",
+    "start page",
+    "main page",
+    "feed",
+    "what's new",
+    "updates"
+   ],
+   "answer": "Home collects what needs you: unread messages, College Hub work and polls, classes today, opportunities that ask for your skills, people you may know and your week. The checklist at the end helps you finish setting up.",
+   "highlight": [
+    {
+     "sel": "#homeNeeds",
+     "text": "Things waiting for you right now."
+    },
+    {
+     "sel": "#homeOpportunities",
+     "text": "Opportunities that ask for your skills."
+    }
+   ]
+  },
+  {
+   "id": "push",
+   "title": "Phone and desktop notifications",
+   "audience": "member",
+   "page": "home.html",
+   "keywords": [
+    "notification",
+    "notifications",
+    "push",
+    "alerts",
+    "notify me",
+    "browser notification",
+    "turn on notifications",
+    "bell"
+   ],
+   "answer": "The bell at the top shows your notifications. To get them even when the site is closed, switch on notifications from Home; your browser will ask for permission. Logging out stops them on that device.",
+   "highlight": [
+    {
+     "sel": "#homeChecklist, #homeReach, #homeWeek",
+     "text": "Notification and email switches are here on Home."
+    }
+   ]
+  },
+  {
+   "id": "weekly-email",
+   "title": "Weekly summary email",
+   "audience": "member",
+   "page": "home.html",
+   "keywords": [
+    "email",
+    "weekly email",
+    "digest",
+    "newsletter",
+    "stop emails",
+    "unsubscribe",
+    "mail"
+   ],
+   "answer": "Connect2Minds can send a short weekly email of what happened. Switch it on or off on Home; every email also has a link to stop it."
+  },
+  {
+   "id": "discover",
+   "title": "Find people by skill (Discover)",
+   "audience": "member",
+   "page": "search.html",
+   "keywords": [
+    "discover",
+    "find people",
+    "search people",
+    "teammate",
+    "find teammates",
+    "skills",
+    "developer",
+    "designer",
+    "who knows",
+    "find someone",
+    "search",
+    "talent",
+    "partner"
+   ],
+   "answer": "Discover lists everyone on the site. Search by name, skill, college or project, filter by college, department, city or type, then follow, save or message people. Cards show skills you have in common.",
+   "highlight": [
+    {
+     "sel": "#talent-search-input",
+     "text": "Type a skill like React or a name."
+    },
+    {
+     "sel": "#filterPanel, #filterPanelBtn",
+     "text": "Narrow by college, department or city."
+    }
+   ]
+  },
+  {
+   "id": "professionals",
+   "title": "Professionals by profession",
+   "audience": "member",
+   "page": "professionals.html",
+   "keywords": [
+    "professional",
+    "professionals",
+    "mentor",
+    "doctor",
+    "lawyer",
+    "industry",
+    "profession",
+    "expert",
+    "mentoring",
+    "hire",
+    "career",
+    "doctors",
+    "lawyers",
+    "find a mentor"
+   ],
+   "answer": "Professionals groups people by field and profession, with what they are open to (mentoring, hiring, internships…) and their experience. Pick a field, then a profession, and introduce yourself with a short message.",
+   "highlight": [
+    {
+     "sel": "#groupTiles",
+     "text": "Start by choosing a field."
+    }
+   ]
+  },
+  {
+   "id": "advanced-filters",
+   "title": "Advanced filters (paid)",
+   "audience": "member",
+   "page": "pricing.html",
+   "keywords": [
+    "advanced filter",
+    "locked filter",
+    "open to filter",
+    "experience sort",
+    "two skills",
+    "filter locked",
+    "upgrade"
+   ],
+   "answer": "On Professionals, needing two or more skills at once, the “open to” filter and sorting by experience are part of Student Pro and the Premium plans. Everything else is free."
+  },
+  {
+   "id": "board",
+   "title": "Opportunities board",
+   "audience": "member",
+   "page": "board.html",
+   "keywords": [
+    "opportunities",
+    "opportunity",
+    "board",
+    "internship",
+    "project idea",
+    "post",
+    "apply",
+    "job",
+    "roles",
+    "openings",
+    "collaboration",
+    "looking for"
+   ],
+   "answer": "The Opportunities board lists open roles and project ideas. Filter by category or skill, apply with a short note, or post your own. Urgent posts are shown first, and sponsored challenges and hackathons appear here too.",
+   "highlight": [
+    {
+     "sel": "#categoryTabs",
+     "text": "Pick a category."
+    },
+    {
+     "sel": "#board-search-input",
+     "text": "Search posts by skill or title."
+    }
+   ]
+  },
+  {
+   "id": "post-opportunity",
+   "title": "Post an opportunity",
+   "audience": "member",
+   "page": "board.html",
+   "keywords": [
+    "post opportunity",
+    "create post",
+    "need teammates",
+    "add post",
+    "recruit",
+    "looking for members",
+    "new post"
+   ],
+   "answer": "On the Opportunities board press the button to post, choose a category, give a title, the skills you need and a description. People who apply show up under your post's applicants."
+  },
+  {
+   "id": "challenges",
+   "title": "Sponsored challenges and hackathons",
+   "audience": "member",
+   "page": "board.html",
+   "keywords": [
+    "hackathon",
+    "challenge",
+    "competition",
+    "bounty",
+    "prize",
+    "sponsored",
+    "contest",
+    "submit entry"
+   ],
+   "answer": "Sponsored challenges and hackathons are posted on the Opportunities board with a prize and deadline. Open one, submit your entry link (alone or as a team) before the deadline, and winners are announced on the post."
+  },
+  {
+   "id": "campus",
+   "title": "Campus Network",
+   "audience": "member",
+   "page": "college.html",
+   "keywords": [
+    "campus",
+    "my college",
+    "college people",
+    "classmates",
+    "same college",
+    "seniors",
+    "juniors",
+    "batch",
+    "invite friends"
+   ],
+   "answer": "Campus Network shows everyone who studies at your college, by department, with who is online. Invite classmates with the invite button.",
+   "highlight": [
+    {
+     "sel": "#deptTabs",
+     "text": "Switch between departments."
+    },
+    {
+     "sel": "#inviteBtn",
+     "text": "Invite classmates."
+    }
+   ]
+  },
+  {
+   "id": "network",
+   "title": "Followers and following",
+   "audience": "member",
+   "page": "network.html",
+   "keywords": [
+    "followers",
+    "following",
+    "follow",
+    "my network",
+    "connections",
+    "unfollow",
+    "follow back",
+    "mutual"
+   ],
+   "answer": "My Network shows who follows you, who you follow and mutual follows, plus suggested people. Follow anyone from their card; following someone who follows you makes messaging free of limits.",
+   "highlight": [
+    {
+     "sel": "#networkTabs",
+     "text": "Followers, following and mutual."
+    }
+   ]
+  },
+  {
+   "id": "saved",
+   "title": "Saved profiles",
+   "audience": "member",
+   "page": "saved.html",
+   "keywords": [
+    "saved",
+    "bookmark",
+    "bookmarks",
+    "saved profiles",
+    "shortlist",
+    "save person"
+   ],
+   "answer": "Save people from their card to find them later in Saved Profiles. You can select several and add them to a team in one go."
+  },
+  {
+   "id": "profile",
+   "title": "Your profile",
+   "audience": "member",
+   "page": "profile.html",
+   "keywords": [
+    "profile",
+    "edit profile",
+    "bio",
+    "skills",
+    "photo",
+    "profile picture",
+    "banner",
+    "update profile",
+    "my profile",
+    "change name"
+   ],
+   "answer": "Open your profile from the picture at the top right. Edit your bio, skills, college details, profession and what you are open to; change your picture and banner; add projects and your GitHub; copy your profile link to share.",
+   "highlight": [
+    {
+     "sel": "#profileActions, #actionBtnsContainer",
+     "text": "Edit your profile from here."
+    }
+   ]
+  },
+  {
+   "id": "projects",
+   "title": "Show your projects",
+   "audience": "member",
+   "page": "profile.html",
+   "keywords": [
+    "projects",
+    "portfolio",
+    "add project",
+    "github",
+    "showcase",
+    "my work",
+    "add a project",
+    "project to my profile",
+    "project on my profile"
+   ],
+   "answer": "On your profile add projects with a title, description, tech stack, GitHub and live links and a picture. Linking your GitHub username shows your public repositories and stars.",
+   "highlight": [
+    {
+     "sel": "#addProjectBtn",
+     "text": "Add a project here."
+    }
+   ]
+  },
+  {
+   "id": "messages",
+   "title": "Messages",
+   "audience": "member",
+   "page": "inbox.html",
+   "keywords": [
+    "message",
+    "messages",
+    "chat",
+    "inbox",
+    "dm",
+    "text someone",
+    "send message",
+    "conversation",
+    "talk to"
+   ],
+   "answer": "Messages has one-to-one chats, a Professionals section for chats started from that page, and Groups for your teams. You can send files, voice notes, code snippets and emoji, search inside a chat and see read ticks.",
+   "highlight": [
+    {
+     "sel": "#open-new-chat-btn",
+     "text": "Start a new chat."
+    },
+    {
+     "sel": "#tab-direct",
+     "text": "Your one-to-one chats."
+    }
+   ]
+  },
+  {
+   "id": "message-limits",
+   "title": "Message limits on the free plan",
+   "audience": "member",
+   "page": "pricing.html",
+   "keywords": [
+    "limit",
+    "cannot message",
+    "message limit",
+    "new conversations",
+    "quota",
+    "402",
+    "upgrade prompt"
+   ],
+   "answer": "On the free plan you can start a limited number of new conversations each month with people who don't follow you. Replies, people who follow you and chats you already have are always free; paid plans raise the limits."
+  },
+  {
+   "id": "block-mute",
+   "title": "Mute, block, archive or clear a chat",
+   "audience": "member",
+   "page": "inbox.html",
+   "keywords": [
+    "block",
+    "mute",
+    "archive",
+    "clear chat",
+    "delete chat",
+    "spam",
+    "harass",
+    "unwanted",
+    "report user",
+    "bothering",
+    "spamming",
+    "spammer",
+    "harassing",
+    "abusive"
+   ],
+   "answer": "Open the chat and use the menu at the top right: mute stops its notifications, block stops messages and calls both ways, archive moves it out of the list, and clear empties it for you only. To report someone, write to Support.",
+   "highlight": [
+    {
+     "sel": "#chat-actions-btn",
+     "text": "The chat menu (open a chat first)."
+    }
+   ]
+  },
+  {
+   "id": "calls",
+   "title": "Voice and video calls",
+   "audience": "member",
+   "page": "inbox.html",
+   "keywords": [
+    "call",
+    "video call",
+    "voice call",
+    "phone",
+    "ring",
+    "screen share",
+    "share screen",
+    "meeting",
+    "talk"
+   ],
+   "answer": "In a one-to-one chat press the phone or camera button to call. During the call you can mute, turn the camera off and share your screen. Teams have voice rooms and group calls in channels.",
+   "highlight": [
+    {
+     "sel": "#voice-call-btn",
+     "text": "Voice call (open a chat first)."
+    },
+    {
+     "sel": "#video-call-btn",
+     "text": "Video call."
+    }
+   ]
+  },
+  {
+   "id": "call-dock",
+   "title": "Use the site during a call",
+   "audience": "member",
+   "page": "team.html",
+   "keywords": [
+    "during call",
+    "while in call",
+    "keep call",
+    "call drops",
+    "multitask",
+    "side by side",
+    "split screen",
+    "other page during call",
+    "minimize call",
+    "picture in picture",
+    "while in a call",
+    "use the site",
+    "during a call",
+    "in a call"
+   ],
+   "answer": "While you are in a call, opening any other section shows it inside the call page, so the call never drops. Use the floating call bar to mute, hang up, go back to the call or switch to side by side; in a video call you can pop the video out into a small window in Chrome or Edge."
+  },
+  {
+   "id": "teams",
+   "title": "My Teams (workspaces)",
+   "audience": "member",
+   "page": "team.html",
+   "keywords": [
+    "team",
+    "teams",
+    "workspace",
+    "group",
+    "create team",
+    "channel",
+    "channels",
+    "discord",
+    "server",
+    "group chat"
+   ],
+   "answer": "My Teams is your team's workspace: text channels for chat (with replies, reactions, pins and search), voice rooms you can drop into, shared resources and members with roles. Create a team from the plus on the left.",
+   "highlight": [
+    {
+     "sel": "#teams-list",
+     "text": "Your teams; the plus creates a new one."
+    },
+    {
+     "sel": "#channels-list",
+     "text": "Text channels of the open team."
+    }
+   ]
+  },
+  {
+   "id": "voice-rooms",
+   "title": "Voice rooms in teams",
+   "audience": "member",
+   "page": "team.html",
+   "keywords": [
+    "voice room",
+    "voice channel",
+    "join voice",
+    "hang out",
+    "lounge",
+    "group call",
+    "team call"
+   ],
+   "answer": "Click a voice room in your team's sidebar to join it; everyone in the room can talk, turn on video or share a screen. You can also start a call inside any text channel with the phone or camera button.",
+   "highlight": [
+    {
+     "sel": "#voice-channels-list",
+     "text": "Click a voice room to join."
+    }
+   ]
+  },
+  {
+   "id": "plan-together",
+   "title": "Plan together during a call",
+   "audience": "member",
+   "page": "team.html",
+   "keywords": [
+    "plan together",
+    "plan during call",
+    "project hub in call",
+    "invite everyone",
+    "planning meeting"
+   ],
+   "answer": "In a team call press Plan together: Project Hub opens beside the call. “Ask everyone” invites the others in the call to open it too, and you see who is looking at which tool."
+  },
+  {
+   "id": "project-hub",
+   "title": "Project Hub",
+   "audience": "member",
+   "page": "project_management.html",
+   "keywords": [
+    "project hub",
+    "project",
+    "plan project",
+    "planning",
+    "manage project",
+    "project management",
+    "jira",
+    "trello",
+    "tasks"
+   ],
+   "answer": "Project Hub plans a team's project. Plan: Board, List, Calendar, Timeline, Sprints. Define: Brief, Risks & decisions, Roles & workload. Track: Dashboard and Time. Together: Docs & meetings, Brainstorm, Canvas and Integrations. Everything updates live for your team.",
+   "highlight": [
+    {
+     "sel": "#hubNav, #hubNavSelect",
+     "text": "All the planning tools, in four groups."
+    }
+   ]
+  },
+  {
+   "id": "kanban",
+   "title": "Task board",
+   "audience": "member",
+   "page": "project_management.html?tab=kanban",
+   "keywords": [
+    "board",
+    "kanban",
+    "task board",
+    "to do",
+    "in progress",
+    "move task",
+    "drag task",
+    "columns",
+    "add task",
+    "new task"
+   ],
+   "answer": "The Board has four columns: To Do, In Progress, Review and Done. Drag cards between them, filter by tag or person and click a card to open everything about the task.",
+   "highlight": [
+    {
+     "sel": "#kanban-columns",
+     "text": "Drag cards between columns; click one to open it."
+    }
+   ]
+  },
+  {
+   "id": "task-panel",
+   "title": "Task details, checklist and comments",
+   "audience": "member",
+   "page": "project_management.html?tab=kanban",
+   "keywords": [
+    "task details",
+    "checklist",
+    "subtasks",
+    "comment",
+    "mention",
+    "@",
+    "attach file",
+    "task history",
+    "waits for",
+    "dependency",
+    "depends on",
+    "blocked"
+   ],
+   "answer": "Click any task to open its panel: status, assignee, sprint, start and due dates, estimate, a checklist, the tasks it waits for, comments (type @ to mention someone, attach files), a timer and its history. Everything saves as you change it."
+  },
+  {
+   "id": "list-view",
+   "title": "List view and bulk editing",
+   "audience": "member",
+   "page": "project_management.html?tab=list",
+   "keywords": [
+    "list view",
+    "table",
+    "spreadsheet",
+    "bulk edit",
+    "sort tasks",
+    "csv",
+    "export tasks",
+    "excel"
+   ],
+   "answer": "List shows every task as a table you can search, filter and sort. Tick several to change their status, assignee, sprint or priority at once, and export to CSV.",
+   "highlight": [
+    {
+     "sel": "[data-hub-tab=list], #hubNavSelect",
+     "text": "Open List."
+    }
+   ]
+  },
+  {
+   "id": "calendar-view",
+   "title": "Calendar of due dates",
+   "audience": "member",
+   "page": "project_management.html?tab=calendar",
+   "keywords": [
+    "calendar",
+    "due dates",
+    "month view",
+    "deadline calendar",
+    "schedule tasks",
+    "reschedule"
+   ],
+   "answer": "Calendar shows tasks on their due dates by month. Drag a task to another day to move it; tasks without a date wait on the side until you drag them in."
+  },
+  {
+   "id": "timeline",
+   "title": "Timeline (Gantt chart)",
+   "audience": "member",
+   "page": "project_management.html?tab=timeline",
+   "keywords": [
+    "timeline",
+    "gantt",
+    "roadmap",
+    "schedule",
+    "milestone",
+    "milestones",
+    "dependencies",
+    "plan dates"
+   ],
+   "answer": "Timeline draws each task as a bar from start to due date, with milestones as diamonds and arrows for what waits for what. Drag a bar to move it, drag its ends to change the dates; conflicts are marked in red.",
+   "highlight": [
+    {
+     "sel": "[data-hub-tab=timeline], #hubNavSelect",
+     "text": "Open Timeline."
+    }
+   ]
+  },
+  {
+   "id": "sprints",
+   "title": "Sprints and backlog",
+   "audience": "member",
+   "page": "project_management.html?tab=sprints",
+   "keywords": [
+    "sprint",
+    "sprints",
+    "backlog",
+    "agile",
+    "scrum",
+    "iteration",
+    "finish sprint",
+    "start sprint"
+   ],
+   "answer": "A sprint is a short stretch of work with a goal. Create sprints, drag tasks from the backlog into them, start one, and when you finish it the unfinished tasks move to the next sprint or back to the backlog."
+  },
+  {
+   "id": "brief",
+   "title": "Project brief",
+   "audience": "member",
+   "page": "project_management.html?tab=brief",
+   "keywords": [
+    "brief",
+    "project brief",
+    "problem statement",
+    "goals",
+    "scope",
+    "deliverables",
+    "deadline",
+    "charter",
+    "synopsis"
+   ],
+   "answer": "The Brief is one page your team agrees on: the problem, who it is for, goals, what is in and out of scope, deliverables, how success is measured and the deadline (with a countdown)."
+  },
+  {
+   "id": "risks",
+   "title": "Risks and decisions",
+   "audience": "member",
+   "page": "project_management.html?tab=risks",
+   "keywords": [
+    "risk",
+    "risks",
+    "risk register",
+    "what could go wrong",
+    "decision",
+    "decisions",
+    "decision log",
+    "why did we"
+   ],
+   "answer": "Write down what could go wrong with its likelihood, impact, owner and plan; the grid shows the riskiest first. The decision log records what was decided, why and by whom."
+  },
+  {
+   "id": "roles",
+   "title": "Roles (RACI) and workload",
+   "audience": "member",
+   "page": "project_management.html?tab=roles",
+   "keywords": [
+    "roles",
+    "raci",
+    "responsibilities",
+    "who does what",
+    "workload",
+    "overloaded",
+    "too much work",
+    "assign work",
+    "accountable"
+   ],
+   "answer": "Roles & workload shows each person's open and late tasks, estimated and logged hours, and flags anyone overloaded. The RACI table says who is Responsible, Accountable, Consulted and Informed for each area."
+  },
+  {
+   "id": "dashboard",
+   "title": "Project dashboard",
+   "audience": "member",
+   "page": "project_management.html?tab=dashboard",
+   "keywords": [
+    "dashboard",
+    "progress",
+    "how is the project going",
+    "burndown",
+    "status report",
+    "percent done",
+    "overview",
+    "stats",
+    "burndown chart",
+    "how is my project going",
+    "project progress",
+    "project status"
+   ],
+   "answer": "The Dashboard shows how much is done, what is late or waiting, hours this week, the next milestone, tasks by stage and a burndown chart for the running sprint."
+  },
+  {
+   "id": "time-tracking",
+   "title": "Time tracking",
+   "audience": "member",
+   "page": "project_management.html?tab=time",
+   "keywords": [
+    "time tracking",
+    "timer",
+    "log time",
+    "hours",
+    "timesheet",
+    "how long",
+    "track time",
+    "stopwatch"
+   ],
+   "answer": "Start a timer from any task (one runs at a time and shows in the header), or log hours by hand. The Time tool totals hours per person, per task and per day, and exports them."
+  },
+  {
+   "id": "docs",
+   "title": "Docs and meeting notes",
+   "audience": "member",
+   "page": "project_management.html?tab=docs",
+   "keywords": [
+    "docs",
+    "document",
+    "wiki",
+    "meeting notes",
+    "minutes",
+    "spec",
+    "action items",
+    "shared page",
+    "team docs"
+   ],
+   "answer": "Docs & meetings holds shared pages written in simple formatting (headings, lists, checkboxes, links, tables) and meeting notes with attendees, agenda and action items that become tasks with one click."
+  },
+  {
+   "id": "brainstorm",
+   "title": "Brainstorm and mind map",
+   "audience": "member",
+   "page": "project_management.html?tab=ideas",
+   "keywords": [
+    "brainstorm",
+    "ideas",
+    "sticky notes",
+    "vote",
+    "voting",
+    "mind map",
+    "mindmap",
+    "idea board"
+   ],
+   "answer": "Brainstorm has sticky notes in columns that everyone can vote on; the best become tasks with one click. Mind map grows a tree of ideas: select a node and press Tab for a child, Enter for a sibling, F2 to rename."
+  },
+  {
+   "id": "canvas",
+   "title": "Planning canvas",
+   "audience": "member",
+   "page": "project_management.html?tab=canvas",
+   "keywords": [
+    "canvas",
+    "whiteboard",
+    "draw",
+    "diagram",
+    "flowchart",
+    "sketch",
+    "architecture"
+   ],
+   "answer": "The Canvas is a shared whiteboard for diagrams: rectangles, circles, databases, sticky notes, text and arrows. Changes save by themselves and appear for teammates; export it as an image."
+  },
+  {
+   "id": "integrations",
+   "title": "GitHub and Figma links",
+   "audience": "member",
+   "page": "project_management.html?tab=integrations",
+   "keywords": [
+    "github",
+    "figma",
+    "integration",
+    "repository",
+    "repo",
+    "pull requests",
+    "design file"
+   ],
+   "answer": "Link your team's public GitHub repository to see its pull requests and commits, and a Figma file to see it inside Project Hub."
+  },
+  {
+   "id": "templates",
+   "title": "Project templates",
+   "audience": "member",
+   "page": "project_management.html",
+   "keywords": [
+    "template",
+    "templates",
+    "start project",
+    "college project",
+    "hackathon template",
+    "startup",
+    "research paper",
+    "ready made plan"
+   ],
+   "answer": "Admins of a workspace can start from a template: College project, Hackathon, Startup MVP or Research paper. It adds a brief, sprints, dated tasks with milestones, risks and a starter page. Press Templates under the board's name."
+  },
+  {
+   "id": "college-hub",
+   "title": "College Hub",
+   "audience": "member",
+   "page": "college-hub.html",
+   "keywords": [
+    "college hub",
+    "teacher",
+    "class",
+    "notices",
+    "notice board",
+    "college groups",
+    "assignments",
+    "submit work",
+    "marks",
+    "class chat",
+    "polls"
+   ],
+   "answer": "College Hub connects a college's students with their approved teachers: notices and activities, groups formed for activities, college and class chat rooms, a calendar, shared resources, Q&A and attendance. Work handed in and marks are here too.",
+   "highlight": [
+    {
+     "sel": "#hubTabs",
+     "text": "The sections of College Hub."
+    }
+   ]
+  },
+  {
+   "id": "college-groups",
+   "title": "Groups for college activities",
+   "audience": "member",
+   "page": "college-hub.html?tab=groups",
+   "keywords": [
+    "form group",
+    "join group",
+    "project group",
+    "group members",
+    "topic",
+    "activity group",
+    "team formation",
+    "form a group",
+    "group for the activity",
+    "make a group"
+   ],
+   "answer": "When a teacher posts an activity, form or join a group under Groups (if students may form groups), choose a topic, hand in work before the deadline and do the weekly check-ins."
+  },
+  {
+   "id": "college-qa",
+   "title": "Ask doubts (College Q&A)",
+   "audience": "member",
+   "page": "college-hub.html?tab=qa",
+   "keywords": [
+    "doubt",
+    "doubts",
+    "question",
+    "ask teacher",
+    "q&a",
+    "qa",
+    "ask question anonymously",
+    "anonymous"
+   ],
+   "answer": "Ask a question in College Hub's Q&A; classmates and teachers answer and vote, and the asker can mark the best answer. You can ask anonymously: only teachers see who asked."
+  },
+  {
+   "id": "teacher",
+   "title": "Become a teacher on College Hub",
+   "audience": "member",
+   "page": "apply-teacher.html",
+   "keywords": [
+    "teacher",
+    "professor",
+    "faculty",
+    "become teacher",
+    "apply teacher",
+    "lecturer",
+    "staff"
+   ],
+   "answer": "Teachers apply from Apply as teacher in the account menu: a short form with proof that you teach at the college. After approval you can post notices, manage groups, take attendance and give marks."
+  },
+  {
+   "id": "admin-apply",
+   "title": "Become a verification admin",
+   "audience": "member",
+   "page": "apply-admin.html",
+   "keywords": [
+    "admin",
+    "become admin",
+    "verify students",
+    "ambassador",
+    "moderator"
+   ],
+   "answer": "College staff can apply as admin from the account menu to verify students' ID cards for their departments. The founder reviews each application."
+  },
+  {
+   "id": "study",
+   "title": "My Study",
+   "audience": "member",
+   "page": "study.html",
+   "keywords": [
+    "study",
+    "my study",
+    "study tools",
+    "student tools"
+   ],
+   "answer": "My Study keeps your timetable, attendance, a planner for assignments and exams, grades with your CGPA and a study timer. Today shows your classes and what is due.",
+   "highlight": [
+    {
+     "sel": "#studyTabs",
+     "text": "Today, Timetable, Attendance, Planner, Grades and Timer."
+    }
+   ]
+  },
+  {
+   "id": "timetable",
+   "title": "Set up your timetable",
+   "audience": "member",
+   "page": "study.html?tab=timetable",
+   "keywords": [
+    "add subject",
+    "timetable",
+    "add class",
+    "lecture",
+    "time table setup",
+    "import timetable",
+    "class timetable"
+   ],
+   "answer": "In My Study → Timetable add your subjects and their weekly classes. If a teacher published your class timetable, import it in one press.",
+   "highlight": [
+    {
+     "sel": "#studyTabs [data-tab=timetable]",
+     "text": "Open Timetable."
+    }
+   ]
+  },
+  {
+   "id": "attendance",
+   "title": "Track attendance",
+   "audience": "member",
+   "page": "study.html?tab=attendance",
+   "keywords": [
+    "attendance",
+    "bunk",
+    "how many classes can i miss",
+    "75",
+    "75%",
+    "percentage",
+    "present",
+    "absent",
+    "mark attendance",
+    "shortage",
+    "defaulter"
+   ],
+   "answer": "In My Study → Attendance tap present or absent for each class. It shows your percentage per subject, how many classes you can still miss, or how many you must attend to get back to your goal (75% by default).",
+   "highlight": [
+    {
+     "sel": "#studyTabs [data-tab=attendance]",
+     "text": "Open Attendance."
+    }
+   ]
+  },
+  {
+   "id": "planner",
+   "title": "Planner for assignments and exams",
+   "audience": "member",
+   "page": "study.html?tab=planner",
+   "keywords": [
+    "planner",
+    "assignment",
+    "assignments",
+    "homework",
+    "exam",
+    "test",
+    "deadline",
+    "due",
+    "to do list",
+    "reminder"
+   ],
+   "answer": "My Study → Planner holds your assignments, exams and to-dos with due dates. You get a reminder the evening before something is due.",
+   "highlight": [
+    {
+     "sel": "#studyTabs [data-tab=planner]",
+     "text": "Open Planner."
+    }
+   ]
+  },
+  {
+   "id": "grades",
+   "title": "Grades and CGPA",
+   "audience": "member",
+   "page": "study.html?tab=grades",
+   "keywords": [
+    "grades",
+    "cgpa",
+    "sgpa",
+    "gpa",
+    "marks",
+    "result",
+    "semester",
+    "pointer",
+    "target cgpa",
+    "calculate cgpa",
+    "cgpa calculator",
+    "sgpa calculator"
+   ],
+   "answer": "My Study → Grades works out your SGPA and CGPA from each semester's subjects, credits and grades (O, A+, A … on the 10-point scale), and what you need for a target CGPA.",
+   "highlight": [
+    {
+     "sel": "#studyTabs [data-tab=grades]",
+     "text": "Open Grades."
+    }
+   ]
+  },
+  {
+   "id": "study-timer",
+   "title": "Study timer and streak",
+   "audience": "member",
+   "page": "study.html?tab=timer",
+   "keywords": [
+    "pomodoro",
+    "study timer",
+    "focus",
+    "streak",
+    "study hours",
+    "concentrate"
+   ],
+   "answer": "My Study → Timer runs focus sessions (Pomodoro style) and counts your study minutes per subject and your daily streak.",
+   "highlight": [
+    {
+     "sel": "#studyTabs [data-tab=timer]",
+     "text": "Open Timer."
+    }
+   ]
+  },
+  {
+   "id": "notes",
+   "title": "Notes and past papers",
+   "audience": "member",
+   "page": "notes.html",
+   "keywords": [
+    "notes",
+    "past papers",
+    "previous year papers",
+    "pyq",
+    "question papers",
+    "share notes",
+    "study material",
+    "pdf",
+    "upload notes",
+    "ppt"
+   ],
+   "answer": "Notes and papers is where students share notes and previous-year papers. Search by subject or college, vote and save the useful ones, share your own file, and report anything wrong.",
+   "highlight": [
+    {
+     "sel": "#notesSearch",
+     "text": "Search by subject or college."
+    }
+   ]
+  },
+  {
+   "id": "practice",
+   "title": "Daily practice",
+   "audience": "member",
+   "page": "practice.html",
+   "keywords": [
+    "practice",
+    "aptitude",
+    "coding question",
+    "placement",
+    "daily question",
+    "quiz",
+    "streak",
+    "leaderboard",
+    "points",
+    "interview prep"
+   ],
+   "answer": "Daily practice gives one aptitude and one coding question every day. Answer to keep your streak and earn points (10 for right, 2 for trying); you can catch up on the last 14 days and see your college's leaderboard.",
+   "highlight": [
+    {
+     "sel": "#practiceToday",
+     "text": "Today's two questions."
+    }
+   ]
+  },
+  {
+   "id": "resume",
+   "title": "Resume builder",
+   "audience": "member",
+   "page": "resume.html",
+   "keywords": [
+    "resume",
+    "cv",
+    "biodata",
+    "make resume",
+    "download resume",
+    "resume pdf"
+   ],
+   "answer": "The Resume builder fills a one-page resume from your profile and projects. Edit it on the left, choose Classic or Modern, and Download PDF. It saves by itself.",
+   "highlight": [
+    {
+     "sel": "#resumeEditor",
+     "text": "Edit here; the page updates on the right."
+    }
+   ]
+  },
+  {
+   "id": "research",
+   "title": "Research Collab",
+   "audience": "member",
+   "page": "research.html",
+   "keywords": [
+    "research",
+    "papers",
+    "sources",
+    "literature",
+    "references",
+    "citations",
+    "wikipedia",
+    "journal"
+   ],
+   "answer": "Research Collab collects sources for a topic from Wikipedia, OpenAlex and Crossref into one report you can save and share. It gathers sources; it does not write the research for you.",
+   "highlight": [
+    {
+     "sel": "#researchQuery",
+     "text": "Type a topic and press Go."
+    }
+   ]
+  },
+  {
+   "id": "history",
+   "title": "Activity history",
+   "audience": "member",
+   "page": "history.html",
+   "keywords": [
+    "history",
+    "activity",
+    "log",
+    "what did i do",
+    "recent activity",
+    "login history"
+   ],
+   "answer": "Activity history lists what you did on the site by category, which you can search, export or clear. Open it from the menu under your picture."
+  },
+  {
+   "id": "plans",
+   "title": "Plans and prices",
+   "audience": "all",
+   "page": "pricing.html",
+   "keywords": [
+    "price",
+    "pricing",
+    "plans",
+    "premium",
+    "pro",
+    "student pro",
+    "subscription",
+    "cost",
+    "paid",
+    "free",
+    "how much",
+    "upgrade"
+   ],
+   "answer": "Most of the site is free. Student Pro is ₹99 a month or ₹799 a year, Premium ₹299 / ₹2,499 and Premium Plus ₹599 / ₹4,999 (GST included). Plans raise limits and unlock extras like advanced filters; there are business plans for recruiters, colleges and sponsors.",
+   "highlight": [
+    {
+     "sel": "#pricingTabs",
+     "text": "Personal and business plans."
+    }
+   ]
+  },
+  {
+   "id": "billing",
+   "title": "Billing and receipts",
+   "audience": "member",
+   "page": "billing.html",
+   "keywords": [
+    "billing",
+    "payment",
+    "receipt",
+    "invoice",
+    "renew",
+    "refund",
+    "cancel plan",
+    "my plan",
+    "razorpay",
+    "paid but"
+   ],
+   "answer": "Plans & billing shows your plan, when it ends and your receipts. Payments go through Razorpay; plans don't renew by themselves, so renew with one click. For a refund write to Support within 7 days."
+  },
+  {
+   "id": "recruiter",
+   "title": "Recruiter search",
+   "audience": "member",
+   "page": "recruiter.html",
+   "keywords": [
+    "recruiter",
+    "hiring",
+    "hire students",
+    "candidates",
+    "talent search",
+    "company"
+   ],
+   "answer": "Recruiters on a paid plan search verified students by skill, college and GitHub activity, shortlist them and unlock contact details only for people who allow it."
+  },
+  {
+   "id": "institution",
+   "title": "For colleges",
+   "audience": "all",
+   "page": "pricing.html",
+   "keywords": [
+    "college license",
+    "institution",
+    "university",
+    "college plan",
+    "analytics",
+    "tpo",
+    "principal"
+   ],
+   "answer": "Colleges get a free 60-day trial when their first teacher is approved, then an institution licence for attendance, handing in work, marks and analytics. Use “Talk to us” on the Plans page."
+  },
+  {
+   "id": "sponsor",
+   "title": "Sponsor a challenge",
+   "audience": "all",
+   "page": "pricing.html",
+   "keywords": [
+    "sponsor",
+    "sponsorship",
+    "brand",
+    "company challenge",
+    "post hackathon"
+   ],
+   "answer": "Companies can sponsor challenges and hackathons on the Opportunities board with a sponsor plan. Ask from the Plans page (Sponsors tab)."
+  },
+  {
+   "id": "account-delete",
+   "title": "Delete my account",
+   "audience": "member",
+   "page": "account.html",
+   "keywords": [
+    "delete account",
+    "remove account",
+    "close account",
+    "deactivate",
+    "erase my data",
+    "delete my data",
+    "leave site",
+    "delete my account",
+    "remove my account",
+    "close my account"
+   ],
+   "answer": "Open Account & privacy from the menu under your picture. Deleting logs you out everywhere and hides you at once; after 14 days everything personal is erased. Logging in before then cancels it. Messages and posts others rely on stay as “Deleted user”.",
+   "highlight": [
+    {
+     "sel": "#deleteCard",
+     "text": "Delete my account is here."
+    }
+   ]
+  },
+  {
+   "id": "data-download",
+   "title": "Download my data",
+   "audience": "member",
+   "page": "account.html",
+   "keywords": [
+    "download my data",
+    "export data",
+    "my data",
+    "gdpr",
+    "data copy",
+    "privacy data"
+   ],
+   "answer": "Account & privacy has Download my data: one file with your profile and everything linked to your account. Your password and ID photo are never included.",
+   "highlight": [
+    {
+     "sel": "#exportBtn",
+     "text": "Download a copy of your data."
+    }
+   ]
+  },
+  {
+   "id": "privacy",
+   "title": "Privacy",
+   "audience": "all",
+   "page": "privacy.html",
+   "keywords": [
+    "privacy",
+    "who can see",
+    "data safe",
+    "privacy policy",
+    "personal data",
+    "visible",
+    "public",
+    "who can see my profile",
+    "who sees my",
+    "is my data safe"
+   ],
+   "answer": "Logged-in members see your profile card (not your email, roll number or ID photo). Messages are only between the people in them. The privacy page explains everything that is stored and your choices."
+  },
+  {
+   "id": "terms",
+   "title": "Terms and honour code",
+   "audience": "all",
+   "page": "terms.html",
+   "keywords": [
+    "terms",
+    "rules",
+    "honour code",
+    "honor code",
+    "allowed",
+    "conduct",
+    "policy",
+    "plagiarism"
+   ],
+   "answer": "Be respectful, do your own work, share only what you may share, be honest in teams, and no spam or scams. The terms page has the full rules and how paid plans work."
+  },
+  {
+   "id": "support",
+   "title": "Contact support",
+   "audience": "all",
+   "page": "support.html",
+   "keywords": [
+    "support",
+    "help desk",
+    "contact",
+    "complaint",
+    "problem",
+    "bug",
+    "not working",
+    "error",
+    "report",
+    "feedback",
+    "customer care"
+   ],
+   "answer": "Use the Support page: pick a topic, describe what happened and leave an email for the reply. It goes straight to the Connect2Minds team.",
+   "highlight": [
+    {
+     "sel": "#supportForm",
+     "text": "Describe the problem here."
+    }
+   ]
+  },
+  {
+   "id": "phone",
+   "title": "Using it on a phone",
+   "audience": "all",
+   "page": "home.html",
+   "keywords": [
+    "phone",
+    "mobile",
+    "app",
+    "android",
+    "iphone",
+    "install",
+    "tab bar",
+    "small screen"
+   ],
+   "answer": "The site works in your phone's browser. The bar at the bottom jumps between Home, Study, Discover, Messages and Me. You can add it to your home screen from the browser menu."
+  },
+  {
+   "id": "follow",
+   "title": "Follow someone",
+   "audience": "member",
+   "page": "search.html",
+   "keywords": [
+    "follow someone",
+    "how to follow",
+    "add friend",
+    "friend request",
+    "connect with"
+   ],
+   "answer": "Press Follow on anyone's card or profile. There are no friend requests; they see that you follow them and can follow you back."
+  },
+  {
+   "id": "notifications-bell",
+   "title": "The bell",
+   "audience": "member",
+   "page": "home.html",
+   "keywords": [
+    "bell",
+    "red badge",
+    "unread notifications",
+    "mark as read",
+    "notification list"
+   ],
+   "answer": "The bell at the top lists mentions, follows, profile views, College Hub news and more. Click one to open it; they are marked read when you open the list."
+  },
+  {
+   "id": "logout",
+   "title": "Log out",
+   "audience": "member",
+   "page": "home.html",
+   "keywords": [
+    "logout",
+    "log out",
+    "sign out",
+    "signout",
+    "exit account"
+   ],
+   "answer": "Open the menu under your picture at the top right and press Log out. It also stops notifications on that device."
+  },
+  {
+   "id": "tour",
+   "title": "Take the tour",
+   "audience": "all",
+   "page": "home.html",
+   "keywords": [
+    "tour",
+    "show me around",
+    "guide me",
+    "walkthrough",
+    "where to start",
+    "new here",
+    "first time",
+    "how does it work"
+   ],
+   "answer": "I can walk you through the main parts of the site, one highlight at a time. Press “Start the tour”."
+  },
+  {
+   "id": "voice",
+   "title": "Talking to this helper",
+   "audience": "all",
+   "page": "home.html",
+   "keywords": [
+    "voice",
+    "speak",
+    "talk to you",
+    "microphone",
+    "mic",
+    "read aloud",
+    "hindi",
+    "language"
+   ],
+   "answer": "Press the microphone in this panel and speak; switch on “Read answers aloud” to hear replies. Voice works in Chrome, Edge and Safari. You can also just type."
+  },
+  {
+   "id": "helper-can-do",
+   "title": "What can this helper do?",
+   "audience": "all",
+   "page": "home.html",
+   "keywords": [
+    "what can you do",
+    "help",
+    "commands",
+    "who are you",
+    "bot",
+    "assistant",
+    "capabilities"
+   ],
+   "answer": "Ask me how anything on the site works and I'll explain and take you there. I can also tell you what's due this week, your attendance, unread messages and find people by skill, add a planner task, mark attendance, or start a timer, always asking before I change anything."
+  }
+ ],
+ "tour": {
+  "member": [
+   {
+    "page": "home.html",
+    "sel": "#homeNeeds",
+    "text": "Home shows what needs you today: messages, College Hub work, classes and more."
+   },
+   {
+    "page": "search.html",
+    "sel": "#talent-search-input",
+    "text": "Discover: find people by skill, college or project, then follow, save or message them."
+   },
+   {
+    "page": "study.html",
+    "sel": "#studyTabs",
+    "text": "My Study keeps your timetable, attendance, planner, grades and a study timer."
+   },
+   {
+    "page": "inbox.html",
+    "sel": "#open-new-chat-btn",
+    "text": "Messages: chats, files, voice notes and calls."
+   },
+   {
+    "page": "team.html",
+    "sel": "#teams-list",
+    "text": "My Teams: channels, voice rooms and calls for each of your teams."
+   },
+   {
+    "page": "project_management.html",
+    "sel": "#hubNav, #hubNavSelect",
+    "text": "Project Hub plans your team's project: board, timeline, sprints, brief, dashboard and more."
+   },
+   {
+    "page": "home.html",
+    "sel": "#helpbotButton",
+    "text": "That's it! Ask me anything, any time, from this button."
+   }
+  ],
+  "visitor": [
+   {
+    "page": "index.html",
+    "sel": "#hero, .hero, main section",
+    "text": "Connect2Minds helps you find the people your project is missing."
+   },
+   {
+    "page": "index.html",
+    "sel": "#tour, .tour, #features, .features",
+    "text": "Find teammates, plan projects, study and keep up with college, all in one place."
+   },
+   {
+    "page": "index.html",
+    "sel": "a[href='register.html']",
+    "text": "Create a free account to get started."
+   }
+  ]
+ }
+}
