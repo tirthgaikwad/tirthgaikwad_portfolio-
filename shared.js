@@ -158,10 +158,13 @@ window.renderAppHeader = function() {
 
 // Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
 // Opportunities and College Hub are not tabs of their own: Home shows what is new in both and links to them
+// Pages anyone may read without logging in; an expired login does not send them to login.html
+const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html'];
+
 const TABBAR_ITEMS = [
     { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html'] },
     { label: 'Study', href: 'study.html', icon: 'book', also: ['notes.html', 'practice.html', 'resume.html'] },
-    { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html', 'department.html', 'global.html', 'followers.html'] },
+    { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html'] },
     { label: 'Messages', href: 'inbox.html', icon: 'chat', also: [] },
     { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'account.html', 'billing.html', 'pricing.html', 'team.html', 'project_management.html', 'research.html'] }
 ];
@@ -494,7 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.removeItem(headerCacheKey);
             // Only redirect if not already on login/join page
             const page = window.location.pathname.split('/').pop();
-            if (page !== 'login.html' && page !== 'join.html' && page !== 'index.html' && page !== '') {
+            if (!PUBLIC_PAGES.includes(page)) {
                 window.location.href = 'login.html';
             }
             return;

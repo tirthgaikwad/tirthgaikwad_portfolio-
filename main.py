@@ -8317,7 +8317,7 @@ class DBChallengeSubmission(Base):
     updated_at = Column(String)
 
 
-ENQUIRY_KINDS = ("institution", "recruiter", "sponsor")
+ENQUIRY_KINDS = ("institution", "recruiter", "sponsor", "support")   # support: the Support page (organisation holds the topic)
 SHORTLIST_STAGES = ("shortlisted", "contacted", "interviewing", "offer", "hired", "rejected")
 CHALLENGE_KINDS = ("bounty", "hackathon")
 SPONSOR_TIERS = {"basic": 30, "featured": 60, "hackathon": 90}
@@ -8399,7 +8399,8 @@ async def create_enquiry(request: Request, body: EnquiryBody):
         contact_name=clean_required(body.contact_name, 120, "your name"), email=email, phone=phone, size=clean_text(body.size, 60, "size"),
         message=clean_text(body.message, 2000, "message"), user_id=optional_user_id(request), status="new", founder_note="", created_at=now_iso, updated_at=now_iso,
     ).returning(DBEnquiry.id))
-    spawn_background(notify_founders("account", f"New {body.kind} enquiry from {body.organisation.strip()[:80]}.", "founder.html?tab=enquiries"))
+    what = f"New support message: {body.organisation.strip()[:80]}." if body.kind == "support" else f"New {body.kind} enquiry from {body.organisation.strip()[:80]}."
+    spawn_background(notify_founders("account", what, "founder.html?tab=enquiries"))
     return {"id": rows[0][0], "status": "received"}
 
 

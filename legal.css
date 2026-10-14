@@ -1,0 +1,46 @@
+/* Privacy, Terms and Support pages (privacy.html, terms.html, support.html). Builds on home.css (hm-*). */
+.lg-page { max-width: 860px; }
+.lg-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+.lg-links a { font-size: 13px; font-weight: 600; color: #3525cd; text-decoration: none; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(199,196,216,0.9); background: #fff; }
+.lg-links a:hover { background: #eff4ff; }
+.lg-links a[aria-current="page"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+
+.lg-doc + .lg-doc { margin-top: 16px; }
+.lg-doc h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; line-height: 24px; font-weight: 700; margin: 22px 0 8px; color: #0b1c30; }
+.lg-doc h2:first-child { margin-top: 0; }
+.lg-doc p, .lg-doc li { font-size: 14px; line-height: 22px; color: #464555; }
+.lg-doc p { margin: 0 0 10px; }
+.lg-doc ul { list-style: disc; margin: 0 0 10px; padding-left: 20px; }
+.lg-doc li + li { margin-top: 6px; }
+.lg-doc strong { color: #0b1c30; }
+.lg-doc a { color: #3525cd; font-weight: 600; text-decoration: none; }
+.lg-doc a:hover { text-decoration: underline; }
+
+.lg-doc details { border-top: 1px solid rgba(199,196,216,0.45); padding: 10px 0; }
+.lg-doc details:last-of-type { border-bottom: 1px solid rgba(199,196,216,0.45); }
+.lg-doc summary { cursor: pointer; font-size: 14px; font-weight: 600; color: #0b1c30; list-style-position: inside; }
+.lg-doc details p { margin: 8px 0 0; }
+
+.lg-form { display: grid; gap: 12px; }
+.lg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lg-field { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: #0b1c30; }
+.lg-field input, .lg-field select, .lg-field textarea { font: 400 14px Inter, sans-serif; padding: 9px 12px; border: 1px solid #c7c4d8; border-radius: 9px; background: #fff; color: #0b1c30; width: 100%; }
+.lg-field textarea { resize: vertical; min-height: 120px; }
+.lg-field :focus { outline: 2px solid #c3c0ff; border-color: #4f46e5; }
+.lg-error { margin: 0; font-size: 13px; color: #ba1a1a; background: #ffdad6; border-radius: 8px; padding: 8px 12px; }
+.lg-error[hidden], .lg-form[hidden], .lg-sent[hidden] { display: none; }
+.lg-sent { display: flex; gap: 10px; align-items: flex-start; background: #eff4ff; border-radius: 12px; padding: 14px 16px; }
+.lg-sent .material-symbols-outlined { color: #3525cd; font-size: 22px; }
+.lg-sent p { margin: 0; }
+
+/* Visitors who are not logged in get a plain top bar (legal.js) */
+.lg-guest-bar { display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 24px; max-width: 1280px; margin: 0 auto; }
+.lg-guest-bar a.lg-brand { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px; color: #0b1c30; text-decoration: none; }
+.lg-guest-bar nav { display: flex; gap: 8px; }
+.lg-guest-bar nav .hm-btn { color: #fff; }
+.lg-guest-bar nav .hm-btn.is-quiet { color: #3525cd; }
+
+@media (max-width: 767px) {
+  .lg-row { grid-template-columns: 1fr; }
+  .lg-guest-bar { padding: 0 16px; }
+}

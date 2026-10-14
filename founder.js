@@ -295,17 +295,17 @@ async function renderEnquiries() {
   let data;
   try { [data] = await Promise.all([api('/api/founder/enquiries'), F.cache.planList ? null : api('/api/founder/subscriptions?status=active').then(r => { F.cache.planList = r.plans; })]); } catch (err) { return guard(err); }
   F.cache.enquiries = data.enquiries;
-  el('fcBody').innerHTML = `<div class="ch-bar"><h2 class="ch-bar-title">Business enquiries<small>${data.enquiries.length}</small></h2></div>
+  el('fcBody').innerHTML = `<div class="ch-bar"><h2 class="ch-bar-title">Enquiries and support<small>${data.enquiries.length}</small></h2></div>
     <div class="fc-apps">${data.enquiries.map(e => `<article class="ch-panel fc-app">
       <div class="fc-app-top"><span class="ch-chip navy">${escapeHtml(e.kind)}</span><h3 style="flex:1">${escapeHtml(e.organisation)}</h3>${statusChip(e.status)}</div>
       <dl class="ap-summary"><dt>Contact</dt><dd>${escapeHtml(e.contact_name)} · <a class="msg-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>${e.phone ? ` · ${escapeHtml(e.phone)}` : ''}</dd>
-        <dt>Plan</dt><dd>${escapeHtml(e.plan_name || 'Not sure yet')}</dd><dt>Size</dt><dd>${escapeHtml(e.size || '—')}</dd><dt>Received</dt><dd>${escapeHtml(formatTime(e.created_at))}</dd></dl>
+        ${e.kind === 'support' ? '' : `<dt>Plan</dt><dd>${escapeHtml(e.plan_name || 'Not sure yet')}</dd><dt>Size</dt><dd>${escapeHtml(e.size || '—')}</dd>`}<dt>Received</dt><dd>${escapeHtml(formatTime(e.created_at))}</dd></dl>
       ${e.message ? `<div class="ap-note">${icon('chat')}<div><p>${linkify(e.message)}</p></div></div>` : ''}
       <div class="ap-actions">
         <select class="ch-select" data-enq-status="${e.id}" aria-label="Status" style="width:auto">${['new', 'contacted', 'won', 'lost'].map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${STATUS_CHIPS[s][1]}</option>`).join('')}</select>
         <input class="ch-input" data-enq-note="${e.id}" value="${escapeHtml(e.founder_note)}" placeholder="Private note" maxlength="1000" style="flex:1;min-width:160px">
-        ${e.status !== 'won' ? `<button class="ch-btn solid small" type="button" data-convert="${e.id}">${icon('add_card')}Switch a plan on</button>` : ''}
-      </div></article>`).join('') || stateBlock('mail', 'No enquiries yet', 'Colleges, recruiters and sponsors who press “Talk to us” on the Plans page appear here.')}</div>`;
+        ${e.status !== 'won' && e.kind !== 'support' ? `<button class="ch-btn solid small" type="button" data-convert="${e.id}">${icon('add_card')}Switch a plan on</button>` : ''}
+      </div></article>`).join('') || stateBlock('mail', 'No enquiries yet', 'Colleges, recruiters and sponsors who press “Talk to us” on the Plans page, and messages from the Support page, appear here.')}</div>`;
 }
 
 async function renderSponsored() {
