@@ -57,7 +57,8 @@ const HEADER_ICONS = {
     chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
     target: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M11 8v6M8 11h6"/>',
     plus: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
-    home: '<path d="M4 11l8-6.5 8 6.5v7.5a1.5 1.5 0 01-1.5 1.5H5.5A1.5 1.5 0 014 18.5z"/><path d="M9.5 20v-5.5h5V20"/>'
+    home: '<path d="M4 11l8-6.5 8 6.5v7.5a1.5 1.5 0 01-1.5 1.5H5.5A1.5 1.5 0 014 18.5z"/><path d="M9.5 20v-5.5h5V20"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>'
 };
 const headerIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${HEADER_ICONS[name]}</svg>`;
 
@@ -142,6 +143,7 @@ window.renderAppHeader = function() {
                         <a class="app-menu-row" href="apply-teacher.html" data-role-hide="teacher">${headerIcon('campus')}Apply as teacher</a>
                         <a class="app-menu-row" href="apply-admin.html" data-role-hide="verifier">${headerIcon('plus')}Apply as admin</a>
                         <div class="app-menu-sep"></div>
+                        <a class="app-menu-row" href="account.html">${headerIcon('lock')}Account &amp; privacy</a>
                         <button class="app-menu-row is-danger" type="button" data-logout>${headerIcon('logout')}Log out</button>
                     </div>
                 </div>
@@ -161,7 +163,7 @@ const TABBAR_ITEMS = [
     { label: 'Study', href: 'study.html', icon: 'book', also: ['notes.html', 'practice.html', 'resume.html'] },
     { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html', 'department.html', 'global.html', 'followers.html'] },
     { label: 'Messages', href: 'inbox.html', icon: 'chat', also: [] },
-    { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'billing.html', 'pricing.html', 'team.html', 'project_management.html', 'research.html'] }
+    { label: 'Me', href: 'profile.html', icon: 'person', also: ['history.html', 'account.html', 'billing.html', 'pricing.html', 'team.html', 'project_management.html', 'research.html'] }
 ];
 
 function renderAppTabbar(currentPage) {

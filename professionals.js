@@ -812,6 +812,12 @@ function handleLiveEvent(data) {
     directoryById.set(person.id, person);
     return queueRender();
   }
+  if (data.type === 'profile_removed') {
+    // Someone closed their account
+    if (!directoryById.delete(data.id)) return;
+    directory = directory.filter(person => person.id !== data.id);
+    return queueRender();
+  }
   const result = applyPeopleEvent(data, directoryById, pendingActions);
   if (result === 'presence') {
     if (view.online) return render();

@@ -97,6 +97,9 @@ class DBUser(Base):
     # Section 21: the weekly email (1 = send it) and when the last one went out
     digest_on = Column(Integer, default=1)
     last_digest_at = Column(String, default="")
+    # Section 26: a deletion the person asked for. account_status is "closing" until delete_after, then "deleted"
+    delete_after = Column(String, default="")
+    status_before_delete = Column(String, default="")
 
 class DBAdminRequest(Base):
     __tablename__ = "admin_requests"
@@ -469,6 +472,8 @@ SCHEMA_UPGRADES = [
     "CREATE INDEX IF NOT EXISTS ix_subscriptions_owner ON subscriptions (user_id, status, ends_at)",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS digest_on INTEGER DEFAULT 1",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_digest_at VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS delete_after VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS status_before_delete VARCHAR DEFAULT ''",
 ]
 
 async def backfill_cleared_chats():
@@ -501,6 +506,8 @@ async def startup_event():
     spawn_background(digest_watch())
     spawn_background(study_watch())
     spawn_background(seed_practice_bank())
+    await load_closed_accounts()
+    spawn_background(account_delete_watch())
 
 async def keep_pool_warm():
     """The database is far away and new connections are slow to open, so keep a few open and fresh."""
@@ -994,6 +1001,12 @@ def create_access_token(data: dict) -> str:
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+# Accounts waiting to be erased, or already erased (section 26). Their old login cookies stop working at once.
+# Kept in memory so the check costs no database read; filled at startup.
+CLOSED_ACCOUNTS: set = set()
+HIDDEN_ACCOUNT_STATUSES = ("rejected", "closing", "deleted")
+CLOSED_DETAIL = "This account has been closed. Log in again to cancel a deletion that is still waiting."
+
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
     token = request.cookies.get("authToken")
     if not token:
@@ -1008,6 +1021,8 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         raise HTTPException(status_code=401, detail="Token has expired. Please log in again.")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication token.")
+    if int(user_id) in CLOSED_ACCOUNTS:
+        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
         
     result = await db.execute(select(DBUser).filter(DBUser.id == int(user_id)))
     user = result.scalars().first()
@@ -1026,11 +1041,14 @@ async def get_current_user_id(request: Request) -> int:
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
-        return int(user_id)
+        user_id = int(user_id)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired. Please log in again.")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication token.")
+    if user_id in CLOSED_ACCOUNTS:
+        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
+    return user_id
 
 
 def get_websocket_user_id(websocket: WebSocket) -> Optional[int]:
@@ -1040,9 +1058,10 @@ def get_websocket_user_id(websocket: WebSocket) -> Optional[int]:
         return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return int(payload.get("sub"))
+        user_id = int(payload.get("sub"))
     except (jwt.PyJWTError, TypeError, ValueError):
         return None
+    return None if user_id in CLOSED_ACCOUNTS else user_id
 
 
 # ==========================================
@@ -1171,6 +1190,9 @@ async def login_user(request: Request, credentials: UserLogin, response: Respons
         
     if not await check_password_async(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
+    restored = user.account_status == "closing"
+    if restored:
+        await cancel_account_deletion(db, user)
         
     access_token = create_access_token(data={"sub": str(user.id)})
     
@@ -1185,7 +1207,7 @@ async def login_user(request: Request, credentials: UserLogin, response: Respons
     )
     
     await log_user_activity(db, user.id, "Session Active", "You successfully logged into your account.")
-    return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type, "is_admin": user.is_admin}
+    return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type, "is_admin": user.is_admin, "restored": restored}
 
 
 @app.post("/api/logout")
@@ -1332,6 +1354,10 @@ async def broadcast_directory(payload: dict):
     await notification_manager.broadcast(json.dumps(payload))
 
 
+def visible_user_clause():
+    """People who may be listed anywhere: not rejected, not waiting to be erased, not erased."""
+    return func.coalesce(DBUser.account_status, "").not_in(HIDDEN_ACCOUNT_STATUSES)
+
 def person_cards_query(viewer_id: int, *conditions, extra_columns=()):
     """People as directory cards with the viewer's relationship to each. Never lists the viewer,
     rejected accounts or people the viewer blocked. Shared by every page that shows people."""
@@ -1350,7 +1376,7 @@ def person_cards_query(viewer_id: int, *conditions, extra_columns=()):
         )
         .where(
             DBUser.id != viewer_id,
-            or_(DBUser.account_status.is_(None), DBUser.account_status != "rejected"),
+            visible_user_clause(),
             ~exists().where(DBBlockedUser.user_id == viewer_id, DBBlockedUser.blocked_user_id == DBUser.id),
             *conditions,
         )
@@ -1951,6 +1977,8 @@ async def store_message(sender_id: int, receiver_id: int, content: str):
     """Check the rules and save a direct message. Returns (message dict, receiver has muted sender)."""
     if len(content) > MAX_MESSAGE_LENGTH:
         raise MessageRefused(f"Message is too long. The limit is {MAX_MESSAGE_LENGTH} characters.")
+    if receiver_id in CLOSED_ACCOUNTS:
+        raise MessageRefused("This account has been closed, so it cannot receive messages.")
     async with AutocommitSession() as db:
         refusal, is_muted = await get_messaging_rules(db, sender_id, receiver_id)
         if refusal:
@@ -4469,6 +4497,8 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
     result = await db.execute(select(DBUser).filter(DBUser.name == credentials.name, DBUser.is_admin == 1))
     admin_user = None
     for candidate in result.scalars().all():
+        if candidate.id in CLOSED_ACCOUNTS:
+            continue
         if candidate.hashed_password and await check_password_async(credentials.bypass_code, candidate.hashed_password):
             admin_user = candidate
             break
@@ -4503,6 +4533,8 @@ async def get_current_admin(request: Request, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=401, detail="Invalid admin token.")
     if payload.get("role") not in ("admin", "founder"):
         raise HTTPException(status_code=403, detail="Insufficient permissions.")
+    if int(payload.get("sub") or 0) in CLOSED_ACCOUNTS:
+        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
     # A token outlives a revoked admin, so the flag is checked again every time
     rows = await fetch_one_off(select(DBUser.is_admin, DBUser.is_founder).where(DBUser.id == int(payload.get("sub") or 0)))
     if not rows or ((rows[0].is_admin or 0) != 1 and (rows[0].is_founder or 0) != 1):
@@ -4980,11 +5012,11 @@ def is_student_clause():
 
 def hub_student_clause(key: str):
     """The students of a college. An approved teacher of the college is never one of them, whatever their profile says."""
-    return and_(USER_COLLEGE_KEY == key, is_student_clause(), func.coalesce(DBUser.teacher_of, "") != key)
+    return and_(USER_COLLEGE_KEY == key, is_student_clause(), func.coalesce(DBUser.teacher_of, "") != key, visible_user_clause())
 
 def hub_people_clause(key: str):
     """Everyone who belongs to a college's hub: its students and its approved teachers."""
-    return or_(hub_student_clause(key), DBUser.teacher_of == key)
+    return or_(hub_student_clause(key), and_(DBUser.teacher_of == key, visible_user_clause()))
 
 
 class TeacherRequestCreate(BaseModel):
@@ -8341,9 +8373,10 @@ def optional_user_id(request: Request) -> Optional[int]:
     if not token:
         return None
     try:
-        return int(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]).get("sub"))
+        user_id = int(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]).get("sub"))
     except Exception:
         return None
+    return None if user_id in CLOSED_ACCOUNTS else user_id
 
 
 # ---------- enquiries ----------
@@ -9482,7 +9515,7 @@ async def digest_watch():
                 due = await fetch_one_off(
                     select(DBUser.id, DBUser.email)
                     .where(func.coalesce(DBUser.digest_on, 1) == 1, DBUser.email.like("%@%"), func.coalesce(DBUser.last_digest_at, "") < cutoff,
-                           or_(DBUser.account_status.is_(None), DBUser.account_status != "rejected"))
+                           visible_user_clause())
                     .order_by(DBUser.id).limit(DIGEST_BATCH))
                 full_batch = len(due) == DIGEST_BATCH
                 for user_id, email in due:
@@ -10632,7 +10665,7 @@ async def get_practice(current_user_id: int = Depends(get_current_user_id)):
         points = func.sum(DBPracticeAnswer.points)
         return (select(DBUser.id, DBUser.name, picture, points.label("points"))
                 .join(DBPracticeAnswer, DBPracticeAnswer.user_id == DBUser.id)
-                .where(USER_COLLEGE_KEY == college, *conditions).group_by(DBUser.id, DBUser.name, DBUser.profile_pic)
+                .where(USER_COLLEGE_KEY == college, visible_user_clause(), *conditions).group_by(DBUser.id, DBUser.name, DBUser.profile_pic)
                 .having(points > 0).order_by(points.desc(), DBUser.id).limit(10))
 
     cache, answers, me, week_board, all_board = await asyncio.gather(
@@ -10818,3 +10851,318 @@ async def delete_resume(current_user_id: int = Depends(get_current_user_id)):
     """Forget the saved resume. The next visit starts again from the profile."""
     await run_one_off(delete(DBResume).where(DBResume.user_id == current_user_id))
     return {"saved": None}
+
+
+# ==========================================
+# 26. DELETE MY ACCOUNT, DOWNLOAD MY DATA
+# ==========================================
+# Anyone can take their information off the site. A deletion waits DELETE_GRACE_DAYS: the account is hidden and
+# logged out at once, and logging in again cancels it. Then erase_account() removes everything personal.
+# What other people still rely on (messages, team chat, College Hub posts, notes, answers, marks) stays, and the
+# account row becomes a nameless "Deleted user". Payment rows stay for the tax records, tied only to that row.
+DELETE_GRACE_DAYS = 14
+DELETED_NAME = "Deleted user"
+EXPORT_ROWS_PER_TABLE = 20000
+
+# The database has no foreign keys, so every column that holds a person's id is listed here, table by table.
+# A new table that stores a person's id must be added to one of the two (account_test.py checks this).
+USER_DATA_ERASED = {
+    "history": ("user_id",),
+    "notifications": ("user_id",),
+    "follows": ("follower_id", "followed_id"),
+    "saved_profiles": ("user_id", "saved_user_id"),
+    "muted_users": ("user_id", "muted_user_id"),
+    "blocked_users": ("user_id", "blocked_user_id"),
+    "cleared_chats": ("user_id",),
+    "archived_chats": ("user_id",),
+    "projects": ("user_id",),
+    "research_reports": ("user_id",),
+    "board_applications": ("user_id",),
+    "team_members": ("user_id",),
+    "team_message_reactions": ("user_id",),
+    "community_members": ("user_id",),
+    "teacher_requests": ("user_id",),
+    "admin_requests": ("user_id",),
+    "admin_scopes": ("user_id",),
+    "college_post_reads": ("user_id",),
+    "college_resource_saves": ("user_id",),
+    "usage_counters": ("user_id",),
+    "recruiter_seats": ("user_id",),
+    "recruiter_unlocks": ("user_id", "recruiter_id"),
+    "recruiter_shortlists": ("user_id",),
+    "github_stats": ("user_id",),
+    "push_subscriptions": ("user_id",),
+    "study_subjects": ("user_id",),
+    "study_slots": ("user_id",),
+    "study_attendance": ("user_id",),
+    "study_tasks": ("user_id",),
+    "study_grades": ("user_id",),
+    "study_sessions": ("user_id",),
+    "study_settings": ("user_id",),
+    "study_reminders": ("user_id",),
+    "class_timetable_slots": ("teacher_id",),
+    "note_saves": ("user_id",),
+    "practice_answers": ("user_id",),
+    "resumes": ("user_id",),
+}
+USER_DATA_KEPT = {
+    "messages": ("sender_id", "receiver_id"),
+    "pro_chats": ("user_a", "user_b"),
+    "teams": ("created_by",),
+    "team_messages": ("sender_id", "pinned_by"),
+    "team_resources": ("added_by",),
+    "team_tasks": ("assignee_id", "created_by"),
+    "board_posts": ("author_id",),             # sponsored ones stay; the rest go in erase_account()
+    "college_posts": ("author_id",),
+    "college_settings": ("updated_by",),
+    "college_messages": ("sender_id",),
+    "college_poll_votes": ("user_id",),
+    "college_submissions": ("submitted_by", "graded_by"),
+    "group_checkins": ("author_id", "teacher_id"),
+    "college_events": ("author_id",),
+    "college_resources": ("author_id",),
+    "attendance_sessions": ("teacher_id",),
+    "attendance_marks": ("user_id",),
+    "college_questions": ("author_id",),
+    "college_answers": ("author_id",),
+    "college_question_votes": ("user_id",),
+    "admin_scopes": ("granted_by",),
+    "verification_log": ("student_id", "admin_id"),
+    "subscriptions": ("user_id", "granted_by"),
+    "payments": ("user_id",),
+    "b2b_enquiries": ("user_id",),
+    "recruiter_shortlists": ("added_by",),
+    "challenge_submissions": ("user_id",),
+    "notes": ("uploader_id",),
+    "note_votes": ("user_id",),
+    "note_reports": ("user_id",),
+    "practice_questions": ("created_by",),
+    # other people's own settings and decisions about this person: kept, and not part of the download
+    "cleared_chats": ("cleared_with_user_id",),
+    "archived_chats": ("archived_user_id",),
+    "admin_requests": ("decided_by",),
+    "teacher_requests": ("decided_by",),
+}
+NOT_EXPORTED = {("cleared_chats", "cleared_with_user_id"), ("archived_chats", "archived_user_id"),
+                ("admin_requests", "decided_by"), ("teacher_requests", "decided_by")}
+PROFILE_NOT_EXPORTED = {"hashed_password", "id_card_image", "invite_code", "status_before_delete"}
+
+for _table, _columns in list(USER_DATA_ERASED.items()) + list(USER_DATA_KEPT.items()):
+    for _column in _columns:
+        assert _column in Base.metadata.tables[_table].c, f"USER_DATA names {_table}.{_column}, which does not exist"
+
+def export_columns() -> dict:
+    """table -> the columns whose rows belong in a person's download."""
+    columns: dict = {}
+    for registry in (USER_DATA_ERASED, USER_DATA_KEPT):
+        for table, names in registry.items():
+            columns.setdefault(table, [])
+            columns[table] += [name for name in names if (table, name) not in NOT_EXPORTED and name not in columns[table]]
+    return {table: names for table, names in columns.items() if names}
+
+
+async def load_closed_accounts():
+    try:
+        rows = await fetch_one_off(select(DBUser.id).where(DBUser.account_status.in_(("closing", "deleted"))))
+        CLOSED_ACCOUNTS.update(row[0] for row in rows)
+    except Exception as e:
+        print("Could not load closed accounts:", e)
+
+async def close_account_sockets(user_id: int):
+    """Close the person's open pages' live connections; the pages then find they are logged out."""
+    sockets = list(chat_manager.active_connections.get(user_id, [])) + list(notification_manager.active_connections.get(user_id, []))
+    for team_id in list(team_hub.teams):
+        sockets += team_hub.sockets_of(team_id, user_id)
+    for websocket in sockets:
+        try:
+            await websocket.close(code=4401)
+        except Exception:
+            pass
+
+async def cancel_account_deletion(db: AsyncSession, user: DBUser):
+    """Logging in during the waiting time brings the account back as it was."""
+    user.account_status = user.status_before_delete or "pending"
+    user.status_before_delete = ""
+    user.delete_after = ""
+    card = directory_card(user)
+    await db.commit()
+    CLOSED_ACCOUNTS.discard(user.id)
+    spawn_background(broadcast_directory({"type": "profile_added", "profile": card}))
+    spawn_background(log_activity_later(user.id, "Account Restored", "You logged in again, so your account will not be deleted."))
+
+
+def account_rate_key(request: Request) -> str:
+    """Limits count per account: a whole college often shares one internet address."""
+    try:
+        return "user:" + str(int(jwt.decode(request.cookies.get("authToken") or "", SECRET_KEY, algorithms=[ALGORITHM]).get("sub")))
+    except Exception:
+        return get_remote_address(request)
+
+
+# ---------- download my data ----------
+@app.get("/api/me/export")
+@limiter.limit("5/hour", key_func=account_rate_key)
+async def export_my_data(request: Request, current_user_id: int = Depends(get_current_user_id)):
+    """Everything the site holds about the caller, as one JSON file. Never the password hash or the ID-card photo."""
+    gate = asyncio.Semaphore(3)     # about 70 reads; a few at a time so other people's requests still get a connection
+
+    async def read(table_name: str, columns: list):
+        table = Base.metadata.tables[table_name]
+        statement = (select(table).where(or_(*(table.c[name] == current_user_id for name in columns)))
+                     .order_by(*table.primary_key.columns).limit(EXPORT_ROWS_PER_TABLE))
+        async with gate:
+            rows = await fetch_one_off(statement)
+        return table_name, [dict(row._mapping) for row in rows]
+
+    profile_rows, *tables = await asyncio.gather(
+        fetch_one_off(select(DBUser).where(DBUser.id == current_user_id)),
+        *(read(name, columns) for name, columns in export_columns().items()),
+    )
+    if not profile_rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    user = profile_rows[0][0]
+    profile = {column.name: getattr(user, column.key) for column in DBUser.__table__.columns if column.name not in PROFILE_NOT_EXPORTED}
+    profile["id_card_on_file"] = bool(user.id_card_image)
+    data = {
+        "exported_at": utc_now_iso(),
+        "site": "Connect2Minds",
+        "about": "Your profile and every row on the site that is linked to your account, table by table.",
+        "profile": profile,
+        "tables": {name: rows for name, rows in sorted(tables) if rows},
+    }
+    return Response(content=json.dumps(data, default=str, ensure_ascii=False, indent=1), media_type="application/json",
+                    headers={"Content-Disposition": 'attachment; filename="connect2minds-my-data.json"'})
+
+
+# ---------- delete my account ----------
+class AccountDeleteBody(BaseModel):
+    password: str = ""
+    confirm: str = ""
+
+@app.get("/api/me/account")
+async def my_account_state(current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBUser.is_founder, DBUser.plan, DBUser.teacher_of).where(DBUser.id == current_user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    return {"can_delete": (rows[0].is_founder or 0) != 1, "grace_days": DELETE_GRACE_DAYS,
+            "has_plan": bool(rows[0].plan), "is_teacher": bool(rows[0].teacher_of)}
+
+@app.post("/api/me/delete")
+@limiter.limit("5/minute", key_func=account_rate_key)
+async def request_account_deletion(request: Request, body: AccountDeleteBody, response: Response, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBUser.hashed_password, DBUser.is_founder).where(DBUser.id == current_user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    if (rows[0].is_founder or 0) == 1:
+        raise HTTPException(status_code=400, detail="The founder account cannot be deleted.")
+    if (body.confirm or "").strip().upper() != "DELETE":
+        raise HTTPException(status_code=400, detail="Type DELETE to confirm.")
+    if not rows[0].hashed_password or not await check_password_async(body.password or "", rows[0].hashed_password):
+        raise HTTPException(status_code=400, detail="That password is not right.")
+
+    delete_after = (datetime.now(timezone.utc) + timedelta(days=DELETE_GRACE_DAYS)).isoformat()
+    await asyncio.gather(
+        run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(
+            status_before_delete=func.coalesce(DBUser.account_status, "pending"), account_status="closing", delete_after=delete_after)),
+        run_one_off(delete(DBPushSubscription).where(DBPushSubscription.user_id == current_user_id)),
+    )
+    CLOSED_ACCOUNTS.add(current_user_id)
+    if push_users is not None:
+        push_users.discard(current_user_id)
+    response.delete_cookie(key="authToken", path="/", httponly=True, samesite="lax")
+    response.delete_cookie(key="adminToken", path="/", httponly=True, samesite="lax")
+    spawn_background(log_activity_later(current_user_id, "Account Deletion Requested", f"Your account will be deleted after {DELETE_GRACE_DAYS} days unless you log in again."))
+    spawn_background(close_account_sockets(current_user_id))
+    spawn_background(broadcast_directory({"type": "profile_removed", "id": current_user_id}))
+    return {"delete_after": delete_after, "grace_days": DELETE_GRACE_DAYS}
+
+
+def erase_deletes_sql() -> str:
+    """One statement that deletes every erased row of one person (:uid), plus their own non-sponsored board posts."""
+    parts = [f"e{i} AS (DELETE FROM {table} WHERE {' OR '.join(f'{column} = :uid' for column in columns)})"
+             for i, (table, columns) in enumerate(USER_DATA_ERASED.items())]
+    own_posts = "SELECT id FROM board_posts WHERE author_id = :uid AND COALESCE(is_sponsored, 0) = 0"
+    parts.append(f"posts_applications AS (DELETE FROM board_applications WHERE post_id IN ({own_posts}))")
+    parts.append(f"posts AS (DELETE FROM board_posts WHERE id IN ({own_posts}))")
+    return "WITH " + ",\n".join(parts) + "\nSELECT 1"
+
+def remove_upload(url: str, prefix: str):
+    """Delete one file under static/uploads, only if its name starts with prefix (e.g. "chat_12_")."""
+    path = urlparse(url or "").path.lstrip("/")
+    folder, name = os.path.split(path)
+    if folder.startswith("static/uploads") and ".." not in path and name.startswith(prefix):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+def remove_user_files(user_id: int, id_card: str, proof_urls: list):
+    import glob
+    for path in glob.glob(f"static/uploads/user_{user_id}_*"):    # profile picture, banner, project pictures
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    remove_id_card_file(id_card)
+    for url in proof_urls:
+        remove_upload(url, f"chat_{user_id}_")
+
+async def erase_account(user_id: int) -> bool:
+    """The end of the waiting time: remove everything personal and leave a nameless row. False if it was cancelled."""
+    async with SessionLocal() as db:
+        user = (await db.execute(select(DBUser.account_status, DBUser.roll_no, DBUser.id_card_image)
+                                 .where(DBUser.id == user_id).with_for_update())).first()
+        if not user or user.account_status != "closing":
+            await db.rollback()
+            return False
+        team_ids = [row[0] for row in (await db.execute(select(DBTeamMember.team_id).where(DBTeamMember.user_id == user_id))).all()]
+        proofs = (await db.execute(text(
+            "SELECT id_proof_url, letter_url FROM teacher_requests WHERE user_id = :uid "
+            "UNION ALL SELECT id_proof_url, letter_url FROM admin_requests WHERE user_id = :uid"), {"uid": user_id})).all()
+        await db.execute(text(erase_deletes_sql()), {"uid": user_id})
+        if user.roll_no and (await db.execute(text("SELECT to_regclass('public.profiles')"))).scalar():
+            await db.execute(text("DELETE FROM profiles WHERE roll_no = :roll"), {"roll": user.roll_no})   # an old copy of the profile
+        await db.execute(update(DBSubscription).where(DBSubscription.user_id == user_id, DBSubscription.status == "active").values(status="cancelled"))
+        await db.execute(update(DBEnquiry).where(DBEnquiry.user_id == user_id).values(contact_name="", email="", phone="", message=""))
+        await db.execute(update(DBUser).where(DBUser.id == user_id).values(
+            name=DELETED_NAME, roll_no=None, email=None, hashed_password="", college_name="", department="", city="", division="",
+            skills="", bio="", profile_pic="", banner_pic="", account_type="standard", github_username="", is_admin=0, is_ambassador=False,
+            ambassador_strikes=0, account_status="deleted", id_barcode=None, id_card_image="", portfolio_link="", invite_code="",
+            profession="", open_to="", experience_years=None, teacher_of="", verify_department="", recruiter_contact_ok=0,
+            plan="", plan_until="", digest_on=0, last_digest_at="", delete_after="", status_before_delete=""))
+        await db.commit()
+    CLOSED_ACCOUNTS.add(user_id)
+
+    # The account is already nameless; each step below runs on its own, so one failing does not stop the others
+    try:
+        await asyncio.to_thread(remove_user_files, user_id, user.id_card_image or "", [url for row in proofs for url in row if url])
+    except Exception as e:
+        print("Removing the files of account", user_id, "failed:", e)
+    # Teams they were in: an empty team goes; a team left without an Admin gets its longest-standing member as Admin
+    for team_id in team_ids:
+        try:
+            members = await fetch_one_off(select(DBTeamMember.id, DBTeamMember.role).where(DBTeamMember.team_id == team_id).order_by(DBTeamMember.id))
+            if not members:
+                async with SessionLocal() as db:
+                    await purge_team(db, team_id)
+                    await db.commit()
+            elif not any(role == "Admin" for _, role in members):
+                await run_one_off(update(DBTeamMember).where(DBTeamMember.id == members[0][0]).values(role="Admin"))
+        except Exception as e:
+            print("Tidying team", team_id, "after erasing account", user_id, "failed:", e)
+    return True
+
+async def account_delete_watch():
+    """Every hour: erase the accounts whose waiting time is over."""
+    while True:
+        try:
+            due = await fetch_one_off(select(DBUser.id).where(DBUser.account_status == "closing", func.coalesce(DBUser.delete_after, "") != "",
+                                                              DBUser.delete_after < utc_now_iso()).order_by(DBUser.id).limit(20))
+            for (user_id,) in due:
+                try:
+                    await erase_account(user_id)
+                except Exception as e:
+                    print("Erasing account", user_id, "failed:", e)
+        except Exception as e:
+            print("Error checking account deletions:", e)
+        await asyncio.sleep(3600)

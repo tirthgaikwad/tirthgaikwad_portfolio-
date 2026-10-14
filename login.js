@@ -75,7 +75,10 @@
     button.classList.remove('loading');
     button.classList.add('done');
     button.firstElementChild.textContent = 'Logged in';
-    setTimeout(() => { window.location.href = nextPage; }, REDUCED_MOTION ? 0 : 450);
+    // Logging in during the waiting time of an account deletion cancels it (account.html)
+    const restored = Boolean(result.data && result.data.restored);
+    if (restored) button.firstElementChild.textContent = 'Welcome back! Deletion cancelled';
+    setTimeout(() => { window.location.href = nextPage; }, restored ? 2600 : (REDUCED_MOTION ? 0 : 450));
   }
 
   forms.user.addEventListener('submit', (e) => {

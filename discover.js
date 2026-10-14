@@ -579,6 +579,12 @@ function handleLiveEvent(data) {
       directoryById.set(person.id, person);
       return queueRender();
     }
+    case 'profile_removed': {
+      // Someone closed their account
+      if (!directoryById.delete(data.id)) return;
+      directory = directory.filter(person => person.id !== data.id);
+      return queueRender();
+    }
     case 'follow_changed': {
       const person = directoryById.get(data.followed_id);
       if (!person) return;

@@ -369,6 +369,12 @@ function handleCampusEvent(data) {
     classmatesById.set(person.id, person);
     return queueCampusRender();
   }
+  if (data.type === 'profile_removed') {
+    // Someone closed their account
+    if (!classmatesById.delete(data.id)) return;
+    classmates = classmates.filter(person => person.id !== data.id);
+    return queueCampusRender();
+  }
   if (data.type === 'profile_updated' && data.profile && campus.college) {
     // A profile edit can move someone into or out of our college
     const known = classmatesById.has(data.profile.id);
