@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Connect2Minds | Your data rights (DPDP Act 2023)</title>
+<script>
+// Ask for this page's data right away, while styles and scripts are still downloading. The page script picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  window.__pagePrefetch = fetch(apiBase + '/api/me', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+/* Custom Modal Styles */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #c7c4d8; animation: slideDown 0.3s ease; }
+.custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0b1c30;}
+.custom-modal p { color: #464555; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-outline-modal { padding: 10px 20px; border: 1px solid #c7c4d8; border-radius: 8px; background: transparent; color: #0b1c30; font-weight: 600; cursor: pointer; transition: 0.2s;}
+.btn-outline-modal:hover { background: #eff4ff; }
+.btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+.btn-primary-modal:hover { background: #2b1ea6; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+/* Hide Scrollbar for Horizontal Nav */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Discover page */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.discover-select.is-set { border-color: #3525cd; background-color: #eff4ff; }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-toggle:hover { background: #eff4ff; }
+.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+</style><script src="https://cdn.tailwindcss.com"></script><link href="header.css" rel="stylesheet"/><link href="home.css" rel="stylesheet"/><link href="legal.css" rel="stylesheet"/><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="app-header" id="appHeader"></header>
+<script>renderAppHeader()</script><main class="w-full pt-16 bg-surface min-h-screen"><div class="hm-page lg-page">
+<section class="hm-hero"><div class="hm-hero-text">
+<p class="hm-date">DPDP Act 2023 · Notice version 15 October 2026</p>
+<h1 class="hm-title">Your data rights in India</h1>
+<p class="hm-sub">The Digital Personal Data Protection Act, 2023 gives you rights over your personal data and tells us what we must do with it. This page explains, in plain words, how Connect2Minds follows it and where to use each right.</p>
+</div></section>
+<nav class="lg-links" aria-label="Legal pages"><a href="privacy.html">Privacy</a><a aria-current="page" href="dpdp.html">DPDP Act</a><a href="terms.html">Terms &amp; honour code</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
+
+<section class="hm-card lg-doc lg-summary" aria-label="In short">
+<div class="lg-facts">
+<div><span aria-hidden="true" class="material-symbols-outlined">verified_user</span><strong>Consent first</strong><p>We use your data only for what you agreed to at sign-up. You can withdraw at any time.</p></div>
+<div><span aria-hidden="true" class="material-symbols-outlined">download</span><strong>See and fix it</strong><p>Download everything we hold, and correct it from your profile.</p></div>
+<div><span aria-hidden="true" class="material-symbols-outlined">delete_forever</span><strong>Erase it</strong><p>Delete your account and your data is erased after 14 days.</p></div>
+<div><span aria-hidden="true" class="material-symbols-outlined">support_agent</span><strong>Complain</strong><p>Our Grievance Officer replies within 90 days. You can then go to the Data Protection Board.</p></div>
+</div>
+</section>
+
+<article class="hm-card lg-doc">
+<h2 id="who">Who we are</h2>
+<p>Under the Act, <strong>Connect2Minds is the Data Fiduciary</strong>: we decide why and how your personal data is used. <strong>You are the Data Principal</strong>: the person the data is about. “Personal data” is anything that identifies you, such as your name, roll number, email, photo, college and the things you post or upload.</p>
+<p>Some companies process data for us as <strong>Data Processors</strong>: our database host (Supabase), payments (Razorpay), browser push services (Google, Mozilla, Apple), and, only when the AI helper is switched on, Anthropic. They may use your data only to do that job for us.</p>
+
+<h2 id="notice">What we collect and why (the notice under Section 5)</h2>
+<div class="lg-table"><table>
+<thead><tr><th>Data</th><th>Why we need it</th></tr></thead>
+<tbody>
+<tr><td data-label="Data">Name, roll number or ID, email, password (hashed)</td><td data-label="Why we need it">To create your account, log you in and contact you about it.</td></tr>
+<tr><td data-label="Data">College, department, division, city, skills, bio, profession, pictures</td><td data-label="Why we need it">To show your profile so students and professionals can find you and build teams.</td></tr>
+<tr><td data-label="Data">ID card photo or barcode</td><td data-label="Why we need it">To check that you really study at your college. Kept private; only verifiers for your college and the founder can open it.</td></tr>
+<tr><td data-label="Data">Messages, team work, posts, notes, study planner, resume</td><td data-label="Why we need it">To run the features you use. Only the people you share them with can see them.</td></tr>
+<tr><td data-label="Data">Plan, payment amount and receipt</td><td data-label="Why we need it">To give you a paid plan and keep the tax records the law requires. Card and UPI details stay with Razorpay.</td></tr>
+<tr><td data-label="Data">Notification address, cookies, visit counts</td><td data-label="Why we need it">Only if you switch them on: push notifications, remembered settings and our own visit counter.</td></tr>
+</tbody></table></div>
+<p>The full list is in the <a href="privacy.html">privacy policy</a>. We do not sell your data and we do not show advertising.</p>
+
+<h2 id="consent">Your consent</h2>
+<ul>
+<li>When you sign up you tick a box to agree to this notice. We record which version you agreed to and when; you can see it on <a href="account.html#dpdpCard">Account &amp; privacy</a>.</li>
+<li>Extra uses have their own switch, and saying no does not stop you using the site: the weekly email (on Home), push notifications (your browser), cookies beyond the essential ones (<a data-cookie-settings href="cookies.html">Cookie settings</a>) and the AI helper.</li>
+<li><strong>Withdrawing consent</strong> (Section 6(4)) is as easy as giving it: switch an extra use off, or, for the account itself, <a href="account.html#deleteCard">delete your account</a>. Withdrawing does not undo what was lawfully done before.</li>
+<li>If we change this notice in a way that matters, we show you a message on the site and ask you to agree again.</li>
+</ul>
+
+<h2 id="rights">Your rights and where to use them</h2>
+<div class="lg-table lg-rights"><table>
+<thead><tr><th>Your right</th><th>Act</th><th>How to use it</th></tr></thead>
+<tbody>
+<tr><td data-label="Your right"><strong>Know what we hold</strong>, who we shared it with and why</td><td data-label="Act">Section 11</td><td data-label="How to use it"><a href="account.html#exportCard">Download my data</a> gives you one file with everything linked to your account. The processors we share with are listed above.</td></tr>
+<tr><td data-label="Your right"><strong>Correct, complete or update</strong> your data</td><td data-label="Act">Section 12</td><td data-label="How to use it">Edit your <a href="profile.html">profile</a>, or change posts, notes, projects and your resume yourself. For anything you cannot edit, send a request below.</td></tr>
+<tr><td data-label="Your right"><strong>Erase</strong> your data</td><td data-label="Act">Section 12</td><td data-label="How to use it"><a href="account.html#deleteCard">Delete my account</a>. You are hidden at once and erased after 14 days. To erase one item, delete it yourself or send a request.</td></tr>
+<tr><td data-label="Your right"><strong>Withdraw consent</strong></td><td data-label="Act">Section 6(4)</td><td data-label="How to use it">Switch off the extra use, or delete your account (see Your consent above).</td></tr>
+<tr><td data-label="Your right"><strong>Have a complaint answered</strong></td><td data-label="Act">Section 13</td><td data-label="How to use it">Write to our Grievance Officer with the form below. We reply within 90 days.</td></tr>
+<tr><td data-label="Your right"><strong>Name a nominee</strong> who can use your rights if you die or cannot act</td><td data-label="Act">Section 14</td><td data-label="How to use it">Add one on <a href="account.html#dpdpCard">Account &amp; privacy</a>.</td></tr>
+</tbody></table></div>
+
+<h2 id="duties">Your duties</h2>
+<p>Section 15 asks you too: give true details (no false name, roll number or ID), do not pretend to be someone else, and do not send false or frivolous complaints. Breaking these duties can lead to a penalty from the Data Protection Board.</p>
+
+<h2 id="safety">Keeping your data safe, and breaches</h2>
+<p>Passwords are hashed, logins use secure cookies, ID photos are kept outside the public folders and access is limited to the people who need it. If a breach of your personal data happens, we will tell you and the Data Protection Board of India as the Act and its Rules require, with what happened, what it means for you and what you can do.</p>
+
+<h2 id="retention">How long we keep it</h2>
+<ul>
+<li>Your account data: while your account is open. When you delete it, it is erased after 14 days (logging in before then cancels the deletion).</li>
+<li>Work other people rely on (messages you sent, team tasks, College Hub posts) stays, shown as “Deleted user” and no longer linked to you.</li>
+<li>Payment records: kept as long as tax law requires, without your name.</li>
+<li>Visit counts: 180 days. Privacy-request records: as long as needed to show we answered.</li>
+</ul>
+
+<h2 id="children">Children</h2>
+<p>Connect2Minds is made for college students and working professionals. Under the Act, anyone under 18 is a child and needs a parent's or lawful guardian's verifiable consent. If you are under 18, please do not sign up without that consent. We do not track children's behaviour or target advertising at anyone. If you believe a child's data is here without consent, tell the Grievance Officer and we will act on it.</p>
+
+<h2 id="board">If you are not happy with our answer</h2>
+<p>First write to our Grievance Officer (Section 13 says this comes first). If you are not satisfied with the reply, or get none within 90 days, you can complain to the <strong>Data Protection Board of India</strong>, set up under the Act, using the process the Board publishes.</p>
+</article>
+
+<section class="hm-card lg-doc lg-officer" id="grievance" aria-labelledby="grievanceTitle">
+<h2 id="grievanceTitle">Grievance Officer</h2>
+<p>The person who answers questions and complaints about your personal data:</p>
+<dl class="lg-contact">
+<div><dt>Name</dt><dd data-dpdp="name">[Grievance Officer name]</dd></div>
+<div><dt>Email</dt><dd><a data-dpdp="email" href="mailto:">[grievance email]</a></dd></div>
+<div><dt>Reply within</dt><dd>90 days</dd></div>
+</dl>
+</section>
+
+<section class="hm-card lg-doc" id="requestCard">
+<h2>Send a data-rights request</h2>
+<p>Tell us what you need. If you are logged in, write from the email on your account so we can match it to you. We may ask you to confirm it is really you before we act.</p>
+<form class="lg-form" id="dpForm" novalidate>
+<label class="lg-field"><span>What do you need?</span><select id="dpTopic" required>
+<option value="">Pick one</option><option>Access my data</option><option>Correct my data</option><option>Erase my data</option><option>Withdraw consent</option>
+<option>Nominee</option><option>Complaint</option><option>Something else</option></select></label>
+<div class="lg-row">
+<label class="lg-field"><span>Your name</span><input autocomplete="name" id="dpName" maxlength="120" required/></label>
+<label class="lg-field"><span>Email for our reply</span><input autocomplete="email" id="dpEmail" maxlength="160" required type="email"/></label>
+</div>
+<label class="lg-field"><span>Details</span><textarea id="dpMessage" maxlength="2000" required rows="6" placeholder="Which data, and what should we do with it?"></textarea></label>
+<p class="lg-error" hidden id="dpError" role="alert"></p>
+<div><button class="hm-btn" id="dpSend" type="submit"><span aria-hidden="true" class="material-symbols-outlined">send</span>Send request</button></div>
+</form>
+<div class="lg-sent" hidden id="dpSent"><span aria-hidden="true" class="material-symbols-outlined">mark_email_read</span><p><strong>Request received.</strong> The Grievance Officer will reply to <span id="dpSentTo"></span> within 90 days.</p></div>
+</section>
+<p class="lg-fineprint">This page explains how we follow the Digital Personal Data Protection Act, 2023 and the Digital Personal Data Protection Rules, 2025. It is a plain-words summary, not legal advice; the Act and Rules themselves are what count.</p>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a></div></div></footer>
+
+<!-- CUSTOM SYSTEM ALERTS MODAL -->
+<div class="modal-overlay" id="systemModal">
+    <div class="custom-modal">
+        <h3 id="systemModalTitle">Notification</h3>
+        <p id="systemModalMessage">Message goes here.</p>
+        <div class="modal-buttons">
+            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
+        </div>
+    </div>
+</div>
+
+<script src="legal.js"></script>
+<script>initLegal()</script>
+</body>
+</html>

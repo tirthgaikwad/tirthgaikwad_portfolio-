@@ -100,6 +100,9 @@ class DBUser(Base):
     # Section 26: a deletion the person asked for. account_status is "closing" until delete_after, then "deleted"
     delete_after = Column(String, default="")
     status_before_delete = Column(String, default="")
+    # Section 30 (DPDP Act 2023): which privacy notice the person agreed to, and when
+    consent_version = Column(String, default="")
+    consent_at = Column(String, default="")
 
 class DBAdminRequest(Base):
     __tablename__ = "admin_requests"
@@ -491,6 +494,8 @@ SCHEMA_UPGRADES = [
     "ALTER TABLE team_tasks ADD COLUMN IF NOT EXISTS done_at VARCHAR DEFAULT ''",
     "CREATE INDEX IF NOT EXISTS ix_team_tasks_sprint_id ON team_tasks (sprint_id)",
     "UPDATE team_tasks SET done_at = updated_at WHERE status = 'done' AND COALESCE(done_at, '') = ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_version VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_at VARCHAR DEFAULT ''",
 ]
 
 async def backfill_cleared_chats():
@@ -758,6 +763,11 @@ class ProfileRegister(BaseModel):
     profession: Optional[str] = ""
     open_to: Optional[str] = ""
     experience_years: Optional[int] = None
+    consent: Optional[bool] = False          # the DPDP notice box on the last sign-up step
+
+# The privacy notice people agree to (privacy.html + dpdp.html). Change it when those pages change in substance:
+# everyone who agreed to an older one is shown the "we updated our notice" bar again (section 30).
+PRIVACY_VERSION = "2026-10-15"
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
@@ -1144,6 +1154,8 @@ def is_professional_account(account_type: Optional[str], profession: Optional[st
 async def register_user(request: Request, profile: ProfileRegister, response: Response, db: AsyncSession = Depends(get_db)):
     # Auto-generate email if not provided
     user_email = profile.email.strip() if profile.email else ""
+    if not profile.consent:
+        raise HTTPException(status_code=400, detail="Please read the privacy notice and tick the box to agree before signing up.")
     if not user_email:
         user_email = f"{profile.roll_no}@placeholder.connect2minds.local"
     
@@ -1202,7 +1214,9 @@ async def register_user(request: Request, profile: ProfileRegister, response: Re
         invite_code=profile.invite_code,
         profession=profession,
         open_to=clean_open_to(profile.open_to),
-        experience_years=experience_years
+        experience_years=experience_years,
+        consent_version=PRIVACY_VERSION,
+        consent_at=utc_now_iso(),
     )
 
     db.add(new_user)
@@ -1349,10 +1363,12 @@ async def load_profile(user_id: int, viewer_id: int, with_projects: bool) -> dic
 @app.get("/api/me")
 async def get_me(db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
     """The logged-in person's own card, for the site header. One small query."""
-    row = (await db.execute(select(*public_profile_columns()).filter(DBUser.id == current_user_id))).first()
+    row = (await db.execute(select(*public_profile_columns(), DBUser.consent_version).filter(DBUser.id == current_user_id))).first()
     if not row:
         raise HTTPException(status_code=401, detail="User account no longer exists.")
-    return public_profile(row)
+    me = public_profile(row)
+    me["consent_needed"] = (row.consent_version or "") != PRIVACY_VERSION   # the DPDP notice bar in shared.js
+    return me
 
 
 @app.get("/api/profile-options")
@@ -8430,7 +8446,7 @@ class DBChallengeSubmission(Base):
     updated_at = Column(String)
 
 
-ENQUIRY_KINDS = ("institution", "recruiter", "sponsor", "support")   # support: the Support page (organisation holds the topic)
+ENQUIRY_KINDS = ("institution", "recruiter", "sponsor", "support", "data_rights")   # support / data_rights: organisation holds the topic (section 30)
 SHORTLIST_STAGES = ("shortlisted", "contacted", "interviewing", "offer", "hired", "rejected")
 CHALLENGE_KINDS = ("bounty", "hackathon")
 SPONSOR_TIERS = {"basic": 30, "featured": 60, "hackathon": 90}
@@ -8498,6 +8514,8 @@ def optional_user_id(request: Request) -> Optional[int]:
 async def create_enquiry(request: Request, body: EnquiryBody):
     if body.kind not in ENQUIRY_KINDS:
         raise HTTPException(status_code=400, detail="Pick what you are asking about.")
+    if body.kind == "data_rights" and body.organisation not in DATA_RIGHTS_TYPES:
+        raise HTTPException(status_code=400, detail="Pick the kind of request.")
     if body.plan_key and (body.plan_key not in PLANS or PLANS[body.plan_key]["line"] != body.kind):
         raise HTTPException(status_code=400, detail="That plan does not match the enquiry.")
     email = (body.email or "").strip()[:160]
@@ -8512,7 +8530,8 @@ async def create_enquiry(request: Request, body: EnquiryBody):
         contact_name=clean_required(body.contact_name, 120, "your name"), email=email, phone=phone, size=clean_text(body.size, 60, "size"),
         message=clean_text(body.message, 2000, "message"), user_id=optional_user_id(request), status="new", founder_note="", created_at=now_iso, updated_at=now_iso,
     ).returning(DBEnquiry.id))
-    what = f"New support message: {body.organisation.strip()[:80]}." if body.kind == "support" else f"New {body.kind} enquiry from {body.organisation.strip()[:80]}."
+    what = {"support": f"New support message: {body.organisation.strip()[:80]}.",
+            "data_rights": f"New data-rights request (DPDP Act): {body.organisation}. Reply within {DPDP_REPLY_DAYS} days."}.get(body.kind, f"New {body.kind} enquiry from {body.organisation.strip()[:80]}.")
     spawn_background(notify_founders("account", what, "founder.html?tab=enquiries"))
     return {"id": rows[0][0], "status": "received"}
 
@@ -9105,8 +9124,11 @@ async def founder_payments(founder_id: int = Depends(require_founder)):
 
 @app.get("/api/founder/enquiries")
 async def founder_enquiries(founder_id: int = Depends(require_founder)):
-    rows = await fetch_one_off(select(DBEnquiry).order_by(case((DBEnquiry.status.in_(("new", "contacted")), 0), else_=1), DBEnquiry.id.desc()).limit(300))
+    open_first = case((DBEnquiry.status.in_(("new", "contacted")), 0), else_=1)
+    rights_first = case((DBEnquiry.kind == "data_rights", 0), else_=1)   # open DPDP requests have a legal reply date
+    rows = await fetch_one_off(select(DBEnquiry).order_by(open_first, rights_first, DBEnquiry.id.desc()).limit(300))
     return {"enquiries": [{
+        "reply_by": dpdp_reply_by(e.created_at) if e.kind == "data_rights" else "",
         "id": e.id, "kind": e.kind, "plan_key": e.plan_key or "", "plan_name": PLANS.get(e.plan_key or "", {}).get("name", ""), "organisation": e.organisation or "",
         "contact_name": e.contact_name or "", "email": e.email or "", "phone": e.phone or "", "size": e.size or "", "message": e.message or "",
         "status": e.status, "founder_note": e.founder_note or "", "subscription_id": e.subscription_id, "created_at": e.created_at or "", "updated_at": e.updated_at or "",
@@ -12496,3 +12518,98 @@ async def visits_watch():
         except Exception as e:
             print("Error clearing old visit counts:", e)
         await asyncio.sleep(24 * 3600)
+
+
+# ==========================================
+# 30. DPDP ACT 2023 (dpdp.html, the "My rights" card on account.html)
+# ==========================================
+# India's Digital Personal Data Protection Act 2023. What the site does for it:
+# - consent: sign-up refuses without the notice box (register_user) and saves which notice was agreed to and when;
+#   people who agreed to an older notice (or signed up before there was one) get a bar in shared.js until they agree here;
+# - access, correction, erasure: the data download and delete of section 26, and the profile editor;
+# - nominee (Section 14): one person who may use these rights if the account holder dies or cannot;
+# - grievances and other rights requests: enquiries of kind "data_rights" (section 20), shown first in the founder
+#   console with the day a reply is due (DPDP_REPLY_DAYS).
+DPDP_REPLY_DAYS = 90
+DATA_RIGHTS_TYPES = ("Access my data", "Correct my data", "Erase my data", "Withdraw consent", "Nominee", "Complaint", "Something else")
+
+class DBDataNominee(Base):
+    __tablename__ = "data_nominees"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, index=True)
+    name = Column(String)
+    relation = Column(String, default="")
+    email = Column(String, default="")
+    phone = Column(String, default="")
+    updated_at = Column(String)
+
+USER_DATA_ERASED["data_nominees"] = ("user_id",)
+
+class NomineeBody(BaseModel):
+    name: str
+    relation: Optional[str] = ""
+    email: Optional[str] = ""
+    phone: Optional[str] = ""
+
+def nominee_dict(row) -> Optional[dict]:
+    if not row:
+        return None
+    return {"name": row.name or "", "relation": row.relation or "", "email": row.email or "", "phone": row.phone or "", "updated_at": row.updated_at or ""}
+
+
+@app.get("/api/me/dpdp")
+async def my_dpdp(current_user_id: int = Depends(get_current_user_id)):
+    """The account card: which notice the person agreed to, and their nominee."""
+    users, nominees = await asyncio.gather(
+        fetch_one_off(select(DBUser.consent_version, DBUser.consent_at).where(DBUser.id == current_user_id)),
+        fetch_one_off(select(DBDataNominee).where(DBDataNominee.user_id == current_user_id)),
+    )
+    if not users:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    version, at = users[0]
+    return {"consent_version": version or "", "consent_at": at or "", "current_version": PRIVACY_VERSION,
+            "consent_needed": (version or "") != PRIVACY_VERSION, "nominee": nominee_dict(nominees[0][0] if nominees else None)}
+
+
+@app.post("/api/me/consent")
+@limiter.limit("20/minute", key_func=account_rate_key)
+async def agree_to_notice(request: Request, current_user_id: int = Depends(get_current_user_id)):
+    """The person agrees to the current privacy notice (the bar shared.js shows)."""
+    now_iso = utc_now_iso()
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(consent_version=PRIVACY_VERSION, consent_at=now_iso))
+    spawn_background(log_activity_later(current_user_id, "Privacy Notice Accepted", f"You agreed to the privacy notice of {PRIVACY_VERSION}."))
+    return {"consent_version": PRIVACY_VERSION, "consent_at": now_iso}
+
+
+@app.put("/api/me/nominee")
+@limiter.limit("20/minute", key_func=account_rate_key)
+async def set_nominee(request: Request, body: NomineeBody, current_user_id: int = Depends(get_current_user_id)):
+    name = clean_required(body.name, 120, "nominee's name")
+    relation = clean_text(body.relation, 60, "relation")
+    email, phone = (body.email or "").strip()[:160], (body.phone or "").strip()[:20]
+    if not email and not phone:
+        raise HTTPException(status_code=400, detail="Give an email or a phone number for your nominee.")
+    if email and not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address, or leave it empty.")
+    if phone and not PHONE_PATTERN.match(phone):
+        raise HTTPException(status_code=400, detail="Enter a valid phone number, or leave it empty.")
+    values = {"name": name, "relation": relation, "email": email, "phone": phone, "updated_at": utc_now_iso()}
+    rows = await run_returning(pg_insert(DBDataNominee).values(user_id=current_user_id, **values)
+                               .on_conflict_do_update(index_elements=["user_id"], set_=values).returning(*DBDataNominee.__table__.c))
+    spawn_background(log_activity_later(current_user_id, "Nominee Saved", f"{name} is your nominee under the DPDP Act."))
+    return {"nominee": nominee_dict(rows[0])}
+
+
+@app.delete("/api/me/nominee")
+async def remove_nominee(current_user_id: int = Depends(get_current_user_id)):
+    await run_one_off(delete(DBDataNominee).where(DBDataNominee.user_id == current_user_id))
+    return {"nominee": None}
+
+def dpdp_reply_by(created_at: str) -> str:
+    """The last day (YYYY-MM-DD) to answer a data-rights request sent at created_at."""
+    try:
+        return (datetime.fromisoformat((created_at or "").replace("Z", "+00:00")) + timedelta(days=DPDP_REPLY_DAYS)).date().isoformat()
+    except ValueError:
+        return ""
+
+assert all(column in DBDataNominee.__table__.c for column in USER_DATA_ERASED["data_nominees"])

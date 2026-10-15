@@ -21,6 +21,19 @@
 .ac-note[hidden] { display: none; }
 .ac-note .material-symbols-outlined { font-size: 18px; color: #3525cd; margin-top: 1px; }
 
+.ac-text a, .ac-small a { color: #3525cd; font-weight: 600; text-decoration: none; }
+.ac-text a:hover, .ac-small a:hover { text-decoration: underline; }
+/* DPDP card: consent and nominee facts, the nominee form */
+.ac-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; background: #eff4ff; }
+.ac-facts dt { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #777587; }
+.ac-facts dd { margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #0b1c30; font-weight: 600; overflow-wrap: anywhere; }
+.ac-facts dd small { display: block; font-weight: 400; color: #464555; font-size: 12px; }
+.ac-nominee { margin-top: 14px; }
+.ac-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ac-grid .ac-field { max-width: none; }
+.ac-field em { font-style: normal; font-weight: 400; color: #777587; }
+.ac-remove { color: #ba1a1a !important; }
+#dpdpCard > .ac-small { margin-top: 14px; }
 .ac-form { border-top: 1px solid rgba(199,196,216,0.45); padding-top: 14px; display: grid; gap: 12px; }
 .ac-form[hidden] { display: none; }
 .ac-field { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: #0b1c30; max-width: 360px; }
@@ -42,5 +55,6 @@
 @media (max-width: 767px) {
   .ac-columns { grid-template-columns: 1fr; }
   .ac-field { max-width: none; }
+  .ac-facts, .ac-grid { grid-template-columns: 1fr; }
   .ac-actions .hm-btn { flex: 1 1 auto; }
 }

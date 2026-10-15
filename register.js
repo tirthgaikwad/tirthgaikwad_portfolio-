@@ -163,7 +163,7 @@
     profession: byId('professionInput'), experience: byId('experienceYears'),
     college: byId('collegeInput'), dept: byId('deptInput'), city: byId('location'),
     barcode: byId('idBarcode'), idFile: byId('idImageUpload'), portfolio: byId('portfolioLink'), invite: byId('inviteCode'),
-    skill: byId('skillInput'), bio: byId('bio')
+    skill: byId('skillInput'), bio: byId('bio'), consent: byId('consentBox')
   };
 
   let step = 0;
@@ -663,6 +663,7 @@
       const wrong = [];
       if (!skills.length) wrong.push([input.skill, 'Add at least one skill.']);
       if (!input.bio.value.trim()) wrong.push([input.bio, 'Write a line or two about yourself.']);
+      if (!input.consent.checked) wrong.push([input.consent, 'Tick the box to agree to the privacy notice (DPDP Act 2023).']);
       return wrong;
     }
   ];
@@ -746,6 +747,7 @@
       division: 'A',
       skills: skills.join(', '),
       bio: input.bio.value.trim(),
+      consent: input.consent.checked,
       account_type: accountType(),
       id_barcode: student ? (input.barcode.value.trim() || null) : null,
       id_card_image: student ? idPhoto : '',
@@ -812,6 +814,7 @@
   });
   form.addEventListener('change', (e) => {
     if (e.target.name === 'accountType') syncAccountType();
+    if (e.target === input.consent && input.consent.checked) setFieldError(input.consent, '');
   });
 
   syncAccountType();

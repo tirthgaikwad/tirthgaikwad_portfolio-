@@ -1445,6 +1445,43 @@
    "answer": "Logged-in members see your profile card (not your email, roll number or ID photo). Messages are only between the people in them. The privacy page explains everything that is stored and your choices."
   },
   {
+   "id": "dpdp",
+   "title": "Your data rights (DPDP Act 2023)",
+   "audience": "all",
+   "page": "dpdp.html",
+   "keywords": [
+    "dpdp",
+    "dpdp act",
+    "data protection act",
+    "digital personal data protection",
+    "data rights",
+    "my rights",
+    "rights over my data",
+    "grievance",
+    "grievance officer",
+    "complaint about my data",
+    "data protection board",
+    "nominee",
+    "nominate",
+    "add a nominee",
+    "withdraw consent",
+    "withdraw my consent",
+    "correct my data",
+    "erase my data",
+    "data principal",
+    "data fiduciary",
+    "privacy notice",
+    "india data law"
+   ],
+   "answer": "Under India's Digital Personal Data Protection Act, 2023 you can see what we hold (Download my data), correct it (edit your profile), erase it (Delete my account), withdraw consent, name a nominee on Account & privacy, and complain to our Grievance Officer, who replies within 90 days. If you are not satisfied you can then go to the Data Protection Board of India. The DPDP Act page explains each right and has the request form.",
+   "highlight": [
+    {
+     "sel": "#requestCard",
+     "text": "Send a data-rights request to the Grievance Officer here."
+    }
+   ]
+  },
+  {
    "id": "cookies",
    "title": "Cookies and cookie settings",
    "audience": "all",

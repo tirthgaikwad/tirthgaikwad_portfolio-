@@ -34,7 +34,7 @@ async function renderOverview() {
   const openItems = [
     ['admins', o.open.admin_applications, 'admin applications waiting', 'shield_person'],
     ['teachers', o.open.teacher_applications, 'teacher applications waiting', 'school'],
-    ['enquiries', o.open.enquiries, 'business enquiries open', 'mail'],
+    ['enquiries', o.open.enquiries, 'enquiries and requests open', 'mail'],
     ['verification', o.open.unassigned_verification, 'accounts waiting with no admin for their department', 'how_to_reg']
   ];
   const lines = { personal: 'Personal plans', recruiter: 'Recruiter', institution: 'Institution licences', sponsor: 'Sponsor packages' };
@@ -324,21 +324,32 @@ function grantForm(prefill) {
 // ==========================================
 // 5. ENQUIRIES AND SPONSORED CHALLENGES
 // ==========================================
+// DPDP Act requests (dpdp.html) have a legal reply date; their statuses read as a request, not a sale
+const RIGHTS_STATUS = { new: 'New', contacted: 'Replied', won: 'Done', lost: 'Closed' };
+const enquiryKind = (e) => e.kind === 'data_rights' ? 'DPDP request' : e.kind;
+function replyByHtml(e) {
+  if (e.kind !== 'data_rights' || !e.reply_by) return '';
+  const days = Math.ceil((new Date(`${e.reply_by}T23:59:59`) - Date.now()) / 86400000);
+  const open = e.status === 'new' || e.status === 'contacted';
+  const left = !open ? '' : days < 0 ? ` <span class="ch-chip warn">${-days} days late</span>` : ` <span class="ch-chip ${days <= 14 ? 'warn' : 'indigo'}">${days} days left</span>`;
+  return `<dt>Reply by</dt><dd>${escapeHtml(new Date(`${e.reply_by}T00:00:00`).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }))}${left}</dd>`;
+}
+
 async function renderEnquiries() {
   let data;
   try { [data] = await Promise.all([api('/api/founder/enquiries'), F.cache.planList ? null : api('/api/founder/subscriptions?status=active').then(r => { F.cache.planList = r.plans; })]); } catch (err) { return guard(err); }
   F.cache.enquiries = data.enquiries;
   el('fcBody').innerHTML = `<div class="ch-bar"><h2 class="ch-bar-title">Enquiries and support<small>${data.enquiries.length}</small></h2></div>
     <div class="fc-apps">${data.enquiries.map(e => `<article class="ch-panel fc-app">
-      <div class="fc-app-top"><span class="ch-chip navy">${escapeHtml(e.kind)}</span><h3 style="flex:1">${escapeHtml(e.organisation)}</h3>${statusChip(e.status)}</div>
+      <div class="fc-app-top"><span class="ch-chip ${e.kind === 'data_rights' ? 'warn' : 'navy'}">${escapeHtml(enquiryKind(e))}</span><h3 style="flex:1">${escapeHtml(e.organisation)}</h3>${e.kind === 'data_rights' ? `<span class="ch-chip ${(STATUS_CHIPS[e.status] || [''])[0]}">${escapeHtml(RIGHTS_STATUS[e.status] || e.status)}</span>` : statusChip(e.status)}</div>
       <dl class="ap-summary"><dt>Contact</dt><dd>${escapeHtml(e.contact_name)} · <a class="msg-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>${e.phone ? ` · ${escapeHtml(e.phone)}` : ''}</dd>
-        ${e.kind === 'support' ? '' : `<dt>Plan</dt><dd>${escapeHtml(e.plan_name || 'Not sure yet')}</dd><dt>Size</dt><dd>${escapeHtml(e.size || '—')}</dd>`}<dt>Received</dt><dd>${escapeHtml(formatTime(e.created_at))}</dd></dl>
+        ${e.kind === 'support' || e.kind === 'data_rights' ? '' : `<dt>Plan</dt><dd>${escapeHtml(e.plan_name || 'Not sure yet')}</dd><dt>Size</dt><dd>${escapeHtml(e.size || '—')}</dd>`}<dt>Received</dt><dd>${escapeHtml(formatTime(e.created_at))}</dd>${replyByHtml(e)}</dl>
       ${e.message ? `<div class="ap-note">${icon('chat')}<div><p>${linkify(e.message)}</p></div></div>` : ''}
       <div class="ap-actions">
-        <select class="ch-select" data-enq-status="${e.id}" aria-label="Status" style="width:auto">${['new', 'contacted', 'won', 'lost'].map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${STATUS_CHIPS[s][1]}</option>`).join('')}</select>
+        <select class="ch-select" data-enq-status="${e.id}" aria-label="Status" style="width:auto">${['new', 'contacted', 'won', 'lost'].map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${e.kind === 'data_rights' ? RIGHTS_STATUS[s] : STATUS_CHIPS[s][1]}</option>`).join('')}</select>
         <input class="ch-input" data-enq-note="${e.id}" value="${escapeHtml(e.founder_note)}" placeholder="Private note" maxlength="1000" style="flex:1;min-width:160px">
-        ${e.status !== 'won' && e.kind !== 'support' ? `<button class="ch-btn solid small" type="button" data-convert="${e.id}">${icon('add_card')}Switch a plan on</button>` : ''}
-      </div></article>`).join('') || stateBlock('mail', 'No enquiries yet', 'Colleges, recruiters and sponsors who press “Talk to us” on the Plans page, and messages from the Support page, appear here.')}</div>`;
+        ${e.status !== 'won' && e.kind !== 'support' && e.kind !== 'data_rights' ? `<button class="ch-btn solid small" type="button" data-convert="${e.id}">${icon('add_card')}Switch a plan on</button>` : ''}
+      </div></article>`).join('') || stateBlock('mail', 'No enquiries yet', 'Colleges, recruiters and sponsors who press “Talk to us” on the Plans page, messages from the Support page and DPDP data-rights requests appear here.')}</div>`;
 }
 
 async function renderSponsored() {

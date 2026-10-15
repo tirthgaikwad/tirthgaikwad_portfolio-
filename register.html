@@ -73,6 +73,11 @@
         .span2 { grid-column: 1 / -1; }
         .wizard-nav { display: flex; gap: 12px; margin-top: 28px; }
         .wizard-nav .btn-primary { flex: 1; }
+        .consent { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--ink-2); cursor: pointer; }
+        .consent input { flex-shrink: 0; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--indigo); cursor: pointer; }
+        .consent a { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
+        .consent + .hint { padding-left: 28px; }
+        .field.invalid .consent input { outline: 2px solid #ff8a80; outline-offset: 1px; }
         .login-foot { margin-top: 24px; text-align: center; font-size: 15px; color: var(--ink-2); }
 
         /* Student or professional */
@@ -384,6 +389,13 @@
                                 <span class="field-label" id="openToLabel">Open to <span class="optional">(optional)</span></span>
                                 <div class="suggest" id="openToBox" role="group" aria-labelledby="openToLabel" style="margin-top:0"></div>
                                 <p class="hint">Shown on your profile, so people know what they can ask you about.</p>
+                            </div>
+                            <div class="field">
+                                <label class="consent" for="consentBox">
+                                    <input type="checkbox" id="consentBox" aria-describedby="consentHint">
+                                    <span>I have read the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a> and <a href="dpdp.html" target="_blank" rel="noopener">my rights under the DPDP Act 2023</a>, and I agree to Connect2Minds using my personal data as they describe.</span>
+                                </label>
+                                <p class="hint" id="consentHint">You can withdraw this consent at any time from Account &amp; privacy.</p>
                             </div>
                         </section>
 

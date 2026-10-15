@@ -59,6 +59,36 @@
 <span aria-live="polite" class="ac-status" id="exportStatus"></span>
 </div>
 </section>
+<section class="hm-card ac-card" id="dpdpCard">
+<div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">gavel</span>My rights under the DPDP Act 2023</h2></div>
+<p class="ac-text">India's Digital Personal Data Protection Act gives you the right to see, correct and erase your data, withdraw your consent, name a nominee and have a complaint answered. <a class="msg-link" href="dpdp.html">Read your rights</a></p>
+<dl class="ac-facts">
+<div><dt>Your consent</dt><dd id="dpConsent">Loading…</dd></div>
+<div><dt>Your nominee</dt><dd id="dpNominee">Loading…</dd></div>
+</dl>
+<div class="ac-actions">
+<button class="hm-btn" hidden id="dpAgreeBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">task_alt</span>I agree to the current notice</button>
+<button class="hm-btn is-quiet" id="nomineeBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">person_add</span>Add a nominee</button>
+<a class="hm-btn is-quiet" href="dpdp.html#requestCard"><span aria-hidden="true" class="material-symbols-outlined">support_agent</span>Ask the Grievance Officer</a>
+<span aria-live="polite" class="ac-status" id="dpStatus"></span>
+</div>
+<form autocomplete="off" class="ac-form ac-nominee" hidden id="nomineeForm" novalidate>
+<p class="ac-small">Your nominee can use your rights under the Act if you die or are unable to act yourself (Section 14). Give at least an email or a phone number.</p>
+<div class="ac-grid">
+<label class="ac-field"><span>Nominee's name</span><input id="nomName" maxlength="120" required/></label>
+<label class="ac-field"><span>Relation to you <em>(optional)</em></span><input id="nomRelation" maxlength="60" placeholder="e.g. Mother"/></label>
+<label class="ac-field"><span>Email</span><input id="nomEmail" maxlength="160" type="email"/></label>
+<label class="ac-field"><span>Phone</span><input id="nomPhone" maxlength="20" type="tel"/></label>
+</div>
+<p class="ac-error" hidden id="nomError" role="alert"></p>
+<div class="ac-actions">
+<button class="hm-btn" id="nomSave" type="submit">Save nominee</button>
+<button class="hm-btn is-quiet" id="nomCancel" type="button">Cancel</button>
+<button class="hm-btn is-quiet ac-remove" hidden id="nomRemove" type="button">Remove nominee</button>
+</div>
+</form>
+<p class="ac-small">To withdraw consent for your whole account, use <a class="msg-link" href="#deleteCard">Delete my account</a> below. Extra uses have their own switch: cookie settings, the weekly email on Home, and notifications in your browser.</p>
+</section>
 <section class="hm-card ac-card" id="cookieCard">
 <div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">cookie</span>Cookies on this device</h2></div>
 <p class="ac-text">Essential cookies keep you logged in. You choose whether this browser also remembers your settings and helps us count visits. <a class="msg-link" href="cookies.html">Read the cookie policy</a></p>
@@ -119,7 +149,7 @@
 <p>You have been logged out. Everything will be erased on <strong id="deleteDate"></strong>. If you change your mind, log in again before then.</p>
 <a class="hm-btn" href="index.html">Go to the home page</a>
 </section>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a></div></div></footer>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a></div></div></footer>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">

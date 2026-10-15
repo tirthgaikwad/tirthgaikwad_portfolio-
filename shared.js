@@ -198,7 +198,7 @@ window.renderAppHeader = function() {
 // Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
 // Opportunities and College Hub are not tabs of their own: Home shows what is new in both and links to them
 // Pages anyone may read without logging in; an expired login does not send them to login.html
-const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html', 'cookies.html'];
+const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'support.html', 'cookies.html'];
 
 const TABBAR_ITEMS = [
     { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html'] },
@@ -546,6 +546,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const profile = await res.json();
             window.applyHeaderProfile(profile);
             try { localStorage.setItem(headerCacheKey, JSON.stringify(profile)); } catch (e) { /* storage unavailable */ }
+            if (profile.consent_needed) showPrivacyNotice(headerCacheKey);
         }
     } catch (err) {
         console.error("Shared.js: Error fetching user profile for header:", err);
@@ -553,6 +554,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initNotifications(currentUserId);
 });
+
+// DPDP Act 2023: a member who agreed to an older privacy notice (or signed up before there was one) is asked on every
+// page until they agree. It uses the cookie banner's look and waits until that banner is answered (cookies.js).
+function showPrivacyNotice(headerCacheKey) {
+    if (IN_CALL_DOCK || document.getElementById('dpNotice')) return;
+    const show = () => {
+        if (document.getElementById('dpNotice')) return;
+        const box = document.createElement('section');
+        box.id = 'dpNotice';
+        box.className = 'ck-banner';
+        box.setAttribute('role', 'region');
+        box.setAttribute('aria-label', 'Privacy notice updated');
+        box.innerHTML = `<h2>We updated our privacy notice</h2>
+            <p>Connect2Minds now follows India's Digital Personal Data Protection Act, 2023. Read what we keep, why, and
+            <a href="dpdp.html">your rights</a>, then agree to keep using the site with your data as described.</p>
+            <div class="ck-actions"><a class="ck-btn is-link" href="dpdp.html">Read the notice</a>
+            <button type="button" class="ck-btn is-primary" data-dp-agree>I agree</button></div>`;
+        box.querySelector('[data-dp-agree]').addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/api/me/consent`, { method: 'POST', credentials: 'include' });
+                if (!res.ok) throw new Error();
+                box.remove();
+                try {
+                    const cached = JSON.parse(localStorage.getItem(headerCacheKey));
+                    if (cached) localStorage.setItem(headerCacheKey, JSON.stringify({ ...cached, consent_needed: false }));
+                } catch (e) { /* storage unavailable */ }
+                if (window.currentUserProfile) window.currentUserProfile.consent_needed = false;
+                document.dispatchEvent(new CustomEvent('privacyconsent'));
+            } catch (e) {
+                button.disabled = false;
+                button.textContent = 'Try again';
+            }
+        });
+        document.body.appendChild(box);
+    };
+    // cookies.js is added by this file and may not have run yet
+    let tries = 0;
+    const wait = () => {
+        const consent = window.CookieConsent;
+        if (consent && !consent.chosen()) return document.addEventListener('cookieconsent', show, { once: true });
+        if (consent || ++tries > 20) return show();
+        setTimeout(wait, 150);
+    };
+    wait();
+}
 
 // ==========================================
 // 4. NOTIFICATION BELL (the header bell and its slide-over panel, on every page)

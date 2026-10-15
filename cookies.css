@@ -5,6 +5,7 @@
 .ck-banner h2 { margin: 0 0 4px; font: 700 16px/22px 'Plus Jakarta Sans', Inter, system-ui, sans-serif; color: #0b1c30; }
 .ck-banner p { margin: 0; color: #464555; }
 .ck-banner a, .ck-dialog a { color: #3525cd; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.ck-banner a.ck-btn { display: inline-flex; align-items: center; text-decoration: none; }   /* the DPDP notice in shared.js */
 .ck-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
 .ck-btn { appearance: none; min-height: 40px; padding: 8px 16px; border-radius: 10px; border: 1px solid #c7c4d8; background: #fff; color: #0b1c30;

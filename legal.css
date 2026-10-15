@@ -53,8 +53,30 @@
 .lg-table td:nth-child(2) { width: 15%; white-space: nowrap; }
 .lg-table code { font: 600 12px/18px ui-monospace, 'Cascadia Mono', Consolas, monospace; color: #0b1c30; word-break: break-word; }
 
+/* DPDP Act page (dpdp.html): four facts at the top, the rights table, the Grievance Officer box */
+.lg-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.lg-facts > div { display: grid; gap: 4px; align-content: start; }
+.lg-facts .material-symbols-outlined { font-size: 22px; color: #3525cd; width: 38px; height: 38px; border-radius: 10px; background: #eff4ff; display: grid; place-items: center; margin-bottom: 4px; }
+.lg-facts strong { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; line-height: 20px; }
+.lg-facts p { margin: 0; font-size: 13px; line-height: 19px; }
+.lg-doc + .lg-summary, .lg-summary + .lg-doc { margin-top: 16px; }
+.lg-table td:first-child:nth-last-child(2) { width: 38%; }   /* two-column tables (dpdp.html's notice) */
+.lg-table td:first-child:nth-last-child(2) + td { width: auto; white-space: normal; }
+.lg-rights td:first-child { width: 34%; }
+.lg-rights td:nth-child(2) { width: 13%; }
+.lg-officer { border: 1px solid #c3c0ff; background: linear-gradient(180deg, #f6f5ff, #fff); }
+.lg-contact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 4px 0 0; }
+.lg-contact dt { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #777587; }
+.lg-contact dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; color: #0b1c30; word-break: break-word; }
+.lg-fineprint { margin: 16px 4px 0; font-size: 12px; line-height: 18px; color: #777587; }
+
+@media (max-width: 1023px) {
+  .lg-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 767px) {
   .lg-row { grid-template-columns: 1fr; }
+  .lg-facts, .lg-contact { grid-template-columns: 1fr; }
   .lg-choice { flex-direction: column; align-items: stretch; }
   .lg-table thead { display: none; }
   .lg-table table, .lg-table tbody, .lg-table tr, .lg-table td { display: block; width: auto !important; }
