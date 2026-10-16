@@ -22,9 +22,21 @@ if (IN_CALL_DOCK) {
     }, true);
 }
 
+// Pages anyone may read without logging in; an expired login does not send them to login.html
+const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'support.html', 'cookies.html'];
+const CURRENT_PAGE = window.location.pathname.split('/').pop();
+
+// Members-only pages: someone who is not logged in goes to log in (or sign up) first, before the page draws anything.
+// This file runs in <head>, so they never see the page. login.html?next= brings them back here afterwards.
+const LEAVING_FOR_LOGIN = !IN_CALL_DOCK && !PUBLIC_PAGES.includes(CURRENT_PAGE) && !localStorage.getItem('currentUserId');
+if (LEAVING_FOR_LOGIN) {
+    document.documentElement.style.visibility = 'hidden';
+    window.location.replace(`login.html?next=${encodeURIComponent(CURRENT_PAGE + window.location.search + window.location.hash)}`);
+}
+
 // The cookie banner (cookies.js) and the helper bot (helpbot.js) on every page that loads this file; not inside the
 // call dock, whose outer page has them. In this order: cookies.js decides what the helper may keep in browser storage.
-if (!IN_CALL_DOCK) {
+if (!IN_CALL_DOCK && !LEAVING_FOR_LOGIN) {
     for (const name of ['cookies', 'helpbot']) {
         if (document.querySelector(`script[src$="${name}.js"]`)) continue;
         const css = document.createElement('link');
@@ -41,7 +53,9 @@ if (!IN_CALL_DOCK) {
 // Going to the login page from inside the dock leaves the whole site page, ending the call properly
 window.goToLogin = function() {
     if (IN_CALL_DOCK && window.top.CallDock) return window.top.CallDock.leaveTo('login.html');
-    window.location.href = 'login.html';
+    // Come back to this page after logging in again
+    const here = CURRENT_PAGE + window.location.search + window.location.hash;
+    window.location.href = PUBLIC_PAGES.includes(CURRENT_PAGE) ? 'login.html' : `login.html?next=${encodeURIComponent(here)}`;
 };
 
 // Escape user-supplied text before placing it in innerHTML or an HTML attribute
@@ -197,8 +211,6 @@ window.renderAppHeader = function() {
 
 // Phones: the five most used pages as a bar at the bottom of the screen (shown by mobile.css below 768px)
 // Opportunities and College Hub are not tabs of their own: Home shows what is new in both and links to them
-// Pages anyone may read without logging in; an expired login does not send them to login.html
-const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'support.html', 'cookies.html'];
 
 const TABBAR_ITEMS = [
     { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html'] },

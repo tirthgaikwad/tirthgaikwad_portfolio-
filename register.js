@@ -817,6 +817,13 @@
     if (e.target === input.consent && input.consent.checked) setFieldError(input.consent, '');
   });
 
+  // Sent here from a members-only page (login.html?next=): keep it, and open it once the account is made
+  byId('loginLink').href = withNext('login.html');
+  if (NEXT_PAGE) {
+    byId('doneGo').href = NEXT_PAGE;
+    byId('doneGo').firstElementChild.textContent = `Continue to ${nextPageName().replace(/^the /, '')}`;
+  }
+
   syncAccountType();
   syncPassword();
   renderSkills();

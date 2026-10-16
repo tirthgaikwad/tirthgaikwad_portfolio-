@@ -8,6 +8,24 @@ const API_BASE = `${window.location.protocol}//${window.location.hostname || '12
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ALERT_ICON = '<svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>';
 
+// login.html?next=board.html: the page someone opened before being asked to log in (landing page links, shared.js).
+// Only a plain page of this site is accepted, so the link cannot send people elsewhere.
+const NEXT_PAGE = (() => {
+  const next = new URLSearchParams(window.location.search).get('next') || '';
+  if (!/^[a-z0-9_-]+\.html(?:[?#][\w=&%.#-]*)?$/i.test(next) || /^(login|register|index)\.html/i.test(next)) return '';
+  return next;
+})();
+const PAGE_NAMES = {
+  'home.html': 'Home', 'search.html': 'Discover Talent', 'board.html': 'the Opportunities Board', 'college.html': 'Campus Network',
+  'network.html': 'My Network', 'saved.html': 'Saved Profiles', 'team.html': 'My Teams', 'project_management.html': 'Project Hub',
+  'research.html': 'Research Collab', 'inbox.html': 'Messages', 'study.html': 'My Study', 'notes.html': 'Notes and papers',
+  'practice.html': 'Daily practice', 'resume.html': 'the Resume builder', 'college-hub.html': 'College Hub', 'professionals.html': 'Professionals',
+  'profile.html': 'that profile', 'account.html': 'Account & privacy', 'pricing.html': 'Plans'
+};
+const nextPageName = () => PAGE_NAMES[NEXT_PAGE.split(/[?#]/)[0]] || 'that page';
+// A link to the other auth page that keeps ?next= along
+const withNext = (href) => NEXT_PAGE ? `${href}?next=${encodeURIComponent(NEXT_PAGE)}` : href;
+
 // ==========================================
 // 1. TALKING TO THE SERVER
 // ==========================================

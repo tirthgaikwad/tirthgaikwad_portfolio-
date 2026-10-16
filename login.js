@@ -8,7 +8,8 @@
   const notice = byId('loginNotice');
   const forms = { user: byId('loginForm'), admin: byId('adminLoginForm') };
   const MODE_TEXT = {
-    user: { title: 'Log in', lead: 'Use the roll number or ID you signed up with.' },
+    // Sent here from a members-only page (landing page links, shared.js): say which one
+    user: { title: 'Log in', lead: NEXT_PAGE ? `Log in or sign up to open ${nextPageName()}.` : 'Use the roll number or ID you signed up with.' },
     admin: { title: 'Admin access', lead: 'For Connect2Minds admins. Enter your admin name and secure code.' }
   };
 
@@ -90,7 +91,7 @@
       (data) => {
         localStorage.setItem('currentUserId', data.user_id);
         localStorage.setItem('userRole', data.is_admin ? 'admin' : 'user');
-        return 'home.html';
+        return NEXT_PAGE || 'home.html';
       });
   });
 
@@ -108,6 +109,60 @@
       });
   });
 
+  // ==========================================
+  // 3. ALREADY LOGGED IN ON THIS BROWSER
+  // ==========================================
+  // Nobody goes into the app from the landing page without choosing: an existing login is offered, not used silently
+  async function offerExistingLogin() {
+    const done = () => document.documentElement.classList.remove('checking-login');
+    if (!localStorage.getItem('currentUserId') || window.location.hash === '#admin') return done();
+    let me = null;
+    try {
+      const res = await fetch(`${API_BASE}/api/me`, { credentials: 'include' });
+      if (res.status === 401) localStorage.removeItem('currentUserId');
+      if (res.ok) me = await res.json();
+    } catch (err) { /* offline: just show the form */ }
+    if (me && me.id) {
+      const name = me.name || 'your account';
+      byId('whoName').textContent = name;
+      byId('whoSub').textContent = me.college_name || '';
+      const avatar = byId('whoAvatar');
+      const pic = String(me.profile_pic || '').trim();
+      if (pic) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = pic.startsWith('/') ? API_BASE + pic : pic;
+        img.onerror = () => { avatar.textContent = initials(name); };
+        avatar.replaceChildren(img);
+      } else {
+        avatar.textContent = initials(name);
+      }
+      const go = byId('continueBtn');
+      go.href = NEXT_PAGE || 'home.html';
+      go.firstElementChild.textContent = `Continue as ${name.split(/\s+/)[0]}`;
+      byId('loginTitle').textContent = 'Welcome back';
+      byId('loginDesc').textContent = NEXT_PAGE ? `You are already logged in. Continue to ${nextPageName()}, or use another account.` : 'You are already logged in on this browser.';
+      modeSwitch.hidden = true;
+      forms.user.hidden = true;
+      byId('signedIn').hidden = false;
+    }
+    done();
+  }
+
+  function initials(name) {
+    return name.split(/\s+/).filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase() || '?';
+  }
+
+  byId('otherAccountBtn').addEventListener('click', () => {
+    byId('signedIn').hidden = true;
+    modeSwitch.hidden = false;
+    setMode('user', true);
+  });
+
+  byId('signupPrompt').querySelector('a').href = withNext('register.html');
+
   // login.html#admin opens straight on the admin tab
   if (window.location.hash === '#admin') setMode('admin', false);
+  else if (NEXT_PAGE) byId('loginDesc').textContent = MODE_TEXT.user.lead;
+  offerExistingLogin();
 })();

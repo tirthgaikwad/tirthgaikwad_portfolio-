@@ -514,4 +514,17 @@
   // 8. THE 3D NETWORK BEHIND THE HERO (drawn by network3d.js)
   // ==========================================
   if (window.startNetwork) window.startNetwork(byId('heroNet'), { fadeOnScroll: true });
+
+  // ==========================================
+  // 9. LINKS INTO THE APP GO THROUGH LOG IN
+  // ==========================================
+  // This page always shows Log in and Sign up, so its links to members-only pages (feature cards, footer) open the
+  // login page first. Someone already logged in on this browser is asked there whether to continue as themselves.
+  const OPEN_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'cookies.html', 'support.html'];
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    const page = href.split(/[?#]/)[0];
+    if (!/^[a-z0-9_-]+\.html$/i.test(page) || OPEN_PAGES.includes(page)) return;
+    link.setAttribute('href', `login.html?next=${encodeURIComponent(href)}`);
+  });
 })();
