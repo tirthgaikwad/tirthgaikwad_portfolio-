@@ -163,8 +163,23 @@
     profession: byId('professionInput'), experience: byId('experienceYears'),
     college: byId('collegeInput'), dept: byId('deptInput'), city: byId('location'),
     barcode: byId('idBarcode'), idFile: byId('idImageUpload'), portfolio: byId('portfolioLink'), invite: byId('inviteCode'),
-    skill: byId('skillInput'), bio: byId('bio'), consent: byId('consentBox')
+    skill: byId('skillInput'), bio: byId('bio'), consent: byId('consentBox'),
+    birth: byId('birthDate'), guardian: byId('guardianEmail')
   };
+
+  // Age (DPDP Act 2023 Section 9): under 13 cannot sign up, 13 to 17 need a parent's or guardian's email
+  const MIN_AGE = 13, ADULT_AGE = 18;
+  function ageFrom(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+    const birth = new Date(`${value}T00:00:00`), now = new Date();
+    if (isNaN(birth)) return null;
+    return now.getFullYear() - birth.getFullYear() - ((now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) ? 1 : 0);
+  }
+  input.birth.max = new Date().toISOString().slice(0, 10);
+  input.birth.addEventListener('change', () => {
+    const age = ageFrom(input.birth.value);
+    byId('guardianField').hidden = !(age !== null && age >= MIN_AGE && age < ADULT_AGE);
+  });
 
   let step = 0;
   let reached = 0;        // the furthest step opened so far; the stepper lets you jump back to any of them
@@ -628,6 +643,14 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.value.trim())) wrong.push([input.email, 'Enter a valid email address.']);
       if (!input.roll.value.trim()) wrong.push([input.roll, isStudent() ? 'Enter your roll or enrollment number.' : 'Enter a username or ID.']);
       if (input.password.value.length < MIN_PASSWORD) wrong.push([input.password, `Use at least ${MIN_PASSWORD} characters.`]);
+      const age = ageFrom(input.birth.value);
+      if (age === null || age < 0 || age > 120) wrong.push([input.birth, 'Enter your date of birth.']);
+      else if (age < MIN_AGE) wrong.push([input.birth, `Connect2Minds is for people aged ${MIN_AGE} and over.`]);
+      else if (age < ADULT_AGE) {
+        const guardian = input.guardian.value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guardian)) wrong.push([input.guardian, "Enter your parent's or guardian's email."]);
+        else if (guardian.toLowerCase() === input.email.value.trim().toLowerCase()) wrong.push([input.guardian, 'This has to be different from your own email.']);
+      }
       return wrong;
     },
     () => {
@@ -748,6 +771,8 @@
       skills: skills.join(', '),
       bio: input.bio.value.trim(),
       consent: input.consent.checked,
+      birth_date: input.birth.value,
+      guardian_email: byId('guardianField').hidden ? '' : input.guardian.value.trim(),
       account_type: accountType(),
       id_barcode: student ? (input.barcode.value.trim() || null) : null,
       id_card_image: student ? idPhoto : '',
@@ -784,6 +809,8 @@
     // The server has already set the login cookie, so the new member goes straight in
     localStorage.setItem('currentUserId', result.data.user_id);
     localStorage.setItem('userRole', 'user');
+    // Under 18: the account waits for the guardian (guardian.html explains and can send the link again)
+    if (result.data.guardian_needed) { window.location.href = 'guardian.html'; return; }
     showDone(payload.name, result.data.status);
   }
 

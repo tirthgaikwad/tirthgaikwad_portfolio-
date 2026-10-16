@@ -1,9 +1,8 @@
 import os
 from dotenv import load_dotenv
 from sqlalchemy.engine import make_url
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 
 load_dotenv()
 
@@ -31,19 +30,16 @@ engine = create_async_engine(
 )
 
 # AsyncSession is mandatory for handling high-traffic concurrency
-SessionLocal = sessionmaker(
-    autocommit=False,
+SessionLocal = async_sessionmaker(
     autoflush=False,
     bind=engine,
-    class_=AsyncSession,
     expire_on_commit=False
 )
 
 # Each statement commits on its own: no BEGIN/COMMIT round trips to the remote database.
 # Use for reads and for single-statement writes; use SessionLocal when several writes must succeed together.
-AutocommitSession = sessionmaker(
+AutocommitSession = async_sessionmaker(
     bind=engine.execution_options(isolation_level="AUTOCOMMIT"),
-    class_=AsyncSession,
     expire_on_commit=False
 )
 

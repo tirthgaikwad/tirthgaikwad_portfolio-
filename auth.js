@@ -4,7 +4,8 @@
 // the Caps Lock hint and the 3D network on the picture side.
 // These two pages do not load shared.js, so the server address is repeated here.
 // ==========================================
-const API_BASE = `${window.location.protocol}//${window.location.hostname || '127.0.0.1'}:8000`;
+// The API: port 8000 on this computer; hosted, the same address as the pages (or window.C2M_API_BASE). See DEPLOY.md.
+const API_BASE = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? `${location.protocol}//${location.hostname || '127.0.0.1'}:8000` : location.origin);
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ALERT_ICON = '<svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>';
 

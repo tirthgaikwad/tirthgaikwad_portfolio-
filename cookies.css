@@ -54,3 +54,11 @@
 }
 @media print { .ck-banner, .ck-toast { display: none !important; } }
 @media (prefers-reduced-motion: reduce) { .ck-banner { animation: none; } .ck-btn, .ck-switch span, .ck-switch span::after { transition: none; } }
+
+/* The date-of-birth question for older accounts (shared.js showBirthDateAsk) */
+.ck-dob { display: grid; gap: 10px; margin-top: 10px; }
+.ck-dob label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: #0b1c30; }
+.ck-dob label[hidden] { display: none; }
+.ck-dob input { font: 400 16px Inter, system-ui, sans-serif; padding: 8px 10px; border: 1px solid #c7c4d8; border-radius: 8px; background: #fff; color: #0b1c30; }
+.ck-dob-error { margin: 0; font-size: 13px; color: #ba1a1a; }
+.ck-dob-error[hidden] { display: none; }

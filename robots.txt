@@ -1,0 +1,20 @@
+# Members' pages need a login and are not useful to search engines; uploads are people's files.
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /pricing.html
+Allow: /privacy.html
+Allow: /dpdp.html
+Allow: /terms.html
+Allow: /cookies.html
+Allow: /refund.html
+Allow: /copyright.html
+Allow: /contact.html
+Allow: /support.html
+Allow: /register.html
+Allow: /login.html
+Disallow: /static/uploads/
+Disallow: /api/
+Disallow: /*.html
+
+Sitemap: https://connect2minds.in/sitemap.xml

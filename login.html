@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"><link rel="icon" href="favicon.svg" type="image/svg+xml"/><link rel="icon" href="favicon.ico" sizes="48x48"/><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/><link rel="manifest" href="site.webmanifest"/><meta name="description" content="Log in to Connect2Minds."/><meta property="og:type" content="website"/><meta property="og:site_name" content="Connect2Minds"/><meta property="og:title" content="Connect2Minds | Log in"/><meta property="og:description" content="Log in to Connect2Minds."/><meta property="og:image" content="https://connect2minds.in/icons/og-image.png"/><meta name="twitter:card" content="summary_large_image"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connect2Minds | Log in</title>
     <meta name="theme-color" content="#05060f">
@@ -33,6 +33,8 @@
         .remember { display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 15px; color: var(--ink-2); cursor: pointer; }
         .remember input { width: 18px; height: 18px; margin: 0; accent-color: var(--indigo); cursor: pointer; }
         .remember + .hint { margin-top: 4px; padding-left: 28px; }
+        .forgot { display: block; margin-top: 8px; text-align: right; font-size: 14px; }
+        .code-input { letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
 
         /* Already logged in on this browser (login.js): continue, or use another account */
         .signed-in { display: grid; gap: 12px; margin-bottom: 8px; }
@@ -138,6 +140,7 @@
                             <button class="peek" type="button" data-for="password" aria-label="Show" aria-pressed="false"><svg class="icon"><use href="#i-eye"/></svg></button>
                         </div>
                         <p class="hint warn" id="passwordCaps" hidden>Caps Lock is on.</p>
+                        <a class="text-link forgot" id="forgotLink" href="reset.html">Forgot password?</a>
                     </div>
                     <label class="remember" for="rememberMe">
                         <input type="checkbox" id="rememberMe" aria-describedby="rememberHint">
@@ -145,6 +148,20 @@
                     </label>
                     <p class="hint" id="rememberHint">Leave this off on a shared or college computer: you are logged out when the browser closes.</p>
                     <button type="submit" class="btn btn-primary btn-block"><span>Log in</span><svg class="icon icon-arrow"><use href="#i-arrow"/></svg></button>
+                </form>
+
+                <!-- TWO-STEP LOGIN: the code from the authenticator app, after the password (section 31 of main.py) -->
+                <form id="twoFactorForm" novalidate hidden>
+                    <div class="field">
+                        <label for="totpCode">Code from your authenticator app</label>
+                        <div class="control">
+                            <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+                            <input type="text" id="totpCode" class="code-input" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false">
+                        </div>
+                        <p class="hint">Lost your phone? Type one of your backup codes instead (like abcde-12345).</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block"><span>Verify and log in</span><svg class="icon icon-arrow"><use href="#i-arrow"/></svg></button>
+                    <button type="button" class="btn btn-ghost btn-block" id="twoFactorBack"><span>Back</span></button>
                 </form>
 
                 <!-- ADMIN LOGIN -->
@@ -164,6 +181,13 @@
                             <button class="peek" type="button" data-for="adminCode" aria-label="Show" aria-pressed="false"><svg class="icon"><use href="#i-eye"/></svg></button>
                         </div>
                         <p class="hint warn" id="adminCaps" hidden>Caps Lock is on.</p>
+                    </div>
+                    <div class="field" id="adminTotpField" hidden>
+                        <label for="adminTotp">Code from your authenticator app</label>
+                        <div class="control">
+                            <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+                            <input type="text" id="adminTotp" class="code-input" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false">
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block"><span>Open admin access</span><svg class="icon icon-arrow"><use href="#i-arrow"/></svg></button>
                 </form>

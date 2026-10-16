@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/>
+<html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="favicon.svg" type="image/svg+xml"/><link rel="icon" href="favicon.ico" sizes="48x48"/><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/><link rel="manifest" href="site.webmanifest"/><meta name="theme-color" content="#3525cd"/>
 <title>Connect2Minds | Opportunities Board</title>
 <script>
 // Ask for the board right away, while styles and scripts are still downloading. board.js picks up the result.
 (function () {
   if (!localStorage.getItem('currentUserId')) return;
-  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  var apiBase = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000' : location.origin);
   window.__boardPrefetch = fetch(apiBase + '/api/board', { credentials: 'include' })
     .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
     .catch(function () { return null; });

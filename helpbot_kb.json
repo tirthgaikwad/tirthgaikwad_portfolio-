@@ -65,22 +65,23 @@
    "id": "forgot-password",
    "title": "I forgot my password",
    "audience": "all",
-   "page": "support.html",
+   "page": "reset.html",
    "keywords": [
     "forgot password",
     "reset password",
     "lost password",
-    "change password",
     "cant login",
     "can't log in",
     "locked out",
-    "password reset"
+    "password reset",
+    "forgot my password",
+    "reset link"
    ],
-   "answer": "There is no automatic reset yet. Send a message from the Support page with your roll number and the email on your account, and the team will help you get back in.",
+   "answer": "Press “Forgot password?” on the Log in page and type your roll number, ID or email. We email a link that works once for 30 minutes; choosing a new password logs out every other device. If your account has no email or nothing arrives, write to Support with your roll number and the team can send you a link.",
    "highlight": [
     {
-     "sel": "#supportForm",
-     "text": "Pick “Logging in”, add your roll number and send."
+     "sel": "#askForm",
+     "text": "Type your roll number, ID or email here."
     }
    ]
   },
@@ -500,7 +501,7 @@
     "harassing",
     "abusive"
    ],
-   "answer": "Open the chat and use the menu at the top right: mute stops its notifications, block stops messages and calls both ways, archive moves it out of the list, and clear empties it for you only. To report someone, write to Support.",
+   "answer": "Open the chat and use the menu at the top right: mute stops its notifications, block stops messages and calls both ways, archive moves it out of the list, and clear empties it for you only. “Report user” in the same menu tells the Connect2Minds team.",
    "highlight": [
     {
      "sel": "#chat-actions-btn",
@@ -1646,6 +1647,202 @@
     "language"
    ],
    "answer": "Press the microphone in this panel and speak; switch on “Read answers aloud” to hear replies. Voice works in Chrome, Edge and Safari. You can also just type."
+  },
+  {
+   "id": "report",
+   "title": "Report a person, message or post",
+   "audience": "member",
+   "page": "profile.html",
+   "keywords": [
+    "report",
+    "report user",
+    "report someone",
+    "report a message",
+    "report post",
+    "report profile",
+    "report team",
+    "fake profile",
+    "harassment",
+    "abuse",
+    "abusive",
+    "inappropriate",
+    "flag",
+    "complain about someone",
+    "scam",
+    "spam account",
+    "bullying"
+   ],
+   "answer": "Press Report on a profile (under the Message and Follow buttons), the flag on a message in Messages, Teams or College Hub, the flag on an opportunity, or “Report this team” in team settings. Pick what is wrong and send. We acknowledge every report within 24 hours, decide within 15 days and tell you the result in your notifications. Only our team sees who reported. If someone is in danger, call 112."
+  },
+  {
+   "id": "change-password",
+   "title": "Change my password or log out other devices",
+   "audience": "member",
+   "page": "account.html",
+   "keywords": [
+    "change password",
+    "new password",
+    "update password",
+    "log out everywhere",
+    "log out all devices",
+    "logout other devices",
+    "someone else logged in",
+    "hacked",
+    "account hacked",
+    "signed in somewhere else"
+   ],
+   "answer": "Open Account & privacy from the menu under your picture. In “Password and devices” press Change password (you need the current one), or “Log out of all other devices” if you think someone else is using your account. Both keep this device logged in.",
+   "highlight": [
+    {
+     "sel": "#securityCard",
+     "text": "Change your password or log out other devices here."
+    }
+   ]
+  },
+  {
+   "id": "two-step",
+   "title": "Two-step login (authenticator app)",
+   "audience": "member",
+   "page": "account.html",
+   "keywords": [
+    "two step",
+    "two-step",
+    "2fa",
+    "two factor",
+    "two-factor",
+    "authenticator",
+    "google authenticator",
+    "otp app",
+    "login code",
+    "backup codes",
+    "lost my phone",
+    "security code"
+   ],
+   "answer": "Two-step login asks for a 6-digit code from an authenticator app after your password. Turn it on in Account & privacy: type your password, scan the QR code with Google Authenticator, Microsoft Authenticator or Authy, type the code, then save the 10 backup codes. Lost your phone? Log in with a backup code, then turn two-step login off and on again.",
+   "highlight": [
+    {
+     "sel": "#twoFactorCard",
+     "text": "Turn two-step login on here."
+    }
+   ]
+  },
+  {
+   "id": "verify-email",
+   "title": "Confirm my email address",
+   "audience": "member",
+   "page": "account.html",
+   "keywords": [
+    "confirm email",
+    "verify email",
+    "email code",
+    "change email",
+    "add email",
+    "email not verified",
+    "wrong email",
+    "update email"
+   ],
+   "answer": "In Account & privacy, the Email address card sends a 6-digit code to your email; type it there to confirm. “Use another email” changes the address the same way. A confirmed college email (.edu.in or .ac.in) also verifies a waiting student account.",
+   "highlight": [
+    {
+     "sel": "#emailCard",
+     "text": "Send yourself a code here."
+    }
+   ]
+  },
+  {
+   "id": "age",
+   "title": "Age, under 18 and parent consent",
+   "audience": "all",
+   "page": "dpdp.html",
+   "keywords": [
+    "age",
+    "date of birth",
+    "birthday",
+    "under 18",
+    "minor",
+    "child",
+    "parent consent",
+    "guardian",
+    "parental consent",
+    "too young",
+    "17 years old",
+    "school student"
+   ],
+   "answer": "Connect2Minds is for people aged 13 and over. Sign-up asks your date of birth; if you are under 18 you also give a parent's or guardian's email and we send them a link to agree, as India's DPDP Act requires. Until they agree your account is hidden and you cannot post or message; if they say no, the account is erased. We never count children's visits and recruiters cannot find them.",
+   "highlight": [
+    {
+     "sel": "#children",
+     "text": "How children's data is handled."
+    }
+   ]
+  },
+  {
+   "id": "refund",
+   "title": "Refunds and cancelling a plan",
+   "audience": "all",
+   "page": "refund.html",
+   "keywords": [
+    "refund",
+    "money back",
+    "cancel plan",
+    "cancel subscription",
+    "cancellation",
+    "charged twice",
+    "double charged",
+    "paid but not active",
+    "return money"
+   ],
+   "answer": "Plans never renew by themselves, so there is nothing to cancel to stop charges; a plan simply ends on its date. You can get a refund within 7 days of paying if you have not used the paid features, and always if you were charged twice or the plan never switched on. Write to Support with the receipt number; approved refunds reach your card, UPI or bank in 5 to 7 working days."
+  },
+  {
+   "id": "contact",
+   "title": "Contact Connect2Minds",
+   "audience": "all",
+   "page": "contact.html",
+   "keywords": [
+    "contact",
+    "contact us",
+    "phone number",
+    "email address of company",
+    "address",
+    "office",
+    "company details",
+    "gstin",
+    "who runs",
+    "grievance officer",
+    "complaint"
+   ],
+   "answer": "The Contact us page lists the business name, address, email and phone, and the Grievance Officer for complaints about content, the service, payments or your data. For help with your account the Support form is quickest.",
+   "highlight": [
+    {
+     "sel": "#grievance",
+     "text": "The Grievance Officer for complaints."
+    }
+   ]
+  },
+  {
+   "id": "copyright",
+   "title": "Copyright and taking down my work",
+   "audience": "all",
+   "page": "copyright.html",
+   "keywords": [
+    "copyright",
+    "takedown",
+    "take down",
+    "my notes were copied",
+    "stolen notes",
+    "plagiarism",
+    "someone uploaded my work",
+    "intellectual property",
+    "dmca"
+   ],
+   "answer": "If your work was posted without permission, send the takedown form on the Copyright page: where it is, what your work is, and a good-faith statement. We acknowledge within 24 hours and remove complete requests within 36 hours. If your post was taken down by mistake, appeal through Support.",
+   "highlight": [
+    {
+     "sel": "#takedown",
+     "text": "Send a takedown request here."
+    }
+   ]
   },
   {
    "id": "helper-can-do",

@@ -17,7 +17,7 @@
   const IN_DOCK = !!(window.frameElement && window.frameElement.id === 'dockFrame');
   const CONSENT = 'c2m_consent', VISITOR = 'c2m_vid', VERSION = 'v1';
   const KEEP_DAYS = 180, VISITOR_DAYS = 365;
-  const API = `${location.protocol}//${location.hostname || '127.0.0.1'}:8000`;
+  const API = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? `${location.protocol}//${location.hostname || '127.0.0.1'}:8000` : location.origin);
   const PAGE = location.pathname.split('/').pop() || 'index.html';
   const SECURE = location.protocol === 'https:' ? '; Secure' : '';
 

@@ -702,6 +702,7 @@ function directBubbleHtml(msg, contact, animate) {
         <div class="msg-bubble px-4 py-2.5 rounded-2xl rounded-bl-xs bg-surface-container-lowest border border-outline-variant/20 shadow-xs text-on-surface text-body-md whitespace-pre-wrap break-words" data-msg-id="${msg.id || ''}">${contentHtml}</div>
         <div class="flex items-center gap-1 ml-1 mt-1">
           <span class="font-label-sm text-[10px] text-outline">${formatClock(msg.timestamp)}</span>
+          ${reportButtonHtml('message', msg.id, contact.name)}
         </div>
       </div>
     </div>`;
@@ -1236,8 +1237,23 @@ function directMenuItems() {
     { icon: isArchived ? 'unarchive' : 'archive', label: isArchived ? 'Unarchive chat' : 'Archive chat', action: 'toggleArchive()' },
     { icon: 'delete_sweep', label: 'Clear chat history', action: 'clearChatHistory()' },
     'divider',
+    { icon: 'flag', label: 'Report user', action: 'reportActiveContact()', danger: true },
     { icon: 'block', label: isBlocked ? 'Unblock user' : 'Block user', action: 'toggleBlock()', danger: true }
   ];
+}
+
+// Report the person of the open chat (openReportDialog in chat-common.js); offers to block them too
+function reportActiveContact() {
+  const contactId = activeContactId;
+  if (!contactId || !contacts[contactId]) return;
+  const alreadyBlocked = chatActionsState.blocked.includes(contactId);
+  openReportDialog({ kind: 'user', id: contactId, name: contacts[contactId].name, onBlock: alreadyBlocked ? null : async () => {
+    const data = await api(`/api/users/${contactId}/block`, { method: 'POST' });
+    chatActionsState.blocked = chatActionsState.blocked.filter(id => id !== contactId);
+    if (data.status === 'blocked') chatActionsState.blocked.push(contactId);
+    updateComposerState();
+    if (activeContactId === contactId) updateInfoPanel();
+  } });
 }
 
 async function toggleMute() {
@@ -1621,6 +1637,7 @@ function teamBubbleHtml(msg, animate) {
           <div class="flex items-center gap-1 ml-1 mt-1">
             <span class="font-label-sm text-[10px] text-outline">${formatClock(msg.timestamp)}</span>
             ${msg.id && canDeleteTeamMessage(msg) ? sentActionsHtml(msg, 'group') : ''}
+            ${reportButtonHtml('team_message', msg.id, msg.sender_name)}
           </div>
         </div>
       </div>

@@ -15,7 +15,7 @@
   window.__helpbot = true;
   if (window.frameElement && window.frameElement.id === 'dockFrame') return;   // inside the call dock: the outer page has the helper
 
-  const API = `${location.protocol}//${location.hostname || '127.0.0.1'}:8000`;
+  const API = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? `${location.protocol}//${location.hostname || '127.0.0.1'}:8000` : location.origin);
   const PAGE = location.pathname.split('/').pop() || 'index.html';
   const UID = parseInt(localStorage.getItem('currentUserId'), 10) || null;
   const MEMBER = !!UID;

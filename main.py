@@ -4,10 +4,13 @@ import json
 import base64
 import uuid
 import hmac
+import hashlib
+import secrets
 import math
 import asyncio
 import urllib.request
 import urllib.error
+import urllib.parse
 import httpx
 import html
 import struct
@@ -18,6 +21,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.fernet import Fernet
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Response, File, UploadFile, WebSocket, WebSocketDisconnect
@@ -26,7 +30,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, NoReturn
 import bcrypt
 import jwt
 from datetime import datetime, timedelta, timezone
@@ -103,6 +107,19 @@ class DBUser(Base):
     # Section 30 (DPDP Act 2023): which privacy notice the person agreed to, and when
     consent_version = Column(String, default="")
     consent_at = Column(String, default="")
+    # Section 31: login safety, email check, age, moderation, terms
+    token_version = Column(Integer, default=0)       # raised to end every login of the person
+    email_verified = Column(Integer, default=0)
+    email_verified_at = Column(String, default="")
+    totp_secret = Column(String, default="")         # two-step login secret, encrypted (seal_secret)
+    totp_enabled = Column(Integer, default=0)
+    birth_date = Column(String, default="")          # YYYY-MM-DD
+    guardian_email = Column(String, default="")
+    guardian_status = Column(String, default="")     # "", pending, approved, declined
+    guardian_consent_at = Column(String, default="")
+    suspended = Column(Integer, default=0)
+    suspend_reason = Column(String, default="")
+    terms_version = Column(String, default="")
 
 class DBAdminRequest(Base):
     __tablename__ = "admin_requests"
@@ -496,6 +513,18 @@ SCHEMA_UPGRADES = [
     "UPDATE team_tasks SET done_at = updated_at WHERE status = 'done' AND COALESCE(done_at, '') = ''",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_version VARCHAR DEFAULT ''",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_at VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_email VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_status VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS guardian_consent_at VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS suspend_reason VARCHAR DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version VARCHAR DEFAULT ''",
 ]
 
 async def backfill_cleared_chats():
@@ -584,7 +613,7 @@ class ConnectionManager:
 
 class RoomConnectionManager:
     def __init__(self):
-        self.rooms: dict[int, set] = {}
+        self.rooms: dict[int, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, room_id: int):
         await websocket.accept()
@@ -598,7 +627,7 @@ class RoomConnectionManager:
                 del self.rooms[room_id]
 
     async def broadcast_to_room(self, room_id: int, message: str):
-        for connection in list(self.rooms.get(room_id, ())):
+        for connection in list(self.rooms.get(room_id, set())):
             try:
                 await connection.send_text(message)
             except Exception:
@@ -718,9 +747,24 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# The addresses the pages are served from. Hosted: ALLOWED_ORIGINS=https://connect2minds.in,https://www.connect2minds.in in .env
+ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:5500,http://localhost:5500").split(",") if o.strip()]
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Headers every answer carries. The pages' host must send the same ones for the .html files (see DEPLOY.md)."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Permissions-Policy", "camera=(self), microphone=(self), geolocation=(), payment=(self)")
+    if request_is_https(request):
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"], 
+    allow_origins=ALLOWED_ORIGINS, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -732,7 +776,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY") or ""
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is not set. Add it to your .env file.")
 ALGORITHM = "HS256"
@@ -764,10 +808,13 @@ class ProfileRegister(BaseModel):
     open_to: Optional[str] = ""
     experience_years: Optional[int] = None
     consent: Optional[bool] = False          # the DPDP notice box on the last sign-up step
+    birth_date: Optional[str] = ""           # YYYY-MM-DD; under 18 needs guardian_email (section 31)
+    guardian_email: Optional[str] = ""
 
 # The privacy notice people agree to (privacy.html + dpdp.html). Change it when those pages change in substance:
 # everyone who agreed to an older one is shown the "we updated our notice" bar again (section 30).
-PRIVACY_VERSION = "2026-10-15"
+# TERMS_VERSION (section 31) works the same way for terms.html.
+PRIVACY_VERSION = "2026-10-16"
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
@@ -809,9 +856,6 @@ class ProfileResponse(BaseModel):
     open_to: Optional[str] = ""
     experience_years: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
-    
     class Config:
         from_attributes = True
 
@@ -985,6 +1029,7 @@ class TeamMessageResponse(BaseModel):
 class AdminLogin(BaseModel):
     name: str
     bypass_code: str
+    code: Optional[str] = ""      # two-step login code, when the account has it on (section 31)
 
 class AdminRequestResponse(BaseModel):
     id: int
@@ -1036,6 +1081,7 @@ def create_access_token(data: dict, minutes: Optional[int] = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=minutes or ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
+    to_encode.setdefault("tv", TOKEN_VERSIONS.get(int(data.get("sub") or 0), 0))   # see token_user_id
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 # The login cookies. "Secure" keeps them off plain http once the site runs on https: it follows how the page was reached
@@ -1068,6 +1114,32 @@ CLOSED_ACCOUNTS: set = set()
 HIDDEN_ACCOUNT_STATUSES = ("rejected", "closing", "deleted")
 CLOSED_DETAIL = "This account has been closed. Log in again to cancel a deletion that is still waiting."
 
+# Section 31, in memory for the same reason: a person's token version (a password change, reset or "log out everywhere"
+# raises it, ending older logins), suspended accounts, and under-18s waiting for a guardian (they may only read and
+# use the few routes in GUARDIAN_OPEN_PATHS until the guardian agrees).
+TOKEN_VERSIONS: dict = {}
+SUSPENDED_ACCOUNTS: set = set()
+GUARDIAN_PENDING: set = set()
+SUSPENDED_DETAIL = "This account is suspended for breaking the terms of use. To appeal, write to Support (support.html)."
+RELOGIN_DETAIL = "You were logged out because your password or login settings changed. Please log in again."
+GUARDIAN_DETAIL = "Your parent or guardian has to agree before you can use Connect2Minds."
+GUARDIAN_OPEN_PATHS = ("/api/logout", "/api/me/guardian", "/api/me/birth-date", "/api/me/delete", "/api/me/consent", "/api/me/email",
+                       "/api/visits", "/api/enquiries", "/api/helpbot", "/api/notifications")
+
+def token_user_id(payload: dict, request=None) -> int:
+    """The account a decoded login token belongs to, once the in-memory checks pass. Raises 401 (or 403)."""
+    user_id = int(payload.get("sub"))
+    if user_id in CLOSED_ACCOUNTS:
+        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
+    if int(payload.get("tv") or 0) != TOKEN_VERSIONS.get(user_id, 0) or payload.get("purpose"):
+        raise HTTPException(status_code=401, detail=RELOGIN_DETAIL)
+    if user_id in SUSPENDED_ACCOUNTS:
+        raise HTTPException(status_code=401, detail=SUSPENDED_DETAIL)
+    if (request is not None and user_id in GUARDIAN_PENDING and request.method not in ("GET", "HEAD", "OPTIONS")
+            and not request.url.path.startswith(GUARDIAN_OPEN_PATHS)):
+        raise HTTPException(status_code=403, detail=GUARDIAN_DETAIL)
+    return user_id
+
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
     token = request.cookies.get("authToken")
     if not token:
@@ -1075,15 +1147,14 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired. Please log in again.")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication token.")
-    if int(user_id) in CLOSED_ACCOUNTS:
-        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
+    token_user_id(payload, request)
         
     result = await db.execute(select(DBUser).filter(DBUser.id == int(user_id)))
     user = result.scalars().first()
@@ -1099,7 +1170,7 @@ async def get_current_user_id(request: Request) -> int:
         raise HTTPException(status_code=401, detail="Not authenticated. No secure cookie found.")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
         user_id = int(user_id)
@@ -1107,9 +1178,7 @@ async def get_current_user_id(request: Request) -> int:
         raise HTTPException(status_code=401, detail="Token has expired. Please log in again.")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication token.")
-    if user_id in CLOSED_ACCOUNTS:
-        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
-    return user_id
+    return token_user_id(payload, request)
 
 
 def get_websocket_user_id(websocket: WebSocket) -> Optional[int]:
@@ -1119,10 +1188,10 @@ def get_websocket_user_id(websocket: WebSocket) -> Optional[int]:
         return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = int(payload.get("sub"))
-    except (jwt.PyJWTError, TypeError, ValueError):
+        user_id = token_user_id(payload)
+    except (jwt.PyJWTError, TypeError, ValueError, HTTPException):
         return None
-    return None if user_id in CLOSED_ACCOUNTS else user_id
+    return None if user_id in GUARDIAN_PENDING else user_id
 
 
 # ==========================================
@@ -1156,6 +1225,10 @@ async def register_user(request: Request, profile: ProfileRegister, response: Re
     user_email = profile.email.strip() if profile.email else ""
     if not profile.consent:
         raise HTTPException(status_code=400, detail="Please read the privacy notice and tick the box to agree before signing up.")
+    birth_date, age = parse_birth_date(profile.birth_date)
+    if age < MIN_AGE:
+        raise HTTPException(status_code=400, detail=f"Connect2Minds is for people aged {MIN_AGE} and over.")
+    guardian_email = check_guardian_email(profile.guardian_email, user_email) if age < ADULT_AGE else ""
     if not user_email:
         user_email = f"{profile.roll_no}@placeholder.connect2minds.local"
     
@@ -1183,8 +1256,8 @@ async def register_user(request: Request, profile: ProfileRegister, response: Re
     # ---------------------------------------------------------
     initial_status = "pending" # Default provisional access
     
-    # 1. Official College Email Auto-Verify
-    if user_email.endswith(".edu.in") or user_email.endswith(".ac.in"):
+    # 1. Official College Email Auto-Verify (once emails can be sent, only after the address is confirmed: section 31)
+    if (user_email.endswith(".edu.in") or user_email.endswith(".ac.in")) and not EMAIL_READY:
         initial_status = "verified"
         
     # 2. Professional Invite Code Auto-Verify
@@ -1217,6 +1290,8 @@ async def register_user(request: Request, profile: ProfileRegister, response: Re
         experience_years=experience_years,
         consent_version=PRIVACY_VERSION,
         consent_at=utc_now_iso(),
+        terms_version=TERMS_VERSION,
+        birth_date=birth_date,
     )
 
     db.add(new_user)
@@ -1231,8 +1306,15 @@ async def register_user(request: Request, profile: ProfileRegister, response: Re
     set_login_cookie(response, request, "authToken", access_token, ACCESS_TOKEN_EXPIRE_MINUTES * 60)
     
     await log_user_activity(db, new_user.id, "Account Created", f"Welcome! Your status is: {initial_status}.")
-    spawn_background(broadcast_directory({"type": "profile_added", "profile": directory_card(new_user)}))
-    return {"message": "Account registered.", "user_id": new_user.id, "status": initial_status}
+    if age < ADULT_AGE:
+        MINOR_ACCOUNTS.add(new_user.id)
+    guardian_sent = await start_guardian_wait(new_user.id, new_user.name or "", guardian_email) if guardian_email else False
+    if not guardian_email:
+        spawn_background(broadcast_directory({"type": "profile_added", "profile": directory_card(new_user)}))
+    if EMAIL_READY and is_real_email(user_email):
+        spawn_background(send_signup_code(new_user.id, new_user.name or "", user_email))
+    return {"message": "Account registered.", "user_id": new_user.id, "status": initial_status,
+            "guardian_needed": bool(guardian_email), "guardian_email_sent": guardian_sent, "email_ready": EMAIL_READY}
 
 
 @app.post("/api/login")
@@ -1246,16 +1328,30 @@ async def login_user(request: Request, credentials: UserLogin, response: Respons
         
     if not await check_password_async(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
+    if (user.suspended or 0) == 1:
+        raise HTTPException(status_code=403, detail=SUSPENDED_DETAIL)
+    if user.account_status == "deleted":
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+    if user.guardian_status == "declined":
+        raise HTTPException(status_code=403, detail="This account was closed because a parent or guardian did not agree.")
+    if (user.totp_enabled or 0) == 1:   # the cookie comes from /api/login/2fa once the code is right (section 31)
+        return {"two_factor": True, "ticket": two_factor_ticket(user.id, credentials.remember)}
+    return await finish_login(request, response, db, user, credentials.remember)
+
+
+async def finish_login(request: Request, response: Response, db: AsyncSession, user: DBUser, remember: bool) -> dict:
+    """The end of a member login (after the password, and the two-step code when it is on)."""
     restored = user.account_status == "closing"
     if restored:
         await cancel_account_deletion(db, user)
         
-    minutes = REMEMBER_ME_DAYS * 24 * 60 if credentials.remember else SESSION_LOGIN_MINUTES
+    minutes = REMEMBER_ME_DAYS * 24 * 60 if remember else SESSION_LOGIN_MINUTES
     access_token = create_access_token(data={"sub": str(user.id)}, minutes=minutes)
-    set_login_cookie(response, request, "authToken", access_token, minutes * 60 if credentials.remember else None)
+    set_login_cookie(response, request, "authToken", access_token, minutes * 60 if remember else None)
     
     await log_user_activity(db, user.id, "Session Active", "You successfully logged into your account.")
-    return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type, "is_admin": user.is_admin, "restored": restored}
+    return {"message": "Login successful.", "user_id": user.id, "account_type": user.account_type, "is_admin": user.is_admin, "restored": restored,
+            "guardian_needed": user.guardian_status == "pending"}
 
 
 @app.post("/api/logout")
@@ -1363,11 +1459,12 @@ async def load_profile(user_id: int, viewer_id: int, with_projects: bool) -> dic
 @app.get("/api/me")
 async def get_me(db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
     """The logged-in person's own card, for the site header. One small query."""
-    row = (await db.execute(select(*public_profile_columns(), DBUser.consent_version).filter(DBUser.id == current_user_id))).first()
+    row = (await db.execute(select(*public_profile_columns(), DBUser.consent_version, *SAFETY_FLAG_COLUMNS()).filter(DBUser.id == current_user_id))).first()
     if not row:
         raise HTTPException(status_code=401, detail="User account no longer exists.")
     me = public_profile(row)
-    me["consent_needed"] = (row.consent_version or "") != PRIVACY_VERSION   # the DPDP notice bar in shared.js
+    me.update(safety_flags(row))   # section 31: email, two-step login, age, terms
+    me["consent_needed"] = (row.consent_version or "") != PRIVACY_VERSION or me.get("terms_needed", False)   # the notice bar in shared.js
     return me
 
 
@@ -1405,7 +1502,8 @@ async def broadcast_directory(payload: dict):
 
 def visible_user_clause():
     """People who may be listed anywhere: not rejected, not waiting to be erased, not erased."""
-    return func.coalesce(DBUser.account_status, "").not_in(HIDDEN_ACCOUNT_STATUSES)
+    return and_(func.coalesce(DBUser.account_status, "").not_in(HIDDEN_ACCOUNT_STATUSES), func.coalesce(DBUser.suspended, 0) == 0,
+                func.coalesce(DBUser.guardian_status, "") != "pending")
 
 def person_cards_query(viewer_id: int, *conditions, extra_columns=()):
     """People as directory cards with the viewer's relationship to each. Never lists the viewer,
@@ -2631,7 +2729,7 @@ async def notification_websocket_endpoint(websocket: WebSocket, user_id: int):
     await notification_manager.connect(websocket, user_id)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         notification_manager.disconnect(websocket, user_id)
 
@@ -2871,7 +2969,7 @@ async def get_projects(
     return [serialize_project(project) for project in result.scalars().all()]
 
 
-async def explain_missing_project(db: AsyncSession, project_id: int):
+async def explain_missing_project(db: AsyncSession, project_id: int) -> NoReturn:
     """Called when an owner-only change matched nothing: say whether the project is missing or someone else's."""
     exists = (await db.execute(select(DBProject.id).filter(DBProject.id == project_id))).first()
     if exists:
@@ -3053,7 +3151,7 @@ async def create_board_post(
     return {"status": "success", "message": "Opportunity published successfully!", "post": card}
 
 
-async def explain_missing_board_post(db: AsyncSession, post_id: int, action: str):
+async def explain_missing_board_post(db: AsyncSession, post_id: int, action: str) -> NoReturn:
     exists_already = (await db.execute(select(DBBoardPost.id).where(DBBoardPost.id == post_id))).first()
     if not exists_already:
         raise HTTPException(status_code=404, detail="Post not found.")
@@ -3980,7 +4078,7 @@ async def channel_websocket_endpoint(websocket: WebSocket, channel_id: int, user
     await team_chat_manager.connect(websocket, channel_id)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         pass
     finally:
@@ -4608,6 +4706,7 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
         
         if not founder_user:
             raise HTTPException(status_code=404, detail="Please create a normal account with your name first before claiming Founder access.")
+        await require_admin_second_factor(founder_user, credentials.code)
         
         founder_user.is_founder = 1
         founder_user.is_admin = 1   # kept so older checks still let the founder in; new code asks is_founder first
@@ -4634,6 +4733,9 @@ async def admin_login(request: Request, credentials: AdminLogin, response: Respo
 
     if not admin_user:
         raise HTTPException(status_code=403, detail="Unauthorized. Invalid name or bypass code.")
+    if (admin_user.suspended or 0) == 1:
+        raise HTTPException(status_code=403, detail=SUSPENDED_DETAIL)
+    await require_admin_second_factor(admin_user, credentials.code)
         
     access_token = create_access_token(data={"sub": str(admin_user.id)})
     admin_token = create_access_token(data={"sub": str(admin_user.id), "role": "admin"})
@@ -4662,8 +4764,7 @@ async def get_current_admin(request: Request, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=401, detail="Invalid admin token.")
     if payload.get("role") not in ("admin", "founder"):
         raise HTTPException(status_code=403, detail="Insufficient permissions.")
-    if int(payload.get("sub") or 0) in CLOSED_ACCOUNTS:
-        raise HTTPException(status_code=401, detail=CLOSED_DETAIL)
+    token_user_id(payload)
     # A token outlives a revoked admin, so the flag is checked again every time
     rows = await fetch_one_off(select(DBUser.is_admin, DBUser.is_founder).where(DBUser.id == int(payload.get("sub") or 0)))
     if not rows or ((rows[0].is_admin or 0) != 1 and (rows[0].is_founder or 0) != 1):
@@ -8446,7 +8547,7 @@ class DBChallengeSubmission(Base):
     updated_at = Column(String)
 
 
-ENQUIRY_KINDS = ("institution", "recruiter", "sponsor", "support", "data_rights")   # support / data_rights: organisation holds the topic (section 30)
+ENQUIRY_KINDS = ("institution", "recruiter", "sponsor", "support", "data_rights", "grievance", "takedown")   # the last four: organisation holds the topic (sections 30, 31)
 SHORTLIST_STAGES = ("shortlisted", "contacted", "interviewing", "offer", "hired", "rejected")
 CHALLENGE_KINDS = ("bounty", "hackathon")
 SPONSOR_TIERS = {"basic": 30, "featured": 60, "hackathon": 90}
@@ -8502,10 +8603,9 @@ def optional_user_id(request: Request) -> Optional[int]:
     if not token:
         return None
     try:
-        user_id = int(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]).get("sub"))
+        return token_user_id(jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]))
     except Exception:
         return None
-    return None if user_id in CLOSED_ACCOUNTS else user_id
 
 
 # ---------- enquiries ----------
@@ -8531,7 +8631,9 @@ async def create_enquiry(request: Request, body: EnquiryBody):
         message=clean_text(body.message, 2000, "message"), user_id=optional_user_id(request), status="new", founder_note="", created_at=now_iso, updated_at=now_iso,
     ).returning(DBEnquiry.id))
     what = {"support": f"New support message: {body.organisation.strip()[:80]}.",
-            "data_rights": f"New data-rights request (DPDP Act): {body.organisation}. Reply within {DPDP_REPLY_DAYS} days."}.get(body.kind, f"New {body.kind} enquiry from {body.organisation.strip()[:80]}.")
+            "data_rights": f"New data-rights request (DPDP Act): {body.organisation}. Reply within {DPDP_REPLY_DAYS} days.",
+            "grievance": f"New grievance: {body.organisation.strip()[:80]}. Acknowledge within 24 hours, resolve within 15 days.",
+            "takedown": "New copyright takedown request. Act on it within 36 hours."}.get(body.kind, f"New {body.kind} enquiry from {body.organisation.strip()[:80]}.")
     spawn_background(notify_founders("account", what, "founder.html?tab=enquiries"))
     return {"id": rows[0][0], "status": "received"}
 
@@ -8580,7 +8682,7 @@ async def recruiter_search(q: str = "", skills: str = "", college: str = "", dep
                            has_github: bool = False, min_repos: int = 0, contactable: bool = False, current_user_id: int = Depends(get_current_user_id)):
     """Verified people only. Skills must all be present. GitHub filters need a plan that includes them."""
     access = await require_recruiter(current_user_id)
-    conditions = [func.coalesce(DBUser.account_status, "") == "verified", DBUser.id != current_user_id]
+    conditions = [func.coalesce(DBUser.account_status, "") == "verified", DBUser.id != current_user_id, adult_clause()]
     for skill in [s.strip() for s in skills.split(",") if s.strip()][:8]:
         conditions.append(func.lower(func.coalesce(DBUser.skills, "")).like(f"%{skill.lower()}%"))
     for field, value in ((DBUser.college_name, college), (DBUser.department, department), (DBUser.city, city)):
@@ -8985,6 +9087,7 @@ async def founder_overview(founder_id: int = Depends(require_founder)):
             select(func.count()).select_from(DBTeacherRequest).where(DBTeacherRequest.status.in_(OPEN_APPLICATION)).scalar_subquery(),
             select(func.count()).select_from(DBEnquiry).where(DBEnquiry.status.in_(("new", "contacted"))).scalar_subquery(),
             select(func.count()).select_from(DBUser).where(func.coalesce(DBUser.account_status, "pending").in_(("pending", "appealed")), func.coalesce(DBUser.is_founder, 0) == 0, UNASSIGNED_CLAUSE).scalar_subquery(),
+            select(func.count()).select_from(DBContentReport).where(DBContentReport.status.in_(("open", "reviewing"))).scalar_subquery(),
         )),
         fetch_one_off(select(DBUser.account_status, func.count()).group_by(DBUser.account_status)),
         fetch_one_off(select(DBSubscription.plan_key, DBSubscription.period, DBSubscription.years, DBSubscription.amount_paise, DBSubscription.gst_paise)
@@ -8994,7 +9097,7 @@ async def founder_overview(founder_id: int = Depends(require_founder)):
         fetch_one_off(select(DBPayment, DBUser.name).outerjoin(DBUser, DBUser.id == DBPayment.user_id).where(DBPayment.status.in_(("paid", "refunded"))).order_by(DBPayment.id.desc()).limit(10)),
         fetch_one_off(helpbot_today),
     )
-    users, admins, teachers, admin_apps, teacher_apps, enquiries, unassigned = counts[0]
+    users, admins, teachers, admin_apps, teacher_apps, enquiries, unassigned, reports = counts[0]
     status_counts: dict = {}
     for status_, count in statuses:
         status_counts[status_ or "pending"] = status_counts.get(status_ or "pending", 0) + count
@@ -9010,7 +9113,7 @@ async def founder_overview(founder_id: int = Depends(require_founder)):
     revenue, revenue_gst, payments = paid[0]
     return {
         "users": users or 0, "verified": status_counts.get("verified", 0), "statuses": status_counts, "admins": admins or 0, "teachers": teachers or 0,
-        "open": {"admin_applications": admin_apps or 0, "teacher_applications": teacher_apps or 0, "enquiries": enquiries or 0, "unassigned_verification": unassigned or 0},
+        "open": {"admin_applications": admin_apps or 0, "teacher_applications": teacher_apps or 0, "enquiries": enquiries or 0, "unassigned_verification": unassigned or 0, "reports": reports or 0},
         "revenue_month_paise": revenue or 0, "revenue_month_gst_paise": revenue_gst or 0, "payments_month": payments or 0, "mrr_paise": round(mrr),
         "active_by_line": by_line, "payments_enabled": bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET),
         "recent_payments": [{**serialize_payment(p), "name": name or ""} for p, name in recent],
@@ -9125,10 +9228,10 @@ async def founder_payments(founder_id: int = Depends(require_founder)):
 @app.get("/api/founder/enquiries")
 async def founder_enquiries(founder_id: int = Depends(require_founder)):
     open_first = case((DBEnquiry.status.in_(("new", "contacted")), 0), else_=1)
-    rights_first = case((DBEnquiry.kind == "data_rights", 0), else_=1)   # open DPDP requests have a legal reply date
+    rights_first = case((DBEnquiry.kind.in_(tuple(LEGAL_REPLY_DAYS)), 0), else_=1)   # DPDP, grievance and takedown requests have a legal reply date
     rows = await fetch_one_off(select(DBEnquiry).order_by(open_first, rights_first, DBEnquiry.id.desc()).limit(300))
     return {"enquiries": [{
-        "reply_by": dpdp_reply_by(e.created_at) if e.kind == "data_rights" else "",
+        "reply_by": dpdp_reply_by(e.created_at, LEGAL_REPLY_DAYS[e.kind]) if e.kind in LEGAL_REPLY_DAYS else "",
         "id": e.id, "kind": e.kind, "plan_key": e.plan_key or "", "plan_name": PLANS.get(e.plan_key or "", {}).get("name", ""), "organisation": e.organisation or "",
         "contact_name": e.contact_name or "", "email": e.email or "", "phone": e.phone or "", "size": e.size or "", "message": e.message or "",
         "status": e.status, "founder_note": e.founder_note or "", "subscription_id": e.subscription_id, "created_at": e.created_at or "", "updated_at": e.updated_at or "",
@@ -11088,7 +11191,7 @@ USER_DATA_KEPT = {
 }
 NOT_EXPORTED = {("cleared_chats", "cleared_with_user_id"), ("archived_chats", "archived_user_id"),
                 ("admin_requests", "decided_by"), ("teacher_requests", "decided_by")}
-PROFILE_NOT_EXPORTED = {"hashed_password", "id_card_image", "invite_code", "status_before_delete"}
+PROFILE_NOT_EXPORTED = {"hashed_password", "id_card_image", "invite_code", "status_before_delete", "totp_secret", "token_version"}
 
 
 def export_columns() -> dict:
@@ -11268,7 +11371,8 @@ async def erase_account(user_id: int) -> bool:
             skills="", bio="", profile_pic="", banner_pic="", account_type="standard", github_username="", is_admin=0, is_ambassador=False,
             ambassador_strikes=0, account_status="deleted", id_barcode=None, id_card_image="", portfolio_link="", invite_code="",
             profession="", open_to="", experience_years=None, teacher_of="", verify_department="", recruiter_contact_ok=0,
-            plan="", plan_until="", digest_on=0, last_digest_at="", delete_after="", status_before_delete=""))
+            plan="", plan_until="", digest_on=0, last_digest_at="", delete_after="", status_before_delete="",
+            email_verified=0, email_verified_at="", totp_secret="", totp_enabled=0, birth_date="", guardian_email="", suspend_reason=""))
         await db.commit()
     CLOSED_ACCOUNTS.add(user_id)
 
@@ -11938,7 +12042,7 @@ async def check_task_in_team(db: AsyncSession, team_id: int, task_id: Optional[i
     if not (await db.execute(select(DBTeamTask.id).where(DBTeamTask.id == task_id, DBTeamTask.team_id == team_id))).first():
         raise HTTPException(status_code=400, detail="That task is not part of this workspace.")
 
-async def stop_running_timer(db: AsyncSession, user_id: int) -> Optional[dict]:
+async def stop_running_timer(db: AsyncSession, user_id: int) -> Optional["DBTimeEntry"]:
     running = (await db.execute(select(DBTimeEntry).where(DBTimeEntry.user_id == user_id, DBTimeEntry.ended_at == "").with_for_update())).scalars().all()
     stopped = None
     for entry in running:
@@ -12478,7 +12582,10 @@ async def record_visit(request: Request, body: VisitBody):
     page = (body.page or "").strip().lower()
     if not re.fullmatch(r"[a-z0-9_-]{1,60}\.html", page) or not os.path.isfile(page):
         raise HTTPException(status_code=400, detail="Unknown page.")
-    member = 1 if optional_user_id(request) else 0
+    member_id = optional_user_id(request)
+    if member_id in MINOR_ACCOUNTS:
+        return Response(status_code=204)                        # children are never counted (DPDP Act Section 9(3))
+    member = 1 if member_id else 0
     digest = hmac.new(SECRET_KEY.encode(), visitor.encode(), "sha256").hexdigest()[:24]
     await run_one_off(pg_insert(DBPageVisit).values(day=site_now().date().isoformat(), page=page, visitor=digest, member=member, count=1)
                       .on_conflict_do_update(index_elements=["day", "page", "visitor"],
@@ -12576,8 +12683,8 @@ async def my_dpdp(current_user_id: int = Depends(get_current_user_id)):
 async def agree_to_notice(request: Request, current_user_id: int = Depends(get_current_user_id)):
     """The person agrees to the current privacy notice (the bar shared.js shows)."""
     now_iso = utc_now_iso()
-    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(consent_version=PRIVACY_VERSION, consent_at=now_iso))
-    spawn_background(log_activity_later(current_user_id, "Privacy Notice Accepted", f"You agreed to the privacy notice of {PRIVACY_VERSION}."))
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(consent_version=PRIVACY_VERSION, consent_at=now_iso, terms_version=TERMS_VERSION))
+    spawn_background(log_activity_later(current_user_id, "Privacy Notice Accepted", f"You agreed to the privacy notice of {PRIVACY_VERSION} and the terms of {TERMS_VERSION}."))
     return {"consent_version": PRIVACY_VERSION, "consent_at": now_iso}
 
 
@@ -12605,11 +12712,884 @@ async def remove_nominee(current_user_id: int = Depends(get_current_user_id)):
     await run_one_off(delete(DBDataNominee).where(DBDataNominee.user_id == current_user_id))
     return {"nominee": None}
 
-def dpdp_reply_by(created_at: str) -> str:
-    """The last day (YYYY-MM-DD) to answer a data-rights request sent at created_at."""
+def dpdp_reply_by(created_at: str, days: int = DPDP_REPLY_DAYS) -> str:
+    """The last day (YYYY-MM-DD) to answer a data-rights request (or another request in LEGAL_REPLY_DAYS) sent at created_at."""
     try:
-        return (datetime.fromisoformat((created_at or "").replace("Z", "+00:00")) + timedelta(days=DPDP_REPLY_DAYS)).date().isoformat()
+        return (datetime.fromisoformat((created_at or "").replace("Z", "+00:00")) + timedelta(days=days)).date().isoformat()
     except ValueError:
         return ""
 
 assert all(column in DBDataNominee.__table__.c for column in USER_DATA_ERASED["data_nominees"])
+
+
+# ==========================================
+# 31. LAUNCH SAFETY: REPORTS, PASSWORD RESET, EMAIL CHECK, TWO-STEP LOGIN, AGE GATE
+# ==========================================
+# What a public launch in India needs on top of sections 26 and 30:
+# - reports (IT Rules 2021, Rule 3(2)): anyone can report a person, a message, a team or college chat message, a board
+#   post or a team. The founder console's Safety tab shows them with the 24-hour acknowledge and 15-day resolve dates,
+#   and can remove the content, warn, or suspend the account (users.suspended, kept in SUSPENDED_ACCOUNTS);
+# - logins that can be ended: tokens carry users.token_version ("tv", see token_user_id near CLOSED_ACCOUNTS), raised by
+#   a password change or reset, two-step login changes and "log out of all other devices";
+# - password reset by an emailed link, email addresses checked with a 6-digit code (both need SMTP_HOST; until then
+#   the founder can make a reset link by hand);
+# - two-step login with an authenticator app (TOTP, RFC 6238, written here) and ten one-time backup codes;
+# - age (DPDP Act Section 9): sign-up asks the date of birth; under 13 is refused, under 18 waits for a parent or
+#   guardian to agree by an emailed link (users.guardian_status "pending", kept in GUARDIAN_PENDING);
+# - TERMS_VERSION: like PRIVACY_VERSION, everyone is asked once to agree when the terms change.
+# Every table here that holds a person's id is in USER_DATA_ERASED / USER_DATA_KEPT below.
+TERMS_VERSION = "2026-10-16"
+LEGAL_REPLY_DAYS = {"data_rights": DPDP_REPLY_DAYS, "grievance": 15, "takedown": 2}
+EMAIL_READY = bool(SMTP_HOST and SMTP_FROM)
+PLACEHOLDER_EMAIL_END = "@placeholder.connect2minds.local"
+RESET_LINK_MINUTES = 30
+FOUNDER_RESET_LINK_MINUTES = 24 * 60
+EMAIL_CODE_MINUTES = 15
+CODE_TRIES = 5
+GUARDIAN_LINK_DAYS = 7
+MIN_AGE, ADULT_AGE = 13, 18
+TWO_FACTOR_TICKET_MINUTES = 5
+BACKUP_CODE_COUNT = 10
+REPORT_ACK_HOURS, REPORT_RESOLVE_DAYS = 24, 15
+REPORT_KINDS = ("user", "message", "team_message", "college_message", "board_post", "team")
+REPORT_REASONS = {
+    "harassment": "Harassment or bullying", "hate": "Hate or discrimination", "sexual": "Sexual content",
+    "violence": "Threats or violence", "self_harm": "Self-harm or suicide", "spam": "Spam",
+    "scam": "Scam or fraud", "fake_profile": "Fake profile", "impersonation": "Pretending to be someone else",
+    "privacy": "Shares someone's private information", "copyright": "Copyright", "other": "Something else",
+}
+REMOVED_TEXT = "This was removed by Connect2Minds for breaking the honour code."
+MINOR_ACCOUNTS: set = set()   # under 18 when the server started or when they told us; never counted or found by recruiters
+
+def adult_clause():
+    """People who are 18 or older, or have not given a date of birth yet."""
+    today = site_now()
+    try:
+        cutoff = today.replace(year=today.year - ADULT_AGE)
+    except ValueError:            # 29 February
+        cutoff = today.replace(year=today.year - ADULT_AGE, day=28)
+    return func.coalesce(DBUser.birth_date, "") <= cutoff.strftime("%Y-%m-%d")
+
+
+class DBAuthCode(Base):
+    """A one-time code or link: a password reset, an email check, or a guardian's consent link. Only a hash is kept."""
+    __tablename__ = "auth_codes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    purpose = Column(String, index=True)       # reset, verify_email, guardian
+    code_hash = Column(String, index=True)
+    target = Column(String, default="")        # the email address it was sent to
+    expires_at = Column(String)
+    attempts = Column(Integer, default=0)
+    created_at = Column(String)
+
+class DBBackupCode(Base):
+    __tablename__ = "totp_backup_codes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    code_hash = Column(String)
+    used_at = Column(String, default="")
+
+class DBContentReport(Base):
+    __tablename__ = "content_reports"
+    id = Column(Integer, primary_key=True, index=True)
+    reporter_id = Column(Integer, index=True)
+    target_kind = Column(String)
+    target_id = Column(Integer)
+    target_user_id = Column(Integer, index=True, nullable=True)   # whose content it is (the person, for kind "user")
+    reason = Column(String)
+    details = Column(String, default="")
+    snapshot = Column(String, default="")      # the reported words as they were, so deleting them hides nothing
+    link = Column(String, default="")          # where the founder can look
+    status = Column(String, default="open")    # open, reviewing, actioned, dismissed
+    action_taken = Column(String, default="")  # removed, warned, suspended
+    founder_note = Column(String, default="")
+    resolver_id = Column(Integer, nullable=True)
+    created_at = Column(String)
+    ack_at = Column(String, default="")
+    resolved_at = Column(String, default="")
+
+USER_DATA_ERASED["auth_codes"] = ("user_id",)
+USER_DATA_ERASED["totp_backup_codes"] = ("user_id",)
+USER_DATA_ERASED["content_reports"] = ("reporter_id",)
+USER_DATA_KEPT["content_reports"] = ("target_user_id", "resolver_id")   # a record of what was done about someone stays
+for _table in ("auth_codes", "totp_backup_codes", "content_reports"):
+    for _registry in (USER_DATA_ERASED, USER_DATA_KEPT):
+        assert all(column in Base.metadata.tables[_table].c for column in _registry.get(_table, ()))
+SCHEMA_UPGRADES.append("CREATE INDEX IF NOT EXISTS ix_content_reports_open ON content_reports (status, id)")
+
+
+# ---------- small helpers ----------
+def code_hash(code: str) -> str:
+    return hmac.new(SECRET_KEY.encode(), (code or "").strip().encode(), "sha256").hexdigest()
+
+def iso_in(minutes: float) -> str:
+    return (datetime.now(timezone.utc) + timedelta(minutes=minutes)).isoformat()
+
+def is_real_email(email: Optional[str]) -> bool:
+    return bool(email) and EMAIL_PATTERN.match(email or "") is not None and not (email or "").endswith(PLACEHOLDER_EMAIL_END)
+
+def mask_email(email: str) -> str:
+    name, _, domain = (email or "").partition("@")
+    return (name[:2] + "•" * max(1, len(name) - 2) + "@" + domain) if domain else ""
+
+async def send_email(to: str, subject: str, plain: str, page_html: str) -> bool:
+    """Send one email on a worker thread. False when email is not set up or sending failed."""
+    if not (SMTP_HOST and SMTP_FROM) or not is_real_email(to):
+        return False
+    try:
+        await asyncio.to_thread(send_email_now, to, subject, plain, page_html)
+        return True
+    except Exception as e:
+        print("Sending email failed:", e)
+        return False
+
+def simple_email(greeting: str, lines: list, button: Optional[tuple] = None, footer: str = "") -> tuple:
+    """(plain text, HTML) for the short account emails of this section. button = (label, address)."""
+    plain = "\n".join([greeting, ""] + lines + ([f"\n{button[0]}: {button[1]}"] if button else []) + (["", footer] if footer else []))
+    paragraphs = "".join(f'<p style="color:#464555;margin:0 0 12px;line-height:1.5;">{html.escape(line)}</p>' for line in lines)
+    action = (f'<a href="{html.escape(button[1])}" style="display:inline-block;background:#3525cd;color:#fff;padding:10px 18px;'
+              f'border-radius:8px;text-decoration:none;font-weight:600;">{html.escape(button[0])}</a>') if button else ""
+    page_html = (f'<div style="font-family:Arial,sans-serif;color:#0b1c30;max-width:520px;margin:0 auto;padding:24px;">'
+                 f'<h2 style="margin:0 0 12px;">{html.escape(greeting)}</h2>{paragraphs}{action}'
+                 + (f'<p style="color:#777587;font-size:12px;margin:26px 0 0;">{html.escape(footer)}</p>' if footer else "") + '</div>')
+    return plain, page_html
+
+async def new_auth_code(user_id: int, purpose: str, minutes: float, target: str = "", code: Optional[str] = None) -> str:
+    """Make a code (a long random link token unless one is given), replacing the person's earlier one for the same purpose."""
+    code = code or secrets.token_urlsafe(32)
+    await run_one_off(delete(DBAuthCode).where(DBAuthCode.user_id == user_id, DBAuthCode.purpose == purpose))
+    await run_one_off(DBAuthCode.__table__.insert().values(user_id=user_id, purpose=purpose, code_hash=code_hash(code), target=target,
+                                                           expires_at=iso_in(minutes), attempts=0, created_at=utc_now_iso()))
+    return code
+
+async def find_link_code(purpose: str, token: str):
+    """The live code row behind a link token, or None."""
+    if not token or len(token) > 200:
+        return None
+    rows = await fetch_one_off(select(DBAuthCode).where(DBAuthCode.purpose == purpose, DBAuthCode.code_hash == code_hash(token),
+                                                        DBAuthCode.expires_at > utc_now_iso()))
+    return rows[0][0] if rows else None
+
+async def check_typed_code(user_id: int, purpose: str, code: str):
+    """A 6-digit code the person typed. Returns the row when right; counts wrong tries (CODE_TRIES at most)."""
+    rows = await fetch_one_off(select(DBAuthCode).where(DBAuthCode.user_id == user_id, DBAuthCode.purpose == purpose,
+                                                        DBAuthCode.expires_at > utc_now_iso()))
+    if not rows:
+        raise HTTPException(status_code=400, detail="That code has run out. Ask for a new one.")
+    row = rows[0][0]
+    if (row.attempts or 0) >= CODE_TRIES:
+        raise HTTPException(status_code=400, detail="Too many wrong tries. Ask for a new code.")
+    if not hmac.compare_digest(row.code_hash, code_hash(re.sub(r"\s", "", code or ""))):
+        await run_one_off(update(DBAuthCode).where(DBAuthCode.id == row.id).values(attempts=DBAuthCode.attempts + 1))
+        raise HTTPException(status_code=400, detail="That code is not right.")
+    return row
+
+async def bump_token_version(user_id: int, keep: Optional[tuple] = None) -> int:
+    """End every login of this person. keep = (request, response, max_age) gives the device asking a fresh one."""
+    rows = await run_returning(update(DBUser).where(DBUser.id == user_id)
+                               .values(token_version=func.coalesce(DBUser.token_version, 0) + 1).returning(DBUser.token_version))
+    TOKEN_VERSIONS[user_id] = rows[0][0]
+    spawn_background(close_account_sockets(user_id))
+    if keep:
+        request, response, max_age = keep
+        set_login_cookie(response, request, "authToken", create_access_token(data={"sub": str(user_id)}, minutes=max(1, (max_age or SESSION_LOGIN_MINUTES * 60) // 60)), max_age)
+    return rows[0][0]
+
+def cookie_lifetime(request: Request) -> Optional[int]:
+    """Seconds left on this device's login, or None for a cookie that ends with the browser ("keep me logged in" off)."""
+    try:
+        payload = jwt.decode(request.cookies.get("authToken") or "", SECRET_KEY, algorithms=[ALGORITHM])
+        left = int(payload["exp"] - datetime.now(timezone.utc).timestamp())
+    except Exception:
+        return None
+    return left if left > SESSION_LOGIN_MINUTES * 60 + 60 else None
+
+def age_on(birth: datetime, today: datetime) -> int:
+    return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+def parse_birth_date(value: Optional[str]) -> tuple:
+    """(YYYY-MM-DD, age today in India). Raises 400 on a missing or impossible date."""
+    try:
+        birth = datetime.strptime((value or "").strip(), "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Enter your date of birth.")
+    age = age_on(birth, site_now())
+    if age < 0 or age > 120:
+        raise HTTPException(status_code=400, detail="Check your date of birth.")
+    return birth.strftime("%Y-%m-%d"), age
+
+def is_minor(birth_date: Optional[str]) -> bool:
+    try:
+        return age_on(datetime.strptime(birth_date or "", "%Y-%m-%d"), site_now()) < ADULT_AGE
+    except ValueError:
+        return False
+
+def check_guardian_email(value: Optional[str], own_email: str) -> str:
+    email = (value or "").strip()[:160]
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Under 18: enter your parent's or guardian's email address.")
+    if email.lower() == (own_email or "").strip().lower():
+        raise HTTPException(status_code=400, detail="Your guardian's email has to be different from your own.")
+    return email
+
+async def send_guardian_request(user_id: int, name: str, guardian_email: str) -> bool:
+    token = await new_auth_code(user_id, "guardian", GUARDIAN_LINK_DAYS * 24 * 60, guardian_email)
+    first = (name or "Your child").split()[0]
+    plain, page_html = simple_email(
+        "Hello,",
+        [f"{name} has signed up to Connect2Minds, a site where college students study together, join teams and find opportunities.",
+         f"{first} is under 18, so India's Digital Personal Data Protection Act asks for your consent before we use their personal data.",
+         "The link shows what they share and lets you agree or say no. If you say no, the account and its data are erased.",
+         f"The link works for {GUARDIAN_LINK_DAYS} days."],
+        ("Review and decide", f"{SITE_URL}/guardian.html?t={token}"),
+        "If you do not know who this is, ignore this email: nothing happens without your answer.")
+    return await send_email(guardian_email, f"{first} asks for your consent to use Connect2Minds", plain, page_html)
+
+
+# ---------- loading the in-memory sets at startup ----------
+async def load_login_state():
+    try:
+        rows = await fetch_one_off(select(DBUser.id, DBUser.token_version, DBUser.suspended, DBUser.guardian_status)
+                                   .where(or_(func.coalesce(DBUser.token_version, 0) > 0, func.coalesce(DBUser.suspended, 0) == 1,
+                                              DBUser.guardian_status == "pending")))
+        minors = await fetch_one_off(select(DBUser.id).where(func.coalesce(DBUser.birth_date, "") != "", ~adult_clause()))
+        MINOR_ACCOUNTS.update(row[0] for row in minors)
+        for user_id, version, suspended, guardian in rows:
+            if version:
+                TOKEN_VERSIONS[user_id] = version
+            if suspended == 1:
+                SUSPENDED_ACCOUNTS.add(user_id)
+            if guardian == "pending":
+                GUARDIAN_PENDING.add(user_id)
+    except Exception as e:
+        print("Could not load login state:", e)
+
+async def auth_codes_watch():
+    """Every hour: forget codes and links that have run out."""
+    while True:
+        try:
+            await run_one_off(delete(DBAuthCode).where(DBAuthCode.expires_at < utc_now_iso()))
+        except Exception as e:
+            print("Error clearing old codes:", e)
+        await asyncio.sleep(3600)
+
+@app.on_event("startup")
+async def launch_safety_startup():
+    await load_login_state()
+    spawn_background(auth_codes_watch())
+
+
+# ---------- what /api/me adds (read in the same query as the rest of /api/me) ----------
+def SAFETY_FLAG_COLUMNS() -> tuple:
+    return (DBUser.email.label("safety_email"), DBUser.email_verified, DBUser.totp_enabled, DBUser.birth_date, DBUser.guardian_status,
+            DBUser.guardian_email, DBUser.terms_version)
+
+def safety_flags(r) -> dict:
+    """r: a row with SAFETY_FLAG_COLUMNS."""
+    return {"email_verified": (r.email_verified or 0) == 1, "email_real": is_real_email(r.safety_email), "email_ready": EMAIL_READY,
+            "two_factor": (r.totp_enabled or 0) == 1, "birth_date_needed": not r.birth_date, "minor": is_minor(r.birth_date),
+            "guardian_needed": r.guardian_status == "pending", "guardian_email": mask_email(r.guardian_email or "") if r.guardian_status == "pending" else "",
+            "terms_needed": (r.terms_version or "") != TERMS_VERSION}
+
+@app.get("/api/me/safety")
+async def my_safety(current_user_id: int = Depends(get_current_user_id)):
+    """The account page's password, email, two-step login and age cards."""
+    rows, backups = await asyncio.gather(
+        fetch_one_off(select(DBUser.email, DBUser.email_verified_at, *SAFETY_FLAG_COLUMNS()).where(DBUser.id == current_user_id)),
+        fetch_one_off(select(func.count()).select_from(DBBackupCode).where(DBBackupCode.user_id == current_user_id, DBBackupCode.used_at == "")))
+    flags = safety_flags(rows[0]) if rows else {}
+    email = rows[0].email if rows else ""
+    return {**flags, "email": email if is_real_email(email) else "", "email_verified_at": rows[0].email_verified_at or "" if rows else "",
+            "birth_date": rows[0].birth_date or "" if rows else "", "backup_codes_left": backups[0][0] if backups else 0}
+
+
+# ---------- password: change, forgot, reset ----------
+class PasswordChangeBody(BaseModel):
+    current_password: str
+    new_password: str
+
+class ForgotBody(BaseModel):
+    who: str               # roll number / ID, or email
+
+class ResetBody(BaseModel):
+    token: str
+    password: str
+
+def check_new_password(password: Optional[str]) -> str:
+    password = password or ""
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Use at least 8 characters for your password.")
+    if len(password) > 200:
+        raise HTTPException(status_code=400, detail="That password is too long.")
+    return password
+
+@app.post("/api/me/password")
+@limiter.limit("5/hour", key_func=account_rate_key)
+async def change_password(request: Request, body: PasswordChangeBody, response: Response, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBUser.hashed_password, DBUser.name).where(DBUser.id == current_user_id))
+    if not rows or not rows[0].hashed_password or not await check_password_async(body.current_password or "", rows[0].hashed_password):
+        raise HTTPException(status_code=400, detail="Your current password is not right.")
+    new_hash = await hash_password_async(check_new_password(body.new_password))
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(hashed_password=new_hash))
+    await bump_token_version(current_user_id, (request, response, cookie_lifetime(request)))
+    spawn_background(log_activity_later(current_user_id, "Password Changed", "Your password was changed. Other devices were logged out."))
+    return {"status": "changed"}
+
+@app.post("/api/me/logout-all")
+@limiter.limit("10/hour", key_func=account_rate_key)
+async def logout_everywhere(request: Request, response: Response, current_user_id: int = Depends(get_current_user_id)):
+    await bump_token_version(current_user_id, (request, response, cookie_lifetime(request)))
+    spawn_background(log_activity_later(current_user_id, "Logged Out Everywhere", "Every other device was logged out."))
+    return {"status": "done"}
+
+FORGOT_ANSWER = "If that account has an email address, a reset link is on its way. It works for 30 minutes."
+
+@app.post("/api/password/forgot")
+@limiter.limit("5/hour")
+async def forgot_password(request: Request, body: ForgotBody):
+    """Always the same answer, so nobody can find out which accounts exist."""
+    who = (body.who or "").strip()[:160]
+    if not who:
+        raise HTTPException(status_code=400, detail="Enter your roll number, ID or email.")
+    if not EMAIL_READY:
+        return {"message": "Email is not set up on Connect2Minds yet, so we cannot send a link. Write to Support and we will help you get back in.", "email_ready": False}
+    rows = await fetch_one_off(select(DBUser.id, DBUser.name, DBUser.email).where(
+        or_(DBUser.roll_no == who, func.lower(DBUser.email) == who.lower()), visible_user_clause()).limit(2))
+    if len(rows) == 1 and is_real_email(rows[0].email):
+        user_id, name, email = rows[0]
+        token = await new_auth_code(user_id, "reset", RESET_LINK_MINUTES, email)
+        plain, page_html = simple_email(f"Hi {(name or 'there').split()[0]},",
+            ["Someone (we hope you) asked to reset your Connect2Minds password.", f"The link works once, for {RESET_LINK_MINUTES} minutes."],
+            ("Choose a new password", f"{SITE_URL}/reset.html?t={token}"),
+            "If you did not ask for this, ignore this email; your password stays as it is.")
+        spawn_background(send_email(email, "Reset your Connect2Minds password", plain, page_html))
+    return {"message": FORGOT_ANSWER, "email_ready": True}
+
+@app.get("/api/password/reset")
+@limiter.limit("20/hour")
+async def check_reset_link(request: Request, t: str = ""):
+    row = await find_link_code("reset", t)
+    if not row:
+        return {"valid": False}
+    rows = await fetch_one_off(select(DBUser.name).where(DBUser.id == row.user_id))
+    return {"valid": True, "first_name": ((rows[0][0] if rows else "") or "").split(" ")[0]}
+
+@app.post("/api/password/reset")
+@limiter.limit("10/hour")
+async def reset_password(request: Request, body: ResetBody):
+    row = await find_link_code("reset", body.token)
+    if not row:
+        raise HTTPException(status_code=400, detail="This link has run out or was already used. Ask for a new one.")
+    new_hash = await hash_password_async(check_new_password(body.password))
+    deleted = await run_returning(delete(DBAuthCode).where(DBAuthCode.id == row.id).returning(DBAuthCode.id))
+    if not deleted:   # used a moment ago in another tab
+        raise HTTPException(status_code=400, detail="This link was already used. Ask for a new one.")
+    await run_one_off(update(DBUser).where(DBUser.id == row.user_id).values(hashed_password=new_hash))
+    await bump_token_version(row.user_id)
+    spawn_background(log_activity_later(row.user_id, "Password Reset", "Your password was reset from an emailed link. Every device was logged out."))
+    return {"status": "reset"}
+
+@app.post("/api/founder/reset-link/{user_id}")
+async def founder_reset_link(user_id: int, founder_id: int = Depends(require_founder)):
+    """For people who cannot get email: the founder checks who they are, then sends this link by hand."""
+    rows = await fetch_one_off(select(DBUser.name).where(DBUser.id == user_id, visible_user_clause()))
+    if not rows:
+        raise HTTPException(status_code=404, detail="No such account.")
+    token = await new_auth_code(user_id, "reset", FOUNDER_RESET_LINK_MINUTES, "by founder")
+    spawn_background(log_activity_later(user_id, "Reset Link Made", "The founder made a password reset link for your account."))
+    return {"link": f"{SITE_URL}/reset.html?t={token}", "name": rows[0][0] or "", "hours": FOUNDER_RESET_LINK_MINUTES // 60}
+
+
+# ---------- email check ----------
+class EmailCodeBody(BaseModel):
+    email: Optional[str] = ""      # empty: the account's own email
+
+class EmailVerifyBody(BaseModel):
+    code: str
+
+@app.post("/api/me/email/send-code")
+@limiter.limit("5/hour", key_func=account_rate_key)
+async def send_email_code(request: Request, body: EmailCodeBody, current_user_id: int = Depends(get_current_user_id)):
+    if not EMAIL_READY:
+        raise HTTPException(status_code=503, detail="Email is not set up on Connect2Minds yet. Try again later.")
+    rows = await fetch_one_off(select(DBUser.email, DBUser.name).where(DBUser.id == current_user_id))
+    target = (body.email or "").strip()[:160] or (rows[0].email if rows else "")
+    if not is_real_email(target):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+    taken = await fetch_one_off(select(DBUser.id).where(func.lower(DBUser.email) == target.lower(), DBUser.id != current_user_id).limit(1))
+    if taken:
+        raise HTTPException(status_code=400, detail="Another account uses that email address.")
+    code = f"{secrets.randbelow(1000000):06d}"
+    await new_auth_code(current_user_id, "verify_email", EMAIL_CODE_MINUTES, target, code)
+    plain, page_html = simple_email(f"Hi {((rows[0].name if rows else '') or 'there').split()[0]},",
+        [f"Your Connect2Minds code is {code}.", f"Type it on the Account page within {EMAIL_CODE_MINUTES} minutes to confirm this email address."],
+        footer="If you did not ask for this, ignore this email.")
+    if not await send_email(target, f"{code} is your Connect2Minds code", plain, page_html):
+        raise HTTPException(status_code=502, detail="We could not send the email. Check the address and try again.")
+    return {"sent_to": target, "minutes": EMAIL_CODE_MINUTES}
+
+async def send_signup_code(user_id: int, name: str, email: str):
+    """Right after sign-up: a code to confirm the email address (typed on the Account page)."""
+    try:
+        code = f"{secrets.randbelow(1000000):06d}"
+        await new_auth_code(user_id, "verify_email", 24 * 60, email, code)
+        plain, page_html = simple_email(f"Welcome to Connect2Minds, {(name or 'there').split()[0]}!",
+            [f"Your code to confirm this email address is {code}.", "Type it on the Account & privacy page within 24 hours."],
+            ("Open Account & privacy", f"{SITE_URL}/account.html#emailCard"), "If you did not sign up, ignore this email.")
+        await send_email(email, f"{code} is your Connect2Minds code", plain, page_html)
+    except Exception as e:
+        print("Sign-up email failed:", e)
+
+@app.post("/api/me/email/verify")
+@limiter.limit("20/hour", key_func=account_rate_key)
+async def verify_email_code(request: Request, body: EmailVerifyBody, current_user_id: int = Depends(get_current_user_id)):
+    row = await check_typed_code(current_user_id, "verify_email", body.code)
+    taken = await fetch_one_off(select(DBUser.id).where(func.lower(DBUser.email) == row.target.lower(), DBUser.id != current_user_id).limit(1))
+    if taken:
+        raise HTTPException(status_code=400, detail="Another account uses that email address.")
+    values = {"email": row.target, "email_verified": 1, "email_verified_at": utc_now_iso()}
+    status_rows = await fetch_one_off(select(DBUser.account_status).where(DBUser.id == current_user_id))
+    # A checked college address verifies a waiting student account, as it did at sign-up before emails could be checked
+    if status_rows and status_rows[0][0] == "pending" and row.target.lower().endswith((".edu.in", ".ac.in")):
+        values["account_status"] = "verified"
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(**values))
+    await run_one_off(delete(DBAuthCode).where(DBAuthCode.id == row.id))
+    spawn_background(log_activity_later(current_user_id, "Email Confirmed", f"{row.target} is confirmed as your email address."))
+    return {"email": row.target, "email_verified": True, "account_status": values.get("account_status", "")}
+
+
+# ---------- two-step login (TOTP) ----------
+class TwoFactorSetupBody(BaseModel):
+    password: str
+
+class TwoFactorCodeBody(BaseModel):
+    code: str
+
+class TwoFactorOffBody(BaseModel):
+    password: str
+    code: str
+
+class TwoFactorLoginBody(BaseModel):
+    ticket: str
+    code: str
+
+TOTP_LAST_STEP: dict = {}     # user id -> the last time step used, so one code cannot log in twice
+
+def totp_key() -> bytes:
+    return base64.urlsafe_b64encode(hashlib.sha256(f"totp:{SECRET_KEY}".encode()).digest())
+
+def seal_secret(secret: str) -> str:
+    return Fernet(totp_key()).encrypt(secret.encode()).decode()
+
+def open_secret(sealed: str) -> str:
+    try:
+        return Fernet(totp_key()).decrypt((sealed or "").encode()).decode()
+    except Exception:
+        return ""
+
+def totp_at(secret: str, step: int) -> str:
+    key = base64.b32decode(secret + "=" * (-len(secret) % 8))
+    digest = hmac.new(key, struct.pack(">Q", step), "sha1").digest()
+    offset = digest[-1] & 0x0F
+    return f"{(struct.unpack('>I', digest[offset:offset + 4])[0] & 0x7FFFFFFF) % 1000000:06d}"
+
+def totp_step_matching(secret: str, code: str, now: Optional[float] = None) -> Optional[int]:
+    """The 30-second step whose code this is (now, or one step either side), or None."""
+    code = re.sub(r"\s", "", code or "")
+    if not secret or not re.fullmatch(r"\d{6}", code):
+        return None
+    step = int((now if now is not None else datetime.now(timezone.utc).timestamp()) // 30)
+    for candidate in (step, step - 1, step + 1):
+        if hmac.compare_digest(totp_at(secret, candidate), code):
+            return candidate
+    return None
+
+async def check_second_factor(user_id: int, sealed_secret: str, code: str) -> bool:
+    """An authenticator code (each used once) or an unused backup code."""
+    step = totp_step_matching(open_secret(sealed_secret), code)
+    if step is not None:
+        if TOTP_LAST_STEP.get(user_id, -1) >= step:
+            return False
+        TOTP_LAST_STEP[user_id] = step
+        return True
+    typed = re.sub(r"[\s-]", "", code or "").lower()
+    if len(typed) != 10:
+        return False
+    used = await run_returning(update(DBBackupCode).where(DBBackupCode.user_id == user_id, DBBackupCode.code_hash == code_hash(typed),
+                                                          DBBackupCode.used_at == "").values(used_at=utc_now_iso()).returning(DBBackupCode.id))
+    return bool(used)
+
+async def new_backup_codes(user_id: int) -> list:
+    codes = [secrets.token_hex(5) for _ in range(BACKUP_CODE_COUNT)]
+    await run_one_off(delete(DBBackupCode).where(DBBackupCode.user_id == user_id))
+    await run_one_off(DBBackupCode.__table__.insert().values([{"user_id": user_id, "code_hash": code_hash(c), "used_at": ""} for c in codes]))
+    return [f"{c[:5]}-{c[5:]}" for c in codes]
+
+async def check_own_password(user_id: int, password: str):
+    rows = await fetch_one_off(select(DBUser.hashed_password, DBUser.totp_secret, DBUser.totp_enabled, DBUser.roll_no, DBUser.name).where(DBUser.id == user_id))
+    if not rows or not rows[0].hashed_password or not await check_password_async(password or "", rows[0].hashed_password):
+        raise HTTPException(status_code=400, detail="That password is not right.")
+    return rows[0]
+
+@app.post("/api/me/2fa/setup")
+@limiter.limit("10/hour", key_func=account_rate_key)
+async def two_factor_setup(request: Request, body: TwoFactorSetupBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await check_own_password(current_user_id, body.password)
+    if (me.totp_enabled or 0) == 1:
+        raise HTTPException(status_code=400, detail="Two-step login is already on.")
+    secret = base64.b32encode(secrets.token_bytes(20)).decode().rstrip("=")
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(totp_secret=seal_secret(secret), totp_enabled=0))
+    label = urllib.parse.quote(f"Connect2Minds:{me.roll_no or me.name or current_user_id}")
+    return {"secret": secret, "uri": f"otpauth://totp/{label}?secret={secret}&issuer=Connect2Minds&digits=6&period=30"}
+
+@app.post("/api/me/2fa/enable")
+@limiter.limit("20/hour", key_func=account_rate_key)
+async def two_factor_enable(request: Request, body: TwoFactorCodeBody, response: Response, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBUser.totp_secret, DBUser.totp_enabled).where(DBUser.id == current_user_id))
+    if not rows or not rows[0].totp_secret:
+        raise HTTPException(status_code=400, detail="Start the set-up again.")
+    if (rows[0].totp_enabled or 0) == 1:
+        raise HTTPException(status_code=400, detail="Two-step login is already on.")
+    step = totp_step_matching(open_secret(rows[0].totp_secret), body.code)
+    if step is None:
+        raise HTTPException(status_code=400, detail="That code is not right. Check the time on your phone and try the newest code.")
+    TOTP_LAST_STEP[current_user_id] = step
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(totp_enabled=1))
+    codes = await new_backup_codes(current_user_id)
+    await bump_token_version(current_user_id, (request, response, cookie_lifetime(request)))
+    spawn_background(log_activity_later(current_user_id, "Two-Step Login On", "Logging in now also needs a code from your authenticator app."))
+    return {"two_factor": True, "backup_codes": codes}
+
+@app.post("/api/me/2fa/disable")
+@limiter.limit("10/hour", key_func=account_rate_key)
+async def two_factor_disable(request: Request, body: TwoFactorOffBody, response: Response, current_user_id: int = Depends(get_current_user_id)):
+    me = await check_own_password(current_user_id, body.password)
+    if (me.totp_enabled or 0) != 1:
+        return {"two_factor": False}
+    if not await check_second_factor(current_user_id, me.totp_secret, body.code):
+        raise HTTPException(status_code=400, detail="That code is not right.")
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(totp_enabled=0, totp_secret=""))
+    await run_one_off(delete(DBBackupCode).where(DBBackupCode.user_id == current_user_id))
+    await bump_token_version(current_user_id, (request, response, cookie_lifetime(request)))
+    spawn_background(log_activity_later(current_user_id, "Two-Step Login Off", "Logging in needs only your password again."))
+    return {"two_factor": False}
+
+@app.post("/api/me/2fa/backup-codes")
+@limiter.limit("5/hour", key_func=account_rate_key)
+async def two_factor_new_backups(request: Request, body: TwoFactorSetupBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await check_own_password(current_user_id, body.password)
+    if (me.totp_enabled or 0) != 1:
+        raise HTTPException(status_code=400, detail="Turn two-step login on first.")
+    return {"backup_codes": await new_backup_codes(current_user_id)}
+
+def two_factor_ticket(user_id: int, remember: bool) -> str:
+    """What /api/login gives instead of a cookie when a code is still needed. Useless for anything else."""
+    return create_access_token(data={"sub": str(user_id), "purpose": "2fa", "remember": bool(remember)}, minutes=TWO_FACTOR_TICKET_MINUTES)
+
+async def require_admin_second_factor(user: DBUser, code: Optional[str]):
+    """The admin tab of login.html: an account with two-step login on must also give its code."""
+    if (user.totp_enabled or 0) != 1:
+        return
+    if not (code or "").strip():
+        raise HTTPException(status_code=401, detail="Enter the 6-digit code from your authenticator app.", headers={"X-Two-Factor": "required"})
+    if not await check_second_factor(user.id, user.totp_secret, code):
+        raise HTTPException(status_code=401, detail="That code is not right.", headers={"X-Two-Factor": "required"})
+
+@app.post("/api/login/2fa")
+@limiter.limit("5/minute")
+async def login_second_step(request: Request, body: TwoFactorLoginBody, response: Response, db: AsyncSession = Depends(get_db)):
+    try:
+        payload = jwt.decode(body.ticket or "", SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="That took too long. Log in again.")
+    if payload.get("purpose") != "2fa":
+        raise HTTPException(status_code=401, detail="Log in again.")
+    user = (await db.execute(select(DBUser).filter(DBUser.id == int(payload["sub"])))).scalars().first()
+    if not user or (user.totp_enabled or 0) != 1:
+        raise HTTPException(status_code=401, detail="Log in again.")
+    if not await check_second_factor(user.id, user.totp_secret, body.code):
+        raise HTTPException(status_code=400, detail="That code is not right.")
+    return await finish_login(request, response, db, user, bool(payload.get("remember")))
+
+
+# ---------- age and guardians ----------
+class BirthDateBody(BaseModel):
+    birth_date: str
+    guardian_email: Optional[str] = ""
+
+class GuardianDecisionBody(BaseModel):
+    token: str
+    decision: str          # approve, decline
+
+class GuardianResendBody(BaseModel):
+    guardian_email: Optional[str] = ""
+
+class FounderGuardianBody(BaseModel):
+    decision: str
+
+async def start_guardian_wait(user_id: int, name: str, guardian_email: str) -> bool:
+    await run_one_off(update(DBUser).where(DBUser.id == user_id).values(guardian_status="pending", guardian_email=guardian_email))
+    GUARDIAN_PENDING.add(user_id)
+    spawn_background(close_account_sockets(user_id))
+    sent = await send_guardian_request(user_id, name, guardian_email)
+    spawn_background(notify_founders("account", f"{name} is under 18 and waits for a guardian's consent.", "founder.html?tab=safety"))
+    return sent
+
+@app.post("/api/me/birth-date")
+@limiter.limit("10/hour", key_func=account_rate_key)
+async def save_birth_date(request: Request, body: BirthDateBody, current_user_id: int = Depends(get_current_user_id)):
+    """For accounts made before sign-up asked the date of birth. Can be set once; Support can correct it."""
+    rows = await fetch_one_off(select(DBUser.birth_date, DBUser.name, DBUser.email, DBUser.is_founder).where(DBUser.id == current_user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    if rows[0].birth_date:
+        raise HTTPException(status_code=400, detail="Your date of birth is already saved. To correct it, write to Support.")
+    birth_date, age = parse_birth_date(body.birth_date)
+    if age < MIN_AGE:
+        raise HTTPException(status_code=400, detail=f"Connect2Minds is for people aged {MIN_AGE} and over.")
+    guardian = check_guardian_email(body.guardian_email, rows[0].email) if age < ADULT_AGE and (rows[0].is_founder or 0) != 1 else ""
+    await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(birth_date=birth_date))
+    if age < ADULT_AGE:
+        MINOR_ACCOUNTS.add(current_user_id)
+    sent = await start_guardian_wait(current_user_id, rows[0].name or "", guardian) if guardian else False
+    return {"birth_date": birth_date, "guardian_needed": bool(guardian), "email_sent": sent}
+
+@app.post("/api/me/guardian/resend")
+@limiter.limit("5/hour", key_func=account_rate_key)
+async def resend_guardian(request: Request, body: GuardianResendBody, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBUser.name, DBUser.email, DBUser.guardian_email, DBUser.guardian_status).where(DBUser.id == current_user_id))
+    if not rows or rows[0].guardian_status != "pending":
+        raise HTTPException(status_code=400, detail="Nothing is waiting for a guardian.")
+    guardian = check_guardian_email(body.guardian_email or rows[0].guardian_email, rows[0].email)
+    if guardian != rows[0].guardian_email:
+        await run_one_off(update(DBUser).where(DBUser.id == current_user_id).values(guardian_email=guardian))
+    sent = await send_guardian_request(current_user_id, rows[0].name or "", guardian)
+    return {"email_sent": sent, "email_ready": EMAIL_READY, "guardian_email": mask_email(guardian)}
+
+async def decide_guardian(user_id: int, approve: bool, by: str):
+    if approve:
+        await run_one_off(update(DBUser).where(DBUser.id == user_id).values(guardian_status="approved", guardian_consent_at=utc_now_iso()))
+        GUARDIAN_PENDING.discard(user_id)
+        await run_one_off(delete(DBAuthCode).where(DBAuthCode.user_id == user_id, DBAuthCode.purpose == "guardian"))
+        spawn_background(create_notification(user_id, "account", "Your guardian agreed. Welcome to Connect2Minds!", utc_now_iso(), "home.html"))
+        spawn_background(log_activity_later(user_id, "Guardian Consent", f"Your parent or guardian agreed ({by})."))
+        return
+    # No: the account and its data go now (the usual erase, without the 14-day wait)
+    await run_one_off(update(DBUser).where(DBUser.id == user_id).values(
+        status_before_delete=func.coalesce(DBUser.account_status, "pending"), account_status="closing", delete_after=utc_now_iso(), guardian_status="declined"))
+    CLOSED_ACCOUNTS.add(user_id)
+    GUARDIAN_PENDING.discard(user_id)
+    spawn_background(close_account_sockets(user_id))
+    spawn_background(erase_account(user_id))
+
+@app.get("/api/guardian")
+@limiter.limit("30/hour")
+async def guardian_view(request: Request, t: str = ""):
+    row = await find_link_code("guardian", t)
+    if not row:
+        return {"valid": False}
+    rows = await fetch_one_off(select(DBUser.name, DBUser.college_name, DBUser.department, DBUser.birth_date, DBUser.guardian_status).where(DBUser.id == row.user_id))
+    if not rows or rows[0].guardian_status != "pending":
+        return {"valid": False}
+    r = rows[0]
+    return {"valid": True, "name": r.name or "", "college": r.college_name or "", "department": r.department or "", "birth_date": r.birth_date or ""}
+
+@app.post("/api/guardian")
+@limiter.limit("10/hour")
+async def guardian_decide(request: Request, body: GuardianDecisionBody):
+    if body.decision not in ("approve", "decline"):
+        raise HTTPException(status_code=400, detail="Choose agree or decline.")
+    row = await find_link_code("guardian", body.token)
+    if not row:
+        raise HTTPException(status_code=400, detail="This link has run out or was already used.")
+    await decide_guardian(row.user_id, body.decision == "approve", "by the emailed link")
+    await run_one_off(delete(DBAuthCode).where(DBAuthCode.id == row.id))
+    return {"decision": body.decision}
+
+
+# ---------- reports ----------
+class ReportBody(BaseModel):
+    kind: str
+    target_id: int
+    reason: str
+    details: Optional[str] = ""
+
+class ReportDecisionBody(BaseModel):
+    action: str            # review, dismiss, remove, warn, suspend
+    note: Optional[str] = ""
+
+def snapshot_text(content: Optional[str]) -> str:
+    text_ = content or ""
+    if text_.startswith("data:") or len(text_) > 20000:
+        return "[a picture, recording or file]"
+    return text_[:2000]
+
+async def report_target(kind: str, target_id: int, reporter_id: int) -> tuple:
+    """(owner id, snapshot, link) of something the reporter can see. 404 otherwise."""
+    missing = HTTPException(status_code=404, detail="We could not find that, or you cannot see it.")
+    if kind == "user":
+        rows = await fetch_one_off(select(DBUser.name, DBUser.bio).where(DBUser.id == target_id, visible_user_clause()))
+        if not rows:
+            raise missing
+        return target_id, f"{rows[0].name or ''}: {rows[0].bio or ''}"[:2000], f"profile.html?id={target_id}"
+    if kind == "message":
+        rows = await fetch_one_off(select(DBMessage.sender_id, DBMessage.receiver_id, DBMessage.content).where(DBMessage.id == target_id))
+        if not rows or rows[0].receiver_id != reporter_id:
+            raise missing
+        return rows[0].sender_id, snapshot_text(rows[0].content), ""
+    if kind == "team_message":
+        rows = await fetch_one_off(select(DBTeamMessage.sender_id, DBTeamMessage.team_id, DBTeamMessage.content).where(DBTeamMessage.id == target_id))
+        if not rows:
+            raise missing
+        member = await fetch_one_off(select(DBTeamMember.id).where(DBTeamMember.team_id == rows[0].team_id, DBTeamMember.user_id == reporter_id))
+        if not member:
+            raise missing
+        return rows[0].sender_id, snapshot_text(rows[0].content), f"team.html?team={rows[0].team_id}"
+    if kind == "college_message":
+        rows = await fetch_one_off(select(DBCollegeMessage.sender_id, DBCollegeMessage.college_key, DBCollegeMessage.content).where(DBCollegeMessage.id == target_id))
+        me = await fetch_one_off(select(DBUser.college_name, DBUser.teacher_of).where(DBUser.id == reporter_id))
+        if not rows or not me or rows[0].college_key not in (college_key_of(me[0].college_name or ""), me[0].teacher_of or ""):
+            raise missing
+        return rows[0].sender_id, snapshot_text(rows[0].content), "college-hub.html"
+    if kind == "board_post":
+        rows = await fetch_one_off(select(DBBoardPost.author_id, DBBoardPost.title, DBBoardPost.description).where(DBBoardPost.id == target_id))
+        if not rows:
+            raise missing
+        return rows[0].author_id, f"{rows[0].title or ''}\n{rows[0].description or ''}"[:2000], "board.html"
+    if kind == "team":
+        rows = await fetch_one_off(select(DBTeam.created_by, DBTeam.name, DBTeam.description).where(DBTeam.id == target_id))
+        if not rows:
+            raise missing
+        return rows[0].created_by, f"{rows[0].name or ''}: {rows[0].description or ''}"[:2000], f"team.html?team={target_id}"
+    raise HTTPException(status_code=400, detail="That cannot be reported.")
+
+@app.post("/api/reports")
+@limiter.limit("10/hour", key_func=account_rate_key)
+async def create_report(request: Request, body: ReportBody, current_user_id: int = Depends(get_current_user_id)):
+    if body.kind not in REPORT_KINDS:
+        raise HTTPException(status_code=400, detail="That cannot be reported.")
+    if body.reason not in REPORT_REASONS:
+        raise HTTPException(status_code=400, detail="Pick a reason.")
+    owner_id, snapshot, link = await report_target(body.kind, body.target_id, current_user_id)
+    if owner_id == current_user_id:
+        raise HTTPException(status_code=400, detail="You cannot report yourself or your own posts.")
+    already = await fetch_one_off(select(DBContentReport.id).where(DBContentReport.reporter_id == current_user_id, DBContentReport.target_kind == body.kind,
+                                                                   DBContentReport.target_id == body.target_id, DBContentReport.status.in_(("open", "reviewing"))))
+    if already:
+        raise HTTPException(status_code=409, detail="You already reported this. We are looking at it.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBContentReport.__table__.insert().values(
+        reporter_id=current_user_id, target_kind=body.kind, target_id=body.target_id, target_user_id=owner_id, reason=body.reason,
+        details=clean_text(body.details, 1000, "details"), snapshot=snapshot, link=link, status="open", created_at=now_iso).returning(DBContentReport.id))
+    spawn_background(create_notification(current_user_id, "account", f"We got your report (#{rows[0][0]}). We will look at it and tell you what we decide within {REPORT_RESOLVE_DAYS} days.", now_iso, "support.html"))
+    spawn_background(notify_founders("account", f"New report: {REPORT_REASONS[body.reason]}. Acknowledge within {REPORT_ACK_HOURS} hours.", "founder.html?tab=safety"))
+    return {"id": rows[0][0], "status": "open", "resolve_days": REPORT_RESOLVE_DAYS}
+
+@app.get("/api/report-reasons")
+async def report_reasons():
+    return {"reasons": [{"key": key, "label": label} for key, label in REPORT_REASONS.items()]}
+
+def report_dict(r, reporter_name, target_name, earlier: int) -> dict:
+    created = datetime.fromisoformat((r.created_at or utc_now_iso()).replace("Z", "+00:00"))
+    return {"id": r.id, "kind": r.target_kind, "target_id": r.target_id, "target_user_id": r.target_user_id, "target_name": target_name or "",
+            "reporter_id": r.reporter_id, "reporter_name": reporter_name or "", "reason": r.reason, "reason_label": REPORT_REASONS.get(r.reason, r.reason),
+            "details": r.details or "", "snapshot": r.snapshot or "", "link": r.link or "", "status": r.status, "action_taken": r.action_taken or "",
+            "founder_note": r.founder_note or "", "created_at": r.created_at or "", "ack_at": r.ack_at or "", "resolved_at": r.resolved_at or "",
+            "ack_by": (created + timedelta(hours=REPORT_ACK_HOURS)).isoformat(), "resolve_by": (created + timedelta(days=REPORT_RESOLVE_DAYS)).isoformat(),
+            "earlier_reports": earlier}
+
+@app.get("/api/founder/safety")
+async def founder_safety(founder_id: int = Depends(require_founder)):
+    """The Safety tab: reports (open first), suspended accounts, under-18s waiting for a guardian."""
+    reporter, target = aliased(DBUser), aliased(DBUser)
+    open_first = case((DBContentReport.status.in_(("open", "reviewing")), 0), else_=1)
+    reports, suspended, waiting = await asyncio.gather(
+        fetch_one_off(select(DBContentReport, reporter.name, target.name)
+                      .outerjoin(reporter, reporter.id == DBContentReport.reporter_id).outerjoin(target, target.id == DBContentReport.target_user_id)
+                      .order_by(open_first, DBContentReport.id.desc()).limit(300)),
+        fetch_one_off(select(DBUser.id, DBUser.name, DBUser.suspend_reason).where(DBUser.suspended == 1).order_by(DBUser.id)),
+        fetch_one_off(select(DBUser.id, DBUser.name, DBUser.college_name, DBUser.birth_date, DBUser.guardian_email).where(DBUser.guardian_status == "pending").order_by(DBUser.id)),
+    )
+    per_person: dict = {}
+    for r, _, _ in reports:
+        per_person[r.target_user_id] = per_person.get(r.target_user_id, 0) + 1
+    return {"reports": [report_dict(r, rn, tn, per_person.get(r.target_user_id, 1) - 1) for r, rn, tn in reports],
+            "suspended": [{"id": i, "name": n or "", "reason": why or ""} for i, n, why in suspended],
+            "guardian_waiting": [{"id": i, "name": n or "", "college": c or "", "birth_date": b or "", "guardian_email": g or ""} for i, n, c, b, g in waiting],
+            "email_ready": EMAIL_READY}
+
+async def remove_reported(kind: str, target_id: int):
+    if kind == "message":
+        await run_one_off(update(DBMessage).where(DBMessage.id == target_id).values(content=REMOVED_TEXT))
+    elif kind == "team_message":
+        await run_one_off(update(DBTeamMessage).where(DBTeamMessage.id == target_id).values(content=REMOVED_TEXT))
+    elif kind == "college_message":
+        await run_one_off(update(DBCollegeMessage).where(DBCollegeMessage.id == target_id).values(content=REMOVED_TEXT))
+    elif kind == "board_post":
+        await run_one_off(delete(DBBoardApplication).where(DBBoardApplication.post_id == target_id))
+        await run_one_off(delete(DBBoardPost).where(DBBoardPost.id == target_id))
+    else:
+        raise HTTPException(status_code=400, detail="Remove works for messages and board posts. Suspend the account or warn the person instead.")
+
+async def set_suspended(user_id: int, on: bool, reason: str = ""):
+    founder = await fetch_one_off(select(DBUser.is_founder).where(DBUser.id == user_id))
+    if not founder:
+        raise HTTPException(status_code=404, detail="No such account.")
+    if on and (founder[0][0] or 0) == 1:
+        raise HTTPException(status_code=400, detail="The founder account cannot be suspended.")
+    await run_one_off(update(DBUser).where(DBUser.id == user_id).values(suspended=1 if on else 0, suspend_reason=reason[:300] if on else ""))
+    if on:
+        SUSPENDED_ACCOUNTS.add(user_id)
+        spawn_background(close_account_sockets(user_id))
+        spawn_background(broadcast_directory({"type": "profile_removed", "id": user_id}))
+    else:
+        SUSPENDED_ACCOUNTS.discard(user_id)
+
+@app.post("/api/founder/reports/{report_id}")
+async def founder_decide_report(report_id: int, body: ReportDecisionBody, founder_id: int = Depends(require_founder)):
+    if body.action not in ("review", "dismiss", "remove", "warn", "suspend"):
+        raise HTTPException(status_code=400, detail="Unknown action.")
+    rows = await fetch_one_off(select(DBContentReport).where(DBContentReport.id == report_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="No such report.")
+    report, note, now_iso = rows[0][0], (body.note or "").strip()[:500], utc_now_iso()
+    values = {"ack_at": report.ack_at or now_iso, "founder_note": note or report.founder_note or "", "resolver_id": founder_id}
+    if body.action == "review":
+        values["status"] = "reviewing"
+    else:
+        reason = REPORT_REASONS.get(report.reason, report.reason or "").lower()
+        if body.action == "remove":
+            await remove_reported(report.target_kind, report.target_id)
+        if body.action == "suspend" and report.target_user_id:
+            await set_suspended(report.target_user_id, True, note or reason)
+        if body.action in ("remove", "warn", "suspend") and report.target_user_id and body.action != "suspend":
+            what = "Something you posted was removed" if body.action == "remove" else "A warning from Connect2Minds"
+            spawn_background(create_notification(report.target_user_id, "account", f"{what}: {reason}." + (f" {note}" if note else "") + " Please follow the honour code. You can appeal through Support.", now_iso, "terms.html#honour-code"))
+        values.update(status="dismissed" if body.action == "dismiss" else "actioned", resolved_at=now_iso,
+                      action_taken={"remove": "removed", "warn": "warned", "suspend": "suspended"}.get(body.action, ""))
+        outcome = "we found it does not break our rules" if body.action == "dismiss" else "we took action"
+        spawn_background(create_notification(report.reporter_id, "account", f"About your report #{report.id}: {outcome}. Thank you for telling us.", now_iso, ""))
+    await run_one_off(update(DBContentReport).where(DBContentReport.id == report_id).values(**values))
+    return {"id": report_id, **{k: v for k, v in values.items() if k != "resolver_id"}}
+
+@app.post("/api/founder/users/{user_id}/suspend")
+async def founder_suspend(user_id: int, body: ReportDecisionBody, founder_id: int = Depends(require_founder)):
+    """action "suspend" or "unsuspend", outside any report."""
+    if body.action not in ("suspend", "unsuspend"):
+        raise HTTPException(status_code=400, detail="Unknown action.")
+    await set_suspended(user_id, body.action == "suspend", (body.note or "").strip())
+    if body.action == "unsuspend":
+        spawn_background(create_notification(user_id, "account", "Your account is active again.", utc_now_iso(), "home.html"))
+    return {"suspended": body.action == "suspend"}
+
+@app.post("/api/founder/guardian/{user_id}")
+async def founder_guardian(user_id: int, body: FounderGuardianBody, founder_id: int = Depends(require_founder)):
+    """When email is not set up: the founder checks with the guardian (phone or email) and records the answer."""
+    if body.decision not in ("approve", "decline"):
+        raise HTTPException(status_code=400, detail="Choose approve or decline.")
+    rows = await fetch_one_off(select(DBUser.guardian_status).where(DBUser.id == user_id))
+    if not rows or rows[0][0] != "pending":
+        raise HTTPException(status_code=400, detail="This account is not waiting for a guardian.")
+    await decide_guardian(user_id, body.decision == "approve", "recorded by the founder")
+    return {"decision": body.decision}

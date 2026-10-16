@@ -60,7 +60,7 @@ function renderBilling(plan, payments) {
         <td>${['paid', 'refunded'].includes(p.status) ? `<button class="ch-btn line small" type="button" data-receipt="${p.id}">${icon('receipt_long')}Receipt</button>` : ''}</td></tr>`).join('')}
     </tbody></table></div>` : `<p class="ch-muted">No payments yet.</p>`}
     ${others.length ? '' : ''}
-    <p class="bl-small">Questions about a payment? Refunds are possible within 7 days if you have not used the paid features. Write to us from the Plans page.</p>`;
+    <p class="bl-small">Questions about a payment? See the <a class="msg-link" href="refund.html">refund &amp; cancellation policy</a>, then write to <a class="msg-link" href="support.html">Support</a> with the receipt number.</p>`;
 }
 
 async function showReceipt(id) {

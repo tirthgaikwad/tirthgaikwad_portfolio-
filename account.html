@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/>
+<html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="favicon.svg" type="image/svg+xml"/><link rel="icon" href="favicon.ico" sizes="48x48"/><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/><link rel="manifest" href="site.webmanifest"/><meta name="theme-color" content="#3525cd"/>
 <title>Connect2Minds | Account &amp; privacy</title>
 <script>
 // Ask for this page's data right away, while styles and scripts are still downloading. The page script picks up the result.
 (function () {
   if (!localStorage.getItem('currentUserId')) return;
-  var apiBase = location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000';
+  var apiBase = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000' : location.origin);
   window.__pagePrefetch = fetch(apiBase + '/api/me/account', { credentials: 'include' })
     .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
     .catch(function () { return null; });
@@ -47,10 +47,85 @@
 <div class="hm-hero-text">
 <p class="hm-date">Account &amp; privacy</p>
 <h1 class="hm-title">Your information, your choice</h1>
-<p class="hm-sub">Take a copy of everything Connect2Minds holds about you, or remove your account and your information from the site.</p>
+<p class="hm-sub">Keep your account safe, take a copy of everything Connect2Minds holds about you, or remove your account and your information from the site.</p>
 </div>
 </section>
 
+<section class="hm-card ac-card" id="securityCard">
+<div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">lock</span>Password and devices</h2></div>
+<p class="ac-text">Changing your password logs out every other device. Forgot it? Use <a href="reset.html">Forgot password</a> on the login page.</p>
+<div class="ac-actions">
+<button class="hm-btn is-quiet" id="pwOpenBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">password</span>Change password</button>
+<button class="hm-btn is-quiet" id="logoutAllBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">devices</span>Log out of all other devices</button>
+<span aria-live="polite" class="ac-status" id="secStatus"></span>
+</div>
+<form autocomplete="off" class="ac-form ac-nominee" hidden id="pwForm" novalidate>
+<div class="ac-grid">
+<label class="ac-field"><span>Current password</span><input autocomplete="current-password" id="pwCurrent" maxlength="200" type="password"/></label>
+<span></span>
+<label class="ac-field"><span>New password</span><input autocomplete="new-password" id="pwNew" maxlength="200" type="password"/></label>
+<label class="ac-field"><span>New password again</span><input autocomplete="new-password" id="pwNew2" maxlength="200" type="password"/></label>
+</div>
+<p class="ac-small">At least 8 characters. A short sentence is easier to remember and harder to guess.</p>
+<p class="ac-error" hidden id="pwError" role="alert"></p>
+<div class="ac-actions"><button class="hm-btn" id="pwSave" type="submit">Save new password</button><button class="hm-btn is-quiet" id="pwCancel" type="button">Cancel</button></div>
+</form>
+</section>
+<section class="hm-card ac-card" id="emailCard">
+<div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">mark_email_read</span>Email address</h2></div>
+<p class="ac-text">A confirmed email lets you reset your password and get account notices.</p>
+<dl class="ac-facts"><div><dt>Email</dt><dd id="emAddress">Loading…</dd></div><div><dt>Status</dt><dd id="emState">Loading…</dd></div></dl>
+<div class="ac-actions">
+<button class="hm-btn" hidden id="emSendBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">send</span>Send me a code</button>
+<button class="hm-btn is-quiet" hidden id="emChangeBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">edit</span>Use another email</button>
+<span aria-live="polite" class="ac-status" id="emStatus"></span>
+</div>
+<form autocomplete="off" class="ac-form ac-nominee" hidden id="emNewForm" novalidate>
+<label class="ac-field"><span>New email address</span><input autocomplete="email" id="emNew" maxlength="160" type="email"/></label>
+<div class="ac-actions"><button class="hm-btn" type="submit">Send a code to it</button><button class="hm-btn is-quiet" id="emNewCancel" type="button">Cancel</button></div>
+</form>
+<form autocomplete="off" class="ac-form ac-nominee" hidden id="emCodeForm" novalidate>
+<p class="ac-small" id="emSentTo"></p>
+<label class="ac-field"><span>6-digit code</span><input autocomplete="one-time-code" class="ac-code" id="emCode" inputmode="numeric" maxlength="6"/></label>
+<p class="ac-error" hidden id="emError" role="alert"></p>
+<div class="ac-actions"><button class="hm-btn" type="submit">Confirm</button></div>
+</form>
+</section>
+<section class="hm-card ac-card" id="twoFactorCard">
+<div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">phonelink_lock</span>Two-step login</h2></div>
+<p class="ac-text">After your password, logging in also asks for a code from an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, Authy…). Someone who learns your password still cannot get in.</p>
+<dl class="ac-facts"><div><dt>Status</dt><dd id="tfState">Loading…</dd></div><div><dt>Backup codes left</dt><dd id="tfBackups">—</dd></div></dl>
+<div class="ac-actions">
+<button class="hm-btn" hidden id="tfStartBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">add_moderator</span>Turn on two-step login</button>
+<button class="hm-btn is-quiet" hidden id="tfNewCodesBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">key</span>New backup codes</button>
+<button class="hm-btn is-quiet ac-remove" hidden id="tfOffBtn" type="button"><span aria-hidden="true" class="material-symbols-outlined">remove_moderator</span>Turn off</button>
+<span aria-live="polite" class="ac-status" id="tfStatus"></span>
+</div>
+<form autocomplete="off" class="ac-form ac-nominee" hidden id="tfPwForm" novalidate>
+<label class="ac-field"><span>Your password</span><input autocomplete="current-password" id="tfPassword" maxlength="200" type="password"/></label>
+<label class="ac-field" hidden id="tfOffCodeField"><span>Code from your app (or a backup code)</span><input autocomplete="one-time-code" class="ac-code" id="tfOffCode" maxlength="11"/></label>
+<p class="ac-error" hidden id="tfPwError" role="alert"></p>
+<div class="ac-actions"><button class="hm-btn" id="tfPwGo" type="submit">Continue</button><button class="hm-btn is-quiet" id="tfPwCancel" type="button">Cancel</button></div>
+</form>
+<div class="ac-form ac-nominee" hidden id="tfSetup">
+<ol class="ac-steps">
+<li>Open your authenticator app and add an account by scanning this code.</li>
+<li>Can't scan? Choose “enter a setup key” and type: <code id="tfSecret"></code></li>
+<li>Type the 6-digit code the app shows.</li>
+</ol>
+<div class="ac-qr" id="tfQr" aria-label="QR code for your authenticator app" role="img"></div>
+<form autocomplete="off" id="tfConfirmForm" novalidate>
+<label class="ac-field"><span>6-digit code</span><input autocomplete="one-time-code" class="ac-code" id="tfCode" inputmode="numeric" maxlength="6"/></label>
+<p class="ac-error" hidden id="tfError" role="alert"></p>
+<div class="ac-actions" style="margin-top:10px"><button class="hm-btn" type="submit">Turn on</button><button class="hm-btn is-quiet" id="tfSetupCancel" type="button">Cancel</button></div>
+</form>
+</div>
+<div class="ac-form ac-nominee" hidden id="tfCodes">
+<p class="ac-note"><span aria-hidden="true" class="material-symbols-outlined">warning</span><span><b>Save these backup codes now.</b> Each one logs you in once if you lose your phone. They are not shown again.</span></p>
+<ul class="ac-backup" id="tfCodeList"></ul>
+<div class="ac-actions"><button class="hm-btn is-quiet" id="tfCopyCodes" type="button"><span aria-hidden="true" class="material-symbols-outlined">content_copy</span>Copy</button><button class="hm-btn" id="tfCodesDone" type="button">I saved them</button></div>
+</div>
+</section>
 <section class="hm-card ac-card" id="exportCard">
 <div class="hm-head"><h2><span aria-hidden="true" class="material-symbols-outlined">download</span>Download my data</h2></div>
 <p class="ac-text">One file (JSON) with your profile and everything linked to your account: messages, projects, posts, study planner, notes, practice answers, payments and more. Your password and ID-card photo are never included.</p>
@@ -149,7 +224,7 @@
 <p>You have been logged out. Everything will be erased on <strong id="deleteDate"></strong>. If you change your mind, log in again before then.</p>
 <a class="hm-btn" href="index.html">Go to the home page</a>
 </section>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a></div></div></footer>
+</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a><a class="hover:text-primary transition-colors text-decoration-none" href="refund.html">Refunds</a><a class="hover:text-primary transition-colors text-decoration-none" href="contact.html">Contact</a></div></div></footer>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">
@@ -165,6 +240,7 @@
 
 <script src="chat-common.js"></script>
 <script src="account.js"></script>
+<script src="account-security.js"></script>
 <script>initAccount()</script>
 </body>
 </html>

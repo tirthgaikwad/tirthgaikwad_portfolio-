@@ -625,6 +625,7 @@ function messageRowHtml(msg, animate) {
         <button type="button" title="Reply" onclick="startReply(${msg.id})"><span class="material-symbols-outlined text-[15px] align-middle">reply</span></button>
         <button type="button" title="${msg.is_pinned ? 'Unpin' : 'Pin'}" onclick="togglePin(${msg.id})"><span class="material-symbols-outlined text-[15px] align-middle ${msg.is_pinned ? 'text-amber-500' : ''}">push_pin</span></button>
         ${canDeleteMessage(msg) ? `<button type="button" title="Delete" onclick="deleteTeamMessage(${msg.id})"><span class="material-symbols-outlined text-[15px] align-middle hover:text-rose-600">delete</span></button>` : ''}
+        ${msg.sender_id !== currentUserId && !msg.is_system_message ? `<button type="button" title="Report" aria-label="Report" data-report-kind="team_message" data-report-id="${msg.id}" data-report-name="${escapeHtml(msg.sender_name || '')}"><span class="material-symbols-outlined text-[15px] align-middle hover:text-rose-600">flag</span></button>` : ''}
       </div>`;
   }
 
@@ -1560,7 +1561,8 @@ function openTeamSettings() {
   el('settings-team-note').textContent = admin ? '' : 'Only Admins can change the name and description.';
   el('settings-danger').innerHTML = isCreator()
     ? '<button type="button" onclick="deleteWorkspace()" class="px-3 py-2 rounded-lg font-semibold text-sm text-rose-600 hover:bg-rose-50">Delete workspace</button>'
-    : '<button type="button" onclick="leaveWorkspace()" class="px-3 py-2 rounded-lg font-semibold text-sm text-rose-600 hover:bg-rose-50">Leave workspace</button>';
+    : '<button type="button" onclick="leaveWorkspace()" class="px-3 py-2 rounded-lg font-semibold text-sm text-rose-600 hover:bg-rose-50">Leave workspace</button>'
+      + `<button type="button" data-report-kind="team" data-report-id="${ws.team.id}" data-report-name="${escapeHtml(ws.team.name)}" class="px-3 py-2 rounded-lg font-semibold text-sm text-slate-500 hover:bg-slate-50">Report this team</button>`;
   el('team-settings-modal').classList.add('active');
 }
 

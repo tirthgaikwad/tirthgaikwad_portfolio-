@@ -1,18 +1,20 @@
 // ==========================================
 // FOUNDER.JS — The Founder console (founder.html). Only the founder: admin and teacher applications, admins and
-// their departments, the verification log, plans and payments, business enquiries and sponsored challenges.
+// their departments, the verification log, plans and payments, business enquiries and sponsored challenges, and the
+// Safety tab (section 31): reports with their legal dates, suspended accounts, under-18s waiting for a guardian,
+// and a password reset link for people who cannot get email.
 // The accounts table and the announcement stay on admin_dashboard.html (the "Accounts" tab links there).
 // Loaded after shared.js, chat-common.js and pages-common.js.
 // ==========================================
 
-const TABS = ['overview', 'admins', 'teachers', 'verification', 'plans', 'enquiries', 'sponsored'];
+const TABS = ['overview', 'safety', 'admins', 'teachers', 'verification', 'plans', 'enquiries', 'sponsored'];
 const F = { tab: 'overview', cache: {} };
 const PERIOD_LABEL = { month: 'Monthly', year: 'Yearly', one_time: 'One-off', trial: 'Trial' };
 
 function switchTab(tab) {
   F.tab = tab;
   el('fcBody').innerHTML = '<div class="skeleton" style="height:140px"></div><div class="skeleton" style="height:220px;margin-top:14px"></div>';
-  ({ overview: renderOverview, admins: renderAdmins, teachers: renderTeachers, verification: renderVerification, plans: renderPlans, enquiries: renderEnquiries, sponsored: renderSponsored })[tab]();
+  ({ overview: renderOverview, safety: renderSafety, admins: renderAdmins, teachers: renderTeachers, verification: renderVerification, plans: renderPlans, enquiries: renderEnquiries, sponsored: renderSponsored })[tab]();
 }
 
 function guard(err) {
@@ -34,6 +36,7 @@ async function renderOverview() {
   const openItems = [
     ['admins', o.open.admin_applications, 'admin applications waiting', 'shield_person'],
     ['teachers', o.open.teacher_applications, 'teacher applications waiting', 'school'],
+    ['safety', o.open.reports || 0, 'reports to answer (24 h to acknowledge, 15 days to decide)', 'flag'],
     ['enquiries', o.open.enquiries, 'enquiries and requests open', 'mail'],
     ['verification', o.open.unassigned_verification, 'accounts waiting with no admin for their department', 'how_to_reg']
   ];
@@ -324,14 +327,18 @@ function grantForm(prefill) {
 // ==========================================
 // 5. ENQUIRIES AND SPONSORED CHALLENGES
 // ==========================================
-// DPDP Act requests (dpdp.html) have a legal reply date; their statuses read as a request, not a sale
+// DPDP Act requests (dpdp.html), grievances and appeals (support.html) and copyright takedowns (copyright.html) have a
+// legal reply date; their statuses read as a request, not a sale
 const RIGHTS_STATUS = { new: 'New', contacted: 'Replied', won: 'Done', lost: 'Closed' };
-const enquiryKind = (e) => e.kind === 'data_rights' ? 'DPDP request' : e.kind;
+const LEGAL_KINDS = { data_rights: 'DPDP request', grievance: 'Grievance', takedown: 'Copyright takedown' };
+const isLegal = (e) => e.kind in LEGAL_KINDS;
+const isRequest = (e) => isLegal(e) || e.kind === 'support';
+const enquiryKind = (e) => LEGAL_KINDS[e.kind] || e.kind;
 function replyByHtml(e) {
-  if (e.kind !== 'data_rights' || !e.reply_by) return '';
+  if (!isLegal(e) || !e.reply_by) return '';
   const days = Math.ceil((new Date(`${e.reply_by}T23:59:59`) - Date.now()) / 86400000);
   const open = e.status === 'new' || e.status === 'contacted';
-  const left = !open ? '' : days < 0 ? ` <span class="ch-chip warn">${-days} days late</span>` : ` <span class="ch-chip ${days <= 14 ? 'warn' : 'indigo'}">${days} days left</span>`;
+  const left = !open ? '' : days < 0 ? ` <span class="ch-chip warn">${-days} days late</span>` : ` <span class="ch-chip ${days <= Math.min(14, e.kind === 'data_rights' ? 14 : 3) ? 'warn' : 'indigo'}">${days} ${days === 1 ? 'day' : 'days'} left</span>`;
   return `<dt>Reply by</dt><dd>${escapeHtml(new Date(`${e.reply_by}T00:00:00`).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }))}${left}</dd>`;
 }
 
@@ -341,14 +348,14 @@ async function renderEnquiries() {
   F.cache.enquiries = data.enquiries;
   el('fcBody').innerHTML = `<div class="ch-bar"><h2 class="ch-bar-title">Enquiries and support<small>${data.enquiries.length}</small></h2></div>
     <div class="fc-apps">${data.enquiries.map(e => `<article class="ch-panel fc-app">
-      <div class="fc-app-top"><span class="ch-chip ${e.kind === 'data_rights' ? 'warn' : 'navy'}">${escapeHtml(enquiryKind(e))}</span><h3 style="flex:1">${escapeHtml(e.organisation)}</h3>${e.kind === 'data_rights' ? `<span class="ch-chip ${(STATUS_CHIPS[e.status] || [''])[0]}">${escapeHtml(RIGHTS_STATUS[e.status] || e.status)}</span>` : statusChip(e.status)}</div>
+      <div class="fc-app-top"><span class="ch-chip ${isLegal(e) ? 'warn' : 'navy'}">${escapeHtml(enquiryKind(e))}</span><h3 style="flex:1">${escapeHtml(e.organisation)}</h3>${isLegal(e) ? `<span class="ch-chip ${(STATUS_CHIPS[e.status] || [''])[0]}">${escapeHtml(RIGHTS_STATUS[e.status] || e.status)}</span>` : statusChip(e.status)}</div>
       <dl class="ap-summary"><dt>Contact</dt><dd>${escapeHtml(e.contact_name)} · <a class="msg-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>${e.phone ? ` · ${escapeHtml(e.phone)}` : ''}</dd>
-        ${e.kind === 'support' || e.kind === 'data_rights' ? '' : `<dt>Plan</dt><dd>${escapeHtml(e.plan_name || 'Not sure yet')}</dd><dt>Size</dt><dd>${escapeHtml(e.size || '—')}</dd>`}<dt>Received</dt><dd>${escapeHtml(formatTime(e.created_at))}</dd>${replyByHtml(e)}</dl>
+        ${isRequest(e) ? '' : `<dt>Plan</dt><dd>${escapeHtml(e.plan_name || 'Not sure yet')}</dd><dt>Size</dt><dd>${escapeHtml(e.size || '—')}</dd>`}<dt>Received</dt><dd>${escapeHtml(formatTime(e.created_at))}</dd>${replyByHtml(e)}</dl>
       ${e.message ? `<div class="ap-note">${icon('chat')}<div><p>${linkify(e.message)}</p></div></div>` : ''}
       <div class="ap-actions">
-        <select class="ch-select" data-enq-status="${e.id}" aria-label="Status" style="width:auto">${['new', 'contacted', 'won', 'lost'].map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${e.kind === 'data_rights' ? RIGHTS_STATUS[s] : STATUS_CHIPS[s][1]}</option>`).join('')}</select>
+        <select class="ch-select" data-enq-status="${e.id}" aria-label="Status" style="width:auto">${['new', 'contacted', 'won', 'lost'].map(s => `<option value="${s}" ${s === e.status ? 'selected' : ''}>${isLegal(e) ? RIGHTS_STATUS[s] : STATUS_CHIPS[s][1]}</option>`).join('')}</select>
         <input class="ch-input" data-enq-note="${e.id}" value="${escapeHtml(e.founder_note)}" placeholder="Private note" maxlength="1000" style="flex:1;min-width:160px">
-        ${e.status !== 'won' && e.kind !== 'support' && e.kind !== 'data_rights' ? `<button class="ch-btn solid small" type="button" data-convert="${e.id}">${icon('add_card')}Switch a plan on</button>` : ''}
+        ${e.status !== 'won' && !isRequest(e) ? `<button class="ch-btn solid small" type="button" data-convert="${e.id}">${icon('add_card')}Switch a plan on</button>` : ''}
       </div></article>`).join('') || stateBlock('mail', 'No enquiries yet', 'Colleges, recruiters and sponsors who press “Talk to us” on the Plans page, messages from the Support page and DPDP data-rights requests appear here.')}</div>`;
 }
 
@@ -365,6 +372,88 @@ async function renderSponsored() {
 }
 
 // ==========================================
+// 5b. SAFETY: REPORTS, SUSPENSIONS, GUARDIANS, RESET LINKS (section 31)
+// ==========================================
+const REPORT_KIND = { user: 'Person', message: 'Message', team_message: 'Team chat', college_message: 'College chat', board_post: 'Board post', team: 'Team' };
+const REPORT_STATUS = { open: ['warn', 'Open'], reviewing: ['indigo', 'Looking at it'], actioned: ['green', 'Action taken'], dismissed: ['', 'No breach'] };
+
+function dueChip(iso, label) {
+  const hours = Math.round((new Date(iso) - Date.now()) / 3600000);
+  if (hours < 0) return `<span class="ch-chip warn">${escapeHtml(label)} ${Math.ceil(-hours / 24) > 1 ? `${Math.ceil(-hours / 24)} days` : `${-hours} h`} late</span>`;
+  return `<span class="ch-chip ${hours <= 24 ? 'warn' : 'indigo'}">${escapeHtml(label)} in ${hours >= 48 ? `${Math.floor(hours / 24)} days` : `${hours} h`}</span>`;
+}
+
+function reportCard(r) {
+  const open = r.status === 'open' || r.status === 'reviewing';
+  const chip = REPORT_STATUS[r.status] || ['', r.status];
+  const removable = ['message', 'team_message', 'college_message', 'board_post'].includes(r.kind);
+  return `<article class="ch-panel fc-app">
+    <div class="fc-app-top"><span class="ch-chip navy">${escapeHtml(REPORT_KIND[r.kind] || r.kind)}</span><h3 style="flex:1">#${r.id} · ${escapeHtml(r.reason_label)}</h3>
+      ${open && r.status === 'open' ? dueChip(r.ack_by, 'Acknowledge') : ''}${open ? dueChip(r.resolve_by, 'Decide') : ''}<span class="ch-chip ${chip[0]}">${escapeHtml(chip[1])}</span></div>
+    <dl class="ap-summary">
+      <dt>About</dt><dd>${r.target_user_id ? `<a class="msg-link" href="profile.html?id=${r.target_user_id}">${escapeHtml(r.target_name || `Account ${r.target_user_id}`)}</a>` : '—'}${r.earlier_reports ? ` <span class="ch-chip warn">${r.earlier_reports} other ${r.earlier_reports === 1 ? 'report' : 'reports'}</span>` : ''}</dd>
+      <dt>Reported by</dt><dd><a class="msg-link" href="profile.html?id=${r.reporter_id}">${escapeHtml(r.reporter_name || `Account ${r.reporter_id}`)}</a></dd>
+      <dt>Received</dt><dd>${escapeHtml(formatTime(r.created_at))}</dd>
+      ${r.link ? `<dt>Where</dt><dd><a class="msg-link" href="${escapeHtml(r.link)}">Open</a></dd>` : ''}
+      ${r.action_taken ? `<dt>Done</dt><dd>${escapeHtml(r.action_taken)} · ${escapeHtml(formatTime(r.resolved_at))}</dd>` : ''}
+    </dl>
+    ${r.snapshot ? `<div class="ap-note">${icon('format_quote')}<div><b>What was reported (copy kept when it was reported)</b><p>${escapeHtml(r.snapshot)}</p></div></div>` : ''}
+    ${r.details ? `<div class="ap-note">${icon('chat')}<div><b>The reporter says</b><p>${escapeHtml(r.details)}</p></div></div>` : ''}
+    ${r.founder_note ? `<p class="ch-muted">Your note: ${escapeHtml(r.founder_note)}</p>` : ''}
+    ${open ? `<div class="ap-actions">
+      ${r.status === 'open' ? `<button class="ch-btn line small" type="button" data-report="${r.id}" data-report-act="review">${icon('visibility')}Acknowledge</button>` : ''}
+      <button class="ch-btn line small" type="button" data-report="${r.id}" data-report-act="dismiss">${icon('do_not_disturb_on')}No breach</button>
+      <button class="ch-btn line small" type="button" data-report="${r.id}" data-report-act="warn">${icon('warning')}Warn</button>
+      ${removable ? `<button class="ch-btn line small" type="button" data-report="${r.id}" data-report-act="remove">${icon('delete')}Remove it</button>` : ''}
+      ${r.target_user_id ? `<button class="ch-btn line small danger" type="button" data-report="${r.id}" data-report-act="suspend">${icon('block')}Suspend account</button>` : ''}
+    </div>` : ''}
+  </article>`;
+}
+
+async function renderSafety() {
+  let data;
+  try { data = await api('/api/founder/safety'); } catch (err) { return guard(err); }
+  F.cache.safety = data;
+  const open = data.reports.filter(r => r.status === 'open' || r.status === 'reviewing');
+  el('fcBody').innerHTML = `
+    <div class="ap-note">${icon('gavel')}<div><b>IT Rules 2021, Rule 3(2)</b><p>Acknowledge every report within 24 hours and decide within 15 days. Nudity or impersonation of the person complaining: remove within 24 hours. The reporter is told your decision automatically.</p></div></div>
+    <div class="ch-bar"><h2 class="ch-bar-title">Reports<small>${open.length} open · ${data.reports.length} in all</small></h2></div>
+    <div class="fc-apps">${data.reports.map(reportCard).join('') || stateBlock('flag', 'No reports yet', 'When someone presses Report on a person, message, post or team, it shows here.')}</div>
+    <div class="in-grid" style="margin-top:16px">
+      <section class="ch-panel in-card"><h3>Suspended accounts</h3>
+        ${data.suspended.map(u => `<div class="in-row"><span><a class="msg-link" href="profile.html?id=${u.id}">${escapeHtml(u.name)}</a><br><small class="ch-muted">${escapeHtml(u.reason)}</small></span><button class="ch-btn line small" type="button" data-unsuspend="${u.id}">Lift</button></div>`).join('') || '<p class="ch-muted">None.</p>'}
+      </section>
+      <section class="ch-panel in-card"><h3>Under 18, waiting for a guardian</h3>
+        ${data.email_ready ? '' : '<p class="ch-muted">Email is not set up, so guardians get no link. Check with the guardian by phone or email yourself, then record their answer here.</p>'}
+        ${data.guardian_waiting.map(u => `<div class="in-row"><span>${escapeHtml(u.name)} · ${escapeHtml(u.college)}<br><small class="ch-muted">born ${escapeHtml(u.birth_date)} · guardian ${escapeHtml(u.guardian_email)}</small></span>
+          <span><button class="ch-btn line small" type="button" data-guardian="${u.id}" data-guardian-decision="approve">Agreed</button> <button class="ch-btn line small" type="button" data-guardian="${u.id}" data-guardian-decision="decline">Said no</button></span></div>`).join('') || '<p class="ch-muted">None.</p>'}
+      </section>
+      <section class="ch-panel in-card"><h3>Password reset link</h3>
+        <p class="ch-muted">For someone who cannot get email. Check who they are first (for example a photo of their college ID), then send them the link yourself. It works once, for 24 hours.</p>
+        <div class="ap-actions"><input class="ch-input" id="resetUserId" type="number" min="1" placeholder="Account number" style="flex:1"><button class="ch-btn solid small" type="button" data-act="reset-link">${icon('key')}Make link</button></div>
+      </section>
+    </div>`;
+}
+
+function decideReport(id, action) {
+  const report = (F.cache.safety ? F.cache.safety.reports : []).find(r => r.id === id) || {};
+  const words = {
+    review: ['Acknowledge this report?', 'It shows as “Looking at it”. Decide within 15 days.', 'Acknowledge'],
+    dismiss: ['No breach?', 'The report is closed and the reporter is told it does not break the rules.', 'Close report'],
+    warn: ['Warn the person?', `${report.target_name || 'They'} get a notification naming the reason.`, 'Send warning'],
+    remove: ['Remove it?', 'Messages are replaced by “removed for breaking the honour code”; a board post is deleted with its applications. The person is told.', 'Remove'],
+    suspend: ['Suspend the account?', `${report.target_name || 'The person'} is logged out everywhere, hidden from everyone and cannot log in until you lift it.`, 'Suspend'],
+  }[action];
+  openModal({ title: words[0], confirmText: words[2],
+    body: `<p>${escapeHtml(words[1])}</p><label>Note${action === 'suspend' || action === 'warn' ? ' (shown to them)' : ' (private)'}<input class="ch-input" id="reportNote" maxlength="500"></label>`,
+    onConfirm: async () => {
+      await api(`/api/founder/reports/${id}`, { method: 'POST', body: { action, note: el('reportNote').value } });
+      showToast('Done.');
+      renderSafety();
+    } });
+}
+
+// ==========================================
 // 6. EVENTS
 // ==========================================
 document.querySelector('main').addEventListener('click', (e) => {
@@ -374,6 +463,23 @@ document.querySelector('main').addEventListener('click', (e) => {
   if (!b) return;
   const d = b.dataset;
   if (d.act === 'reload') return switchTab(F.tab);
+  if (d.report) return decideReport(Number(d.report), d.reportAct);
+  if (d.unsuspend) return confirmThen('Lift the suspension?', 'They can log in again and are shown to others.', 'Lift', () => attempt(async () => { await api(`/api/founder/users/${d.unsuspend}/suspend`, { method: 'POST', body: { action: 'unsuspend' } }); renderSafety(); }, 'Suspension lifted.'));
+  if (d.guardian) {
+    const yes = d.guardianDecision === 'approve';
+    return confirmThen(yes ? 'Record that the guardian agreed?' : 'Record that the guardian said no?', yes ? 'Only after you checked with the guardian yourself. The account opens at once.' : 'The account and all its data are erased now. This cannot be undone.', yes ? 'They agreed' : 'Erase account',
+      () => attempt(async () => { await api(`/api/founder/guardian/${d.guardian}`, { method: 'POST', body: { decision: d.guardianDecision } }); renderSafety(); }, 'Recorded.'));
+  }
+  if (d.act === 'reset-link') {
+    const id = Number(el('resetUserId').value);
+    if (!id) return showToast('Type the account number.');
+    return attempt(async () => {
+      const r = await api(`/api/founder/reset-link/${id}`, { method: 'POST' });
+      openModal({ title: `Reset link for ${r.name}`, confirmText: 'Copy link',
+        body: `<p>Send this to them yourself. It works once, for ${r.hours} hours.</p><input class="ch-input" id="resetLink" readonly value="${escapeHtml(r.link)}">`,
+        onConfirm: async () => { await navigator.clipboard.writeText(r.link); showToast('Copied.'); } });
+    });
+  }
   if (d.decide) return decide(d.kind, Number(d.id), d.decide);
   if (d.scope) return editScope(Number(d.scope));
   if (d.log) return showLog(Number(d.log));

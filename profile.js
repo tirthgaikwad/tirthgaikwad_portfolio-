@@ -218,7 +218,10 @@ function renderActions() {
   container.innerHTML =
     actionButton('openMessageBtn', 'chat', 'Message', `window.location.href='inbox.html?user=${viewedUserId}'`, true, inert) +
     actionButton('followBtn', profile.is_following ? 'person_remove' : 'person_add', profile.is_following ? 'Following' : 'Follow', 'toggleFollow()', false, inert) +
-    actionButton('saveProfileBtn', profile.is_saved ? 'bookmark_added' : 'bookmark_add', profile.is_saved ? 'Saved' : 'Save Profile', 'toggleSave()', false, inert);
+    actionButton('saveProfileBtn', profile.is_saved ? 'bookmark_added' : 'bookmark_add', profile.is_saved ? 'Saved' : 'Save Profile', 'toggleSave()', false, inert) +
+    (previewingPublic ? '' : `<button type="button" id="reportProfileBtn" data-report-kind="user" data-report-id="${viewedUserId}" data-report-name="${escapeHtml(profile.name || '')}"
+      class="w-full py-1.5 font-label-sm text-label-sm text-on-surface-variant hover:text-error flex items-center justify-center gap-1 rounded-lg">
+      <span class="material-symbols-outlined text-[16px]">flag</span><span>Report profile</span></button>`);
 }
 
 // ==========================================

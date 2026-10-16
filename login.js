@@ -1,5 +1,6 @@
 // ==========================================
-// LOGIN.JS — The login page (login.html): member login, admin login and the switch between them
+// LOGIN.JS — The login page (login.html): member login, admin login and the switch between them, and the second
+// step (authenticator code) for accounts with two-step login on
 // Loaded after auth.js, which provides postJson, setFieldError, showNotice and setBusy.
 // ==========================================
 (function () {
@@ -7,6 +8,7 @@
   const modeSwitch = byId('modeSwitch');
   const notice = byId('loginNotice');
   const forms = { user: byId('loginForm'), admin: byId('adminLoginForm') };
+  const twoFactor = { form: byId('twoFactorForm'), ticket: '' };
   const MODE_TEXT = {
     // Sent here from a members-only page (landing page links, shared.js): say which one
     user: { title: 'Log in', lead: NEXT_PAGE ? `Log in or sign up to open ${nextPageName()}.` : 'Use the roll number or ID you signed up with.' },
@@ -25,6 +27,7 @@
     });
     forms.user.hidden = mode !== 'user';
     forms.admin.hidden = mode !== 'admin';
+    twoFactor.form.hidden = true;
     byId('loginTitle').textContent = MODE_TEXT[mode].title;
     byId('loginDesc').textContent = MODE_TEXT[mode].lead;
     byId('signupPrompt').hidden = mode !== 'user';
@@ -60,19 +63,28 @@
     return !firstEmpty;
   }
 
-  // Runs one login: send, then either go to the next page or say what went wrong
-  async function submitLogin(form, path, body, refusedText, onSuccess) {
+  // Runs one login: send, then either go to the next page or say what went wrong.
+  // onRefused(result) may handle a refusal itself (return true), e.g. the admin tab asking for a code.
+  async function submitLogin(form, path, body, refusedText, onSuccess, onRefused) {
     const button = form.querySelector('.btn');
     showNotice(notice, '');
     setBusy(button, true);
     const result = await postJson(path, body);
     if (!result.ok) {
       setBusy(button, false);
-      const refused = result.status === 401 || result.status === 403;
+      if (onRefused && onRefused(result)) return;
+      // Suspended accounts and guardian refusals are 403 with a reason worth showing
+      const refused = result.status === 401 || (result.status === 403 && !result.message);
       showNotice(notice, refused ? refusedText : (result.message || 'Log in failed. Try again.'));
       return;
     }
-    const nextPage = onSuccess(result.data);
+    if (result.data && result.data.two_factor) {
+      setBusy(button, false);
+      return askForCode(result.data.ticket);
+    }
+    let nextPage = onSuccess(result.data);
+    // Under 18 and the guardian has not agreed yet: the waiting page (guardian.html)
+    if (result.data && result.data.guardian_needed) nextPage = 'guardian.html';
     button.classList.remove('loading');
     button.classList.add('done');
     button.firstElementChild.textContent = 'Logged in';
@@ -87,25 +99,69 @@
     const roll = byId('rollNumber'), password = byId('password');
     if (!requireAll([[roll, 'Enter your roll number or ID.'], [password, 'Enter your password.']])) return;
     submitLogin(forms.user, '/api/login', { roll_no: roll.value.trim(), password: password.value, remember: byId('rememberMe').checked },
-      'That roll number or password is not right.',
-      (data) => {
-        localStorage.setItem('currentUserId', data.user_id);
-        localStorage.setItem('userRole', data.is_admin ? 'admin' : 'user');
-        return NEXT_PAGE || 'home.html';
+      'That roll number or password is not right.', (data) => memberDone(data));
+  });
+
+  const memberDone = (data) => {
+    localStorage.setItem('currentUserId', data.user_id);
+    localStorage.setItem('userRole', data.is_admin ? 'admin' : 'user');
+    return NEXT_PAGE || 'home.html';
+  };
+
+  // ==========================================
+  // 2b. TWO-STEP LOGIN
+  // ==========================================
+  function askForCode(ticket) {
+    twoFactor.ticket = ticket;
+    forms.user.hidden = true;
+    modeSwitch.hidden = true;
+    byId('signupPrompt').hidden = true;
+    twoFactor.form.hidden = false;
+    byId('loginTitle').textContent = 'Two-step login';
+    byId('loginDesc').textContent = 'Open your authenticator app and type the 6-digit code for Connect2Minds.';
+    byId('totpCode').value = '';
+    byId('totpCode').focus();
+  }
+
+  twoFactor.form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = byId('totpCode');
+    if (!requireAll([[code, 'Enter the code.']])) return;
+    submitLogin(twoFactor.form, '/api/login/2fa', { ticket: twoFactor.ticket, code: code.value.trim() }, 'That took too long. Go back and log in again.', memberDone,
+      (result) => {
+        if (result.status !== 400) return false;
+        setFieldError(code, result.message || 'That code is not right.');
+        code.select();
+        return true;
       });
+  });
+
+  byId('twoFactorBack').addEventListener('click', () => {
+    twoFactor.ticket = '';
+    modeSwitch.hidden = false;
+    setMode('user', true);
   });
 
   forms.admin.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = byId('adminName'), code = byId('adminCode');
+    const name = byId('adminName'), code = byId('adminCode'), totp = byId('adminTotp');
     if (!requireAll([[name, 'Enter your admin name.'], [code, 'Enter your secure code.']])) return;
-    submitLogin(forms.admin, '/api/admin/login', { name: name.value.trim(), bypass_code: code.value.trim() },
+    submitLogin(forms.admin, '/api/admin/login', { name: name.value.trim(), bypass_code: code.value.trim(), code: totp.value.trim() },
       'That admin name or secure code is not right.',
       (data) => {
         localStorage.setItem('currentUserId', data.user_id);
         localStorage.setItem('userRole', data.role);
         localStorage.setItem('adminToken', data.token);
         return data.role === 'founder' ? 'founder.html' : 'verify.html';
+      },
+      (result) => {
+        // The account has two-step login on: show the code box and ask again
+        if (result.status !== 401 || !/code/i.test(result.message || '')) return false;
+        byId('adminTotpField').hidden = false;
+        setFieldError(totp, totp.value.trim() ? result.message : '');
+        if (!totp.value.trim()) showNotice(notice, result.message);
+        totp.focus();
+        return true;
       });
   });
 

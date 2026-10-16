@@ -3,7 +3,8 @@
 // Loaded on every page to make user data appear in real-time
 // ==========================================
 
-const API_BASE = `${window.location.protocol}//${window.location.hostname || '127.0.0.1'}:8000`;
+// The API: port 8000 on this computer; hosted, the same address as the pages (or window.C2M_API_BASE). See DEPLOY.md.
+const API_BASE = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? `${location.protocol}//${location.hostname || '127.0.0.1'}:8000` : location.origin);
 
 // Opened inside the call dock (call-dock.js) of a page that holds a call: hide the phone tab bar and footer there
 const IN_CALL_DOCK = !!(window.frameElement && window.frameElement.id === 'dockFrame');
@@ -23,7 +24,10 @@ if (IN_CALL_DOCK) {
 }
 
 // Pages anyone may read without logging in; an expired login does not send them to login.html
-const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'support.html', 'cookies.html'];
+const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'support.html', 'cookies.html',
+    'refund.html', 'contact.html', 'copyright.html', 'reset.html', 'guardian.html', '404.html'];
+// An under-18 whose guardian has not agreed yet may only open these (guardian.html explains the wait)
+const GUARDIAN_WAIT_PAGES = PUBLIC_PAGES.concat(['account.html']);
 const CURRENT_PAGE = window.location.pathname.split('/').pop();
 
 // Members-only pages: someone who is not logged in goes to log in (or sign up) first, before the page draws anything.
@@ -558,7 +562,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const profile = await res.json();
             window.applyHeaderProfile(profile);
             try { localStorage.setItem(headerCacheKey, JSON.stringify(profile)); } catch (e) { /* storage unavailable */ }
+            if (profile.guardian_needed && !GUARDIAN_WAIT_PAGES.includes(CURRENT_PAGE) && !IN_CALL_DOCK) {
+                window.location.replace('guardian.html');
+                return;
+            }
             if (profile.consent_needed) showPrivacyNotice(headerCacheKey);
+            if (profile.birth_date_needed) showBirthDateAsk(headerCacheKey, profile.consent_needed);
         }
     } catch (err) {
         console.error("Shared.js: Error fetching user profile for header:", err);
@@ -566,6 +575,67 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initNotifications(currentUserId);
 });
+
+// DPDP Act 2023 Section 9: accounts made before sign-up asked the date of birth are asked once, in the same kind of bar,
+// after the notice bar above. Under 18 also needs a guardian's email; the server then makes the account wait (guardian.html).
+function showBirthDateAsk(headerCacheKey, afterNotice) {
+    if (IN_CALL_DOCK || document.getElementById('dobAsk')) return;
+    const show = () => {
+        if (document.getElementById('dobAsk') || document.getElementById('dpNotice')) return;
+        const box = document.createElement('section');
+        box.id = 'dobAsk';
+        box.className = 'ck-banner';
+        box.setAttribute('role', 'region');
+        box.setAttribute('aria-label', 'Date of birth');
+        const today = new Date().toISOString().slice(0, 10);
+        box.innerHTML = `<h2>Add your date of birth</h2>
+            <p>The law asks us to know who is under 18 (<a href="dpdp.html#children">why</a>). Only you and the founder see it.</p>
+            <form class="ck-dob" novalidate>
+              <label>Date of birth<input type="date" name="dob" max="${today}" min="1900-01-01" required></label>
+              <label hidden data-guardian>Parent or guardian's email<input type="email" name="guardian" maxlength="160" autocomplete="off"></label>
+              <p class="ck-dob-error" role="alert" hidden></p>
+              <div class="ck-actions"><button type="button" class="ck-btn is-link" data-later>Later</button>
+              <button type="submit" class="ck-btn is-primary">Save</button></div>
+            </form>`;
+        const form = box.querySelector('form');
+        const guardianField = box.querySelector('[data-guardian]');
+        const error = box.querySelector('.ck-dob-error');
+        const ageOf = (value) => {
+            const birth = new Date(`${value}T00:00:00`), now = new Date();
+            return now.getFullYear() - birth.getFullYear() - ((now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) ? 1 : 0);
+        };
+        form.dob.addEventListener('change', () => { guardianField.hidden = !(form.dob.value && ageOf(form.dob.value) < 18); });
+        box.querySelector('[data-later]').addEventListener('click', () => box.remove());
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const say = (text) => { error.textContent = text; error.hidden = !text; };
+            if (!form.dob.value) return say('Pick your date of birth.');
+            if (ageOf(form.dob.value) < 18 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guardian.value.trim())) return say("Enter your parent's or guardian's email.");
+            const button = form.querySelector('[type="submit"]');
+            button.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/api/me/birth-date`, {
+                    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ birth_date: form.dob.value, guardian_email: form.guardian.value.trim() })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not save. Try again.');
+                try {
+                    const cached = JSON.parse(localStorage.getItem(headerCacheKey));
+                    if (cached) localStorage.setItem(headerCacheKey, JSON.stringify({ ...cached, birth_date_needed: false, guardian_needed: data.guardian_needed }));
+                } catch (e) { /* storage unavailable */ }
+                box.remove();
+                if (data.guardian_needed) window.location.replace('guardian.html');
+            } catch (err) {
+                say(err.message);
+                button.disabled = false;
+            }
+        });
+        document.body.appendChild(box);
+    };
+    if (afterNotice) document.addEventListener('privacyconsent', () => setTimeout(show, 300), { once: true });
+    else setTimeout(() => (window.CookieConsent && !window.CookieConsent.chosen()) ? document.addEventListener('cookieconsent', show, { once: true }) : show(), 600);
+}
 
 // DPDP Act 2023: a member who agreed to an older privacy notice (or signed up before there was one) is asked on every
 // page until they agree. It uses the cookie banner's look and waits until that banner is answered (cookies.js).
@@ -577,10 +647,11 @@ function showPrivacyNotice(headerCacheKey) {
         box.id = 'dpNotice';
         box.className = 'ck-banner';
         box.setAttribute('role', 'region');
-        box.setAttribute('aria-label', 'Privacy notice updated');
-        box.innerHTML = `<h2>We updated our privacy notice</h2>
-            <p>Connect2Minds now follows India's Digital Personal Data Protection Act, 2023. Read what we keep, why, and
-            <a href="dpdp.html">your rights</a>, then agree to keep using the site with your data as described.</p>
+        box.setAttribute('aria-label', 'Terms and privacy notice updated');
+        box.innerHTML = `<h2>We updated our terms and privacy notice</h2>
+            <p>They now cover age and parental consent, reporting people and posts, refunds, and two-step login, under
+            India's DPDP Act 2023 and IT Rules 2021. Read the <a href="terms.html">terms</a> and
+            <a href="dpdp.html">your data rights</a>, then agree to keep using the site.</p>
             <div class="ck-actions"><a class="ck-btn is-link" href="dpdp.html">Read the notice</a>
             <button type="button" class="ck-btn is-primary" data-dp-agree>I agree</button></div>`;
         box.querySelector('[data-dp-agree]').addEventListener('click', async (event) => {

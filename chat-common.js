@@ -829,3 +829,82 @@ function insertEmoji(emoji) {
   input.setSelectionRange(start + emoji.length, start + emoji.length);
   autoGrowInput();
 }
+
+// ==========================================
+// REPORTING (section 31 of main.py): one dialog for every page.
+// openReportDialog({ kind, id, name, onBlock }) — kind is user, message, team_message, college_message, board_post
+// or team; onBlock, when given, adds an "Also block" box and is called after the report is sent.
+// reportButtonHtml(kind, id, name) is the small flag button shown on other people's messages.
+// ==========================================
+const REPORT_REASON_LIST = [
+  ['harassment', 'Harassment or bullying'], ['hate', 'Hate or discrimination'], ['sexual', 'Sexual content'],
+  ['violence', 'Threats or violence'], ['self_harm', 'Self-harm or suicide'], ['spam', 'Spam'], ['scam', 'Scam or fraud'],
+  ['fake_profile', 'Fake profile'], ['impersonation', 'Pretending to be someone else'], ['privacy', "Shares someone's private information"],
+  ['copyright', 'Copyright'], ['other', 'Something else'],
+];
+const REPORT_WHAT = { user: 'this person', message: 'this message', team_message: 'this message', college_message: 'this message', board_post: 'this post', team: 'this team' };
+
+function reportButtonHtml(kind, id, name) {
+  if (!id) return '';
+  return `<button class="hidden group-hover/msg:inline-flex p-0.5 text-on-surface-variant hover:text-error transition-colors" title="Report" aria-label="Report" type="button"
+    data-report-kind="${kind}" data-report-id="${Number(id)}" data-report-name="${escapeHtml(name || '')}"><span class="material-symbols-outlined text-[14px]">flag</span></button>`;
+}
+// Any element with data-report-kind / data-report-id opens the dialog (message bubbles, menus, cards)
+document.addEventListener('click', (e) => {
+  const button = e.target.closest && e.target.closest('[data-report-kind][data-report-id]');
+  if (!button) return;
+  e.preventDefault();
+  e.stopPropagation();
+  openReportDialog({ kind: button.dataset.reportKind, id: Number(button.dataset.reportId), name: button.dataset.reportName || '' });
+}, true);
+
+function openReportDialog({ kind, id, name, onBlock }) {
+  if (!document.querySelector('link[href="report.css"]')) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'report.css';
+    document.head.appendChild(css);
+  }
+  document.getElementById('rpDialog')?.remove();
+  const who = name ? escapeHtml(name) : '';
+  const box = document.createElement('div');
+  box.id = 'rpDialog';
+  box.className = 'rp-overlay';
+  box.innerHTML = `<form class="rp-box" role="dialog" aria-modal="true" aria-labelledby="rpTitle" novalidate>
+      <h2 id="rpTitle">Report ${kind === 'user' && who ? who : REPORT_WHAT[kind] || 'this'}</h2>
+      <p class="rp-sub">Only the Connect2Minds team sees who reported. We acknowledge it within 24 hours and decide within 15 days.</p>
+      <fieldset><legend>What is wrong?</legend><div class="rp-reasons">
+        ${REPORT_REASON_LIST.map(([key, label]) => `<label><input type="radio" name="reason" value="${key}"><span>${escapeHtml(label)}</span></label>`).join('')}
+      </div></fieldset>
+      <label class="rp-field">Anything else we should know? (optional)<textarea name="details" maxlength="1000" rows="3"></textarea></label>
+      ${onBlock ? `<label class="rp-check"><input type="checkbox" name="block" checked><span>Also block ${who || 'them'}</span></label>` : ''}
+      <p class="rp-help">If someone is in danger, call <b>112</b>. For self-harm, Tele-MANAS is free on <b>14416</b>.</p>
+      <p class="rp-error" role="alert" hidden></p>
+      <div class="rp-actions"><button type="button" class="rp-btn" data-rp-close>Cancel</button><button type="submit" class="rp-btn is-primary">Send report</button></div>
+    </form>`;
+  const form = box.querySelector('form');
+  const error = box.querySelector('.rp-error');
+  const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  box.addEventListener('click', (e) => { if (e.target === box || e.target.closest('[data-rp-close]')) close(); });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const reason = form.reason.value;
+    if (!reason) { error.textContent = 'Pick what is wrong.'; error.hidden = false; return; }
+    const button = form.querySelector('[type="submit"]');
+    button.disabled = true;
+    try {
+      const data = await api('/api/reports', { method: 'POST', body: { kind, target_id: Number(id), reason, details: form.details.value.trim() } });
+      if (onBlock && form.block && form.block.checked) { try { await onBlock(); } catch (err) { /* the report still went */ } }
+      form.innerHTML = `<h2>Thank you</h2><p class="rp-sub">We got your report (#${data.id}). We will look at it and tell you what we decided in your notifications.</p>
+        <div class="rp-actions"><button type="button" class="rp-btn is-primary" data-rp-close>Done</button></div>`;
+    } catch (err) {
+      error.textContent = err.message;
+      error.hidden = false;
+      button.disabled = false;
+    }
+  });
+  document.body.appendChild(box);
+  form.querySelector('input[name="reason"]').focus();
+}

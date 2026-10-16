@@ -236,6 +236,7 @@ function postActionsHtml(post) {
   }
   return `
     ${viewerIsAdmin ? deleteButton : ''}
+    <button type="button" data-report-kind="board_post" data-report-id="${post.id}" data-report-name="${escapeHtml(post.title)}" title="Report this post" aria-label="Report this post" class="${iconButton} hover:text-error"><span class="material-symbols-outlined text-[20px] block">flag</span></button>
     ${post.author_id ? `<a href="inbox.html?user=${post.author_id}" title="Message ${escapeHtml(post.author_name)}" class="${iconButton} hover:text-primary"><span class="material-symbols-outlined text-[20px] block">chat</span></a>` : ''}
     <button type="button" data-action="${post.has_applied ? 'withdraw' : 'apply'}" ${busy} aria-pressed="${post.has_applied}" title="${post.has_applied ? 'Click to withdraw your application' : 'Apply to this post'}" class="px-space-md py-1.5 rounded-lg font-label-md text-label-md transition-colors flex items-center gap-1 disabled:opacity-60 ${post.has_applied ? 'border border-outline-variant/60 text-on-surface-variant hover:text-error hover:border-error/40' : 'bg-primary hover:bg-primary-container text-on-primary'}">
       <span class="material-symbols-outlined text-[16px]">${post.has_applied ? 'check' : 'send'}</span>

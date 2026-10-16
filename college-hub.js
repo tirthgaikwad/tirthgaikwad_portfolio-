@@ -515,7 +515,8 @@ function messageHtml(message) {
     <span class="ch-avatar">${avatarHtml(message.sender_pic ? mediaUrl(message.sender_pic) : '', message.sender_name, '')}</span>
     <div class="ch-msg-main">
       <div class="ch-msg-head"><b>${escapeHtml(message.sender_name)}${mine ? ' (you)' : ''}</b>${message.is_teacher ? '<span class="ch-chip navy">Teacher</span>' : ''}<time>${escapeHtml(formatClock(message.timestamp))}</time>
-        ${deletable ? `<button class="ch-icon-btn danger" type="button" data-act="delete-message" data-id="${message.id}" title="Delete message" aria-label="Delete message"><span class="material-symbols-outlined">delete</span></button>` : ''}</div>
+        ${deletable ? `<button class="ch-icon-btn danger" type="button" data-act="delete-message" data-id="${message.id}" title="Delete message" aria-label="Delete message"><span class="material-symbols-outlined">delete</span></button>` : ''}
+        ${mine ? '' : `<button class="ch-icon-btn danger" type="button" data-report-kind="college_message" data-report-id="${message.id}" data-report-name="${escapeHtml(message.sender_name)}" title="Report message" aria-label="Report message"><span class="material-symbols-outlined">flag</span></button>`}</div>
       <div class="ch-msg-text">${linkify(message.content)}</div>
     </div>
   </div>`;

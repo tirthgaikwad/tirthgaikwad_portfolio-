@@ -87,3 +87,9 @@
   .lg-table td::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #777587; }
   .lg-guest-bar { padding: 0 16px; }
 }
+
+/* Business details not filled in yet (SITE_INFO in legal.js): visibly marked so they are not published by accident */
+.lg-todo { color: #ba1a1a !important; background: #ffdad6; border-radius: 4px; padding: 0 4px; }
+/* A statement box to tick (copyright.html takedown form) */
+.lg-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 19px; color: #464555; }
+.lg-check input { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; accent-color: #3525cd; }
