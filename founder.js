@@ -59,6 +59,7 @@ async function renderOverview() {
         ${o.helpbot && o.helpbot.ai ? '' : '<p class="ch-muted">To switch AI on, add ANTHROPIC_API_KEY to the .env file on the server. Each member gets up to 40 AI answers a day; after that the free built-in guide answers.</p>'}
       </section>
       <section class="ch-panel in-card wide" id="fcVisits" aria-busy="true"><h3>Visitors</h3><div class="skeleton" style="height:120px"></div></section>
+      <section class="ch-panel in-card" id="fcAi" aria-busy="true"><h3>AI Tutor spend</h3><div class="skeleton" style="height:80px"></div></section>
       <section class="ch-panel in-card"><h3>Active plans</h3>
         ${Object.keys(lines).map(line => `<div class="in-row"><span>${lines[line]}</span><b>${o.active_by_line[line] || 0}</b></div>`).join('')}
         <a class="msg-link" href="pricing.html">See the public pricing page</a>
@@ -68,6 +69,23 @@ async function renderOverview() {
       </section>
     </div>`;
   renderVisits();
+  renderAiSpend();
+}
+
+// This month's estimated AI spend against the budget (AI_MONTHLY_BUDGET_INR in .env)
+async function renderAiSpend() {
+  const box = el('fcAi');
+  if (!box) return;
+  box.removeAttribute('aria-busy');
+  let a;
+  try { a = await api('/api/founder/ai-usage'); } catch (err) { box.innerHTML = '<h3>AI Tutor spend</h3><p class="ch-muted">Could not load it.</p>'; return; }
+  const share = Math.min(100, Math.round(a.spend_inr * 100 / Math.max(1, a.budget_inr)));
+  const money = (n) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  box.innerHTML = `<h3>AI Tutor spend</h3>
+    ${a.ai_on ? '' : '<p class="ch-muted">AI is off: add ANTHROPIC_API_KEY to .env (and pip install anthropic) to switch the tutor on.</p>'}
+    <div class="in-row"><span>${escapeHtml(a.month)}</span><div class="ch-meter"><i style="width:${share}%"></i></div><b>${money(a.spend_inr)}</b></div>
+    <p class="ch-muted">${share}% of the ${money(a.budget_inr)} monthly budget · ${a.people} ${a.people === 1 ? 'person' : 'people'} used it · model ${escapeHtml(a.model)}. Free accounts pause at 80%, everyone at 100%.</p>
+    ${a.features.map(f => `<div class="in-row"><span>${escapeHtml(f.feature)}</span><b>${f.calls} · ${money(f.spend_inr)}</b></div>`).join('')}`;
 }
 
 // Visit counts (main.py section 29): only from people who allowed them in the cookie banner

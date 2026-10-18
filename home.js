@@ -67,6 +67,7 @@ function setHome(data) {
   home = data;
   onlineUserIds = new Set(data.online_user_ids || []);
   renderGreeting();
+  renderGoal();
   renderNeeds();
   renderClasses();
   renderNews();
@@ -220,6 +221,37 @@ function renderPeople() {
   box.innerHTML = `<div class="hm-head"><h2>People to know</h2><a href="search.html">Find more</a></div><div>${home.people.map(personRowHtml).join('')}</div>`;
 }
 
+// Today's goal: the XP ring, the streak, and the quickest ways to reach the goal
+function renderGoal() {
+  const progress = home.progress, box = el('homeGoal');
+  if (!progress) { box.hidden = true; return; }
+  const left = Math.max(0, progress.goal - progress.xp_today);
+  const streak = progress.streak || 0;
+  const line = progress.goal_met ? (streak > 1 ? `Done for today. ${streak} days in a row.` : 'Done for today. Come back tomorrow to start a streak.')
+    : progress.xp_today ? `${left} XP to go${streak ? ' to keep your streak' : ''}.` : (streak ? `Earn ${progress.goal} XP today to keep your ${streak}-day streak.` : `Earn ${progress.goal} XP to start a streak.`);
+  const focus = progress.focus_today || 0;
+  box.hidden = false;
+  box.innerHTML = `
+    <div class="hm-head"><h2>Today's goal</h2><a href="progress.html">Progress</a></div>
+    <div class="pg-goal-head">
+      ${goalRingHtml(progress)}
+      <div class="pg-goal-text">
+        <strong>${progress.goal_met ? 'Goal met' : `${progress.xp_today} of ${progress.goal} XP`}</strong>
+        <p>${line}</p>
+        <a class="pg-streak${streak ? '' : ' is-off'}" href="progress.html">${icon('local_fire_department')}${streak ? `${plural(streak, 'day', 'days')} streak` : 'No streak yet'}</a>
+      </div>
+    </div>
+    <div class="hm-list pg-tasks">
+      ${prepRowsHtml(home.prep)}
+      ${practiceRowHtml(home.practice)}
+      <a class="hm-row" href="study.html?tab=timer">
+        <span class="hm-icon${focus >= 25 ? ' is-good' : ''}">${icon('timer')}</span>
+        <span class="hm-row-text"><strong>Focus session</strong><small>${home.studying_now ? `${home.studying_now} from your college ${home.studying_now === 1 ? 'is' : 'are'} studying now · ` : ''}${focus ? `${focus} min today · 1 XP for every 5 minutes` : '25 minutes on the timer earns 5 XP'}</small></span>
+        ${focus >= 25 ? '' : '<span class="hm-due">25 min</span>'}
+      </a>
+    </div>`;
+}
+
 function renderWeek() {
   const week = home.week;
   const stat = (count, label, link) => `<a class="hm-stat" href="${link}"><b>${count}</b><span>${label}</span></a>`;
@@ -233,8 +265,40 @@ function renderWeek() {
       ${stat(week.unread, week.unread === 1 ? 'unread message' : 'unread messages', 'inbox.html')}
       ${stat(week.study_streak || 0, 'day study streak', 'study.html?tab=timer')}
       ${stat(week.study_minutes >= 60 ? `${Math.round(week.study_minutes / 6) / 10} h` : `${week.study_minutes || 0} min`, 'studied this week', 'study.html?tab=timer')}
-    </div>
-    ${practiceRowHtml(home.practice)}`;
+    </div>`;
+}
+
+// Flashcards waiting today and the nearest exam (Exam Prep)
+function prepRowsHtml(prep) {
+  if (!prep) return '';
+  const rows = [];
+  if (prep.cards_due) {
+    const minutes = Math.max(1, Math.round(prep.cards_due * 12 / 60));
+    rows.push(`
+      <a class="hm-row" href="prep.html?review=1">
+        <span class="hm-icon">${icon('style')}</span>
+        <span class="hm-row-text"><strong>Review ${plural(prep.cards_due, 'flashcard', 'flashcards')}</strong><small>1 XP a card · comes back just before you forget</small></span>
+        <span class="hm-due">${minutes} min</span>
+      </a>`);
+  }
+  const exam = prep.exam;
+  if (exam && exam.days_left >= 0 && exam.days_left <= 60) {
+    rows.push(`
+      <a class="hm-row${exam.days_left <= 7 ? ' is-urgent' : ''}" href="prep.html">
+        <span class="hm-icon">${icon('event')}</span>
+        <span class="hm-row-text"><strong>${escapeHtml(exam.name)} exam ${exam.days_left === 0 ? 'today' : `in ${plural(exam.days_left, 'day', 'days')}`}</strong><small>${exam.units ? (exam.units_left ? `${plural(exam.units_left, 'unit', 'units')} left to revise` : 'Every unit revised') : 'Link its syllabus to track the units'}</small></span>
+        <span class="hm-go material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </a>`);
+    if (home.progress && home.progress.paid === false && exam.days_left <= 30) {
+      rows.push(`
+      <a class="hm-row" href="pricing.html">
+        <span class="hm-icon">${icon('bolt')}</span>
+        <span class="hm-row-text"><strong>Exam month? Get the ₹49 Exam Pass</strong><small>60 AI tutor questions a day, unlimited mock tests, full reports, for 30 days</small></span>
+        <span class="hm-go material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </a>`);
+    }
+  }
+  return rows.join('');
 }
 
 // One line about the daily practice questions: how many are done today and the streak

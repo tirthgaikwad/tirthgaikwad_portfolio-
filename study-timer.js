@@ -54,11 +54,28 @@ function paintTimer() {
 async function logFocus(minutes) {
   if (minutes < 1) return;
   try {
-    await api('/api/study/sessions', { method: 'POST', body: { minutes: Math.min(180, minutes), subject_id: timer.subject ? Number(timer.subject) : null } });
+    const saved = await api('/api/study/sessions', { method: 'POST', body: { minutes: Math.min(180, minutes), subject_id: timer.subject ? Number(timer.subject) : null } });
+    showXpPop(saved && saved.xp);
     await loadStudy();
   } catch (err) {
     showToast(`Could not save that session: ${err.message}`);
   }
+}
+
+// "Studying now" for the rest of the college (section 36): on while a focus stretch runs, off otherwise
+let studyingNow = null;            // how many others of my college are studying, from the last start
+function tellStudying(on) {
+  if (on && timer.mode === 'focus') {
+    const subject = subjectOf(Number(timer.subject));
+    api('/api/study/now', { method: 'POST', body: { minutes: Math.ceil(timerLeft() / 60), subject: subject ? subject.name : '' } })
+      .then((r) => { studyingNow = r.studying_now; if (studyView.tab === 'timer') paintStudyingNow(); }).catch(() => {});
+  } else {
+    api('/api/study/now', { method: 'DELETE' }).catch(() => {});
+  }
+}
+function paintStudyingNow() {
+  const line = el('studyingNow');
+  if (line) line.textContent = studyingNow ? `${studyingNow} ${studyingNow === 1 ? 'other student' : 'other students'} from your college ${studyingNow === 1 ? 'is' : 'are'} studying right now.` : 'Study with classmates in a room: one shared timer, no camera.';
 }
 
 // A stretch ran out: a finished focus is logged and the break starts; a finished break waits for the next focus
@@ -73,6 +90,7 @@ function finishStretch() {
     storeTimer();
     showToast(`${minutes} minutes done. Take a break.`);
     logFocus(minutes);
+    tellStudying(false);
   } else {
     resetTimer('focus');
     clearInterval(timerTick);
@@ -88,6 +106,7 @@ studyActions['timer-start'] = () => {
   storeTimer();
   startTicking();
   renderStudy();
+  tellStudying(true);
 };
 
 studyActions['timer-pause'] = () => {
@@ -95,6 +114,7 @@ studyActions['timer-pause'] = () => {
   timer.running = false;
   storeTimer();
   renderStudy();
+  tellStudying(false);
 };
 
 // Stop a focus early: the minutes already studied still count
@@ -105,6 +125,7 @@ studyActions['timer-finish'] = () => {
   resetTimer('focus');
   renderStudy();
   if (wasFocus && studied >= 1) { showToast(`${plural(studied, 'minute', 'minutes')} logged.`); logFocus(studied); }
+  if (wasFocus) tellStudying(false);
 };
 
 studyActions['timer-skip'] = () => { clearInterval(timerTick); resetTimer('focus'); renderStudy(); };
@@ -158,6 +179,7 @@ studyRender.timer = () => {
           <div class="st-timer-actions">${controls}</div>
           <button type="button" class="st-fold" data-act="timer-lengths">${icon('tune')}${study.settings.focus_minutes} min focus, ${study.settings.break_minutes} min break</button>
         </section>
+        <a class="hm-row" href="rooms.html"><span class="hm-icon">${icon('groups')}</span><span class="hm-row-text"><strong>Study rooms</strong><small id="studyingNow">${studyingNow ? `${studyingNow} ${studyingNow === 1 ? 'other student' : 'other students'} from your college ${studyingNow === 1 ? 'is' : 'are'} studying right now.` : 'Study with classmates in a room: one shared timer, no camera.'}</small></span><span class="hm-go material-symbols-outlined" aria-hidden="true">chevron_right</span></a>
       </div>
       <aside class="hm-side">
         <section class="hm-card"><div class="hm-head"><h2>Your focus</h2></div>

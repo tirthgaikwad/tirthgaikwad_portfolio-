@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="favicon.svg" type="image/svg+xml"/><link rel="icon" href="favicon.ico" sizes="48x48"/><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/><link rel="manifest" href="site.webmanifest"/><meta name="theme-color" content="#3525cd"/>
+<title>Connect2Minds | Study rooms</title>
+<script>
+// Ask for this page's data right away, while styles and scripts are still downloading. The page script picks up the result.
+(function () {
+  if (!localStorage.getItem('currentUserId')) return;
+  var apiBase = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000' : location.origin);
+  window.__pagePrefetch = fetch(apiBase + 'C:/Program Files/Git/api/rooms', { credentials: 'include' })
+    .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+    .catch(function () { return null; });
+})();
+</script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+/* Custom Modal Styles */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.custom-modal { background: #ffffff; padding: 32px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); border: 1px solid #c7c4d8; animation: slideDown 0.3s ease; }
+.custom-modal h3 { font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 12px; font-weight: 800; font-size: 1.25rem; color: #0b1c30;}
+.custom-modal p { color: #464555; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-outline-modal { padding: 10px 20px; border: 1px solid #c7c4d8; border-radius: 8px; background: transparent; color: #0b1c30; font-weight: 600; cursor: pointer; transition: 0.2s;}
+.btn-outline-modal:hover { background: #eff4ff; }
+.btn-primary-modal { padding: 10px 20px; border: none; border-radius: 8px; background: #3525cd; color: #ffffff; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
+.btn-primary-modal:hover { background: #2b1ea6; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+/* Hide Scrollbar for Horizontal Nav */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Discover page */
+.chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.discover-select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777587' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid rgba(199,196,216,0.7); border-radius: 10px; padding: 8px 30px 8px 12px; font-size: 13px; font-weight: 500; color: #0b1c30; cursor: pointer; text-overflow: ellipsis; }
+.discover-select:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.discover-select.is-set { border-color: #3525cd; background-color: #eff4ff; }
+.filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(199,196,216,0.7); background: #fff; color: #464555; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.filter-toggle:hover { background: #eff4ff; }
+.filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
+.skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+</style><script src="https://cdn.tailwindcss.com"></script><link href="header.css" rel="stylesheet"/><link href="home.css" rel="stylesheet"/><link href="study.css" rel="stylesheet"/><link href="formsheet.css" rel="stylesheet"/><link href="prep.css" rel="stylesheet"/><link href="rooms.css" rel="stylesheet"/><link href="progress.css" rel="stylesheet"/><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="app-header" id="appHeader"></header>
+<script>renderAppHeader()</script><main class="w-full pt-16 bg-surface min-h-screen"><div class="hm-page rm-page">
+<div id="roomsView" aria-live="polite"><div class="hm-card"><div class="hm-list"><div class="skeleton hm-skel"></div><div class="skeleton hm-skel"></div></div></div></div>
+</div></main>
+<div class="rm-floats" id="roomFloats" aria-hidden="true"></div><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a><a class="hover:text-primary transition-colors text-decoration-none" href="refund.html">Refunds</a><a class="hover:text-primary transition-colors text-decoration-none" href="contact.html">Contact</a></div></div></footer>
+
+<!-- CUSTOM SYSTEM ALERTS MODAL -->
+<div class="modal-overlay" id="systemModal">
+    <div class="custom-modal">
+        <h3 id="systemModalTitle">Notification</h3>
+        <p id="systemModalMessage">Message goes here.</p>
+        <div class="modal-buttons">
+            <button class="btn-outline-modal" id="systemModalCancel" style="display: none;">Cancel</button>
+            <button class="btn-primary-modal" id="systemModalConfirm">OK</button>
+        </div>
+    </div>
+</div>
+
+<script src="chat-common.js"></script>
+<script src="formsheet.js"></script>
+<script src="rooms.js"></script>
+</body>
+</html>

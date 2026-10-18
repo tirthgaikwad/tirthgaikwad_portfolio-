@@ -150,3 +150,13 @@
 /* A page opened inside the call dock (call-dock.js): the calling page around it has its own call bar */
 html.in-dock .app-tabbar, html.in-dock footer { display: none !important; }
 html.in-dock body.has-tabbar { padding-bottom: 0 !important; }
+
+
+/* "+5 XP" after an action that earns XP (showXpPop in shared.js) */
+.xp-pop { position: fixed; right: 20px; bottom: 28px; z-index: 10002; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; background: #0b1c30; color: #fff; font-family: Inter, sans-serif; font-size: 13px; text-decoration: none; box-shadow: 0 8px 24px rgba(11,28,48,0.25); animation: xpPop 0.3s ease; max-width: calc(100vw - 32px); }
+.xp-pop svg { width: 20px; height: 20px; fill: #85f8c4; flex-shrink: 0; }
+.xp-pop b { font-weight: 700; white-space: nowrap; }
+.xp-pop span { color: #cbdbf5; }
+@keyframes xpPop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 767px) { body.has-tabbar .xp-pop { bottom: 84px; } .xp-pop { right: 16px; left: 16px; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .xp-pop { animation: none; } }

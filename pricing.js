@@ -8,7 +8,16 @@
 const P = { plans: null, me: null, period: 'month', years: 1, tab: 'personal' };
 const LINES = { personal: 'Students & professionals', recruiter: 'Recruiters', institution: 'Institutions', sponsor: 'Sponsors' };
 
+// Study perks first: they are why most students upgrade
+const STUDY_FEATURES = (l) => [
+  ['auto_awesome', `${l.tutor_daily === null ? 'Unlimited' : l.tutor_daily} AI tutor questions a day`],
+  ['style', `${l.ai_gen_daily === null ? 'Unlimited' : l.ai_gen_daily} AI-made flashcard deck${l.ai_gen_daily === 1 ? '' : 's'} or quiz${l.ai_gen_daily === 1 ? '' : 'zes'} a day${l.ai_note_files ? ', also from your note files' : ''}`],
+  ['timer', l.mock_weekly === null ? 'Unlimited timed mock tests' : `${l.mock_weekly} timed mock test a week`],
+  ...(l.full_test_report ? [['insights', 'Full test report: weak topics, time per question, progress']] : []),
+  ...(l.freezes_monthly ? [['ac_unit', `${l.freezes_monthly} streak freezes a month`]] : [])
+];
 const PERSONAL_FEATURES = (l) => [
+  ...STUDY_FEATURES(l),
   ['forum', l.new_conversations === null ? 'Unlimited new conversations' : `${l.new_conversations} new conversations a month with people who don't follow you`],
   ['work', l.board_applications === null ? 'Unlimited applications on the Opportunities board' : `${l.board_applications} board applications a month`],
   ['handshake', l.pro_intros === null ? 'Unlimited introductions to professionals' : `${l.pro_intros} introductions to professionals a month`],
@@ -54,11 +63,11 @@ function renderPricing() {
   el('periodSwitch').querySelectorAll('[data-period]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === P.period)));
   el('yearsSwitch').classList.toggle('ch-hidden', P.tab !== 'institution');
   el('yearsSwitch').querySelectorAll('[data-years]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.years) === P.years)));
-  const plans = Object.values(P.plans.plans).filter(plan => plan.line === P.tab);
+  const plans = Object.values(P.plans.plans).filter(plan => plan.line === P.tab && plan.key !== 'exam_pass');
   const founder = P.me && P.me.founder;
   el('founderNote').classList.toggle('ch-hidden', !founder);
 
-  el('pricingBody').innerHTML = `<div class="pr-grid pr-${P.tab}">${plans.map(cardHtml).join('')}</div>
+  el('pricingBody').innerHTML = `${P.tab === 'personal' ? passHtml() : ''}<div class="pr-grid pr-${P.tab}">${plans.map(cardHtml).join('')}</div>
     ${P.tab === 'personal' ? compareHtml() : ''}
     ${P.tab === 'institution' ? `<p class="pr-small">${icon('redeem')}Every college gets a free ${P.plans.trial_days}-day trial of all institution features when its first teacher is approved. Prices are per college per year, before 18% GST.</p>` : ''}
     ${['recruiter', 'sponsor', 'institution'].includes(P.tab) ? `<div class="ch-panel pr-talk"><div><h3>Not sure which fits?</h3><p>Tell us about your ${P.tab === 'institution' ? 'college' : P.tab === 'recruiter' ? 'hiring' : 'challenge'} and we will suggest a plan. We usually reply within one working day.</p></div><button class="ch-btn solid" type="button" data-enquire="${P.tab}">${icon('mail')}Talk to us</button></div>` : ''}`;
@@ -108,12 +117,35 @@ function cardHtml(plan) {
   </article>`;
 }
 
+// The Exam Pass: one payment, 30 days of the study perks, then it simply ends
+function passHtml() {
+  const pass = P.plans.plans.exam_pass;
+  if (!pass || !pass.prices.one_time) return '';
+  const founder = P.me && P.me.founder;
+  const rank = { free: 0, exam_pass: 0.5 }[P.me ? P.me.plan : 'free'];
+  const covered = P.me && !founder && rank === undefined;               // Student Pro or above already include it
+  const action = founder ? '<span class="pr-small">Included for the founder</span>'
+    : covered ? '<span class="pr-small">Your plan already includes all of this.</span>'
+    : `<button class="ch-btn solid" type="button" data-buy="exam_pass">${icon('bolt')}${P.me && P.me.plan === 'exam_pass' ? 'Add 30 more days' : 'Get the Exam Pass'}</button>`;
+  return `<div class="ch-panel pr-pass">
+    <div class="pr-pass-text"><span class="ch-chip green">Exam month</span><h3>Exam Pass: ${inr(pass.prices.one_time.total)} for ${pass.days} days</h3>
+      <p>${escapeHtml(pass.blurb)} ${STUDY_FEATURES(pass.limits).map(([, text]) => escapeHtml(text)).join(' · ')}.</p></div>
+    <div class="pr-pass-action">${action}</div></div>`;
+}
+
 function compareHtml() {
   const keys = ['free', 'student_pro', 'premium', 'premium_plus'];
   const plans = keys.map(key => P.plans.plans[key]);
   const cell = (value, unit) => value === null ? '<b>Unlimited</b>' : value === true ? icon('check') : value === false ? '<span class="pr-dash">—</span>' : `${value}${unit || ''}`;
   const rows = [
     ['Profile, Discover, follows, College Hub, teams and chat with people who follow you back', () => icon('check')],
+    ['Flashcards, syllabus units, past-paper questions, daily practice, study rooms, league', () => icon('check')],
+    ['AI tutor questions a day', (p) => cell(p.limits.tutor_daily)],
+    ['AI flashcard decks or quizzes a day', (p) => cell(p.limits.ai_gen_daily)],
+    ['AI cards from your note files', (p) => cell(p.limits.ai_note_files)],
+    ['Timed mock tests a week', (p) => cell(p.limits.mock_weekly)],
+    ['Full test report (weak topics, time per question)', (p) => cell(p.limits.full_test_report)],
+    ['Streak freezes a month', (p) => cell(p.limits.freezes_monthly)],
     ['New conversations a month (people who do not follow you)', (p) => cell(p.limits.new_conversations)],
     ['Opportunities board applications a month', (p) => cell(p.limits.board_applications)],
     ['Introductions to professionals a month', (p) => cell(p.limits.pro_intros)],
@@ -148,7 +180,7 @@ async function buy(planKey, button) {
   }
   button.disabled = true;
   try {
-    const order = await api('/api/billing/order', { method: 'POST', body: { plan_key: planKey, period: P.period } });
+    const order = await api('/api/billing/order', { method: 'POST', body: { plan_key: planKey, period: planKey === 'exam_pass' ? 'one_time' : P.period } });
     await loadRazorpay();
     const checkout = new window.Razorpay({
       key: order.key_id, amount: order.amount, currency: order.currency, name: order.name, description: order.description, order_id: order.order_id,

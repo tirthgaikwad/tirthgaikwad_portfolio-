@@ -1308,7 +1308,7 @@
     "how much",
     "upgrade"
    ],
-   "answer": "Most of the site is free. Student Pro is ₹99 a month or ₹799 a year, Premium ₹299 / ₹2,499 and Premium Plus ₹599 / ₹4,999 (GST included). Plans raise limits and unlock extras like advanced filters; there are business plans for recruiters, colleges and sponsors.",
+   "answer": "Free gives every daily study tool and the basics of networking. **Student Pro** (₹99 a month or ₹799 a year) adds 60 AI tutor questions a day, AI flashcards and quizzes, unlimited mock tests with the full report and streak freezes, plus more outreach. The **Exam Pass** is ₹49 once for 30 days of the study perks. Networking Premium and Premium Plus add unlimited messaging, introductions and a profile boost. See **Plans**.",
    "highlight": [
     {
      "sel": "#pricingTabs",
@@ -1331,7 +1331,10 @@
     "cancel plan",
     "my plan",
     "razorpay",
-    "paid but"
+    "paid but",
+    "paid but not active",
+    "plan not active",
+    "payment done but"
    ],
    "answer": "Plans & billing shows your plan, when it ends and your receipts. Payments go through Razorpay; plans don't renew by themselves, so renew with one click. For a refund write to Support within 7 days."
   },
@@ -1859,6 +1862,221 @@
     "capabilities"
    ],
    "answer": "Ask me how anything on the site works and I'll explain and take you there. I can also tell you what's due this week, your attendance, unread messages and find people by skill, add a planner task, mark attendance, or start a timer, always asking before I change anything."
+  },
+  {
+   "id": "progress",
+   "title": "XP, daily goal and streak",
+   "audience": "member",
+   "page": "progress.html",
+   "keywords": [
+    "xp",
+    "streak",
+    "daily goal",
+    "progress",
+    "points",
+    "streak freeze",
+    "freeze",
+    "calendar",
+    "goal"
+   ],
+   "answer": "Everything you study earns XP: daily questions, focus minutes, flashcards, tests, quizzes and helping your class. Reach your daily goal (you pick 10, 30, 50 or 80 XP on **Your progress**) to keep your streak. With Student Pro or the Exam Pass, 2 streak freezes a month cover a missed day by themselves.",
+   "highlight": [
+    {
+     "sel": "#pgTop",
+     "text": "Today's XP against your goal, and your streak."
+    }
+   ]
+  },
+  {
+   "id": "exam-prep",
+   "title": "Exam Prep: syllabus units",
+   "audience": "member",
+   "page": "prep.html",
+   "keywords": [
+    "exam prep",
+    "syllabus",
+    "units",
+    "unit",
+    "exam date",
+    "countdown",
+    "revise",
+    "revision",
+    "semester exam",
+    "topics"
+   ],
+   "answer": "**Exam Prep** keeps your subjects with their syllabus. Pick your class's syllabus (or paste it in once for everyone), set the exam date, and mark each unit To do, Learning, Revised or Confident. It tells you the daily pace to finish before the exam.",
+   "highlight": [
+    {
+     "sel": "#prepView",
+     "text": "Your subjects, cards to review and the next exam."
+    }
+   ]
+  },
+  {
+   "id": "flashcards",
+   "title": "Flashcards and daily review",
+   "audience": "member",
+   "page": "prep.html",
+   "keywords": [
+    "flashcards",
+    "flash cards",
+    "cards",
+    "deck",
+    "review",
+    "spaced repetition",
+    "remember",
+    "memorise",
+    "revise cards"
+   ],
+   "answer": "Make flashcard decks in **Exam Prep** (one at a time or paste many with | between front and back), or follow decks your class shares. Review every day: cards you find hard come back sooner, easy ones later. Each card reviewed earns 1 XP.",
+   "highlight": [
+    {
+     "sel": "#prepView",
+     "text": "Start today's review from here."
+    }
+   ]
+  },
+  {
+   "id": "past-papers",
+   "title": "Past-paper questions",
+   "audience": "member",
+   "page": "prep.html",
+   "keywords": [
+    "past paper",
+    "previous year",
+    "pyq",
+    "important questions",
+    "repeated questions",
+    "asked",
+    "question paper",
+    "exam questions"
+   ],
+   "answer": "In a subject's **Past-paper questions** tab, add questions from previous-year papers with the year. When a question was asked in several years it moves to the top, so the class knows what to prepare first. From a past paper in Notes, use 'Add its questions to Exam Prep'.",
+   "highlight": [
+    {
+     "sel": "#prepView",
+     "text": "Open a subject, then its Past-paper questions tab."
+    }
+   ]
+  },
+  {
+   "id": "ai-tutor",
+   "title": "AI Tutor",
+   "audience": "member",
+   "page": "tutor.html",
+   "keywords": [
+    "ai tutor",
+    "tutor",
+    "doubt",
+    "explain",
+    "exam answer",
+    "5 marks",
+    "10 marks",
+    "ai flashcards",
+    "quiz me",
+    "ask ai",
+    "solve"
+   ],
+   "answer": "The **AI Tutor** answers doubts, writes 2- to 15-mark exam answers in the format universities expect, explains past-paper questions, and makes flashcards or a quiz from a unit or topic. Free accounts get 5 questions and 1 deck or quiz a day; Student Pro and the Exam Pass give 60 questions and 10 decks or quizzes a day, and can read your note files.",
+   "highlight": [
+    {
+     "sel": "#tutorMain",
+     "text": "Pick a mode: doubt, exam answer, flashcards or quiz."
+    }
+   ]
+  },
+  {
+   "id": "mock-tests",
+   "title": "Mock tests",
+   "audience": "member",
+   "page": "tests.html",
+   "keywords": [
+    "mock test",
+    "mock",
+    "test",
+    "timed test",
+    "placement test",
+    "aptitude test",
+    "tcs",
+    "infosys",
+    "practice test",
+    "topic practice"
+   ],
+   "answer": "**Mock tests** are timed aptitude and CS tests, from 15 to 55 questions, with every answer explained. Answers save as you pick them and the clock is the server's. Free accounts get one timed test a week; untimed topic practice is free and unlimited. Student Pro and the Exam Pass give unlimited tests plus a report of weak topics and time per question.",
+   "highlight": [
+    {
+     "sel": "#testsView",
+     "text": "Pick a topic test or a placement round."
+    }
+   ]
+  },
+  {
+   "id": "study-rooms",
+   "title": "Study rooms",
+   "audience": "member",
+   "page": "rooms.html",
+   "keywords": [
+    "study room",
+    "study together",
+    "study with friends",
+    "group study",
+    "pomodoro",
+    "focus together",
+    "studying now",
+    "room code"
+   ],
+   "answer": "In **Study rooms** you study alongside classmates on one shared timer, with no camera and no chat. Open a room (share its code) or join one from your college. A focus round you take part in counts for your XP and streak.",
+   "highlight": [
+    {
+     "sel": "#roomsView",
+     "text": "Open a room or join one."
+    }
+   ]
+  },
+  {
+   "id": "league",
+   "title": "Weekly league",
+   "audience": "member",
+   "page": "progress.html",
+   "keywords": [
+    "league",
+    "leaderboard",
+    "rank",
+    "weekly",
+    "top 3",
+    "badge",
+    "compete",
+    "college ranking"
+   ],
+   "answer": "Every week the XP you earn puts you in your college's league (and one with the people you follow), on **Your progress**. It starts again each Monday; the top three get a badge on their profile and everyone is told their place.",
+   "highlight": [
+    {
+     "sel": "#pgLeague",
+     "text": "This week's league."
+    }
+   ]
+  },
+  {
+   "id": "exam-pass",
+   "title": "Exam Pass",
+   "audience": "all",
+   "page": "pricing.html",
+   "keywords": [
+    "exam pass",
+    "₹49",
+    "49 rupees",
+    "one month plan",
+    "30 days plan",
+    "exam month",
+    "cheap plan"
+   ],
+   "answer": "The **Exam Pass** is one ₹49 payment for 30 days of every study perk: 60 AI tutor questions a day, AI flashcards and quizzes, unlimited mock tests with the full report, and streak freezes. It does not renew; it simply ends. Networking limits stay as on the free plan.",
+   "highlight": [
+    {
+     "sel": "#pricingBody",
+     "text": "The Exam Pass is at the top."
+    }
+   ]
   }
  ],
  "tour": {

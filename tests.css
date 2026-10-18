@@ -1,0 +1,85 @@
+/* ==========================================
+   TESTS.CSS — Mock tests (tests.html): the list, the timed test, results and topic practice.
+   Reuses home.css (hm-*), study.css (st-*, pr-* for questions), prep.css (pp-*). Site palette only.
+   ========================================== */
+.tt-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.tt-strip .pg-tile b { font-size: 26px; line-height: 32px; }
+.tt-running { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 16px; background: #3525cd; color: #fff; margin-bottom: 20px; }
+.tt-running .material-symbols-outlined { font-size: 28px; }
+.tt-running div { flex: 1; min-width: 0; }
+.tt-running strong { display: block; font-size: 15px; }
+.tt-running small { color: #e2dfff; font-size: 12.5px; }
+.tt-running .hm-btn { background: #fff; color: #3525cd; border-color: #fff; }
+
+.tt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tt-test { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 14px; border: 1px solid rgba(199,196,216,0.6); background: #fff; min-width: 0; }
+.tt-test strong { font-size: 15px; line-height: 21px; }
+.tt-test p { margin: 0; font-size: 12.5px; line-height: 18px; color: #464555; flex: 1; }
+.tt-test-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.tt-test .hm-btn { align-self: flex-start; margin-top: 4px; }
+.tt-test.is-pattern { border-color: #c3c0ff; background: #f8f9ff; }
+
+.tt-topics { display: flex; gap: 6px; flex-wrap: wrap; }
+.tt-section-row { display: grid; grid-template-columns: 140px minmax(0, 1fr) 56px; gap: 10px; align-items: center; padding: 6px 0; font-size: 13px; }
+.tt-section-row .hm-bar { margin: 0; }
+.tt-section-row b { text-align: right; }
+
+/* trend: one bar per test, labelled */
+.tt-trend { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding-top: 18px; }
+.tt-bar { flex: 1; min-width: 14px; max-width: 40px; background: #4f46e5; border-radius: 4px 4px 0 0; position: relative; }
+.tt-bar span { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: #0b1c30; }
+.tt-weak { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(199,196,216,0.35); font-size: 13.5px; }
+.tt-weak:first-of-type { border-top: 0; }
+.tt-weak div { flex: 1; min-width: 0; }
+.tt-weak small { display: block; color: #464555; font-size: 12px; }
+.tt-locked { position: relative; min-height: 190px; }
+.tt-locked-blur { filter: blur(4px); pointer-events: none; user-select: none; opacity: 0.6; }
+.tt-locked-cover { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; padding: 12px; }
+.tt-locked-cover strong { font-size: 14.5px; }
+
+/* the timed test */
+.tt-run { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: start; }
+.tt-run-head { position: sticky; top: 64px; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 12px 0; background: #f8f9ff; margin-bottom: 8px; }
+.tt-run-head h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; margin: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-clock { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: #0b1c30; color: #fff; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; }
+.tt-clock.is-low { background: #ba1a1a; }
+.tt-qhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; font-size: 12.5px; color: #464555; }
+.tt-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.tt-dot { aspect-ratio: 1; border-radius: 8px; border: 1px solid rgba(199,196,216,0.9); background: #fff; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; color: #464555; cursor: pointer; position: relative; }
+.tt-dot.is-done { background: #e2dfff; border-color: #c3c0ff; color: #3323cc; }
+.tt-dot.is-flag::after { content: ''; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 999px; background: #ba1a1a; }
+.tt-dot[aria-current="true"] { outline: 2px solid #3525cd; outline-offset: 1px; }
+.tt-part { font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #777587; margin: 12px 0 6px; }
+.tt-part:first-child { margin-top: 0; }
+.tt-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: #464555; margin-top: 12px; }
+.tt-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.tt-legend i { width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(199,196,216,0.9); display: inline-block; }
+.tt-run .pr-option[aria-pressed="true"] { border-color: #3525cd; background: #eff4ff; box-shadow: inset 0 0 0 1px #3525cd; }
+.tt-run .pr-option[aria-pressed="true"] b { background: #3525cd; color: #fff; }
+.tt-run-foot { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.tt-run-foot .fs-gap { flex: 1; }
+
+/* results */
+.tt-score { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.tt-score b { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; line-height: 44px; font-weight: 800; }
+.tt-score small { display: block; font-size: 13px; color: #464555; }
+.tt-review-q { padding: 16px 0; border-top: 1px solid rgba(199,196,216,0.35); }
+.tt-review-q:first-of-type { border-top: 0; }
+.tt-review-q .pr-options { margin-top: 8px; }
+
+@media (max-width: 1023px) {
+  .tt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tt-run { grid-template-columns: minmax(0, 1fr); }
+  .tt-side { order: -1; }
+  .tt-nav { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .tt-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tt-strip .pg-tile { padding: 12px; }
+  .tt-strip .pg-tile b { font-size: 20px; line-height: 26px; }
+  .tt-grid { grid-template-columns: minmax(0, 1fr); }
+  .tt-nav { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .tt-section-row { grid-template-columns: 100px minmax(0, 1fr) 44px; }
+  .tt-run-head h1 { font-size: 16px; }
+  .tt-run .pr-options { grid-template-columns: minmax(0, 1fr); }
+}

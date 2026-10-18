@@ -113,6 +113,8 @@ const HEADER_ICONS = {
     check: '<path d="M12 3.5l7 2.5v5.5c0 4.3-2.8 7.6-7 9-4.2-1.4-7-4.7-7-9V6z"/><path d="M9 12l2.2 2.2L15.2 10"/>',
     chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
     target: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M11 8v6M8 11h6"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    exam: '<rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5v-1h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/>',
     plus: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
     home: '<path d="M4 11l8-6.5 8 6.5v7.5a1.5 1.5 0 01-1.5 1.5H5.5A1.5 1.5 0 014 18.5z"/><path d="M9.5 20v-5.5h5V20"/>',
     lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>'
@@ -126,8 +128,13 @@ const HEADER_NAV = [
     { label: 'Opportunities', href: 'board.html', icon: 'board', text: 'Open roles and project ideas' },
     { label: 'Study', pages: [
         { label: 'My Study', href: 'study.html', icon: 'book', text: 'Timetable, attendance, planner, grades, timer' },
+        { label: 'Exam Prep', href: 'prep.html', icon: 'exam', text: 'Syllabus, past-paper questions, flashcards' },
+        { label: 'AI Tutor', href: 'tutor.html', icon: 'star', text: 'Doubts, exam answers, AI flashcards and quizzes' },
+        { label: 'Mock tests', href: 'tests.html', icon: 'clock', text: 'Timed aptitude and CS tests, explained' },
+        { label: 'Study rooms', href: 'rooms.html', icon: 'teams', text: 'Focus together with classmates' },
         { label: 'Notes and papers', href: 'notes.html', icon: 'board', text: 'Shared notes and previous-year papers' },
         { label: 'Daily practice', href: 'practice.html', icon: 'target', text: 'Two placement questions a day, with a streak' },
+        { label: 'Progress and streak', href: 'progress.html', icon: 'chart', text: 'Your XP, daily goal and streak' },
         { label: 'Resume builder', href: 'resume.html', icon: 'card', text: 'A one-page resume from your profile' }
     ] },
     { label: 'Workspace', pages: [
@@ -953,4 +960,36 @@ function initNotifications(userId) {
     loadBell();
     // Pages that use connectNotifications (chat-common.js) already have this socket and pass bell events on
     if (!window.__bellSocketOwned) openBellSocket();
+}
+
+
+// ==========================================
+// XP POP: "+5 XP" after something that earns XP (practice, focus timer, flashcards). xp is the server's award_xp answer.
+// ==========================================
+function showXpPop(xp) {
+    if (!xp || !xp.xp) return;
+    const old = document.getElementById('xpPop');
+    if (old) old.remove();
+    const pop = document.createElement('a');
+    pop.id = 'xpPop';
+    pop.className = 'xp-pop';
+    pop.href = 'progress.html';
+    pop.setAttribute('role', 'status');
+    const reached = xp.goal_reached ? 'Daily goal reached, streak kept' : (xp.goal ? `${Math.min(xp.today, xp.goal)} of ${xp.goal} XP today` : '');
+    pop.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/></svg><b>+${xp.xp} XP</b>${reached ? `<span>${reached}</span>` : ''}`;
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), xp.goal_reached ? 5000 : 3200);
+    if (typeof CACHE_PREFIX !== 'undefined') { try { localStorage.removeItem(CACHE_PREFIX + 'home'); } catch (e) { /* Home refetches anyway */ } }
+}
+
+// The daily-goal ring (styles in progress.css): XP today against the goal, a tick once it is met
+function goalRingHtml(progress, size) {
+    const goal = Math.max(1, progress.goal || 30), xp = progress.xp_today || 0;
+    const r = 37, length = 2 * Math.PI * r, share = Math.min(1, xp / goal);
+    const inside = progress.goal_met
+        ? '<span class="material-symbols-outlined" aria-hidden="true">check</span><small>goal met</small>'
+        : `<b>${xp}</b><small>of ${goal} XP</small>`;
+    return `<div class="pg-ring${progress.goal_met ? ' is-met' : ''}"${size ? ` style="width:${size}px;height:${size}px"` : ''} role="img" aria-label="${xp} of ${goal} XP today${progress.goal_met ? ', goal met' : ''}">
+      <svg viewBox="0 0 84 84"><circle class="pg-ring-track" cx="42" cy="42" r="${r}"/><circle class="pg-ring-fill" cx="42" cy="42" r="${r}" stroke-dasharray="${length.toFixed(1)}" stroke-dashoffset="${(length * (1 - share)).toFixed(1)}"${xp ? '' : ' hidden'}/></svg>
+      <div class="pg-ring-text">${inside}</div></div>`;
 }

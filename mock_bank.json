@@ -1,0 +1,3569 @@
+[
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 1,
+  "q": "A student scores 72 out of 90. What is the percentage?",
+  "options": [
+   "75%",
+   "78%",
+   "80%",
+   "82%"
+  ],
+  "answer": 2,
+  "why": "72 ÷ 90 = 0.8, which is 80%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 2,
+  "q": "The price of sugar rises by 25%. By what percent must a family cut its use so that the spending stays the same?",
+  "options": [
+   "20%",
+   "25%",
+   "15%",
+   "30%"
+  ],
+  "answer": 0,
+  "why": "New use is 1/1.25 = 0.8 of the old, a cut of 20%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 2,
+  "q": "A town's population of 50,000 grows by 10% a year. What is it after 2 years?",
+  "options": [
+   "60,000",
+   "60,500",
+   "61,000",
+   "55,000"
+  ],
+  "answer": 1,
+  "why": "50,000 × 1.1 × 1.1 = 60,500."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 1,
+  "q": "What is 15% of 15% of 2,000?",
+  "options": [
+   "45",
+   "30",
+   "300",
+   "4.5"
+  ],
+  "answer": 0,
+  "why": "15% of 2,000 is 300, and 15% of 300 is 45."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 2,
+  "q": "In an exam 35% failed in Maths, 25% in English and 10% in both. What percent passed in both?",
+  "options": [
+   "40%",
+   "50%",
+   "60%",
+   "45%"
+  ],
+  "answer": 1,
+  "why": "Failed in at least one: 35 + 25 − 10 = 50%. So 50% passed in both."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 3,
+  "q": "A's salary is 25% more than B's. By what percent is B's salary less than A's?",
+  "options": [
+   "20%",
+   "25%",
+   "15%",
+   "22.5%"
+  ],
+  "answer": 0,
+  "why": "If B = 100, A = 125. The difference 25 is 20% of 125."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 2,
+  "q": "After spending 80% of his income, a man saves ₹6,000. What is his income?",
+  "options": [
+   "₹24,000",
+   "₹30,000",
+   "₹36,000",
+   "₹48,000"
+  ],
+  "answer": 1,
+  "why": "₹6,000 is the 20% he saves, so the income is 6,000 ÷ 0.2 = 30,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 1,
+  "q": "A phone bought for ₹12,000 is sold for ₹10,800. What is the loss percent?",
+  "options": [
+   "8%",
+   "10%",
+   "12%",
+   "9%"
+  ],
+  "answer": 1,
+  "why": "The loss is 1,200, which is 10% of 12,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 2,
+  "q": "By selling 12 pens for ₹100 a shop loses 20%. How many pens should it sell for ₹100 to gain 20%?",
+  "options": [
+   "8",
+   "9",
+   "10",
+   "6"
+  ],
+  "answer": 0,
+  "why": "At a 20% loss, 12 pens cost 100/0.8 = 125, so one costs 125/12. To gain 20% the price per pen is 1.2 × 125/12 = 12.5, and ₹100 buys 8."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 2,
+  "q": "The cost price of 20 items equals the selling price of 16 items. What is the profit percent?",
+  "options": [
+   "20%",
+   "25%",
+   "16%",
+   "30%"
+  ],
+  "answer": 1,
+  "why": "If each costs ₹1, 16 items sell for ₹20: a profit of 4 on 16, which is 25%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 3,
+  "q": "Two articles are sold for ₹990 each, one at a 10% profit and the other at a 10% loss. The overall result is:",
+  "options": [
+   "No profit, no loss",
+   "1% loss",
+   "1% profit",
+   "2% loss"
+  ],
+  "answer": 1,
+  "why": "Selling two things at the same price with equal profit and loss percent always gives a loss of (10)²/100 = 1%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 2,
+  "q": "A trader marks goods 40% above cost and gives a 20% discount. His profit percent is:",
+  "options": [
+   "12%",
+   "20%",
+   "16%",
+   "10%"
+  ],
+  "answer": 0,
+  "why": "1.4 × 0.8 = 1.12, a 12% profit."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 1,
+  "q": "A shopkeeper gains ₹150 by selling a fan for ₹1,650. What is his profit percent?",
+  "options": [
+   "9%",
+   "10%",
+   "11%",
+   "12%"
+  ],
+  "answer": 1,
+  "why": "The cost is 1,650 − 150 = 1,500, and 150 is 10% of 1,500."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Discounts",
+  "difficulty": 2,
+  "q": "Two successive discounts of 20% and 10% are the same as a single discount of:",
+  "options": [
+   "30%",
+   "28%",
+   "27%",
+   "25%"
+  ],
+  "answer": 1,
+  "why": "0.8 × 0.9 = 0.72, so the price falls by 28%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Discounts",
+  "difficulty": 1,
+  "q": "A bag marked ₹1,200 is sold for ₹960. What is the discount percent?",
+  "options": [
+   "15%",
+   "20%",
+   "25%",
+   "24%"
+  ],
+  "answer": 1,
+  "why": "The discount is 240, which is 20% of 1,200."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Interest",
+  "difficulty": 1,
+  "q": "What sum gives ₹900 as simple interest in 3 years at 6% a year?",
+  "options": [
+   "₹4,500",
+   "₹5,000",
+   "₹5,400",
+   "₹6,000"
+  ],
+  "answer": 1,
+  "why": "900 = P × 6 × 3 ÷ 100, so P = 900 × 100 ÷ 18 = 5,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Interest",
+  "difficulty": 2,
+  "q": "A sum becomes ₹7,200 in 3 years and ₹8,400 in 5 years at simple interest. What is the sum?",
+  "options": [
+   "₹5,000",
+   "₹5,400",
+   "₹5,600",
+   "₹6,000"
+  ],
+  "answer": 1,
+  "why": "Two years of interest is 1,200, so one year is 600. Three years is 1,800, and 7,200 − 1,800 = 5,400."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Interest",
+  "difficulty": 2,
+  "q": "₹8,000 at 5% a year, compounded yearly, for 3 years gives an amount of:",
+  "options": [
+   "₹9,200",
+   "₹9,261",
+   "₹9,240",
+   "₹9,300"
+  ],
+  "answer": 1,
+  "why": "8,000 × 1.05³ = 9,261."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Interest",
+  "difficulty": 3,
+  "q": "A sum doubles in 5 years at compound interest. In how many years will it become 8 times?",
+  "options": [
+   "10",
+   "15",
+   "20",
+   "25"
+  ],
+  "answer": 1,
+  "why": "8 = 2³, so it needs three doublings: 3 × 5 = 15 years."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Interest",
+  "difficulty": 2,
+  "q": "The compound interest on ₹10,000 for 2 years at 10% a year, compounded every six months, is:",
+  "options": [
+   "₹2,100",
+   "₹2,155.06",
+   "₹2,000",
+   "₹2,200"
+  ],
+  "answer": 1,
+  "why": "Half-yearly the rate is 5% for 4 periods: 10,000 × 1.05⁴ − 10,000 = 2,155.06."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Time and work",
+  "difficulty": 2,
+  "q": "A and B together finish a job in 8 days. A alone takes 12 days. How long does B alone take?",
+  "options": [
+   "20 days",
+   "24 days",
+   "16 days",
+   "18 days"
+  ],
+  "answer": 1,
+  "why": "B's daily work is 1/8 − 1/12 = 1/24, so B takes 24 days."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Time and work",
+  "difficulty": 2,
+  "q": "A can do a job in 10 days and B in 15 days. They work together for 3 days, then A leaves. How many more days does B need?",
+  "options": [
+   "6",
+   "7.5",
+   "8",
+   "9"
+  ],
+  "answer": 1,
+  "why": "In 3 days they finish 3 × (1/10 + 1/15) = 1/2. B does the other half at 1/15 a day: 7.5 days."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Time and work",
+  "difficulty": 3,
+  "q": "12 men can finish a job in 10 days. After 4 days, 4 men leave. How many days does the rest of the work take?",
+  "options": [
+   "8",
+   "9",
+   "10",
+   "12"
+  ],
+  "answer": 1,
+  "why": "The job is 120 man-days. After 4 days 72 are left, and 8 men need 72 ÷ 8 = 9 days."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Time and work",
+  "difficulty": 1,
+  "q": "If 6 people can paint a house in 8 days, how many people are needed to paint it in 4 days?",
+  "options": [
+   "10",
+   "12",
+   "14",
+   "16"
+  ],
+  "answer": 1,
+  "why": "6 × 8 = 48 person-days, and 48 ÷ 4 = 12."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Pipes and cisterns",
+  "difficulty": 2,
+  "q": "Pipe A fills a tank in 4 hours and pipe B in 6 hours. Together they fill it in:",
+  "options": [
+   "2 hours",
+   "2.4 hours",
+   "2.5 hours",
+   "5 hours"
+  ],
+  "answer": 1,
+  "why": "1/4 + 1/6 = 5/12 an hour, so 12/5 = 2.4 hours."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Pipes and cisterns",
+  "difficulty": 3,
+  "q": "Two pipes fill a tank in 10 and 15 minutes, and a third empties it in 20 minutes. With all three open, the tank fills in:",
+  "options": [
+   "8 minutes",
+   "8.57 minutes",
+   "12 minutes",
+   "9 minutes"
+  ],
+  "answer": 1,
+  "why": "1/10 + 1/15 − 1/20 = 7/60 a minute, so 60/7 ≈ 8.57 minutes."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 1,
+  "q": "A cyclist covers 36 km in 2 hours 15 minutes. His speed is:",
+  "options": [
+   "15 km/h",
+   "16 km/h",
+   "18 km/h",
+   "14 km/h"
+  ],
+  "answer": 1,
+  "why": "2 hours 15 minutes is 2.25 hours, and 36 ÷ 2.25 = 16."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 2,
+  "q": "A train running at 72 km/h crosses a 300 m platform in 30 seconds. How long is the train?",
+  "options": [
+   "200 m",
+   "300 m",
+   "600 m",
+   "250 m"
+  ],
+  "answer": 1,
+  "why": "72 km/h is 20 m/s. In 30 s it covers 600 m: the platform plus the train, so the train is 300 m."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 2,
+  "q": "Walking at 3/4 of his usual speed, a man is 20 minutes late. His usual time is:",
+  "options": [
+   "40 minutes",
+   "60 minutes",
+   "80 minutes",
+   "50 minutes"
+  ],
+  "answer": 1,
+  "why": "At 3/4 the speed the time is 4/3 of usual. The extra 1/3 is 20 minutes, so the usual time is 60."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 3,
+  "q": "Two trains start at the same time from cities 300 km apart and move towards each other at 60 km/h and 40 km/h. They meet after:",
+  "options": [
+   "2 hours",
+   "3 hours",
+   "4 hours",
+   "2.5 hours"
+  ],
+  "answer": 1,
+  "why": "They close the gap at 100 km/h: 300 ÷ 100 = 3 hours."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 2,
+  "q": "A boat's speed in still water is 10 km/h and the stream flows at 2 km/h. How long does a 24 km trip upstream take?",
+  "options": [
+   "2 hours",
+   "2.4 hours",
+   "3 hours",
+   "2.5 hours"
+  ],
+  "answer": 2,
+  "why": "Upstream the speed is 10 − 2 = 8 km/h, and 24 ÷ 8 = 3 hours."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 3,
+  "q": "A thief runs at 8 km/h. A policeman starts 10 minutes later at 10 km/h. How long after starting does he catch the thief?",
+  "options": [
+   "30 minutes",
+   "40 minutes",
+   "50 minutes",
+   "60 minutes"
+  ],
+  "answer": 1,
+  "why": "In 10 minutes the thief is 8/6 km ahead. The policeman gains 2 km/h, so he needs (4/3) ÷ 2 h = 40 minutes."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Ratio",
+  "difficulty": 1,
+  "q": "If 3 : x = 12 : 20, then x is:",
+  "options": [
+   "4",
+   "5",
+   "6",
+   "8"
+  ],
+  "answer": 1,
+  "why": "3 × 20 = 12 × x, so x = 5."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Ratio",
+  "difficulty": 2,
+  "q": "The ratio of boys to girls in a class is 3 : 2. If there are 12 girls, how many students are there?",
+  "options": [
+   "24",
+   "28",
+   "30",
+   "36"
+  ],
+  "answer": 2,
+  "why": "12 girls are 2 parts, so one part is 6. The class has 5 parts: 30."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Ratio",
+  "difficulty": 2,
+  "q": "Incomes of A and B are in the ratio 5 : 4 and their spending in the ratio 3 : 2. If each saves ₹2,000, A's income is:",
+  "options": [
+   "₹8,000",
+   "₹10,000",
+   "₹12,000",
+   "₹9,000"
+  ],
+  "answer": 1,
+  "why": "5x − 3y = 2,000 and 4x − 2y = 2,000 give x = 2,000, y = 2,000. A's income is 5x = 10,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Partnership",
+  "difficulty": 2,
+  "q": "A puts ₹40,000 into a business for 12 months and B puts ₹60,000 for 6 months. Out of a profit of ₹14,000, A gets:",
+  "options": [
+   "₹6,000",
+   "₹7,000",
+   "₹8,000",
+   "₹8,400"
+  ],
+  "answer": 2,
+  "why": "Shares go by money × time: 480,000 : 360,000 = 4 : 3. A gets 4/7 of 14,000 = 8,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Partnership",
+  "difficulty": 3,
+  "q": "A, B and C start a business with ₹20,000, ₹30,000 and ₹50,000. After a year, C's share of the profit is ₹15,000. The total profit is:",
+  "options": [
+   "₹25,000",
+   "₹30,000",
+   "₹35,000",
+   "₹40,000"
+  ],
+  "answer": 1,
+  "why": "C's money is half the total, so C gets half the profit. The total is 30,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Averages",
+  "difficulty": 2,
+  "q": "The average of 11 results is 50. The first six average 49 and the last six average 52. The sixth result is:",
+  "options": [
+   "50",
+   "56",
+   "52",
+   "48"
+  ],
+  "answer": 1,
+  "why": "6 × 49 + 6 × 52 − 11 × 50 = 294 + 312 − 550 = 56. The sixth result was counted twice."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Averages",
+  "difficulty": 2,
+  "q": "A batsman's average after 16 innings is 40. What must he score in the 17th innings to raise his average to 42?",
+  "options": [
+   "74",
+   "72",
+   "76",
+   "84"
+  ],
+  "answer": 0,
+  "why": "He needs 17 × 42 = 714 in all, and has 640: he needs 74."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Averages",
+  "difficulty": 1,
+  "q": "The average of 4, 8, 15, 16, 23 and 42 is:",
+  "options": [
+   "16",
+   "18",
+   "17",
+   "19"
+  ],
+  "answer": 1,
+  "why": "The sum is 108, and 108 ÷ 6 = 18."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Mixtures",
+  "difficulty": 2,
+  "q": "In what ratio must rice at ₹40/kg be mixed with rice at ₹55/kg to get a mixture worth ₹45/kg?",
+  "options": [
+   "1 : 2",
+   "2 : 1",
+   "3 : 2",
+   "2 : 3"
+  ],
+  "answer": 1,
+  "why": "By alligation: (55 − 45) : (45 − 40) = 10 : 5 = 2 : 1."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Mixtures",
+  "difficulty": 3,
+  "q": "A 40-litre can has milk and water in the ratio 3 : 1. How much of the mixture must be replaced with water so the ratio becomes 1 : 1?",
+  "options": [
+   "10 litres",
+   "13.33 litres",
+   "8 litres",
+   "12 litres"
+  ],
+  "answer": 1,
+  "why": "Milk must fall from 30 to 20 litres, so 1/3 of the mixture is replaced: 40/3 ≈ 13.33 litres."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Ages",
+  "difficulty": 2,
+  "q": "The ratio of A's and B's ages is 4 : 5. After 6 years it will be 5 : 6. A's age now is:",
+  "options": [
+   "20",
+   "24",
+   "28",
+   "30"
+  ],
+  "answer": 1,
+  "why": "(4x + 6)/(5x + 6) = 5/6 gives x = 6, so A is 24."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Ages",
+  "difficulty": 3,
+  "q": "A mother is 3 times as old as her daughter. 15 years from now she will be twice as old. How old is the daughter now?",
+  "options": [
+   "12",
+   "15",
+   "18",
+   "20"
+  ],
+  "answer": 1,
+  "why": "3d + 15 = 2(d + 15) gives d = 15."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Numbers",
+  "difficulty": 1,
+  "q": "The sum of three consecutive even numbers is 78. The largest is:",
+  "options": [
+   "24",
+   "26",
+   "28",
+   "30"
+  ],
+  "answer": 2,
+  "why": "They are n − 2, n, n + 2 with 3n = 78, so n = 26 and the largest is 28."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Numbers",
+  "difficulty": 2,
+  "q": "How many numbers between 1 and 100 (inclusive) are divisible by 3 or 5?",
+  "options": [
+   "45",
+   "47",
+   "48",
+   "53"
+  ],
+  "answer": 1,
+  "why": "33 by 3 and 20 by 5, minus 6 by 15: 33 + 20 − 6 = 47."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Numbers",
+  "difficulty": 2,
+  "q": "What is the remainder when 2¹⁰ is divided by 7?",
+  "options": [
+   "1",
+   "2",
+   "4",
+   "3"
+  ],
+  "answer": 1,
+  "why": "2³ = 8 leaves 1, so 2⁹ leaves 1 and 2¹⁰ leaves 2."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Numbers",
+  "difficulty": 3,
+  "q": "How many zeros does 50! (50 factorial) end with?",
+  "options": [
+   "10",
+   "12",
+   "11",
+   "15"
+  ],
+  "answer": 1,
+  "why": "Count the 5s: 50/5 = 10 plus 50/25 = 2, so 12."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Numbers",
+  "difficulty": 2,
+  "q": "What is the unit digit of 3²⁰²⁶?",
+  "options": [
+   "1",
+   "3",
+   "7",
+   "9"
+  ],
+  "answer": 3,
+  "why": "Powers of 3 end in 3, 9, 7, 1 in turn. 2026 leaves 2 when divided by 4, so it ends in 9."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Numbers",
+  "difficulty": 1,
+  "q": "Which of these is a prime number?",
+  "options": [
+   "91",
+   "87",
+   "97",
+   "93"
+  ],
+  "answer": 2,
+  "why": "91 = 7 × 13, 87 = 3 × 29 and 93 = 3 × 31. 97 has no factor other than 1 and itself."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "HCF and LCM",
+  "difficulty": 2,
+  "q": "The HCF of two numbers is 12 and their LCM is 360. If one number is 72, the other is:",
+  "options": [
+   "48",
+   "60",
+   "90",
+   "120"
+  ],
+  "answer": 1,
+  "why": "HCF × LCM = product: 12 × 360 ÷ 72 = 60."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "HCF and LCM",
+  "difficulty": 2,
+  "q": "Three bells ring every 6, 8 and 12 minutes. They ring together at 9:00. When will they next ring together?",
+  "options": [
+   "9:24",
+   "9:48",
+   "9:36",
+   "10:00"
+  ],
+  "answer": 0,
+  "why": "The LCM of 6, 8 and 12 is 24 minutes, so 9:24."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Simplification",
+  "difficulty": 1,
+  "q": "What is 25% of 480 plus 40% of 250?",
+  "options": [
+   "200",
+   "220",
+   "180",
+   "240"
+  ],
+  "answer": 1,
+  "why": "120 + 100 = 220."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Simplification",
+  "difficulty": 2,
+  "q": "√(1764) equals:",
+  "options": [
+   "38",
+   "42",
+   "44",
+   "46"
+  ],
+  "answer": 1,
+  "why": "42 × 42 = 1,764."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Simplification",
+  "difficulty": 2,
+  "q": "If x + 1/x = 5, then x² + 1/x² is:",
+  "options": [
+   "23",
+   "25",
+   "27",
+   "21"
+  ],
+  "answer": 0,
+  "why": "Squaring: x² + 2 + 1/x² = 25, so x² + 1/x² = 23."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Algebra",
+  "difficulty": 2,
+  "q": "If 2x + 3y = 12 and x − y = 1, then x is:",
+  "options": [
+   "2",
+   "3",
+   "4",
+   "1"
+  ],
+  "answer": 1,
+  "why": "From x = y + 1: 2y + 2 + 3y = 12, so y = 2 and x = 3."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Algebra",
+  "difficulty": 3,
+  "q": "The roots of x² − 7x + 12 = 0 are:",
+  "options": [
+   "2 and 6",
+   "3 and 4",
+   "−3 and −4",
+   "1 and 12"
+  ],
+  "answer": 1,
+  "why": "x² − 7x + 12 = (x − 3)(x − 4)."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Geometry",
+  "difficulty": 1,
+  "q": "The area of a rectangle 12 m long and 8 m wide is:",
+  "options": [
+   "40 m²",
+   "96 m²",
+   "80 m²",
+   "48 m²"
+  ],
+  "answer": 1,
+  "why": "12 × 8 = 96."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Geometry",
+  "difficulty": 2,
+  "q": "A circle has a circumference of 44 cm (take π = 22/7). Its area is:",
+  "options": [
+   "154 cm²",
+   "144 cm²",
+   "176 cm²",
+   "616 cm²"
+  ],
+  "answer": 0,
+  "why": "2πr = 44 gives r = 7, and πr² = 22/7 × 49 = 154."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Geometry",
+  "difficulty": 2,
+  "q": "If each side of a square grows by 20%, its area grows by:",
+  "options": [
+   "20%",
+   "40%",
+   "44%",
+   "36%"
+  ],
+  "answer": 2,
+  "why": "1.2² = 1.44, a 44% increase."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Geometry",
+  "difficulty": 2,
+  "q": "The sides of a right triangle are 6 cm and 8 cm. The hypotenuse is:",
+  "options": [
+   "9 cm",
+   "10 cm",
+   "12 cm",
+   "14 cm"
+  ],
+  "answer": 1,
+  "why": "√(36 + 64) = 10."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Geometry",
+  "difficulty": 3,
+  "q": "How many diagonals does a hexagon have?",
+  "options": [
+   "6",
+   "8",
+   "9",
+   "12"
+  ],
+  "answer": 2,
+  "why": "n(n − 3)/2 = 6 × 3 ÷ 2 = 9."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Mensuration",
+  "difficulty": 2,
+  "q": "The volume of a cube is 512 cm³. Its total surface area is:",
+  "options": [
+   "256 cm²",
+   "384 cm²",
+   "512 cm²",
+   "324 cm²"
+  ],
+  "answer": 1,
+  "why": "The side is 8 cm, and 6 × 64 = 384."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Mensuration",
+  "difficulty": 3,
+  "q": "A cylinder has radius 7 cm and height 10 cm (π = 22/7). Its volume is:",
+  "options": [
+   "1,540 cm³",
+   "1,440 cm³",
+   "1,620 cm³",
+   "1,960 cm³"
+  ],
+  "answer": 0,
+  "why": "πr²h = 22/7 × 49 × 10 = 1,540."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Permutations",
+  "difficulty": 2,
+  "q": "In how many ways can the letters of LEVEL be arranged?",
+  "options": [
+   "120",
+   "30",
+   "60",
+   "20"
+  ],
+  "answer": 1,
+  "why": "5! ÷ (2! × 2!) = 120 ÷ 4 = 30, because L and E each appear twice."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Permutations",
+  "difficulty": 3,
+  "q": "How many 4-digit numbers can be made from 0, 1, 2, 3, 4 without repeating a digit?",
+  "options": [
+   "120",
+   "96",
+   "100",
+   "72"
+  ],
+  "answer": 1,
+  "why": "The first digit cannot be 0: 4 choices, then 4, 3 and 2: 4 × 4 × 3 × 2 = 96."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Combinations",
+  "difficulty": 2,
+  "q": "In how many ways can 3 students be picked from 8 for a project?",
+  "options": [
+   "24",
+   "56",
+   "336",
+   "112"
+  ],
+  "answer": 1,
+  "why": "8C3 = 8 × 7 × 6 ÷ 6 = 56."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Combinations",
+  "difficulty": 3,
+  "q": "A team of 3 men and 2 women is chosen from 5 men and 4 women. In how many ways?",
+  "options": [
+   "60",
+   "120",
+   "80",
+   "100"
+  ],
+  "answer": 0,
+  "why": "5C3 × 4C2 = 10 × 6 = 60."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Probability",
+  "difficulty": 2,
+  "q": "Two dice are thrown. The probability that the total is 7 is:",
+  "options": [
+   "1/6",
+   "1/12",
+   "5/36",
+   "7/36"
+  ],
+  "answer": 0,
+  "why": "6 of the 36 outcomes add to 7: 1/6."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Probability",
+  "difficulty": 3,
+  "q": "Two cards are drawn without putting back from a pack of 52. The probability that both are aces is:",
+  "options": [
+   "1/221",
+   "1/169",
+   "1/26",
+   "4/221"
+  ],
+  "answer": 0,
+  "why": "4/52 × 3/51 = 12/2652 = 1/221."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Probability",
+  "difficulty": 2,
+  "q": "A number is picked from 1 to 20. The probability that it is a multiple of 3 or 4 is:",
+  "options": [
+   "1/2",
+   "2/5",
+   "9/20",
+   "3/10"
+  ],
+  "answer": 0,
+  "why": "Multiples of 3: 6, of 4: 5, of both (12): 1. That is 10 numbers out of 20."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Calendars",
+  "difficulty": 2,
+  "q": "15 August 2026 is a Saturday. What day is 15 August 2027?",
+  "options": [
+   "Saturday",
+   "Sunday",
+   "Monday",
+   "Friday"
+  ],
+  "answer": 1,
+  "why": "The year between has no 29 February, so it is 365 days: one extra day, Sunday."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Clocks",
+  "difficulty": 2,
+  "q": "At what time between 2 and 3 o'clock are the hands of a clock together?",
+  "options": [
+   "2:10",
+   "2:10 10/11",
+   "2:11",
+   "2:12"
+  ],
+  "answer": 1,
+  "why": "The minute hand gains 5.5° a minute and starts 60° behind: 60 ÷ 5.5 = 10 10/11 minutes past 2."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Clocks",
+  "difficulty": 3,
+  "q": "How many times do the hands of a clock coincide in a day?",
+  "options": [
+   "24",
+   "22",
+   "23",
+   "44"
+  ],
+  "answer": 1,
+  "why": "They meet 11 times every 12 hours, so 22 times a day."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Data interpretation",
+  "difficulty": 2,
+  "q": "A company's sales were ₹40 lakh, ₹50 lakh and ₹65 lakh in three years. The growth from the second to the third year was:",
+  "options": [
+   "25%",
+   "30%",
+   "15%",
+   "35%"
+  ],
+  "answer": 1,
+  "why": "65 − 50 = 15, which is 30% of 50."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Data interpretation",
+  "difficulty": 2,
+  "q": "Out of 400 students, 30% chose Physics, 25% Chemistry and the rest Biology. How many chose Biology?",
+  "options": [
+   "160",
+   "180",
+   "200",
+   "220"
+  ],
+  "answer": 1,
+  "why": "Biology is 45% of 400 = 180."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Data interpretation",
+  "difficulty": 3,
+  "q": "A pie chart shows rent as 90° of a monthly spend of ₹48,000. How much is rent?",
+  "options": [
+   "₹10,000",
+   "₹12,000",
+   "₹14,400",
+   "₹9,600"
+  ],
+  "answer": 1,
+  "why": "90° is a quarter of the circle: 48,000 ÷ 4 = 12,000."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Number series",
+  "difficulty": 2,
+  "q": "Find the next number: 7, 10, 16, 25, 37, ?",
+  "options": [
+   "49",
+   "52",
+   "50",
+   "48"
+  ],
+  "answer": 1,
+  "why": "The gaps 3, 6, 9, 12 grow by 3, so the next gap is 15: 52."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Number series",
+  "difficulty": 2,
+  "q": "Find the next number: 2, 3, 5, 7, 11, 13, ?",
+  "options": [
+   "15",
+   "17",
+   "19",
+   "16"
+  ],
+  "answer": 1,
+  "why": "These are the prime numbers, and the next prime after 13 is 17."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Number series",
+  "difficulty": 3,
+  "q": "Find the next number: 1, 2, 6, 24, 120, ?",
+  "options": [
+   "240",
+   "600",
+   "720",
+   "840"
+  ],
+  "answer": 2,
+  "why": "Each number is multiplied by 2, 3, 4, 5 and then 6: 120 × 6 = 720."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Number series",
+  "difficulty": 2,
+  "q": "Find the missing number: 4, 9, 19, 39, ?, 159",
+  "options": [
+   "79",
+   "78",
+   "80",
+   "69"
+  ],
+  "answer": 0,
+  "why": "Each term is double the one before, plus 1: 39 × 2 + 1 = 79."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Boats and streams",
+  "difficulty": 3,
+  "q": "A boat goes 30 km downstream in 2 hours and 18 km upstream in 2 hours. The speed of the boat in still water is:",
+  "options": [
+   "10 km/h",
+   "12 km/h",
+   "11 km/h",
+   "13 km/h"
+  ],
+  "answer": 1,
+  "why": "Downstream 15 km/h and upstream 9 km/h. The boat's own speed is the average: 12 km/h."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Interest",
+  "difficulty": 1,
+  "q": "At 10% simple interest, how much interest does ₹2,500 earn in 2 years?",
+  "options": [
+   "₹250",
+   "₹500",
+   "₹525",
+   "₹600"
+  ],
+  "answer": 1,
+  "why": "2,500 × 10 × 2 ÷ 100 = 500."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Percentages",
+  "difficulty": 3,
+  "q": "A number is first increased by 10% and then by another 10%. The total increase is:",
+  "options": [
+   "20%",
+   "21%",
+   "22%",
+   "19%"
+  ],
+  "answer": 1,
+  "why": "1.1 × 1.1 = 1.21, so 21%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Profit and loss",
+  "difficulty": 3,
+  "q": "A dishonest shopkeeper sells at cost price but uses a 900 g weight for 1 kg. His gain percent is:",
+  "options": [
+   "10%",
+   "11.11%",
+   "9.09%",
+   "12%"
+  ],
+  "answer": 1,
+  "why": "He gives 900 g for the price of 1,000 g: a gain of 100/900 ≈ 11.11%."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Time and work",
+  "difficulty": 3,
+  "q": "A is twice as fast as B. Together they finish a job in 12 days. How long would A alone take?",
+  "options": [
+   "16 days",
+   "18 days",
+   "24 days",
+   "36 days"
+  ],
+  "answer": 1,
+  "why": "If B does 1 unit a day, A does 2: together 3 units a day for 12 days = 36 units. A alone takes 36 ÷ 2 = 18 days."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Speed and distance",
+  "difficulty": 1,
+  "q": "How far does a car travel in 45 minutes at 80 km/h?",
+  "options": [
+   "50 km",
+   "60 km",
+   "64 km",
+   "70 km"
+  ],
+  "answer": 1,
+  "why": "45 minutes is 0.75 hours, and 80 × 0.75 = 60."
+ },
+ {
+  "track": "aptitude",
+  "section": "quant",
+  "topic": "Averages",
+  "difficulty": 3,
+  "q": "The average weight of 8 people rises by 2.5 kg when one of them, who weighs 65 kg, is replaced. The new person weighs:",
+  "options": [
+   "75 kg",
+   "80 kg",
+   "85 kg",
+   "70 kg"
+  ],
+  "answer": 2,
+  "why": "The total rises by 8 × 2.5 = 20 kg, so the new person weighs 65 + 20 = 85 kg."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Codes",
+  "difficulty": 1,
+  "q": "If MANGO is written as NBOHP, how is APPLE written?",
+  "options": [
+   "BQQMF",
+   "BQPMF",
+   "AQQMF",
+   "BRQMF"
+  ],
+  "answer": 0,
+  "why": "Every letter moves one place forward: A→B, P→Q, P→Q, L→M, E→F."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Codes",
+  "difficulty": 2,
+  "q": "If TABLE is coded as 20-1-2-12-5, how is CHAIR coded?",
+  "options": [
+   "3-8-1-9-18",
+   "3-8-1-9-17",
+   "3-7-1-9-18",
+   "4-8-1-9-18"
+  ],
+  "answer": 0,
+  "why": "Each letter is its place in the alphabet: C3 H8 A1 I9 R18."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Codes",
+  "difficulty": 2,
+  "q": "In a code, ROAD is written as URDG. How is SWAN written?",
+  "options": [
+   "VZDQ",
+   "VYDQ",
+   "UZDQ",
+   "VZCQ"
+  ],
+  "answer": 0,
+  "why": "Each letter moves three places forward: S→V, W→Z, A→D, N→Q."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Codes",
+  "difficulty": 3,
+  "q": "If FRIEND is written as HUMJTK, how is CANDLE written?",
+  "options": [
+   "EDRIRL",
+   "DCQHQK",
+   "EDRJRL",
+   "ESJFME"
+  ],
+  "answer": 0,
+  "why": "The letters move forward by 2, 3, 4, 5, 6 and 7 places: C+2=E, A+3=D, N+4=R, D+5=I, L+6=R, E+7=L."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Family relations",
+  "difficulty": 2,
+  "q": "Rahul's mother is the only daughter of Sita's father. How is Sita related to Rahul?",
+  "options": [
+   "Aunt",
+   "Mother",
+   "Grandmother",
+   "Sister"
+  ],
+  "answer": 1,
+  "why": "The only daughter of Sita's father is Sita herself, so Sita is Rahul's mother."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Family relations",
+  "difficulty": 2,
+  "q": "A is the brother of B. B is the daughter of C. D is the father of A. How is C related to D?",
+  "options": [
+   "Sister",
+   "Wife",
+   "Daughter",
+   "Cannot be told"
+  ],
+  "answer": 1,
+  "why": "A and B are brother and sister, so D, A's father, is B's father too. C is B's other parent, so C is D's wife."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Family relations",
+  "difficulty": 3,
+  "q": "Pointing to a man, a woman says, 'His mother is the only daughter of my mother.' How is the woman related to the man?",
+  "options": [
+   "Sister",
+   "Mother",
+   "Aunt",
+   "Grandmother"
+  ],
+  "answer": 1,
+  "why": "The only daughter of her mother is the woman herself, so she is his mother."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Directions",
+  "difficulty": 2,
+  "q": "A man walks 10 m south, turns left and walks 10 m, then turns left and walks 10 m. Which direction is he from his start?",
+  "options": [
+   "North",
+   "East",
+   "West",
+   "South"
+  ],
+  "answer": 1,
+  "why": "South, then left (east), then left (north) back up: he ends 10 m east of the start."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Directions",
+  "difficulty": 2,
+  "q": "At 6 in the morning a man stands facing the sun. His shadow falls to his:",
+  "options": [
+   "Left",
+   "Right",
+   "Back",
+   "Front"
+  ],
+  "answer": 2,
+  "why": "The morning sun is in the east. Facing it, his shadow falls behind him."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Directions",
+  "difficulty": 3,
+  "q": "Riya walks 4 km east, then 3 km north. How far is she from where she started?",
+  "options": [
+   "5 km",
+   "7 km",
+   "6 km",
+   "1 km"
+  ],
+  "answer": 0,
+  "why": "The straight-line distance is √(4² + 3²) = 5 km."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Seating",
+  "difficulty": 2,
+  "q": "Five friends sit in a row. A is to the left of B, C is to the right of B, D is between A and B, and E is at the far right. Who sits in the middle?",
+  "options": [
+   "A",
+   "B",
+   "D",
+   "C"
+  ],
+  "answer": 1,
+  "why": "The order is A, D, B, C, E, so B is in the middle."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Seating",
+  "difficulty": 3,
+  "q": "Five people sit in a row facing north. P sits at one end, Q sits next to P, R sits in the middle and S is not next to R. Where does T sit?",
+  "options": [
+   "Between R and S",
+   "At one end",
+   "Next to P",
+   "Between Q and R"
+  ],
+  "answer": 0,
+  "why": "With P at seat 1, Q is at 2 and R at 3. S cannot be at 2 or 4, so S is at 5 and T at 4, between R and S. Starting P at the other end gives the mirror image, with the same answer."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Seating",
+  "difficulty": 2,
+  "q": "In a queue, Aman is 8th from the front and 13th from the back. How many people are in the queue?",
+  "options": [
+   "19",
+   "20",
+   "21",
+   "22"
+  ],
+  "answer": 1,
+  "why": "8 + 13 − 1 = 20, since Aman is counted twice."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Ranking",
+  "difficulty": 1,
+  "q": "In a class of 40, Neha is 15th from the top. What is her rank from the bottom?",
+  "options": [
+   "25th",
+   "26th",
+   "24th",
+   "27th"
+  ],
+  "answer": 1,
+  "why": "40 − 15 + 1 = 26."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Analogy",
+  "difficulty": 1,
+  "q": "Doctor is to Hospital as Teacher is to:",
+  "options": [
+   "Book",
+   "School",
+   "Student",
+   "Class test"
+  ],
+  "answer": 1,
+  "why": "A doctor works in a hospital; a teacher works in a school."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Analogy",
+  "difficulty": 2,
+  "q": "Cup is to Coffee as Bowl is to:",
+  "options": [
+   "Dish",
+   "Soup",
+   "Spoon",
+   "Food"
+  ],
+  "answer": 1,
+  "why": "A cup holds coffee; a bowl holds soup."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Analogy",
+  "difficulty": 2,
+  "q": "Find the pair that is related the same way as Bird : Nest",
+  "options": [
+   "Dog : Kennel",
+   "Fish : Water",
+   "Cow : Milk",
+   "Bee : Honey"
+  ],
+  "answer": 0,
+  "why": "A nest is the home a bird lives in; a kennel is the home a dog lives in."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Odd one out",
+  "difficulty": 1,
+  "q": "Which is the odd one out?",
+  "options": [
+   "Mercury",
+   "Venus",
+   "Moon",
+   "Mars"
+  ],
+  "answer": 2,
+  "why": "Mercury, Venus and Mars are planets; the Moon is a satellite."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Odd one out",
+  "difficulty": 2,
+  "q": "Which number does not belong: 2, 5, 10, 17, 26, 37, 50, 64",
+  "options": [
+   "17",
+   "37",
+   "50",
+   "64"
+  ],
+  "answer": 3,
+  "why": "The numbers are n² + 1 (1, 4, 9, 16, 25, 36, 49 plus one). The next would be 65, not 64."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Syllogism",
+  "difficulty": 2,
+  "q": "Statements: All pens are books. All books are tables. Conclusion I: All pens are tables. Conclusion II: Some tables are pens.",
+  "options": [
+   "Only I follows",
+   "Only II follows",
+   "Both follow",
+   "Neither follows"
+  ],
+  "answer": 2,
+  "why": "Every pen is a book and every book a table, so all pens are tables, and therefore some tables are pens."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Syllogism",
+  "difficulty": 3,
+  "q": "Statements: Some cats are dogs. No dog is a rat. Conclusion I: Some cats are not rats. Conclusion II: No cat is a rat.",
+  "options": [
+   "Only I follows",
+   "Only II follows",
+   "Both follow",
+   "Neither follows"
+  ],
+  "answer": 0,
+  "why": "The cats that are dogs cannot be rats, so some cats are not rats. Other cats might be rats, so II does not follow."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Syllogism",
+  "difficulty": 2,
+  "q": "Statements: No student is lazy. Some lazy people are rich. Conclusion: Some rich people are not students.",
+  "options": [
+   "Follows",
+   "Does not follow",
+   "Follows only if all rich people are lazy",
+   "Cannot be decided"
+  ],
+  "answer": 0,
+  "why": "The rich people who are lazy cannot be students, so some rich people are not students."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Statements and assumptions",
+  "difficulty": 3,
+  "q": "Statement: 'Use our app to book a train ticket in 2 minutes.' Which is assumed?",
+  "options": [
+   "People want to book tickets quickly",
+   "Every train has seats",
+   "The app is free",
+   "Nobody books at stations"
+  ],
+  "answer": 0,
+  "why": "The advert only works if people care about booking quickly."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Cause and effect",
+  "difficulty": 2,
+  "q": "Statement I: Many students failed the exam. Statement II: The exam was much harder than earlier ones. Which is most likely?",
+  "options": [
+   "I is the cause, II the effect",
+   "II is the cause, I the effect",
+   "Both are independent",
+   "Both are effects of a third cause"
+  ],
+  "answer": 1,
+  "why": "A harder exam explains more failures, not the other way round."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Puzzles",
+  "difficulty": 3,
+  "q": "A clock gains 5 minutes every hour. It is set right at 8 am. What time does it show at 2 pm the same day?",
+  "options": [
+   "2:25 pm",
+   "2:30 pm",
+   "2:35 pm",
+   "2:20 pm"
+  ],
+  "answer": 1,
+  "why": "Six hours pass, and it gains 6 × 5 = 30 minutes: it shows 2:30 pm."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Puzzles",
+  "difficulty": 2,
+  "q": "If tomorrow is Thursday, what day was it 3 days before yesterday?",
+  "options": [
+   "Friday",
+   "Saturday",
+   "Sunday",
+   "Monday"
+  ],
+  "answer": 1,
+  "why": "Today is Wednesday, yesterday was Tuesday, and three days before that was Saturday."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Puzzles",
+  "difficulty": 3,
+  "q": "A, B, C, D and E have different heights. B is taller than D but shorter than A. C is taller than A. E is the shortest. Who is the tallest?",
+  "options": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "answer": 2,
+  "why": "The order from the top is C, A, B, D, E."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Data sufficiency",
+  "difficulty": 3,
+  "q": "x is a whole number. Is x even? (1) 3x is even. (2) x + 2 is even. Which is enough?",
+  "options": [
+   "Only (1)",
+   "Only (2)",
+   "Either alone",
+   "Both together, not alone"
+  ],
+  "answer": 2,
+  "why": "If 3x is even, x must be even (for whole numbers). If x + 2 is even, x is even. Either one is enough."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Venn diagrams",
+  "difficulty": 2,
+  "q": "In a group of 50, 30 like tea, 25 like coffee and 10 like both. How many like neither?",
+  "options": [
+   "5",
+   "10",
+   "15",
+   "0"
+  ],
+  "answer": 0,
+  "why": "At least one: 30 + 25 − 10 = 45, so 5 like neither."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Letter series",
+  "difficulty": 2,
+  "q": "Find the next letters: AZ, BY, CX, DW, ?",
+  "options": [
+   "EV",
+   "EU",
+   "FV",
+   "EW"
+  ],
+  "answer": 0,
+  "why": "The first letter moves forward and the second backward: E and V."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Letter series",
+  "difficulty": 2,
+  "q": "Find the next: B, E, H, K, ?",
+  "options": [
+   "L",
+   "M",
+   "N",
+   "O"
+  ],
+  "answer": 2,
+  "why": "Each letter is three places after the last: K + 3 = N."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Mirror and water images",
+  "difficulty": 2,
+  "q": "A clock shows 3:15. What time does its mirror image show?",
+  "options": [
+   "8:45",
+   "9:45",
+   "8:15",
+   "9:15"
+  ],
+  "answer": 0,
+  "why": "The mirror time is 11:60 − 3:15 = 8:45."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Cubes",
+  "difficulty": 3,
+  "q": "A cube painted on all sides is cut into 27 equal small cubes. How many small cubes have exactly two painted faces?",
+  "options": [
+   "8",
+   "12",
+   "6",
+   "1"
+  ],
+  "answer": 1,
+  "why": "Edge cubes (not corners) have two painted faces: 12 edges × 1 = 12."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Cubes",
+  "difficulty": 3,
+  "q": "In the same 27-cube cut, how many small cubes have no paint at all?",
+  "options": [
+   "0",
+   "1",
+   "6",
+   "8"
+  ],
+  "answer": 1,
+  "why": "Only the one cube in the very centre is unpainted."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Inequalities",
+  "difficulty": 2,
+  "q": "If A > B, B ≥ C and C > D, which must be true?",
+  "options": [
+   "A > D",
+   "B > A",
+   "C ≥ A",
+   "D > B"
+  ],
+  "answer": 0,
+  "why": "A > B ≥ C > D, so A is greater than D."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Calendars",
+  "difficulty": 2,
+  "q": "Which year has the same calendar as 2026?",
+  "options": [
+   "2032",
+   "2037",
+   "2031",
+   "2036"
+  ],
+  "answer": 1,
+  "why": "Day shifts from 2026: 2027 +1, 2028 (leap) +2, 2029 +1, 2030 +1, 2031 +1, 2032 (leap) +2, 2033 +1, 2034 +1, 2035 +1, 2036 (leap) +2. That totals 14 by 2037, a whole number of weeks, and 2037 is not a leap year like 2026."
+ },
+ {
+  "track": "aptitude",
+  "section": "logical",
+  "topic": "Odd one out",
+  "difficulty": 1,
+  "q": "Which word does not belong?",
+  "options": [
+   "Keyboard",
+   "Mouse",
+   "Scanner",
+   "Monitor"
+  ],
+  "answer": 3,
+  "why": "Keyboard, mouse and scanner put data into a computer; a monitor shows output."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Synonyms",
+  "difficulty": 1,
+  "q": "Choose the word closest in meaning to ABUNDANT.",
+  "options": [
+   "Scarce",
+   "Plentiful",
+   "Hidden",
+   "Ancient"
+  ],
+  "answer": 1,
+  "why": "Abundant means existing in large amounts: plentiful."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Synonyms",
+  "difficulty": 2,
+  "q": "Choose the word closest in meaning to METICULOUS.",
+  "options": [
+   "Careless",
+   "Very careful",
+   "Quick",
+   "Noisy"
+  ],
+  "answer": 1,
+  "why": "Meticulous means showing great attention to detail."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Synonyms",
+  "difficulty": 2,
+  "q": "Choose the word closest in meaning to CANDID.",
+  "options": [
+   "Frank",
+   "Sweet",
+   "Shy",
+   "Polite"
+  ],
+  "answer": 0,
+  "why": "A candid remark is open and honest: frank."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Synonyms",
+  "difficulty": 3,
+  "q": "Choose the word closest in meaning to OBSOLETE.",
+  "options": [
+   "Outdated",
+   "Expensive",
+   "Rare",
+   "Modern"
+  ],
+  "answer": 0,
+  "why": "Obsolete means no longer in use."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Antonyms",
+  "difficulty": 1,
+  "q": "Choose the word opposite in meaning to EXPAND.",
+  "options": [
+   "Grow",
+   "Contract",
+   "Spread",
+   "Extend"
+  ],
+  "answer": 1,
+  "why": "To contract is to become smaller, the opposite of expand."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Antonyms",
+  "difficulty": 2,
+  "q": "Choose the word opposite in meaning to TRANSPARENT.",
+  "options": [
+   "Clear",
+   "Opaque",
+   "Bright",
+   "Thin"
+  ],
+  "answer": 1,
+  "why": "Opaque things do not let light through."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Antonyms",
+  "difficulty": 2,
+  "q": "Choose the word opposite in meaning to FRUGAL.",
+  "options": [
+   "Thrifty",
+   "Wasteful",
+   "Careful",
+   "Poor"
+  ],
+  "answer": 1,
+  "why": "Frugal means careful with money; wasteful is the opposite."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Antonyms",
+  "difficulty": 3,
+  "q": "Choose the word opposite in meaning to BENEVOLENT.",
+  "options": [
+   "Kind",
+   "Generous",
+   "Malicious",
+   "Gentle"
+  ],
+  "answer": 2,
+  "why": "Benevolent means kind and well-meaning; malicious means wanting to harm."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Sentence correction",
+  "difficulty": 2,
+  "q": "Choose the correct sentence.",
+  "options": [
+   "Each of the students have a laptop.",
+   "Each of the students has a laptop.",
+   "Each of the student has a laptop.",
+   "Each of the students having a laptop."
+  ],
+  "answer": 1,
+  "why": "'Each' is singular, so it takes 'has'."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Sentence correction",
+  "difficulty": 2,
+  "q": "Choose the correct sentence.",
+  "options": [
+   "He is senior than me.",
+   "He is senior to me.",
+   "He is more senior than me.",
+   "He is senior from me."
+  ],
+  "answer": 1,
+  "why": "'Senior', 'junior', 'superior' and 'inferior' take 'to', not 'than'."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Sentence correction",
+  "difficulty": 2,
+  "q": "Choose the correct sentence.",
+  "options": [
+   "I have been working here since five years.",
+   "I am working here for five years.",
+   "I have been working here for five years.",
+   "I work here since five years."
+  ],
+  "answer": 2,
+  "why": "Use 'for' with a length of time and the present perfect continuous for something still going on."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Sentence correction",
+  "difficulty": 3,
+  "q": "Choose the correct sentence.",
+  "options": [
+   "Neither the manager nor the employees was present.",
+   "Neither the manager nor the employees were present.",
+   "Neither the manager or the employees were present.",
+   "Neither the manager nor the employees is present."
+  ],
+  "answer": 1,
+  "why": "With 'neither… nor', the verb agrees with the nearer subject: 'employees were'."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Fill in the blank",
+  "difficulty": 1,
+  "q": "She is good ___ mathematics.",
+  "options": [
+   "in",
+   "at",
+   "on",
+   "with"
+  ],
+  "answer": 1,
+  "why": "We say 'good at' a subject or skill."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Fill in the blank",
+  "difficulty": 2,
+  "q": "The meeting was ___ because the manager was ill.",
+  "options": [
+   "called off",
+   "called up",
+   "called for",
+   "called in"
+  ],
+  "answer": 0,
+  "why": "'Called off' means cancelled."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Fill in the blank",
+  "difficulty": 2,
+  "q": "If I ___ you, I would accept the offer.",
+  "options": [
+   "am",
+   "was",
+   "were",
+   "be"
+  ],
+  "answer": 2,
+  "why": "Imagined situations use 'were' for every subject: 'If I were you'."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Fill in the blank",
+  "difficulty": 3,
+  "q": "Hardly had the train left ___ it started raining.",
+  "options": [
+   "than",
+   "when",
+   "then",
+   "that"
+  ],
+  "answer": 1,
+  "why": "'Hardly… when' (and 'no sooner… than') is the fixed pair."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Idioms",
+  "difficulty": 2,
+  "q": "What does 'to burn the midnight oil' mean?",
+  "options": [
+   "To waste money",
+   "To study or work late at night",
+   "To start a fire",
+   "To get angry"
+  ],
+  "answer": 1,
+  "why": "It means working late into the night."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Idioms",
+  "difficulty": 2,
+  "q": "What does 'a blessing in disguise' mean?",
+  "options": [
+   "A hidden enemy",
+   "Something bad that turns out good",
+   "A secret gift",
+   "A lucky charm"
+  ],
+  "answer": 1,
+  "why": "It is a misfortune that ends up having a good result."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Idioms",
+  "difficulty": 3,
+  "q": "What does 'to beat around the bush' mean?",
+  "options": [
+   "To avoid the main point",
+   "To work hard",
+   "To search carefully",
+   "To garden"
+  ],
+  "answer": 0,
+  "why": "It means talking around a topic instead of saying it directly."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "One-word substitution",
+  "difficulty": 2,
+  "q": "A person who can speak many languages is a:",
+  "options": [
+   "Linguist",
+   "Polyglot",
+   "Bilingual",
+   "Orator"
+  ],
+  "answer": 1,
+  "why": "A polyglot knows and uses several languages."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "One-word substitution",
+  "difficulty": 2,
+  "q": "A government by the people is a:",
+  "options": [
+   "Monarchy",
+   "Democracy",
+   "Oligarchy",
+   "Autocracy"
+  ],
+  "answer": 1,
+  "why": "Democracy is rule by the people."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "One-word substitution",
+  "difficulty": 3,
+  "q": "Something that cannot be read because the writing is unclear is:",
+  "options": [
+   "Illegible",
+   "Ineligible",
+   "Invisible",
+   "Illegal"
+  ],
+  "answer": 0,
+  "why": "Illegible means not clear enough to be read."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Spelling",
+  "difficulty": 2,
+  "q": "Choose the correctly spelt word.",
+  "options": [
+   "Accomodation",
+   "Accommodation",
+   "Acommodation",
+   "Accommadation"
+  ],
+  "answer": 1,
+  "why": "Accommodation has double c and double m."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Spelling",
+  "difficulty": 2,
+  "q": "Choose the correctly spelt word.",
+  "options": [
+   "Occurence",
+   "Occurrence",
+   "Ocurrence",
+   "Occurrance"
+  ],
+  "answer": 1,
+  "why": "Occurrence has double c, double r and ends in -ence."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Reading",
+  "difficulty": 3,
+  "q": "\"The new metro line cut the average commute from 70 to 40 minutes, but ticket prices rose by 20%.\" Which conclusion is best supported?",
+  "options": [
+   "Everyone saves money",
+   "Commuters save time but may pay more",
+   "Fewer people use the metro",
+   "Ticket prices fell"
+  ],
+  "answer": 1,
+  "why": "Time went down and prices went up; nothing is said about usage."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Reading",
+  "difficulty": 2,
+  "q": "\"Most students who practised daily scored above 70%.\" Which is a fair reading?",
+  "options": [
+   "Daily practice guarantees 70%",
+   "All students practised daily",
+   "Daily practice is linked to higher scores",
+   "Students who did not practise failed"
+  ],
+  "answer": 2,
+  "why": "'Most' shows a link, not a guarantee, and says nothing about the others."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Para jumbles",
+  "difficulty": 3,
+  "q": "Arrange: (P) Then add the rice. (Q) First, boil the water. (R) Finally, drain and serve. (S) Cook it for 15 minutes.",
+  "options": [
+   "QPSR",
+   "PQSR",
+   "QSPR",
+   "QPRS"
+  ],
+  "answer": 0,
+  "why": "Boil water, add rice, cook it, then drain and serve."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Active and passive",
+  "difficulty": 2,
+  "q": "Change to passive: 'The committee approved the plan.'",
+  "options": [
+   "The plan was approved by the committee.",
+   "The plan is approved by the committee.",
+   "The committee was approved by the plan.",
+   "The plan had approved the committee."
+  ],
+  "answer": 0,
+  "why": "Simple past active becomes 'was + past participle' in the passive."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Direct and indirect",
+  "difficulty": 3,
+  "q": "She said, 'I am tired.' In indirect speech:",
+  "options": [
+   "She said that she is tired.",
+   "She said that she was tired.",
+   "She said that I was tired.",
+   "She says that she was tired."
+  ],
+  "answer": 1,
+  "why": "After a past reporting verb, 'am' changes to 'was' and 'I' to 'she'."
+ },
+ {
+  "track": "aptitude",
+  "section": "verbal",
+  "topic": "Articles",
+  "difficulty": 1,
+  "q": "He is ___ honest man.",
+  "options": [
+   "a",
+   "an",
+   "the",
+   "no article"
+  ],
+  "answer": 1,
+  "why": "'Honest' starts with a vowel sound (the h is silent), so 'an'."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 1,
+  "q": "Which data structure works on Last In, First Out?",
+  "options": [
+   "Queue",
+   "Stack",
+   "Linked list",
+   "Heap"
+  ],
+  "answer": 1,
+  "why": "A stack removes the item added most recently."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 2,
+  "q": "Which structure is best for checking whether brackets in an expression are balanced?",
+  "options": [
+   "Queue",
+   "Stack",
+   "Hash table",
+   "Binary tree"
+  ],
+  "answer": 1,
+  "why": "Push each opening bracket and pop when its closing bracket comes; a stack matches the most recent open bracket."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 2,
+  "q": "What is the time to look up a key in a hash table on average?",
+  "options": [
+   "O(1)",
+   "O(log n)",
+   "O(n)",
+   "O(n log n)"
+  ],
+  "answer": 0,
+  "why": "A good hash spreads keys evenly, so a lookup checks only a few slots on average."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 2,
+  "q": "In a min-heap, where is the smallest element?",
+  "options": [
+   "At a leaf",
+   "At the root",
+   "In the middle level",
+   "Anywhere"
+  ],
+  "answer": 1,
+  "why": "Every parent is no larger than its children, so the root holds the minimum."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 3,
+  "q": "What is the worst-case time to search a binary search tree with n nodes?",
+  "options": [
+   "O(1)",
+   "O(log n)",
+   "O(n)",
+   "O(n²)"
+  ],
+  "answer": 2,
+  "why": "If keys arrive in sorted order the tree becomes a chain, and a search may visit all n nodes."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 2,
+  "q": "A queue is built from a circular array of size 5 holding 5 items. What happens on one more insert?",
+  "options": [
+   "It wraps and overwrites",
+   "Overflow: the queue is full",
+   "The oldest item is removed",
+   "The array grows automatically"
+  ],
+  "answer": 1,
+  "why": "A fixed circular array has no free slot left, so the insert fails as an overflow."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Data structures",
+  "difficulty": 3,
+  "q": "How many edges does a tree with 20 nodes have?",
+  "options": [
+   "20",
+   "19",
+   "21",
+   "40"
+  ],
+  "answer": 1,
+  "why": "A tree with n nodes always has n − 1 edges."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Graphs",
+  "difficulty": 2,
+  "q": "Which algorithm finds the shortest path from one vertex when all edge weights are non-negative?",
+  "options": [
+   "Kruskal",
+   "Dijkstra",
+   "Prim",
+   "DFS"
+  ],
+  "answer": 1,
+  "why": "Dijkstra's algorithm handles non-negative weights; Kruskal and Prim build spanning trees."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Graphs",
+  "difficulty": 2,
+  "q": "Breadth-first search uses which data structure?",
+  "options": [
+   "Stack",
+   "Queue",
+   "Heap",
+   "Set only"
+  ],
+  "answer": 1,
+  "why": "BFS visits vertices level by level by taking them from a queue."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Graphs",
+  "difficulty": 3,
+  "q": "Which algorithm can detect a negative-weight cycle?",
+  "options": [
+   "Dijkstra",
+   "Bellman-Ford",
+   "Prim",
+   "BFS"
+  ],
+  "answer": 1,
+  "why": "Bellman-Ford relaxes edges V − 1 times; if one more pass still improves a distance, there is a negative cycle."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Sorting",
+  "difficulty": 2,
+  "q": "Which sort has O(n log n) time in the worst case?",
+  "options": [
+   "Quick sort",
+   "Merge sort",
+   "Bubble sort",
+   "Insertion sort"
+  ],
+  "answer": 1,
+  "why": "Merge sort always splits in half and merges in linear time; quick sort can fall to O(n²)."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Sorting",
+  "difficulty": 2,
+  "q": "Which sort is usually fastest on an array that is already nearly sorted?",
+  "options": [
+   "Selection sort",
+   "Insertion sort",
+   "Heap sort",
+   "Merge sort"
+  ],
+  "answer": 1,
+  "why": "Insertion sort does little work when each item is close to its place: close to O(n)."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Sorting",
+  "difficulty": 3,
+  "q": "Which of these sorts is stable?",
+  "options": [
+   "Quick sort",
+   "Heap sort",
+   "Merge sort",
+   "Selection sort"
+  ],
+  "answer": 2,
+  "why": "Merge sort keeps equal keys in their original order; the others can swap them."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Searching",
+  "difficulty": 1,
+  "q": "Binary search needs the array to be:",
+  "options": [
+   "Sorted",
+   "Of even length",
+   "Without duplicates",
+   "Stored in a linked list"
+  ],
+  "answer": 0,
+  "why": "Binary search discards half the range by comparing with the middle, which only works on sorted data."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Searching",
+  "difficulty": 2,
+  "q": "At most how many comparisons does binary search need on 1,000 sorted items?",
+  "options": [
+   "10",
+   "100",
+   "500",
+   "1000"
+  ],
+  "answer": 0,
+  "why": "2¹⁰ = 1024 ≥ 1000, so about 10 halvings are enough."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Complexity",
+  "difficulty": 2,
+  "q": "What is the time complexity of two nested loops that each run n times?",
+  "options": [
+   "O(n)",
+   "O(n log n)",
+   "O(n²)",
+   "O(2n)"
+  ],
+  "answer": 2,
+  "why": "The inner loop runs n times for each of the n outer passes: n × n."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Complexity",
+  "difficulty": 3,
+  "q": "What is the time complexity of this loop? i = 1; while i < n: i = i * 2",
+  "options": [
+   "O(n)",
+   "O(log n)",
+   "O(√n)",
+   "O(n log n)"
+  ],
+  "answer": 1,
+  "why": "i doubles each time, so the loop runs about log₂ n times."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Complexity",
+  "difficulty": 3,
+  "q": "The recurrence T(n) = 2T(n/2) + n solves to:",
+  "options": [
+   "O(n)",
+   "O(n log n)",
+   "O(n²)",
+   "O(log n)"
+  ],
+  "answer": 1,
+  "why": "This is merge sort's recurrence: log n levels each doing n work."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Dynamic programming",
+  "difficulty": 3,
+  "q": "Which problem is usually solved with dynamic programming?",
+  "options": [
+   "Binary search",
+   "0/1 knapsack",
+   "Finding the maximum of an array",
+   "Reversing a string"
+  ],
+  "answer": 1,
+  "why": "0/1 knapsack has overlapping subproblems and optimal substructure, the two signs of DP."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Greedy algorithms",
+  "difficulty": 3,
+  "q": "Which problem is solved correctly by a greedy method?",
+  "options": [
+   "0/1 knapsack",
+   "Fractional knapsack",
+   "Longest common subsequence",
+   "Travelling salesman"
+  ],
+  "answer": 1,
+  "why": "In fractional knapsack, taking the best value-per-weight item first is always optimal."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 1,
+  "q": "Which of these is not an operating system?",
+  "options": [
+   "Linux",
+   "Windows",
+   "Oracle Database",
+   "Android"
+  ],
+  "answer": 2,
+  "why": "Oracle Database is a database management system that runs on an operating system."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "What is a process?",
+  "options": [
+   "A program stored on disk",
+   "A program in execution",
+   "A thread of the kernel only",
+   "A file in memory"
+  ],
+  "answer": 1,
+  "why": "A process is a running program with its own memory and state."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "Threads of the same process share:",
+  "options": [
+   "Stack",
+   "Registers",
+   "Address space (code and data)",
+   "Program counter"
+  ],
+  "answer": 2,
+  "why": "Each thread has its own stack, registers and program counter, but they share the process's memory."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "Which scheduling algorithm can cause starvation?",
+  "options": [
+   "Round robin",
+   "First come first served",
+   "Shortest job first",
+   "None of them"
+  ],
+  "answer": 2,
+  "why": "Long jobs may wait forever if short jobs keep arriving."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 3,
+  "q": "Three jobs with burst times 6, 2 and 4 arrive together. Under shortest job first, what is the average waiting time?",
+  "options": [
+   "2.67",
+   "3.33",
+   "4",
+   "4.67"
+  ],
+  "answer": 0,
+  "why": "Order 2, 4, 6: waits are 0, 2 and 6, which average 8/3 ≈ 2.67."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "Which is not one of the four conditions needed for deadlock?",
+  "options": [
+   "Mutual exclusion",
+   "Hold and wait",
+   "Preemption",
+   "Circular wait"
+  ],
+  "answer": 2,
+  "why": "The condition is no preemption; allowing preemption breaks deadlock."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "Thrashing happens when:",
+  "options": [
+   "The CPU is idle",
+   "The system spends most of its time paging",
+   "A disk fails",
+   "Too many files are open"
+  ],
+  "answer": 1,
+  "why": "With too little memory for the working sets, processes keep swapping pages in and out instead of working."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 3,
+  "q": "With 3 frames and FIFO replacement, how many page faults does the string 1, 2, 3, 4, 1, 2 cause?",
+  "options": [
+   "4",
+   "5",
+   "6",
+   "3"
+  ],
+  "answer": 2,
+  "why": "1, 2, 3 fault; 4 replaces 1; then 1 replaces 2 and 2 replaces 3. Every reference faults: 6."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "A semaphore whose value can only be 0 or 1 is called a:",
+  "options": [
+   "Counting semaphore",
+   "Binary semaphore (mutex)",
+   "Monitor",
+   "Spinlock"
+  ],
+  "answer": 1,
+  "why": "A binary semaphore works like a lock for one resource."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 2,
+  "q": "Virtual memory lets a program:",
+  "options": [
+   "Run faster than the CPU",
+   "Use more memory than the RAM installed",
+   "Avoid using the disk",
+   "Run without an OS"
+  ],
+  "answer": 1,
+  "why": "Pages not in use stay on disk, so a program's address space can exceed physical RAM."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Operating systems",
+  "difficulty": 3,
+  "q": "Belady's anomaly can happen with which page replacement policy?",
+  "options": [
+   "LRU",
+   "Optimal",
+   "FIFO",
+   "LFU"
+  ],
+  "answer": 2,
+  "why": "With FIFO, giving more frames can sometimes cause more page faults."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 1,
+  "q": "What does SQL stand for?",
+  "options": [
+   "Structured Query Language",
+   "Simple Query Language",
+   "Standard Question Language",
+   "System Query Logic"
+  ],
+  "answer": 0,
+  "why": "SQL is the Structured Query Language."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 2,
+  "q": "A primary key column can contain:",
+  "options": [
+   "Duplicate values",
+   "NULL values",
+   "Only unique, non-NULL values",
+   "Any values"
+  ],
+  "answer": 2,
+  "why": "A primary key identifies each row, so it must be unique and never NULL."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 3,
+  "q": "Which normal form removes transitive dependency?",
+  "options": [
+   "1NF",
+   "2NF",
+   "3NF",
+   "4NF"
+  ],
+  "answer": 2,
+  "why": "3NF forbids non-key columns depending on other non-key columns."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 2,
+  "q": "In ACID, what does the A stand for?",
+  "options": [
+   "Availability",
+   "Atomicity",
+   "Accuracy",
+   "Authorisation"
+  ],
+  "answer": 1,
+  "why": "Atomicity: a transaction happens completely or not at all."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 2,
+  "q": "A foreign key is used to:",
+  "options": [
+   "Speed up searches",
+   "Link rows of one table to another",
+   "Encrypt data",
+   "Store images"
+  ],
+  "answer": 1,
+  "why": "It references the primary key of another table, keeping the link valid."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 3,
+  "q": "Which isolation problem is a 'dirty read'?",
+  "options": [
+   "Reading data another transaction has not committed",
+   "Reading the same row twice and getting different values",
+   "New rows appearing in a repeated query",
+   "Two writes overwriting each other"
+  ],
+  "answer": 0,
+  "why": "A dirty read sees uncommitted changes that may later be rolled back."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 2,
+  "q": "An index on a column mainly makes which faster?",
+  "options": [
+   "Inserts",
+   "Searches on that column",
+   "Backups",
+   "Deletes of the whole table"
+  ],
+  "answer": 1,
+  "why": "An index is a sorted lookup structure for that column; inserts get a little slower."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "DBMS",
+  "difficulty": 2,
+  "q": "In an ER diagram, a diamond shape stands for:",
+  "options": [
+   "An entity",
+   "An attribute",
+   "A relationship",
+   "A key"
+  ],
+  "answer": 2,
+  "why": "Rectangles are entities, ovals attributes and diamonds relationships."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "SQL",
+  "difficulty": 1,
+  "q": "Which clause filters rows before grouping?",
+  "options": [
+   "HAVING",
+   "WHERE",
+   "ORDER BY",
+   "GROUP BY"
+  ],
+  "answer": 1,
+  "why": "WHERE filters rows; HAVING filters groups after GROUP BY."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "SQL",
+  "difficulty": 2,
+  "q": "Which query counts the rows in a table named students?",
+  "options": [
+   "SELECT COUNT(*) FROM students;",
+   "SELECT SUM(*) FROM students;",
+   "COUNT students;",
+   "SELECT ROWS FROM students;"
+  ],
+  "answer": 0,
+  "why": "COUNT(*) counts all rows."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "SQL",
+  "difficulty": 2,
+  "q": "Which join returns all rows of the left table even when there is no match on the right?",
+  "options": [
+   "INNER JOIN",
+   "LEFT JOIN",
+   "RIGHT JOIN",
+   "CROSS JOIN"
+  ],
+  "answer": 1,
+  "why": "A LEFT JOIN keeps every left row and fills missing right columns with NULL."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "SQL",
+  "difficulty": 2,
+  "q": "Which command removes all rows but keeps the table?",
+  "options": [
+   "DROP TABLE",
+   "DELETE TABLE",
+   "TRUNCATE TABLE",
+   "REMOVE TABLE"
+  ],
+  "answer": 2,
+  "why": "TRUNCATE empties the table; DROP removes the table itself."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "SQL",
+  "difficulty": 3,
+  "q": "Which query finds the second-highest salary from employees(salary)?",
+  "options": [
+   "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees);",
+   "SELECT salary FROM employees ORDER BY salary LIMIT 2;",
+   "SELECT MAX(salary) - 1 FROM employees;",
+   "SELECT SECOND(salary) FROM employees;"
+  ],
+  "answer": 0,
+  "why": "The highest salary below the overall maximum is the second highest."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "SQL",
+  "difficulty": 2,
+  "q": "What does SELECT DISTINCT city FROM users; return?",
+  "options": [
+   "Every city, with repeats",
+   "Each city once",
+   "The number of cities",
+   "Only the first city"
+  ],
+  "answer": 1,
+  "why": "DISTINCT removes duplicate values from the result."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 1,
+  "q": "How many layers does the OSI model have?",
+  "options": [
+   "4",
+   "5",
+   "7",
+   "9"
+  ],
+  "answer": 2,
+  "why": "Physical, data link, network, transport, session, presentation and application."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 2,
+  "q": "TCP differs from UDP because TCP is:",
+  "options": [
+   "Connectionless",
+   "Faster with no checks",
+   "Connection-oriented and reliable",
+   "Used only for video"
+  ],
+  "answer": 2,
+  "why": "TCP sets up a connection, numbers bytes and resends lost data; UDP does none of that."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 2,
+  "q": "Which device works at the network layer and forwards packets between networks?",
+  "options": [
+   "Hub",
+   "Switch",
+   "Router",
+   "Repeater"
+  ],
+  "answer": 2,
+  "why": "Routers use IP addresses to forward packets between networks."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 2,
+  "q": "The default port for HTTPS is:",
+  "options": [
+   "80",
+   "443",
+   "21",
+   "8080"
+  ],
+  "answer": 1,
+  "why": "HTTP uses 80 and HTTPS uses 443."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 3,
+  "q": "How many usable host addresses does a /26 IPv4 subnet have?",
+  "options": [
+   "64",
+   "62",
+   "30",
+   "126"
+  ],
+  "answer": 1,
+  "why": "A /26 leaves 6 host bits: 2⁶ = 64 addresses, minus the network and broadcast addresses = 62."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 3,
+  "q": "Which protocol finds the MAC address for a known IP address on a local network?",
+  "options": [
+   "DNS",
+   "ARP",
+   "ICMP",
+   "RARP"
+  ],
+  "answer": 1,
+  "why": "ARP broadcasts 'who has this IP?' and the owner replies with its MAC address."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 2,
+  "q": "Which of these is a private IPv4 address?",
+  "options": [
+   "8.8.8.8",
+   "192.168.1.10",
+   "172.217.0.1",
+   "100.200.1.1"
+  ],
+  "answer": 1,
+  "why": "192.168.0.0/16 is one of the private ranges, along with 10.0.0.0/8 and 172.16.0.0/12."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Networks",
+  "difficulty": 2,
+  "q": "The 'ping' command uses which protocol?",
+  "options": [
+   "TCP",
+   "UDP",
+   "ICMP",
+   "SMTP"
+  ],
+  "answer": 2,
+  "why": "Ping sends ICMP echo requests and waits for echo replies."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "OOP",
+  "difficulty": 1,
+  "q": "Wrapping data and the methods that use it into one unit is called:",
+  "options": [
+   "Inheritance",
+   "Encapsulation",
+   "Polymorphism",
+   "Abstraction"
+  ],
+  "answer": 1,
+  "why": "Encapsulation bundles data with its methods and hides the details."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "OOP",
+  "difficulty": 2,
+  "q": "Method overriding is an example of:",
+  "options": [
+   "Compile-time polymorphism",
+   "Run-time polymorphism",
+   "Encapsulation",
+   "Overloading"
+  ],
+  "answer": 1,
+  "why": "The method that runs is chosen at run time from the object's actual class."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "OOP",
+  "difficulty": 2,
+  "q": "Two methods with the same name but different parameters in one class is:",
+  "options": [
+   "Overriding",
+   "Overloading",
+   "Hiding",
+   "Inheritance"
+  ],
+  "answer": 1,
+  "why": "Overloading picks the method by its parameter list at compile time."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "OOP",
+  "difficulty": 2,
+  "q": "An abstract class:",
+  "options": [
+   "Can be instantiated",
+   "Cannot be instantiated",
+   "Cannot have methods",
+   "Must be final"
+  ],
+  "answer": 1,
+  "why": "An abstract class is meant to be extended; you create objects of its subclasses."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "OOP",
+  "difficulty": 3,
+  "q": "Java does not allow multiple inheritance of classes mainly to avoid:",
+  "options": [
+   "Slow programs",
+   "The diamond problem",
+   "Memory leaks",
+   "Too many objects"
+  ],
+  "answer": 1,
+  "why": "If two parents had the same method, the child would not know which to inherit. Interfaces avoid this."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "OOP",
+  "difficulty": 2,
+  "q": "A constructor:",
+  "options": [
+   "Has a return type",
+   "Has the same name as the class and runs when an object is created",
+   "Must be static",
+   "Can only be private"
+  ],
+  "answer": 1,
+  "why": "Constructors set up a new object and have no return type."
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 1,
+  "q": "What does this print?",
+  "options": [
+   "[1, 2, 3, 4]",
+   "[4, 3, 2, 1]",
+   "[1, 2, 3]",
+   "None"
+  ],
+  "answer": 1,
+  "why": "[::-1] makes a reversed copy of the list.",
+  "code": "print([1, 2, 3, 4][::-1])",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 2,
+  "q": "What does this print?",
+  "options": [
+   "6",
+   "12",
+   "24",
+   "10"
+  ],
+  "answer": 2,
+  "why": "The function multiplies 1 × 2 × 3 × 4 = 24.",
+  "code": "def f(n):\n    return 1 if n == 0 else n * f(n - 1)\nprint(f(4))",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 2,
+  "q": "What does this print?",
+  "options": [
+   "[0, 1, 4, 9]",
+   "[1, 4, 9, 16]",
+   "[0, 1, 2, 3]",
+   "[0, 2, 4, 6]"
+  ],
+  "answer": 0,
+  "why": "range(4) gives 0 to 3, and each is squared.",
+  "code": "print([x * x for x in range(4)])",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 2,
+  "q": "What does this print?",
+  "options": [
+   "3",
+   "4",
+   "2",
+   "5"
+  ],
+  "answer": 0,
+  "why": "A set keeps only unique items: 1, 2 and 3.",
+  "code": "print(len({1, 2, 2, 3, 3, 3}))",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 3,
+  "q": "What does this print?",
+  "options": [
+   "[1]\n[1, 2]",
+   "[1]\n[2]",
+   "[1]\n[1]",
+   "[]\n[2]"
+  ],
+  "answer": 0,
+  "why": "The default list is made once, when the function is defined, so the second call adds to the same list.",
+  "code": "def add(x, items=[]):\n    items.append(x)\n    return items\nprint(add(1))\nprint(add(2))",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 2,
+  "q": "What does this print?",
+  "options": [
+   "ab",
+   "ba",
+   "aabb",
+   "abab"
+  ],
+  "answer": 3,
+  "why": "Multiplying a string repeats it.",
+  "code": "print('ab' * 2)",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 3,
+  "q": "What does this print?",
+  "options": [
+   "2",
+   "2.5",
+   "3",
+   "2.0"
+  ],
+  "answer": 0,
+  "why": "// is floor division on whole numbers, so 5 // 2 is 2.",
+  "code": "print(5 // 2)",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 2,
+  "q": "What does this print?",
+  "options": [
+   "{'a': 1, 'b': 2}",
+   "{'a': 3, 'b': 2}",
+   "{'a': 1, 'b': 2, 'a': 3}",
+   "Error"
+  ],
+  "answer": 1,
+  "why": "A repeated key keeps its first position but takes the last value.",
+  "code": "d = {'a': 1, 'b': 2, 'a': 3}\nprint(d)",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 3,
+  "q": "What does this print?",
+  "options": [
+   "True",
+   "False",
+   "None",
+   "Error"
+  ],
+  "answer": 1,
+  "why": "is checks whether two names point to the same object; the two lists are equal but separate objects.",
+  "code": "a = [1, 2]\nb = [1, 2]\nprint(a is b)",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Python",
+  "difficulty": 2,
+  "q": "What does this print?",
+  "options": [
+   "Hello",
+   "hello",
+   "HELLO",
+   "hELLO"
+  ],
+  "answer": 2,
+  "why": "upper() returns the string in capitals.",
+  "code": "print('hello'.upper())",
+  "lang": "python"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "C",
+  "difficulty": 2,
+  "q": "What does this C program print?",
+  "options": [
+   "5 6",
+   "6 6",
+   "6 5",
+   "5 5"
+  ],
+  "answer": 0,
+  "why": "x++ hands back 5 and then makes x 6.",
+  "code": "#include <stdio.h>\nint main() {\n    int x = 5;\n    int y = x++;\n    printf(\"%d %d\", y, x);\n    return 0;\n}",
+  "lang": "c"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "C",
+  "difficulty": 2,
+  "q": "What does this C program print?",
+  "options": [
+   "2",
+   "2.5",
+   "3",
+   "2.500000"
+  ],
+  "answer": 0,
+  "why": "5 / 2 between two ints is integer division: 2.",
+  "code": "#include <stdio.h>\nint main() {\n    int a = 5, b = 2;\n    printf(\"%d\", a / b);\n    return 0;\n}",
+  "lang": "c"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "C",
+  "difficulty": 3,
+  "q": "What does this C program print?",
+  "options": [
+   "10",
+   "20",
+   "30",
+   "0"
+  ],
+  "answer": 1,
+  "why": "p points at a[1], which is 20.",
+  "code": "#include <stdio.h>\nint main() {\n    int a[] = {10, 20, 30};\n    int *p = a;\n    p++;\n    printf(\"%d\", *p);\n    return 0;\n}",
+  "lang": "c"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "C",
+  "difficulty": 2,
+  "q": "What does this C program print?",
+  "options": [
+   "0 1 2",
+   "1 2 3",
+   "0 1 2 3",
+   "1 2"
+  ],
+  "answer": 0,
+  "why": "The loop runs for i = 0, 1 and 2 and stops when i reaches 3.",
+  "code": "#include <stdio.h>\nint main() {\n    for (int i = 0; i < 3; i++) printf(i ? \" %d\" : \"%d\", i);\n    return 0;\n}",
+  "lang": "c"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "C",
+  "difficulty": 3,
+  "q": "What does this C program print?",
+  "options": [
+   "4",
+   "5",
+   "6",
+   "Error"
+  ],
+  "answer": 2,
+  "why": "\"hello\" is 5 characters plus the ending '\\0', and sizeof counts all 6 bytes.",
+  "code": "#include <stdio.h>\nint main() {\n    char s[] = \"hello\";\n    printf(\"%d\", (int) sizeof(s));\n    return 0;\n}",
+  "lang": "c"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "C",
+  "difficulty": 3,
+  "q": "What does this C program print?",
+  "options": [
+   "1",
+   "0",
+   "5",
+   "6"
+  ],
+  "answer": 0,
+  "why": "5 & 3 is 0101 AND 0011 = 0001, which is 1.",
+  "code": "#include <stdio.h>\nint main() {\n    printf(\"%d\", 5 & 3);\n    return 0;\n}",
+  "lang": "c"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Java",
+  "difficulty": 2,
+  "q": "What does this Java program print?",
+  "options": [
+   "true",
+   "false",
+   "Error",
+   "null"
+  ],
+  "answer": 1,
+  "why": "== compares references, and new String makes a separate object.",
+  "code": "public class Main {\n    public static void main(String[] args) {\n        String a = new String(\"hi\");\n        String b = new String(\"hi\");\n        System.out.println(a == b);\n    }\n}",
+  "lang": "java"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Java",
+  "difficulty": 2,
+  "q": "What does this Java program print?",
+  "options": [
+   "true",
+   "false",
+   "Error",
+   "hi"
+  ],
+  "answer": 0,
+  "why": "equals compares the characters, which are the same.",
+  "code": "public class Main {\n    public static void main(String[] args) {\n        String a = new String(\"hi\");\n        System.out.println(a.equals(\"hi\"));\n    }\n}",
+  "lang": "java"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Java",
+  "difficulty": 3,
+  "q": "What does this Java program print?",
+  "options": [
+   "Animal",
+   "Dog",
+   "Error",
+   "AnimalDog"
+  ],
+  "answer": 1,
+  "why": "The overridden method of the actual object (a Dog) runs.",
+  "code": "public class Main {\n    public static void main(String[] args) {\n        Animal a = new Dog();\n        System.out.println(a.name());\n    }\n}\nclass Animal { String name() { return \"Animal\"; } }\nclass Dog extends Animal { String name() { return \"Dog\"; } }",
+  "lang": "java"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Java",
+  "difficulty": 2,
+  "q": "What does this Java program print?",
+  "options": [
+   "12",
+   "3",
+   "Error",
+   "21"
+  ],
+  "answer": 0,
+  "why": "Once a String is involved, + joins text: \"1\" + 2 is \"12\".",
+  "code": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"1\" + 2);\n    }\n}",
+  "lang": "java"
+ },
+ {
+  "track": "coding",
+  "section": "technical",
+  "topic": "Java",
+  "difficulty": 3,
+  "q": "What does this Java program print?",
+  "options": [
+   "3",
+   "12",
+   "Error",
+   "\"12\""
+  ],
+  "answer": 0,
+  "why": "Java works left to right: 1 + 2 = 3 first, then the empty string makes it text: \"3\".",
+  "code": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(1 + 2 + \"\");\n    }\n}",
+  "lang": "java"
+ }
+]

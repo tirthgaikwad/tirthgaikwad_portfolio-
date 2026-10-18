@@ -183,6 +183,7 @@ function renderProfile() {
     }
   }
   el('profileBadges').innerHTML = badges.join('');
+  addLeagueBadge(viewedUserId);
 
   // Academics and skills
   el('profileCollege').textContent = profile.college_name || 'Not listed';
@@ -905,3 +906,14 @@ function uploadNewIdCard() {
   input.click();
 }
 
+// Weekly league finishes (top three of their college), added once the profile is drawn
+async function addLeagueBadge(userId) {
+  if (!userId) return;
+  try {
+    const league = await api(`/api/league/badges/${userId}`);
+    const box = el('profileBadges');
+    if (!league.count || !box || box.querySelector('[data-league]')) return;
+    const title = league.best === 1 ? 'Won the weekly league of their college' : 'Finished in the top three of the weekly league at their college';
+    box.insertAdjacentHTML('beforeend', `<a data-league href="progress.html" title="${title}" class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold" style="text-decoration:none">🏆 ${league.count === 1 ? (league.best === 1 ? 'Weekly league winner' : 'Weekly league top 3') : `${league.count}× weekly top 3`}</a>`);
+  } catch (e) { /* the badge is a nice extra */ }
+}

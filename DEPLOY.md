@@ -34,7 +34,9 @@ When you change the privacy notice or the terms in substance, raise `PRIVACY_VER
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | for payments | Test keys first, then live keys after Razorpay approves the website |
 | `BUSINESS_NAME`, `BUSINESS_GSTIN` | for receipts | Printed on payment receipts |
 | `VAPID_SUBJECT` | for push | A real `mailto:` address (iPhones need it) |
-| `ANTHROPIC_API_KEY` | optional | Turns on AI answers in the helper bot |
+| `ANTHROPIC_API_KEY` | recommended | Turns on the AI Tutor (doubts, exam answers, AI flashcards and quizzes, the founder's AI question drafts) and AI answers in the helper bot. The server's Python also needs `pip install anthropic` |
+| `AI_MONTHLY_BUDGET_INR` | with the key | The most the AI Tutor may spend in a month (default 1000). At 80% free accounts pause until the 1st, at 100% everyone. The founder's `/api/founder/ai-usage` shows this month's spend |
+| `USD_TO_INR` | optional | Exchange rate used to estimate AI spend in rupees (default 88) |
 | `FOUNDER_CODE` | optional | Founder login on the admin tab |
 | `SITE_UTC_OFFSET_MINUTES` | optional | "Today" for study and practice; 330 (India) by default |
 

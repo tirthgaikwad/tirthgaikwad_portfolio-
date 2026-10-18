@@ -1,0 +1,98 @@
+/* ==========================================
+   TUTOR.CSS — the AI Tutor (tutor.html). Reuses home.css (hm-*), study.css (st-*), prep.css (pp-*). Site palette only.
+   ========================================== */
+.tu-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+.tu-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+.tu-main { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+/* quota */
+.tu-quota { display: flex; flex-direction: column; gap: 10px; }
+.tu-quota-row { font-size: 12.5px; color: #464555; }
+.tu-quota-row b { color: #0b1c30; }
+.tu-quota-row .hm-bar { margin: 6px 0 0; }
+
+/* threads */
+.tu-threads { display: flex; flex-direction: column; gap: 2px; max-height: 46vh; overflow-y: auto; }
+.tu-thread { display: block; padding: 9px 10px; border-radius: 10px; color: #0b1c30; text-decoration: none; font-size: 13px; line-height: 18px; border: 0; background: none; text-align: left; font-family: Inter, sans-serif; cursor: pointer; width: 100%; }
+.tu-thread:hover { background: #eff4ff; }
+.tu-thread[aria-current="true"] { background: #e2dfff; color: #3323cc; font-weight: 600; }
+.tu-thread span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tu-thread small { display: block; color: #777587; font-size: 11.5px; }
+
+/* mode tabs and pickers */
+.tu-pickers { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tu-pickers select, .tu-pickers input { padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(199,196,216,0.9); background: #fff; font-family: Inter, sans-serif; font-size: 13.5px; color: #0b1c30; min-width: 0; max-width: 100%; }
+.tu-pickers input { flex: 1; min-width: 160px; }
+.tu-marks { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* conversation */
+.tu-log { display: flex; flex-direction: column; gap: 14px; }
+.tu-msg { max-width: 100%; }
+.tu-msg.is-user { align-self: flex-end; max-width: 80%; background: #3525cd; color: #fff; padding: 10px 14px; border-radius: 14px 14px 4px 14px; font-size: 14px; line-height: 21px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tu-msg.is-bot { background: #fff; border: 1px solid rgba(199,196,216,0.5); border-radius: 14px 14px 14px 4px; padding: 16px 18px; font-size: 14.5px; line-height: 24px; overflow-wrap: anywhere; }
+.tu-msg.is-bot h3, .tu-msg.is-bot h4 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15.5px; line-height: 22px; font-weight: 700; margin: 14px 0 6px; }
+.tu-msg.is-bot h3:first-child, .tu-msg.is-bot h4:first-child { margin-top: 0; }
+.tu-msg.is-bot p { margin: 0 0 10px; }
+.tu-msg.is-bot p:last-child { margin-bottom: 0; }
+.tu-msg.is-bot ul, .tu-msg.is-bot ol { margin: 0 0 10px; padding-left: 22px; }
+.tu-msg.is-bot ul { list-style: disc; }
+.tu-msg.is-bot ol { list-style: decimal; }
+.tu-msg.is-bot li { margin: 3px 0; }
+.tu-msg.is-bot code { padding: 1px 5px; border-radius: 5px; background: #eff4ff; font-size: 13px; font-family: ui-monospace, Consolas, monospace; }
+.tu-msg.is-bot pre { margin: 0 0 10px; padding: 12px 14px; border-radius: 10px; background: #0b1c30; color: #fff; overflow-x: auto; font-size: 13px; line-height: 20px; }
+.tu-msg.is-bot pre code { background: none; padding: 0; color: inherit; }
+.tu-msg.is-bot table { border-collapse: collapse; margin: 0 0 10px; font-size: 13.5px; display: block; overflow-x: auto; }
+.tu-msg.is-bot th, .tu-msg.is-bot td { border: 1px solid rgba(199,196,216,0.8); padding: 6px 10px; text-align: left; vertical-align: top; }
+.tu-msg.is-bot th { background: #eff4ff; }
+.tu-caret { display: inline-block; width: 8px; height: 16px; margin-left: 2px; vertical-align: -3px; background: #3525cd; animation: tuBlink 1s steps(2) infinite; }
+@keyframes tuBlink { 50% { opacity: 0; } }
+.tu-thinking { display: inline-flex; gap: 4px; }
+.tu-thinking i { width: 7px; height: 7px; border-radius: 999px; background: #c3c0ff; animation: tuDot 1.2s infinite; }
+.tu-thinking i:nth-child(2) { animation-delay: 0.15s; }
+.tu-thinking i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes tuDot { 50% { background: #3525cd; } }
+.tu-msg-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+
+/* composer */
+.tu-composer { display: flex; gap: 8px; align-items: flex-end; }
+.tu-composer textarea { flex: 1; min-width: 0; resize: none; min-height: 48px; max-height: 220px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(199,196,216,0.9); background: #fff; font-family: Inter, sans-serif; font-size: 14.5px; line-height: 22px; color: #0b1c30; }
+.tu-composer textarea:focus { outline: none; border-color: #3525cd; box-shadow: 0 0 0 3px rgba(53,37,205,0.12); }
+.tu-composer .hm-btn { height: 48px; padding: 0 18px; }
+.tu-starters { display: flex; gap: 8px; flex-wrap: wrap; }
+.tu-question-box { padding: 12px 14px; border-radius: 12px; background: #eff4ff; font-size: 14px; line-height: 22px; white-space: pre-wrap; }
+
+/* generated cards and quiz */
+.tu-gen-card { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid rgba(199,196,216,0.35); font-size: 13.5px; line-height: 20px; }
+.tu-gen-card:first-of-type { border-top: 0; }
+.tu-gen-card input[type=checkbox] { width: 17px; height: 17px; margin-top: 2px; accent-color: #3525cd; }
+.tu-gen-card [contenteditable] { padding: 4px 6px; border-radius: 6px; outline: none; overflow-wrap: anywhere; }
+.tu-gen-card [contenteditable]:focus { background: #f8f9ff; box-shadow: inset 0 0 0 1px #c3c0ff; }
+.tu-gen-card [contenteditable]:first-of-type { font-weight: 600; }
+.tu-gen-card.is-off { opacity: 0.45; }
+.tu-quiz-q { font-size: 15px; line-height: 23px; font-weight: 600; margin-bottom: 12px; white-space: pre-wrap; }
+.tu-options { display: flex; flex-direction: column; gap: 8px; }
+.tu-option { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border-radius: 11px; border: 1px solid rgba(199,196,216,0.9); background: #fff; font-family: Inter, sans-serif; font-size: 14px; line-height: 20px; color: #0b1c30; text-align: left; cursor: pointer; }
+.tu-option:hover:not(:disabled) { background: #eff4ff; border-color: #c3c0ff; }
+.tu-option b { flex-shrink: 0; width: 22px; height: 22px; border-radius: 999px; background: #e5eeff; color: #3323cc; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
+.tu-option.is-right { border-color: #10b981; background: #d1fae5; }
+.tu-option.is-right b { background: #047857; color: #fff; }
+.tu-option.is-wrong { border-color: #ffb4ab; background: #fff5f4; }
+.tu-option.is-wrong b { background: #ba1a1a; color: #fff; }
+.tu-option:disabled { cursor: default; }
+.tu-why { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #f8f9ff; font-size: 13.5px; line-height: 21px; color: #464555; }
+
+@media (max-width: 1023px) {
+  .tu-layout { grid-template-columns: minmax(0, 1fr); }
+  .tu-side { position: static; order: 2; }
+  .tu-threads { max-height: 260px; }
+}
+@media (max-width: 767px) {
+  .tu-msg.is-user { max-width: 92%; }
+  .tu-msg.is-bot { padding: 14px; font-size: 14px; }
+  .tu-composer textarea { font-size: 16px; }
+  .tu-pickers select { flex: 1 1 140px; font-size: 16px; }
+  .tu-pickers input { font-size: 16px; }
+  .tu-gen-card { grid-template-columns: auto minmax(0, 1fr); }
+  .tu-gen-card [contenteditable]:last-of-type { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .tu-caret, .tu-thinking i { animation: none; } }

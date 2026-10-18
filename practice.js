@@ -165,6 +165,7 @@ async function answerQuestion(card, choice) {
     cacheSet('practice', practice);
     practicePending.delete(question.id);
     renderPractice();
+    showXpPop(result.xp);
     if (result.points) loadPractice();      // the leaderboard moved
   } catch (err) {
     practicePending.delete(question.id);

@@ -222,6 +222,7 @@
 .nt-link { margin-top: 6px; padding: 0; border: 0; background: none; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 600; color: #3525cd; cursor: pointer; }
 .nt-link:hover:not(:disabled) { text-decoration: underline; }
 .nt-link:disabled { color: #777587; cursor: default; }
+a.nt-link { text-decoration: none; }
 .nt-link.is-danger { color: #ba1a1a; }
 .nt-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .nt-actions .st-iconbtn[aria-pressed="true"] { background: #e2dfff; border-color: #c3c0ff; color: #3525cd; }

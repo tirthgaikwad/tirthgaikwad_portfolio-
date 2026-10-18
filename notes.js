@@ -30,6 +30,7 @@ function initNotes() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('show') === 'reported') notesView.only = 'reported';
   if (params.get('q')) notesView.q = params.get('q').trim();
+  if (NOTE_KINDS.some(([value]) => value === params.get('kind'))) notesView.kind = params.get('kind');
   el('notesSearch').value = notesView.q;
   bindNotes();
 
@@ -113,7 +114,7 @@ function noteCardHtml(note) {
         <p class="nt-meta">${facts}</p>
         ${note.description ? `<p class="nt-desc">${escapeHtml(note.description)}</p>` : ''}
         <p class="nt-by">${by}</p>
-        <div class="nt-manage">${manage}</div>
+        <div class="nt-manage">${manage}${note.kind === 'paper' ? `<a class="nt-link" href="prep.html?note=${note.id}">Add its questions to Exam Prep</a>` : ''}${/\.(pdf|png|jpe?g|webp)$/i.test(note.file_url || '') ? `<a class="nt-link" href="tutor.html?note=${note.id}">Make flashcards with the AI tutor</a>` : ''}</div>
       </div>
       <div class="nt-actions">
         <a class="hm-btn" href="${escapeHtml(safeUrl(note.file_url))}" target="_blank" rel="noopener" data-act="download">${icon('download')}Open</a>

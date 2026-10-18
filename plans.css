@@ -100,3 +100,11 @@
   .bl-plan h2 { font-size: 20px; }
 }
 .pr-legal { margin: 18px 0 0; font-size: 12.5px; line-height: 19px; color: #64748b; }
+
+/* the Exam Pass strip above the personal plans */
+.pr-pass { display: flex; align-items: center; gap: 20px; padding: 20px 22px; margin-bottom: 16px; border: 1px solid #c3c0ff; background: #f8f9ff; }
+.pr-pass-text { flex: 1; min-width: 0; }
+.pr-pass-text h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; color: #0b1c30; margin: 8px 0 4px; }
+.pr-pass-text p { font-size: 13.5px; line-height: 21px; color: #464555; margin: 0; }
+.pr-pass-action { flex-shrink: 0; }
+@media (max-width: 767px) { .pr-pass { flex-direction: column; align-items: stretch; } }

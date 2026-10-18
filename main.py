@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import json
 import base64
@@ -7982,6 +7983,10 @@ MULTI_YEAR_DISCOUNT = {1: 0, 2: 10, 3: 18}   # per cent off the yearly price, fo
 
 FREE_LIMITS = {"new_conversations": 10, "board_applications": 5, "teams": 3, "research_saves": 5, "pro_intros": 3,
                "advanced_filters": False, "profile_boost": False}
+# Study perks (sections 32 to 34). The daily habit (cards, practice, timer, syllabus) is free for everyone; these are the extras.
+FREE_STUDY_LIMITS = {"tutor_daily": 5, "ai_gen_daily": 1, "mock_weekly": 1, "freezes_monthly": 0, "full_test_report": False, "ai_note_files": False}
+PAID_STUDY_LIMITS = {"tutor_daily": 60, "ai_gen_daily": 10, "mock_weekly": None, "freezes_monthly": 2, "full_test_report": True, "ai_note_files": True}
+FREE_LIMITS.update(FREE_STUDY_LIMITS)
 
 PLANS = {
     # ---- Freemium B2C and professional networking (self-serve, for one person) ----
@@ -7990,7 +7995,7 @@ PLANS = {
     "student_pro": {"line": "personal", "name": "Student Pro", "rank": 1, "gst": "inclusive", "prices": {"month": 9900, "year": 79900}, "self_serve": True,
                     "limits": {"new_conversations": 30, "board_applications": UNLIMITED, "teams": 10, "research_saves": UNLIMITED, "pro_intros": 10,
                                "advanced_filters": True, "profile_boost": False},
-                    "blurb": "Low-cost upgrade for students: unlimited applications, more outreach and advanced filters."},
+                    "blurb": "For your studies: 60 AI tutor questions a day, AI flashcards and quizzes, unlimited mock tests with the full report, streak freezes. Plus unlimited applications and more outreach."},
     "premium": {"line": "personal", "name": "Networking Premium", "rank": 2, "gst": "inclusive", "prices": {"month": 29900, "year": 249900}, "self_serve": True,
                 "limits": {"new_conversations": UNLIMITED, "board_applications": UNLIMITED, "teams": 10, "research_saves": UNLIMITED, "pro_intros": UNLIMITED,
                            "advanced_filters": True, "profile_boost": False},
@@ -8027,10 +8032,22 @@ PLANS = {
     "sponsor_season": {"line": "sponsor", "name": "Season Pack", "gst": "extra", "prices": {"one_time": 5999900}, "days": 365, "credits": 5, "tier": "featured",
                        "blurb": "Five Featured challenges to use within a year."},
 }
+# The Exam Pass (section 36 plan work): a single ₹49 payment for 30 days of the study perks, for exam month.
+# Networking stays at the free limits. It ranks between Free and Student Pro, so any paid plan wins over it.
+PLANS["exam_pass"] = {"line": "personal", "name": "Exam Pass", "rank": 0.5, "gst": "inclusive", "prices": {"one_time": 4900}, "days": 30,
+                      "self_serve": True, "study_only": True, "limits": dict(FREE_LIMITS),
+                      "blurb": "30 days of every study perk for exam month, for one small payment. No renewal: it simply ends."}
 PERSONAL_PLANS = [key for key, plan in PLANS.items() if plan["line"] == "personal" and key != "free"]
+STUDY_METRICS = ("tutor_daily", "ai_gen_daily", "mock_weekly")
+for _key in PERSONAL_PLANS:
+    PLANS[_key]["limits"].update(PAID_STUDY_LIMITS)
 PERIOD_DAYS = {"month": 30, "year": 365}
 LIMIT_LABELS = {"new_conversations": "new conversations this month", "board_applications": "board applications this month",
-                "teams": "teams", "research_saves": "saved research reports", "pro_intros": "introductions to professionals this month"}
+                "teams": "teams", "research_saves": "saved research reports", "pro_intros": "introductions to professionals this month",
+                "tutor_daily": "AI tutor questions today", "ai_gen_daily": "AI-made flashcard decks and quizzes today",
+                "mock_weekly": "timed mock tests this week"}
+# How often a counted limit starts again; anything not listed is monthly
+LIMIT_PERIODS = {"tutor_daily": "day", "ai_gen_daily": "day", "mock_weekly": "week"}
 MONTHLY_METRICS = ("new_conversations", "board_applications", "pro_intros")
 
 
@@ -8113,6 +8130,17 @@ def plan_price(plan_key: str, period: str, years: int = 1) -> int:
 def this_month() -> str:
     return datetime.now().strftime("%Y-%m")
 
+def period_key(metric: str) -> str:
+    """The usage_counters period a metric counts in: '2026-10' (month), '2026-10-17' (day), 'w2026-10-12' (the week's Monday).
+    Days and weeks are on the site's clock (India time)."""
+    period = LIMIT_PERIODS.get(metric, "month")
+    if period == "day":
+        return site_now().date().isoformat()
+    if period == "week":
+        today = site_now().date()
+        return "w" + (today - timedelta(days=today.weekday())).isoformat()
+    return this_month()
+
 def today_iso() -> str:
     return datetime.now().date().isoformat()
 
@@ -8132,12 +8160,12 @@ async def personal_plan(user_id: int) -> tuple:
     return False, "free"
 
 async def usage_count(user_id: int, metric: str) -> int:
-    rows = await fetch_one_off(select(DBUsageCounter.count).where(DBUsageCounter.user_id == user_id, DBUsageCounter.metric == metric, DBUsageCounter.period == this_month()))
+    rows = await fetch_one_off(select(DBUsageCounter.count).where(DBUsageCounter.user_id == user_id, DBUsageCounter.metric == metric, DBUsageCounter.period == period_key(metric)))
     return rows[0][0] if rows else 0
 
 async def bump_usage(user_id: int, metric: str, by: int = 1):
     try:
-        await run_one_off(pg_insert(DBUsageCounter).values(user_id=user_id, metric=metric, period=this_month(), count=by)
+        await run_one_off(pg_insert(DBUsageCounter).values(user_id=user_id, metric=metric, period=period_key(metric), count=by)
                           .on_conflict_do_update(index_elements=["user_id", "metric", "period"], set_={"count": DBUsageCounter.count + by}))
     except Exception as e:
         print("Error counting usage:", e)
@@ -8165,7 +8193,14 @@ async def check_limit(user_id: int, metric: str, used: Optional[int] = None):
         used = await usage_count(user_id, metric)
     if used >= limit:
         better = PLANS[upgrade_for(metric, plan_key)]["name"]
+        if metric in STUDY_METRICS and plan_key == "free":
+            better = "Student Pro, or the ₹49 Exam Pass for 30 days,"
         raise HTTPException(status_code=402, detail=f"You have used all {limit} {LIMIT_LABELS.get(metric, metric)} on the {PLANS.get(plan_key, PLANS['free'])['name']} plan. Upgrade to {better} on the Plans page to get more.")
+
+async def has_feature(user_id: int, feature: str) -> bool:
+    """A yes/no perk of the person's plan (full_test_report, ai_note_files, advanced_filters...). The founder has them all."""
+    founder, plan_key = await personal_plan(user_id)
+    return founder or bool(limit_of(plan_key, feature))
 
 
 # ---------- subscriptions ----------
@@ -8275,8 +8310,8 @@ async def entitlements(user_id: int) -> dict:
     usage = {metric: count for metric, count in usage_rows}
     usage.update({"teams": teams[0][0] or 0, "research_saves": reports[0][0] or 0})
     if founder:
-        limits = {metric: UNLIMITED for metric in FREE_LIMITS}
-        limits.update({"advanced_filters": True, "profile_boost": True})
+        limits = {metric: True if isinstance(value, bool) else UNLIMITED for metric, value in FREE_LIMITS.items()}
+        limits["freezes_monthly"] = 2
     else:
         limits = dict(PLANS[plan_key]["limits"])
     return {
@@ -8354,10 +8389,13 @@ async def create_billing_order(body: OrderBody, current_user_id: int = Depends(g
     plan = PLANS.get(body.plan_key)
     if not plan or not plan.get("self_serve"):
         raise HTTPException(status_code=400, detail="That plan is arranged with our team. Use 'Talk to us' on the Plans page.")
-    founder, _ = await personal_plan(current_user_id)
+    founder, current_plan = await personal_plan(current_user_id)
     if founder:
         raise HTTPException(status_code=400, detail="As the founder you already have every feature, free.")
+    if plan.get("study_only") and PLANS.get(current_plan, {}).get("rank", 0) >= 1:
+        raise HTTPException(status_code=400, detail="Your plan already includes everything in the Exam Pass.")
     total, gst = gst_split(plan, plan_price(body.plan_key, body.period))
+    period_words = {"year": "yearly", "month": "monthly", "one_time": f"{plan.get('days', 30)} days"}.get(body.period, body.period)
     rows = await fetch_one_off(select(DBUser.name, DBUser.email).where(DBUser.id == current_user_id))
     payment_rows = await run_returning(DBPayment.__table__.insert().values(
         user_id=current_user_id, plan_key=body.plan_key, period=body.period, amount_paise=total, gst_paise=gst, status="created", method="razorpay", created_at=utc_now_iso(),
@@ -8367,7 +8405,7 @@ async def create_billing_order(body: OrderBody, current_user_id: int = Depends(g
                                                "notes": {"user_id": str(current_user_id), "plan_key": body.plan_key, "period": body.period}})
     await run_one_off(update(DBPayment).where(DBPayment.id == payment_id).values(razorpay_order_id=order["id"]))
     return {"key_id": RAZORPAY_KEY_ID, "order_id": order["id"], "amount": total, "currency": "INR", "name": BUSINESS_NAME,
-            "description": f"{plan['name']} ({'yearly' if body.period == 'year' else 'monthly'})",
+            "description": f"{plan['name']} ({period_words})",
             "prefill": {"name": rows[0].name or "", "email": rows[0].email or ""} if rows else {}}
 
 
@@ -9136,7 +9174,7 @@ async def founder_grant(body: GrantBody, founder_id: int = Depends(require_found
     plan = PLANS.get(body.plan_key)
     if not plan or body.plan_key == "free":
         raise HTTPException(status_code=400, detail="Pick a plan.")
-    period = body.period or ("one_time" if plan["line"] == "sponsor" else ("trial" if body.plan_key == "inst_trial" else ("year" if "year" in plan["prices"] else "month")))
+    period = body.period or ("one_time" if plan["line"] == "sponsor" or list(plan["prices"]) == ["one_time"] else ("trial" if body.plan_key == "inst_trial" else ("year" if "year" in plan["prices"] else "month")))
     for value, what in ((body.starts_at, "start date"), (body.ends_at, "end date")):
         if value and not HUB_DATE_PATTERN.match(value):
             raise HTTPException(status_code=400, detail=f"The {what} must be a date.")
@@ -9407,10 +9445,12 @@ async def build_home(user_id: int) -> dict:
         fetch_one_off(person_cards_query(user_id, DBUser.id.not_in(i_follow)).order_by(DBUser.id.desc()).limit(200)),
     )
     row, counts = me_rows[0], number_rows[0]
-    (needs, news), study, practice = await asyncio.gather(
+    (needs, news), study, practice, progress, prep = await asyncio.gather(
         home_hub_items(me, today) if me["role"] != "none" else asyncio.sleep(0, ([], [])),
         home_study(user_id),
         practice_glance(user_id),
+        progress_glance(user_id),
+        prep_glance(user_id),
     )
     needs = study["needs"] + needs
 
@@ -9471,6 +9511,9 @@ async def build_home(user_id: int) -> dict:
                  "applications": counts.applications or 0, "unread": unread_count,
                  "study_minutes": study["week_minutes"], "study_streak": study["streak"]},
         "practice": practice,
+        "progress": {key: progress[key] for key in ("goal", "xp_today", "goal_met", "streak", "week_xp", "focus_today", "freezes", "paid")},
+        "prep": prep,
+        "studying_now": studying_count(college_key_of(me["college"]), user_id),
         "checklist": [] if all(step["done"] for step in checklist) else checklist,
         "push": {"available": bool(VAPID_PUBLIC), "devices": counts.devices or 0},
         "email_ready": bool(SMTP_HOST),
@@ -9876,6 +9919,7 @@ class DBStudySetting(Base):
     remind_classes = Column(Integer, default=0)
     remind_tasks = Column(Integer, default=1)
     remind_practice = Column(Integer, default=1)
+    xp_goal = Column(Integer, nullable=True)       # daily XP goal (section 32); empty = XP_DEFAULT_GOAL
 
 class DBClassTimetableSlot(Base):
     """A teacher's classes for one class of a college, published for its students to copy."""
@@ -10298,9 +10342,10 @@ async def log_study_session(body: StudySessionBody, current_user_id: int = Depen
     if body.subject_id:
         await require_own_subject(current_user_id, body.subject_id)
     day = site_now().date().isoformat()
-    await run_one_off(DBStudySession.__table__.insert().values(user_id=current_user_id, subject_id=body.subject_id or None, day=day,
-                                                               minutes=body.minutes, created_at=utc_now_iso()))
-    return {"day": day, "minutes": body.minutes, "subject_id": body.subject_id or None}
+    saved = await run_returning(DBStudySession.__table__.insert().values(user_id=current_user_id, subject_id=body.subject_id or None, day=day,
+                                                                         minutes=body.minutes, created_at=utc_now_iso()).returning(DBStudySession.id))
+    xp = await award_xp(current_user_id, "focus", f"s{saved[0][0]}", body.minutes // XP_FOCUS_MINUTES_PER_POINT)
+    return {"day": day, "minutes": body.minutes, "subject_id": body.subject_id or None, "xp": xp}
 
 
 @app.put("/api/study/settings")
@@ -10523,6 +10568,22 @@ async def study_reminders_pass(send=None) -> int:
         for user_id, _ in fresh:
             sent += await send([user_id], {"title": "Keep your streak", "body": "Today's practice questions are waiting. It takes two minutes.",
                                            "link": "practice.html", "tag": "practice"})
+
+    # Flashcards (section 33): one evening nudge for people with cards due who have not reviewed any today
+    if now.hour >= PREP_EVENING_HOUR:
+        reviewed_today = select(DBCardState.user_id).where(DBCardState.last_day == today.isoformat())
+        rows = await fetch_one_off(
+            select(DBCardState.user_id, func.count()).join(DBCardFollow, and_(DBCardFollow.user_id == DBCardState.user_id, DBCardFollow.deck_id == DBCardState.deck_id))
+            .outerjoin(DBStudySetting, DBStudySetting.user_id == DBCardState.user_id)
+            .where(DBCardState.due_day <= today.isoformat(), DBCardState.user_id.not_in(reviewed_today), DBCardState.user_id.in_(has_device),
+                   func.coalesce(DBStudySetting.remind_practice, 1) == 1).group_by(DBCardState.user_id).limit(5000))
+        due = dict(rows)
+        fresh = await claim_reminders([(user_id, f"cards:{today.isoformat()}") for user_id in due])
+        for user_id, _ in fresh:
+            minutes = max(1, round(due[user_id] * 12 / 60))
+            sent += await send([user_id], {"title": f"{due[user_id]} {'card' if due[user_id] == 1 else 'cards'} to review",
+                                           "body": f"About {minutes} {'minute' if minutes == 1 else 'minutes'}. Reviewing today is what makes them stick.",
+                                           "link": "prep.html?review=1", "tag": "cards"})
     return sent
 
 async def study_watch():
@@ -10535,6 +10596,7 @@ async def study_watch():
             if today != last_cleanup:
                 last_cleanup = today
                 await run_one_off(delete(DBStudyReminder).where(DBStudyReminder.sent_at < (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()))
+                await tutor_cleanup()
         except Exception as e:
             print("Error sending study reminders:", e)
         await asyncio.sleep(STUDY_WATCH_SECONDS)
@@ -10802,6 +10864,13 @@ class DBPracticeQuestion(Base):
     active = Column(Integer, default=1)
     created_by = Column(Integer, nullable=True)
     created_at = Column(String)
+    # Section 35 (mock tests). daily = 0: only in tests and topic practice, never one of the daily questions,
+    # so adding to the test bank does not change which question is "today's".
+    section = Column(String, default="")           # quant, logical, verbal, technical
+    difficulty = Column(Integer, nullable=True)    # 1 easy, 2 medium, 3 hard
+    daily = Column(Integer, default=1)
+    lang = Column(String, default="")              # the language of the code listing: python, c, java
+    draft = Column(Integer, default=0)             # 1: written by the AI for the founder to check (active = 0 until approved)
 
 class DBPracticeAnswer(Base):
     __tablename__ = "practice_answers"
@@ -10865,7 +10934,7 @@ async def practice_questions() -> dict:
         rows = await fetch_one_off(select(DBPracticeQuestion).where(func.coalesce(DBPracticeQuestion.active, 1) == 1).order_by(DBPracticeQuestion.id))
         by_track: dict = {track: [] for track, _ in PRACTICE_TRACKS}
         for (question,) in rows:
-            if question.track in by_track:
+            if question.track in by_track and (question.daily if question.daily is not None else 1) == 1:
                 by_track[question.track].append(question)
         practice_cache.update(at=now, by_track=by_track, by_id={question.id: question for (question,) in rows})
     return practice_cache
@@ -10978,9 +11047,10 @@ async def answer_practice(body: PracticeAnswerBody, current_user_id: int = Depen
         .on_conflict_do_nothing(index_elements=["user_id", "question_id", "day"]).returning(DBPracticeAnswer.id))
     if not saved:
         raise HTTPException(status_code=409, detail="You have already answered this one.")
-    glance = await practice_glance(current_user_id)
+    glance, xp = await asyncio.gather(practice_glance(current_user_id),
+                                      award_xp(current_user_id, "practice", f"q{question.id}:{day}", points) if points else asyncio.sleep(0, {"xp": 0}))
     return {"question_id": question.id, "correct": correct, "answer": question.answer, "explanation": question.explanation or "",
-            "points": points, "daily": is_today, "streak": glance["streak"]}
+            "points": points, "daily": is_today, "streak": glance["streak"], "xp": xp}
 
 
 @app.post("/api/founder/practice-questions")
@@ -12752,6 +12822,8 @@ TWO_FACTOR_TICKET_MINUTES = 5
 BACKUP_CODE_COUNT = 10
 REPORT_ACK_HOURS, REPORT_RESOLVE_DAYS = 24, 15
 REPORT_KINDS = ("user", "message", "team_message", "college_message", "board_post", "team")
+# Later sections add kinds of their own: kind -> (async target(target_id, reporter_id) -> (owner, snapshot, link), async remove(target_id))
+EXTRA_REPORT_TARGETS: dict = {}
 REPORT_REASONS = {
     "harassment": "Harassment or bullying", "hate": "Hate or discrimination", "sexual": "Sexual content",
     "violence": "Threats or violence", "self_harm": "Self-harm or suicide", "spam": "Spam",
@@ -13428,6 +13500,8 @@ def snapshot_text(content: Optional[str]) -> str:
 async def report_target(kind: str, target_id: int, reporter_id: int) -> tuple:
     """(owner id, snapshot, link) of something the reporter can see. 404 otherwise."""
     missing = HTTPException(status_code=404, detail="We could not find that, or you cannot see it.")
+    if kind in EXTRA_REPORT_TARGETS:
+        return await EXTRA_REPORT_TARGETS[kind][0](target_id, reporter_id)
     if kind == "user":
         rows = await fetch_one_off(select(DBUser.name, DBUser.bio).where(DBUser.id == target_id, visible_user_clause()))
         if not rows:
@@ -13467,7 +13541,7 @@ async def report_target(kind: str, target_id: int, reporter_id: int) -> tuple:
 @app.post("/api/reports")
 @limiter.limit("10/hour", key_func=account_rate_key)
 async def create_report(request: Request, body: ReportBody, current_user_id: int = Depends(get_current_user_id)):
-    if body.kind not in REPORT_KINDS:
+    if body.kind not in REPORT_KINDS and body.kind not in EXTRA_REPORT_TARGETS:
         raise HTTPException(status_code=400, detail="That cannot be reported.")
     if body.reason not in REPORT_REASONS:
         raise HTTPException(status_code=400, detail="Pick a reason.")
@@ -13520,7 +13594,9 @@ async def founder_safety(founder_id: int = Depends(require_founder)):
             "email_ready": EMAIL_READY}
 
 async def remove_reported(kind: str, target_id: int):
-    if kind == "message":
+    if kind in EXTRA_REPORT_TARGETS:
+        await EXTRA_REPORT_TARGETS[kind][1](target_id)
+    elif kind == "message":
         await run_one_off(update(DBMessage).where(DBMessage.id == target_id).values(content=REMOVED_TEXT))
     elif kind == "team_message":
         await run_one_off(update(DBTeamMessage).where(DBTeamMessage.id == target_id).values(content=REMOVED_TEXT))
@@ -13593,3 +13669,2524 @@ async def founder_guardian(user_id: int, body: FounderGuardianBody, founder_id: 
         raise HTTPException(status_code=400, detail="This account is not waiting for a guardian.")
     await decide_guardian(user_id, body.decision == "approve", "recorded by the founder")
     return {"decision": body.decision}
+
+
+# ==========================================
+# 32. XP, DAILY GOAL AND STREAKS (progress.html, the Home ring)
+# ==========================================
+# Everything a student does to study earns XP: practice, focus minutes, flashcards, tests, helping others.
+# A day counts for the streak when its XP reaches the person's daily goal; that day gets a "goal" marker row.
+# Each action pays once (unique user, kind, ref) and each kind has a daily cap, so XP cannot be farmed.
+class DBXpEvent(Base):
+    __tablename__ = "xp_events"
+    __table_args__ = (UniqueConstraint("user_id", "kind", "ref", name="ux_xp_events"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    day = Column(String, index=True)               # the site's day (India time)
+    kind = Column(String)                          # a key of XP_RULES, or "goal" for the day's marker
+    ref = Column(String)                           # what earned it, so it pays once
+    points = Column(Integer, default=0)
+    created_at = Column(String)
+
+class DBStreakFreeze(Base):
+    """A missed day that a streak freeze covered."""
+    __tablename__ = "streak_freezes"
+    __table_args__ = (UniqueConstraint("user_id", "day", name="ux_streak_freezes"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    day = Column(String)
+    month = Column(String)                         # the month it was spent in, for the monthly allowance
+    created_at = Column(String)
+
+
+# kind: (label, daily cap)
+XP_RULES = {
+    "practice": ("Daily questions", 20),
+    "topic": ("Topic practice", 30),
+    "focus": ("Focus time", 48),
+    "card": ("Flashcards", 60),
+    "quiz": ("Quizzes", 15),
+    "mock": ("Mock tests", 40),
+    "unit": ("Units revised", 15),
+    "contribute": ("Helping others", 25),
+}
+XP_GOALS = (10, 30, 50, 80)                        # casual, regular, serious, intense
+XP_DEFAULT_GOAL = 30
+XP_CALENDAR_DAYS = 84
+XP_FOCUS_MINUTES_PER_POINT = 5
+SCHEMA_UPGRADES.append("ALTER TABLE study_settings ADD COLUMN IF NOT EXISTS xp_goal INTEGER")
+SCHEMA_UPGRADES.append("CREATE INDEX IF NOT EXISTS ix_xp_events_user_day ON xp_events (user_id, day)")
+USER_DATA_ERASED["xp_events"] = ("user_id",)
+USER_DATA_ERASED["streak_freezes"] = ("user_id",)
+for _table in ("xp_events", "streak_freezes"):
+    assert all(column in Base.metadata.tables[_table].c for column in USER_DATA_ERASED[_table])
+
+AWARD_XP_SQL = text("""
+WITH used AS (
+  SELECT coalesce(sum(points), 0) AS n FROM xp_events WHERE user_id = :uid AND day = :day AND kind = :kind
+), ins AS (
+  INSERT INTO xp_events (user_id, day, kind, ref, points, created_at)
+  SELECT :uid, :day, :kind, :ref, least(:points, :cap - n), :now FROM used WHERE n < :cap
+  ON CONFLICT (user_id, kind, ref) DO NOTHING
+  RETURNING points
+), total AS (
+  SELECT coalesce((SELECT sum(points) FROM xp_events WHERE user_id = :uid AND day = :day), 0)
+       + coalesce((SELECT sum(points) FROM ins), 0) AS n
+), goal AS (
+  SELECT coalesce((SELECT xp_goal FROM study_settings WHERE user_id = :uid), :default_goal) AS n
+), marker AS (
+  INSERT INTO xp_events (user_id, day, kind, ref, points, created_at)
+  SELECT :uid, :day, 'goal', :day, 0, :now FROM total, goal WHERE total.n >= goal.n
+  ON CONFLICT (user_id, kind, ref) DO NOTHING
+  RETURNING 1
+)
+SELECT coalesce((SELECT sum(points) FROM ins), 0), (SELECT n FROM total), (SELECT n FROM goal), (SELECT count(*) FROM marker)
+""")
+
+async def award_xp(user_id: int, kind: str, ref, points: int) -> dict:
+    """Gives XP once per (kind, ref), up to the kind's daily cap. Never raises: XP must not break the action that earned it.
+    Returns what was given, today's total, the goal and whether this action reached the goal."""
+    if kind not in XP_RULES or points <= 0:
+        return {"xp": 0}
+    try:
+        rows = await run_returning(AWARD_XP_SQL.bindparams(
+            uid=user_id, day=site_now().date().isoformat(), kind=kind, ref=str(ref)[:120], points=int(points), cap=XP_RULES[kind][1],
+            now=utc_now_iso(), default_goal=XP_DEFAULT_GOAL))
+        given, total, goal, reached = rows[0]
+        return {"xp": int(given or 0), "today": int(total or 0), "goal": int(goal or XP_DEFAULT_GOAL), "goal_reached": bool(reached)}
+    except Exception as e:
+        print("Error giving XP:", e)
+        return {"xp": 0}
+
+def freezes_per_month(founder: bool, plan_key: str) -> int:
+    return 2 if founder else int(limit_of(plan_key, "freezes_monthly") or 0)
+
+async def use_streak_freezes(user_id: int, met: set, frozen: set, today, left: int) -> list:
+    """Covers the days missed since the last goal day, if the person has enough freezes left for all of them."""
+    if left <= 0:
+        return []
+    covered = met | frozen
+    missed, day = [], today - timedelta(days=1)
+    while day.isoformat() not in covered and len(missed) <= left:
+        missed.append(day.isoformat())
+        day -= timedelta(days=1)
+    if not missed or len(missed) > left or day.isoformat() not in covered:
+        return []
+    month, now_iso = today.strftime("%Y-%m"), utc_now_iso()
+    await run_one_off(pg_insert(DBStreakFreeze).values([{"user_id": user_id, "day": d, "month": month, "created_at": now_iso} for d in missed])
+                      .on_conflict_do_nothing(index_elements=["user_id", "day"]))
+    return missed
+
+PROGRESS_SQL = text("""
+SELECT
+  (SELECT coalesce(json_agg(json_build_array(d.day, d.xp, d.met)), '[]') FROM (
+     SELECT day, sum(points) AS xp, bool_or(kind = 'goal') AS met FROM xp_events
+     WHERE user_id = :me AND day >= :since GROUP BY day) d) AS days,
+  (SELECT coalesce(json_agg(json_build_array(k.kind, k.xp)), '[]') FROM (
+     SELECT kind, sum(points) AS xp FROM xp_events WHERE user_id = :me AND day = :today AND kind <> 'goal' GROUP BY kind) k) AS today_kinds,
+  (SELECT coalesce(json_agg(json_build_array(f.day, f.month)), '[]') FROM streak_freezes f WHERE f.user_id = :me) AS freezes,
+  (SELECT xp_goal FROM study_settings WHERE user_id = :me) AS goal,
+  (SELECT coalesce(sum(points), 0) FROM xp_events WHERE user_id = :me AND day >= :week_from) AS week_xp,
+  (SELECT coalesce(sum(points), 0) FROM xp_events WHERE user_id = :me) AS total_xp,
+  (SELECT coalesce(sum(minutes), 0) FROM study_sessions WHERE user_id = :me AND day = :today) AS focus_today
+""")
+
+def week_start(day):
+    """The Monday of a day's week."""
+    return day - timedelta(days=day.weekday())
+
+def progress_from(rows, today, founder: bool, plan_key: str) -> tuple:
+    """Turns PROGRESS_SQL's row into numbers. Returns (glance without the freeze step, met days, frozen days, freezes left)."""
+    days, today_kinds, freezes, goal, week_xp, total_xp, focus_today = rows[0]
+    days, today_kinds, freezes = [json.loads(value) if isinstance(value, str) else (value or []) for value in (days, today_kinds, freezes)]
+    per_day = {day: int(xp or 0) for day, xp, _ in days}
+    met = {day for day, _, was_met in days if was_met}
+    if per_day.get(today.isoformat(), 0) >= (goal or XP_DEFAULT_GOAL):
+        met.add(today.isoformat())          # XP can reach the goal without its marker row (e.g. a goal lowered by hand)
+    frozen = {day for day, _ in freezes}
+    allowance = freezes_per_month(founder, plan_key)
+    left = max(0, allowance - sum(1 for _, spent in freezes if spent == today.strftime("%Y-%m")))
+    glance = {
+        "today": today.isoformat(), "goal": goal or XP_DEFAULT_GOAL, "goals": list(XP_GOALS), "xp_today": per_day.get(today.isoformat(), 0),
+        "goal_met": today.isoformat() in met,
+        "by_kind": [{"kind": kind, "label": XP_RULES.get(kind, (kind, 0))[0], "xp": int(xp or 0), "cap": XP_RULES.get(kind, ("", 0))[1]}
+                    for kind, xp in today_kinds],
+        "week_xp": int(week_xp or 0), "total_xp": int(total_xp or 0), "focus_today": int(focus_today or 0),
+        "per_day": per_day, "allowance": allowance, "paid": founder or plan_key != "free",
+    }
+    return glance, met, frozen, left
+
+async def progress_glance(user_id: int) -> dict:
+    """XP today against the goal, the streak (spending freezes when they are due), the last 12 weeks and freezes left.
+    Two reads at the same time, plus one write only when a freeze is spent."""
+    today = site_now().date()
+    (founder, plan_key), rows = await asyncio.gather(
+        personal_plan(user_id),
+        fetch_one_off(PROGRESS_SQL.bindparams(me=user_id, today=today.isoformat(), since=(today - timedelta(days=STUDY_STREAK_DAYS)).isoformat(),
+                                              week_from=week_start(today).isoformat())))
+    glance, met, frozen, left = progress_from(rows, today, founder, plan_key)
+    used_now = await use_streak_freezes(user_id, met, frozen, today, left)
+    frozen |= set(used_now)
+    covered = met | frozen
+    per_day = glance.pop("per_day")
+    best, run = 0, 0
+    for back in range(STUDY_STREAK_DAYS, -1, -1):
+        run = run + 1 if (today - timedelta(days=back)).isoformat() in covered else 0
+        best = max(best, run)
+    glance["calendar"] = [{"day": day, "xp": per_day.get(day, 0), "met": day in met, "frozen": day in frozen}
+                          for day in ((today - timedelta(days=back)).isoformat() for back in range(XP_CALENDAR_DAYS - 1, -1, -1))]
+    glance["streak"], glance["best_streak"] = day_streak(covered, today), best
+    glance["freezes"] = {"per_month": glance.pop("allowance"), "left": left - len(used_now), "used_now": used_now}
+    return glance
+
+
+class XpGoalBody(BaseModel):
+    goal: int
+
+@app.get("/api/progress")
+async def get_progress(current_user_id: int = Depends(get_current_user_id)):
+    glance = await progress_glance(current_user_id)
+    glance["rules"] = [{"kind": kind, "label": label, "cap": cap} for kind, (label, cap) in XP_RULES.items()]
+    return glance
+
+GOAL_MARKER_SQL = text("""
+INSERT INTO xp_events (user_id, day, kind, ref, points, created_at)
+SELECT :uid, :day, 'goal', :day, 0, :now
+WHERE (SELECT coalesce(sum(points), 0) FROM xp_events WHERE user_id = :uid AND day = :day) >= :goal
+ON CONFLICT (user_id, kind, ref) DO NOTHING
+""")
+
+@app.put("/api/progress/goal")
+async def set_xp_goal(body: XpGoalBody, current_user_id: int = Depends(get_current_user_id)):
+    if body.goal not in XP_GOALS:
+        raise HTTPException(status_code=400, detail="Pick one of the daily goals.")
+    await run_one_off(pg_insert(DBStudySetting).values(user_id=current_user_id, xp_goal=body.goal)
+                      .on_conflict_do_update(index_elements=["user_id"], set_={"xp_goal": body.goal}))
+    # A lower goal can already be met today
+    await run_one_off(GOAL_MARKER_SQL.bindparams(uid=current_user_id, day=site_now().date().isoformat(), now=utc_now_iso(), goal=body.goal))
+    return await progress_glance(current_user_id)
+
+
+# ==========================================
+# 33. EXAM PREP: SYLLABUS UNITS, PAST-PAPER QUESTIONS, FLASHCARDS (prep.html)
+# ==========================================
+# A syllabus belongs to a class (college + department + semester + subject) and is typed in once by a student or a
+# teacher; everyone in that college can use it. Each student keeps their own progress per unit and links the syllabus
+# to a subject of My Study (study_subjects.syllabus_id, exam_date).
+# Past-paper questions sit on a syllabus; students add the years a question was asked, so the list sorts by "asked most".
+# Flashcards: anyone makes decks; a public deck can be followed by others in the college. Review state is per person
+# per card (spaced repetition, SM-2), so following a deck needs no copy.
+class DBSyllabus(Base):
+    __tablename__ = "syllabi"
+    id = Column(Integer, primary_key=True, index=True)
+    college_key = Column(String, index=True)
+    college_name = Column(String, default="")
+    department = Column(String, default="")        # as typed
+    department_key = Column(String, index=True)    # lower-cased, like college_key
+    semester = Column(Integer, nullable=True)
+    subject = Column(String)
+    subject_key = Column(String, index=True)       # lower-cased, spaces and punctuation folded, to find the same subject
+    code = Column(String, default="")
+    created_by = Column(Integer, index=True)
+    updated_by = Column(Integer, nullable=True)
+    teacher_checked = Column(Integer, default=0)   # 1 once a teacher of the college saved it
+    removed = Column(Integer, default=0)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+class DBSyllabusUnit(Base):
+    __tablename__ = "syllabus_units"
+    id = Column(Integer, primary_key=True, index=True)
+    syllabus_id = Column(Integer, index=True)
+    number = Column(Integer)
+    title = Column(String)
+    topics = Column(String, default="")            # one topic a line
+
+class DBSyllabusProgress(Base):
+    __tablename__ = "syllabus_progress"
+    __table_args__ = (UniqueConstraint("user_id", "unit_id", name="ux_syllabus_progress"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    syllabus_id = Column(Integer, index=True)
+    unit_id = Column(Integer, index=True)
+    status = Column(String, default="todo")        # todo, learning, revised, confident
+    updated_at = Column(String)
+
+class DBExamQuestion(Base):
+    __tablename__ = "exam_questions"
+    id = Column(Integer, primary_key=True, index=True)
+    syllabus_id = Column(Integer, index=True)
+    unit_id = Column(Integer, nullable=True)
+    text = Column(String)
+    text_key = Column(String, index=True)          # folded text, to spot the same question typed again
+    marks = Column(Integer, nullable=True)
+    source_note_id = Column(Integer, nullable=True)
+    added_by = Column(Integer, index=True)
+    removed = Column(Integer, default=0)
+    created_at = Column(String)
+
+class DBExamQuestionYear(Base):
+    """One exam year a question was asked in. Several people can add years to the same question."""
+    __tablename__ = "exam_question_years"
+    __table_args__ = (UniqueConstraint("question_id", "year", name="ux_exam_question_years"),)
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, index=True)
+    year = Column(Integer)
+    added_by = Column(Integer, index=True)
+    created_at = Column(String)
+
+class DBExamQuestionVote(Base):
+    """'Important': a student marks a question worth preparing."""
+    __tablename__ = "exam_question_votes"
+    __table_args__ = (UniqueConstraint("question_id", "user_id", name="ux_exam_question_votes"),)
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+
+class DBCardDeck(Base):
+    __tablename__ = "card_decks"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, index=True)
+    title = Column(String)
+    syllabus_id = Column(Integer, nullable=True, index=True)
+    unit_id = Column(Integer, nullable=True)
+    subject = Column(String, default="")           # the subject's name, for decks without a syllabus
+    college_key = Column(String, index=True)
+    public = Column(Integer, default=0)
+    made_by_ai = Column(Integer, default=0)
+    removed = Column(Integer, default=0)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+class DBCard(Base):
+    __tablename__ = "cards"
+    id = Column(Integer, primary_key=True, index=True)
+    deck_id = Column(Integer, index=True)
+    front = Column(String)
+    back = Column(String)
+    position = Column(Integer, default=0)
+    created_at = Column(String)
+
+class DBCardFollow(Base):
+    """Decks a person reviews: their own and the public ones they follow."""
+    __tablename__ = "card_follows"
+    __table_args__ = (UniqueConstraint("user_id", "deck_id", name="ux_card_follows"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    deck_id = Column(Integer, index=True)
+    created_at = Column(String)
+
+class DBCardState(Base):
+    """Where one person is with one card."""
+    __tablename__ = "card_states"
+    __table_args__ = (UniqueConstraint("user_id", "card_id", name="ux_card_states"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    card_id = Column(Integer, index=True)
+    deck_id = Column(Integer, index=True)
+    ease = Column(Float, default=2.5)
+    interval_days = Column(Integer, default=0)
+    due_day = Column(String, index=True)
+    reps = Column(Integer, default=0)              # good reviews in a row
+    lapses = Column(Integer, default=0)
+    first_day = Column(String)                     # the day it was first seen, for the new-cards-a-day limit
+    last_day = Column(String)
+
+
+SCHEMA_UPGRADES.append("ALTER TABLE study_subjects ADD COLUMN IF NOT EXISTS syllabus_id INTEGER")
+SCHEMA_UPGRADES.append("ALTER TABLE study_subjects ADD COLUMN IF NOT EXISTS exam_date VARCHAR DEFAULT ''")
+SCHEMA_UPGRADES.append("CREATE INDEX IF NOT EXISTS ix_syllabi_class ON syllabi (college_key, department_key, semester)")
+SCHEMA_UPGRADES.append("CREATE INDEX IF NOT EXISTS ix_card_states_due ON card_states (user_id, due_day)")
+SCHEMA_UPGRADES.append("CREATE INDEX IF NOT EXISTS ix_cards_deck ON cards (deck_id, position)")
+DBStudySubject.syllabus_id = Column(Integer, nullable=True)
+DBStudySubject.exam_date = Column(String, default="")
+
+USER_DATA_ERASED.update({
+    "syllabus_progress": ("user_id",), "exam_question_votes": ("user_id",), "card_follows": ("user_id",), "card_states": ("user_id",),
+})
+# What a person typed in for their class stays for the class (like notes they shared), shown without a name
+USER_DATA_KEPT.update({
+    "syllabi": ("created_by", "updated_by"), "exam_questions": ("added_by",), "exam_question_years": ("added_by",), "card_decks": ("owner_id",),
+})
+for _registry in (USER_DATA_ERASED, USER_DATA_KEPT):
+    for _table in ("syllabus_progress", "exam_question_votes", "card_follows", "card_states", "syllabi", "exam_questions", "exam_question_years", "card_decks"):
+        assert all(column in Base.metadata.tables[_table].c for column in _registry.get(_table, ()))
+
+PREP_UNIT_STATUSES = ("todo", "learning", "revised", "confident")
+PREP_MAX_UNITS = 12
+PREP_MAX_DECKS = 200
+PREP_MAX_CARDS = 500           # in one deck
+PREP_NEW_CARDS_A_DAY = 20
+PREP_REVIEW_BATCH = 200
+PREP_MARKS = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14, 15, 16, 20)
+PREP_EVENING_HOUR = 19
+CARD_GRADES = {1: "again", 2: "hard", 3: "good", 4: "easy"}
+CARD_MAX_INTERVAL = 365
+
+
+def fold_key(value: Optional[str]) -> str:
+    """'Data  Structures & Algorithms!' -> 'data structures algorithms': for spotting the same subject or question."""
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", (value or "").lower().replace("&", " ")).split())[:300]
+
+def sm2_next(state: Optional[dict], grade: int, today) -> dict:
+    """The next review of a card after a grade (1 again, 2 hard, 3 good, 4 easy). state holds ease, interval_days,
+    reps, lapses (None for a card seen for the first time). 'Again' makes it due today, so it comes back in the session."""
+    ease = (state or {}).get("ease") or 2.5
+    interval = (state or {}).get("interval_days") or 0
+    reps = (state or {}).get("reps") or 0
+    lapses = (state or {}).get("lapses") or 0
+    if grade == 1:
+        reps, lapses, interval, ease = 0, lapses + (1 if state and state.get("reps") else 0), 0, max(1.3, ease - 0.2)
+    elif grade == 2:
+        interval, ease = max(1, round(interval * 1.2)), max(1.3, ease - 0.15)
+        reps += 1
+    elif grade == 3:
+        interval = 1 if reps == 0 else 3 if reps == 1 else max(interval + 1, round(interval * ease))
+        reps += 1
+    else:
+        interval = 4 if reps == 0 else max(interval + 2, round(max(interval, 1) * ease * 1.3))
+        ease = min(3.0, ease + 0.15)
+        reps += 1
+    interval = min(CARD_MAX_INTERVAL, interval)
+    return {"ease": round(ease, 2), "interval_days": interval, "reps": reps, "lapses": lapses,
+            "due_day": (today + timedelta(days=interval)).isoformat()}
+
+async def prep_identity(user_id: int) -> dict:
+    """College and class of the caller, plus whether they may edit any syllabus of their college (a teacher there, the founder)."""
+    rows = await fetch_one_off(select(DBUser.college_name, DBUser.department, DBUser.teacher_of, DBUser.is_founder).where(DBUser.id == user_id))
+    if not rows:
+        raise HTTPException(status_code=401, detail="User account no longer exists.")
+    row = rows[0]
+    teacher_key = (row.teacher_of or "").strip()
+    key = teacher_key or college_key_of(row.college_name)
+    return {"id": user_id, "college_key": key, "college": (row.college_name or "").strip(), "department": (row.department or "").strip(),
+            "teacher": bool(teacher_key), "founder": (row.is_founder or 0) == 1}
+
+def can_edit_syllabus(me: dict, syllabus) -> bool:
+    return me["founder"] or syllabus.created_by == me["id"] or (me["teacher"] and me["college_key"] == syllabus.college_key)
+
+def unit_card(unit) -> dict:
+    return {"id": unit.id, "number": unit.number, "title": unit.title or "", "topics": [t for t in (unit.topics or "").split("\n") if t.strip()]}
+
+def syllabus_card(syllabus, units: list, me: dict, users: int = 0) -> dict:
+    return {"id": syllabus.id, "subject": syllabus.subject or "", "code": syllabus.code or "", "department": syllabus.department or "",
+            "semester": syllabus.semester, "college": syllabus.college_name or "", "teacher_checked": bool(syllabus.teacher_checked),
+            "mine": syllabus.created_by == me["id"], "can_edit": can_edit_syllabus(me, syllabus), "users": users,
+            "units": [unit_card(unit) for unit in sorted(units, key=lambda u: (u.number or 0, u.id))], "updated_at": syllabus.updated_at or ""}
+
+async def load_syllabus(syllabus_id: int, me: dict):
+    """A syllabus of the caller's college (or any, for the founder). 404 otherwise."""
+    rows = await fetch_one_off(select(DBSyllabus).where(DBSyllabus.id == syllabus_id, func.coalesce(DBSyllabus.removed, 0) == 0))
+    if not rows or (rows[0][0].college_key != me["college_key"] and not me["founder"]):
+        raise HTTPException(status_code=404, detail="That syllabus is not here, or it is for another college.")
+    return rows[0][0]
+
+
+# ---------- reading ----------
+PREP_SQL = text("""
+SELECT
+  (SELECT coalesce(json_agg(json_build_object('id', s.id, 'name', s.name, 'code', s.code, 'syllabus_id', s.syllabus_id,
+       'exam_date', coalesce(s.exam_date, '')) ORDER BY s.id), '[]')
+     FROM study_subjects s WHERE s.user_id = :me AND coalesce(s.archived, 0) = 0) AS subjects,
+  (SELECT coalesce(json_agg(json_build_array(p.unit_id, p.status)), '[]') FROM syllabus_progress p WHERE p.user_id = :me) AS progress,
+  (SELECT coalesce(json_agg(json_build_object('id', d.id, 'title', d.title, 'syllabus_id', d.syllabus_id, 'unit_id', d.unit_id, 'subject', d.subject,
+       'public', d.public, 'mine', d.owner_id = :me, 'made_by_ai', coalesce(d.made_by_ai, 0),
+       'cards', (SELECT count(*) FROM cards c WHERE c.deck_id = d.id),
+       'followers', (SELECT count(*) FROM card_follows f2 WHERE f2.deck_id = d.id AND f2.user_id <> d.owner_id),
+       'due', (SELECT count(*) FROM card_states cs WHERE cs.user_id = :me AND cs.deck_id = d.id AND cs.due_day <= :today),
+       'seen', (SELECT count(*) FROM card_states cs WHERE cs.user_id = :me AND cs.deck_id = d.id)) ORDER BY d.id DESC), '[]')
+     FROM card_decks d JOIN card_follows f ON f.deck_id = d.id AND f.user_id = :me WHERE coalesce(d.removed, 0) = 0) AS decks,
+  (SELECT count(*) FROM card_states WHERE user_id = :me AND first_day = :today) AS new_today
+""")
+
+async def prep_state(user_id: int) -> dict:
+    """Everything the Exam Prep page opens with: my subjects with their syllabus and progress, my decks with what is due."""
+    today = site_now().date()
+    me, rows, (founder, plan_key) = await asyncio.gather(prep_identity(user_id), fetch_one_off(PREP_SQL.bindparams(me=user_id, today=today.isoformat())),
+                                                         personal_plan(user_id))
+    subjects, progress, decks, new_today = rows[0]
+    subjects, progress, decks = [json.loads(value) if isinstance(value, str) else (value or []) for value in (subjects, progress, decks)]
+    syllabus_ids = sorted({s["syllabus_id"] for s in subjects if s["syllabus_id"]})
+    syllabi, units, users = [], [], []
+    if syllabus_ids:
+        syllabi, units, users = await asyncio.gather(
+            fetch_one_off(select(DBSyllabus).where(DBSyllabus.id.in_(syllabus_ids), func.coalesce(DBSyllabus.removed, 0) == 0)),
+            fetch_one_off(select(DBSyllabusUnit).where(DBSyllabusUnit.syllabus_id.in_(syllabus_ids))),
+            fetch_one_off(select(DBStudySubject.syllabus_id, func.count()).where(DBStudySubject.syllabus_id.in_(syllabus_ids)).group_by(DBStudySubject.syllabus_id)))
+    by_syllabus: dict = {}
+    for (unit,) in units:
+        by_syllabus.setdefault(unit.syllabus_id, []).append(unit)
+    used_by = dict(users)
+    cards = {s.id: syllabus_card(s, by_syllabus.get(s.id, []), me, used_by.get(s.id, 0)) for (s,) in syllabi}
+    status = {unit_id: state for unit_id, state in progress}
+    for subject in subjects:
+        syllabus = cards.get(subject["syllabus_id"])
+        subject["syllabus"] = syllabus
+        if not syllabus:
+            subject["syllabus_id"] = None
+        exam = subject["exam_date"]
+        subject["days_left"] = (datetime.fromisoformat(exam).date() - today).days if exam else None
+    due = sum(deck["due"] for deck in decks)
+    unseen = sum(max(0, deck["cards"] - deck["seen"]) for deck in decks)
+    return {"today": today.isoformat(), "me": {k: me[k] for k in ("college", "department", "teacher", "founder")},
+            "subjects": subjects, "progress": status, "decks": decks,
+            "cards": {"due": due, "new_left": max(0, PREP_NEW_CARDS_A_DAY - (new_today or 0)), "unseen": unseen,
+                      "today_total": due + min(unseen, max(0, PREP_NEW_CARDS_A_DAY - (new_today or 0)))},
+            "statuses": list(PREP_UNIT_STATUSES), "marks": list(PREP_MARKS), "paid": founder or plan_key != "free"}
+
+@app.get("/api/prep")
+async def get_prep(current_user_id: int = Depends(get_current_user_id)):
+    return await prep_state(current_user_id)
+
+PREP_GLANCE_SQL = text("""
+SELECT
+  (SELECT count(*) FROM card_states cs JOIN card_follows f ON f.user_id = cs.user_id AND f.deck_id = cs.deck_id
+     WHERE cs.user_id = :me AND cs.due_day <= :today) AS due,
+  (SELECT count(*) FROM cards c JOIN card_follows f ON f.deck_id = c.deck_id AND f.user_id = :me
+     WHERE NOT EXISTS (SELECT 1 FROM card_states cs WHERE cs.user_id = :me AND cs.card_id = c.id)) AS unseen,
+  (SELECT count(*) FROM card_states WHERE user_id = :me AND first_day = :today) AS new_today,
+  (SELECT json_build_object('name', s.name, 'exam_date', s.exam_date, 'syllabus_id', s.syllabus_id,
+       'units', (SELECT count(*) FROM syllabus_units u WHERE u.syllabus_id = s.syllabus_id),
+       'done', (SELECT count(*) FROM syllabus_progress p WHERE p.user_id = :me AND p.syllabus_id = s.syllabus_id AND p.status IN ('revised', 'confident')))
+     FROM study_subjects s WHERE s.user_id = :me AND coalesce(s.archived, 0) = 0 AND coalesce(s.exam_date, '') >= :today
+     ORDER BY s.exam_date LIMIT 1) AS exam
+""")
+
+async def prep_glance(user_id: int) -> dict:
+    """Cards to review today and the nearest exam, for Home and the evening reminder. One read."""
+    today = site_now().date()
+    rows = await fetch_one_off(PREP_GLANCE_SQL.bindparams(me=user_id, today=today.isoformat()))
+    due, unseen, new_today, exam = rows[0]
+    exam = json.loads(exam) if isinstance(exam, str) else exam
+    if exam:
+        exam["days_left"] = (datetime.fromisoformat(exam["exam_date"]).date() - today).days
+        exam["units_left"] = max(0, (exam["units"] or 0) - (exam["done"] or 0))
+    new_left = max(0, PREP_NEW_CARDS_A_DAY - (new_today or 0))
+    return {"cards_due": (due or 0) + min(unseen or 0, new_left), "exam": exam}
+
+
+# ---------- syllabi ----------
+class SyllabusUnitBody(BaseModel):
+    id: Optional[int] = None
+    title: str
+    topics: Optional[List[str]] = []
+
+class SyllabusBody(BaseModel):
+    subject: str
+    code: Optional[str] = ""
+    department: Optional[str] = ""
+    semester: Optional[int] = None
+    units: List[SyllabusUnitBody]
+
+class SubjectLinkBody(BaseModel):
+    syllabus_id: Optional[int] = None
+    exam_date: Optional[str] = None
+    clear_exam: Optional[bool] = False
+
+class UnitStatusBody(BaseModel):
+    unit_id: int
+    status: str
+
+def clean_units(units: List[SyllabusUnitBody]) -> list:
+    if not (1 <= len(units) <= PREP_MAX_UNITS):
+        raise HTTPException(status_code=400, detail=f"A syllabus has 1 to {PREP_MAX_UNITS} units.")
+    cleaned = []
+    for number, unit in enumerate(units, start=1):
+        topics = [clean_text(t, 200, "topic") for t in (unit.topics or []) if (t or "").strip()][:40]
+        cleaned.append({"id": unit.id, "number": number, "title": clean_required(unit.title, 160, f"title of unit {number}"), "topics": "\n".join(topics)})
+    return cleaned
+
+def clean_semester(value: Optional[int]) -> Optional[int]:
+    if value is not None and not (1 <= value <= 12):
+        raise HTTPException(status_code=400, detail="The semester is a number from 1 to 12.")
+    return value
+
+@app.get("/api/prep/syllabi")
+async def list_syllabi(department: Optional[str] = "", semester: Optional[int] = None, q: Optional[str] = "",
+                       current_user_id: int = Depends(get_current_user_id)):
+    """Syllabi of my college, my department first; filtered by department, semester and a search."""
+    me = await prep_identity(current_user_id)
+    if not me["college_key"]:
+        return {"syllabi": [], "college": "", "need_college": True}
+    conditions = [DBSyllabus.college_key == me["college_key"], func.coalesce(DBSyllabus.removed, 0) == 0]
+    if (department or "").strip():
+        conditions.append(DBSyllabus.department_key == college_key_of(department))
+    if semester:
+        conditions.append(DBSyllabus.semester == semester)
+    if fold_key(q):
+        conditions.append(DBSyllabus.subject_key.contains(fold_key(q)))
+    own_department = case((DBSyllabus.department_key == college_key_of(me["department"]), 0), else_=1)
+    rows = await fetch_one_off(select(DBSyllabus).where(*conditions).order_by(own_department, DBSyllabus.semester, DBSyllabus.subject).limit(200))
+    ids = [s.id for (s,) in rows]
+    units, users = [], []
+    if ids:
+        units, users = await asyncio.gather(
+            fetch_one_off(select(DBSyllabusUnit).where(DBSyllabusUnit.syllabus_id.in_(ids))),
+            fetch_one_off(select(DBStudySubject.syllabus_id, func.count()).where(DBStudySubject.syllabus_id.in_(ids)).group_by(DBStudySubject.syllabus_id)))
+    by_syllabus: dict = {}
+    for (unit,) in units:
+        by_syllabus.setdefault(unit.syllabus_id, []).append(unit)
+    used_by = dict(users)
+    return {"college": me["college"], "syllabi": [syllabus_card(s, by_syllabus.get(s.id, []), me, used_by.get(s.id, 0)) for (s,) in rows]}
+
+@app.post("/api/prep/syllabi")
+async def create_syllabus(body: SyllabusBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await prep_identity(current_user_id)
+    if not me["college_key"]:
+        raise HTTPException(status_code=400, detail="Add your college on your profile first. A syllabus is shared with your college.")
+    subject = clean_required(body.subject, 120, "subject")
+    department = clean_text(body.department, 120, "department") or me["department"]
+    semester = clean_semester(body.semester)
+    units = clean_units(body.units)
+    same = await fetch_one_off(select(DBSyllabus.id).where(
+        DBSyllabus.college_key == me["college_key"], DBSyllabus.department_key == college_key_of(department), DBSyllabus.semester == semester,
+        DBSyllabus.subject_key == fold_key(subject), func.coalesce(DBSyllabus.removed, 0) == 0))
+    if same:
+        raise HTTPException(status_code=409, detail=f"Your class already has a syllabus for {subject}. Use that one (it is listed under Find your syllabus).")
+    now_iso = utc_now_iso()
+    async with AutocommitSession() as db:
+        syllabus_id = (await db.execute(DBSyllabus.__table__.insert().values(
+            college_key=me["college_key"], college_name=me["college"], department=department, department_key=college_key_of(department), semester=semester,
+            subject=subject, subject_key=fold_key(subject), code=clean_text(body.code, 30, "subject code"), created_by=current_user_id,
+            updated_by=current_user_id, teacher_checked=1 if me["teacher"] else 0, removed=0, created_at=now_iso, updated_at=now_iso).returning(DBSyllabus.id))).scalar()
+        await db.execute(DBSyllabusUnit.__table__.insert().values([{"syllabus_id": syllabus_id, "number": u["number"], "title": u["title"], "topics": u["topics"]} for u in units]))
+    spawn_background(award_xp(current_user_id, "contribute", f"syllabus:{syllabus_id}", 5))
+    return {"id": syllabus_id}
+
+@app.put("/api/prep/syllabi/{syllabus_id}")
+async def edit_syllabus(syllabus_id: int, body: SyllabusBody, current_user_id: int = Depends(get_current_user_id)):
+    """Units keep their id (and everyone's progress) when sent back with it; units left out are removed."""
+    me = await prep_identity(current_user_id)
+    syllabus = await load_syllabus(syllabus_id, me)
+    if not can_edit_syllabus(me, syllabus):
+        raise HTTPException(status_code=403, detail="Only the person who added this syllabus or a teacher of your college can change it. You can report a mistake.")
+    units = clean_units(body.units)
+    existing = {unit_id for (unit_id,) in await fetch_one_off(select(DBSyllabusUnit.id).where(DBSyllabusUnit.syllabus_id == syllabus_id))}
+    keep = {u["id"] for u in units if u["id"] in existing}
+    gone = existing - keep
+    async with AutocommitSession() as db:
+        await db.execute(update(DBSyllabus).where(DBSyllabus.id == syllabus_id).values(
+            subject=clean_required(body.subject, 120, "subject"), subject_key=fold_key(body.subject), code=clean_text(body.code, 30, "subject code"),
+            semester=clean_semester(body.semester), updated_by=current_user_id, updated_at=utc_now_iso(),
+            teacher_checked=1 if (me["teacher"] or syllabus.teacher_checked) else 0))
+        for u in units:
+            if u["id"] in keep:
+                await db.execute(update(DBSyllabusUnit).where(DBSyllabusUnit.id == u["id"]).values(number=u["number"], title=u["title"], topics=u["topics"]))
+            else:
+                await db.execute(DBSyllabusUnit.__table__.insert().values(syllabus_id=syllabus_id, number=u["number"], title=u["title"], topics=u["topics"]))
+        if gone:
+            await db.execute(delete(DBSyllabusUnit).where(DBSyllabusUnit.id.in_(gone)))
+            await db.execute(delete(DBSyllabusProgress).where(DBSyllabusProgress.unit_id.in_(gone)))
+            await db.execute(update(DBExamQuestion).where(DBExamQuestion.unit_id.in_(gone)).values(unit_id=None))
+    return {"id": syllabus_id}
+
+@app.delete("/api/prep/syllabi/{syllabus_id}")
+async def delete_syllabus(syllabus_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Taken down for everyone. The person who added it can do that only while nobody else uses it."""
+    me = await prep_identity(current_user_id)
+    syllabus = await load_syllabus(syllabus_id, me)
+    if not can_edit_syllabus(me, syllabus):
+        raise HTTPException(status_code=403, detail="Only the person who added this syllabus or a teacher of your college can remove it.")
+    others = await fetch_one_off(select(func.count()).select_from(DBStudySubject).where(DBStudySubject.syllabus_id == syllabus_id, DBStudySubject.user_id != current_user_id))
+    if others[0][0] and not (me["teacher"] or me["founder"]):
+        raise HTTPException(status_code=409, detail="Classmates are using this syllabus, so it stays. You can edit it instead.")
+    await remove_syllabus(syllabus_id)
+    return {"removed": syllabus_id}
+
+async def remove_syllabus(syllabus_id: int):
+    await run_one_off(update(DBSyllabus).where(DBSyllabus.id == syllabus_id).values(removed=1, updated_at=utc_now_iso()))
+    await run_one_off(update(DBStudySubject).where(DBStudySubject.syllabus_id == syllabus_id).values(syllabus_id=None))
+
+@app.put("/api/prep/subjects/{subject_id}")
+async def link_subject(subject_id: int, body: SubjectLinkBody, current_user_id: int = Depends(get_current_user_id)):
+    """Links one of my My Study subjects to a syllabus and/or sets its exam date."""
+    await require_own_subject(current_user_id, subject_id)
+    values: dict = {}
+    if body.syllabus_id is not None:
+        if body.syllabus_id:
+            await load_syllabus(body.syllabus_id, await prep_identity(current_user_id))
+        values["syllabus_id"] = body.syllabus_id or None
+    if body.clear_exam:
+        values["exam_date"] = ""
+    elif body.exam_date:
+        try:
+            exam = datetime.fromisoformat(body.exam_date).date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Give the exam date as a date.")
+        if not (site_now().date() - timedelta(days=30) <= exam <= site_now().date() + timedelta(days=400)):
+            raise HTTPException(status_code=400, detail="That exam date is too far away.")
+        values["exam_date"] = exam.isoformat()
+    if not values:
+        raise HTTPException(status_code=400, detail="Nothing to change.")
+    await run_one_off(update(DBStudySubject).where(DBStudySubject.id == subject_id, DBStudySubject.user_id == current_user_id).values(**values))
+    return {"id": subject_id, **values}
+
+class PrepSubjectBody(BaseModel):
+    syllabus_id: int
+
+@app.post("/api/prep/subjects")
+async def add_subject_from_syllabus(body: PrepSubjectBody, current_user_id: int = Depends(get_current_user_id)):
+    """Adds a syllabus's subject to My Study, already linked."""
+    syllabus = await load_syllabus(body.syllabus_id, await prep_identity(current_user_id))
+    count, same = await asyncio.gather(
+        fetch_one_off(select(func.count()).select_from(DBStudySubject).where(DBStudySubject.user_id == current_user_id)),
+        fetch_one_off(select(DBStudySubject.id).where(DBStudySubject.user_id == current_user_id, DBStudySubject.syllabus_id == syllabus.id)))
+    if same:
+        return {"id": same[0][0]}
+    if count[0][0] >= STUDY_MAX_SUBJECTS:
+        raise HTTPException(status_code=400, detail=f"You can keep up to {STUDY_MAX_SUBJECTS} subjects.")
+    rows = await run_returning(DBStudySubject.__table__.insert().values(
+        user_id=current_user_id, name=syllabus.subject, code=syllabus.code or "", goal=75, base_attended=0, base_total=0, archived=0,
+        syllabus_id=syllabus.id, exam_date="", created_at=utc_now_iso()).returning(DBStudySubject.id))
+    return {"id": rows[0][0]}
+
+@app.put("/api/prep/progress")
+async def set_unit_status(body: UnitStatusBody, current_user_id: int = Depends(get_current_user_id)):
+    if body.status not in PREP_UNIT_STATUSES:
+        raise HTTPException(status_code=400, detail="Pick how far you are with this unit.")
+    me = await prep_identity(current_user_id)
+    rows = await fetch_one_off(select(DBSyllabusUnit.syllabus_id).where(DBSyllabusUnit.id == body.unit_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That unit is no longer in the syllabus.")
+    await load_syllabus(rows[0][0], me)
+    values = {"status": body.status, "updated_at": utc_now_iso()}
+    await run_one_off(pg_insert(DBSyllabusProgress).values(user_id=current_user_id, syllabus_id=rows[0][0], unit_id=body.unit_id, **values)
+                      .on_conflict_do_update(index_elements=["user_id", "unit_id"], set_=values))
+    xp = await award_xp(current_user_id, "unit", f"unit:{body.unit_id}", 3) if body.status in ("revised", "confident") else {"xp": 0}
+    return {"unit_id": body.unit_id, "status": body.status, "xp": xp}
+
+
+# ---------- past-paper questions ----------
+class ExamQuestionBody(BaseModel):
+    syllabus_id: int
+    unit_id: Optional[int] = None
+    text: str
+    marks: Optional[int] = None
+    year: Optional[int] = None
+    source_note_id: Optional[int] = None
+
+class QuestionYearBody(BaseModel):
+    year: int
+
+class QuestionEditBody(BaseModel):
+    unit_id: Optional[int] = None
+    marks: Optional[int] = None
+    text: Optional[str] = None
+
+def clean_year(year: Optional[int]) -> Optional[int]:
+    if year is not None and not (1990 <= year <= site_now().year):
+        raise HTTPException(status_code=400, detail="Give the exam year, like 2024.")
+    return year
+
+async def load_question(question_id: int, me: dict):
+    rows = await fetch_one_off(select(DBExamQuestion, DBSyllabus).join(DBSyllabus, DBSyllabus.id == DBExamQuestion.syllabus_id)
+                               .where(DBExamQuestion.id == question_id, func.coalesce(DBExamQuestion.removed, 0) == 0))
+    if not rows or (rows[0][1].college_key != me["college_key"] and not me["founder"]):
+        raise HTTPException(status_code=404, detail="That question is no longer here.")
+    return rows[0]
+
+@app.get("/api/prep/syllabi/{syllabus_id}/questions")
+async def list_exam_questions(syllabus_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """The syllabus's questions, asked-most first. Names are left out: who added a question does not matter."""
+    me = await prep_identity(current_user_id)
+    syllabus = await load_syllabus(syllabus_id, me)
+    years = func.count(func.distinct(DBExamQuestionYear.year))
+    rows = await fetch_one_off(
+        select(DBExamQuestion, func.array_agg(func.distinct(DBExamQuestionYear.year)), years,
+               select(func.count()).where(DBExamQuestionVote.question_id == DBExamQuestion.id).scalar_subquery(),
+               exists().where(DBExamQuestionVote.question_id == DBExamQuestion.id, DBExamQuestionVote.user_id == current_user_id))
+        .outerjoin(DBExamQuestionYear, DBExamQuestionYear.question_id == DBExamQuestion.id)
+        .where(DBExamQuestion.syllabus_id == syllabus_id, func.coalesce(DBExamQuestion.removed, 0) == 0)
+        .group_by(DBExamQuestion.id).limit(1000))
+    questions = []
+    for question, year_list, year_count, votes, voted in rows:
+        questions.append({"id": question.id, "unit_id": question.unit_id, "text": question.text or "", "marks": question.marks,
+                          "years": sorted([y for y in (year_list or []) if y], reverse=True), "votes": votes or 0, "voted": bool(voted),
+                          "mine": question.added_by == current_user_id, "source_note_id": question.source_note_id,
+                          "can_remove": question.added_by == current_user_id or me["founder"] or (me["teacher"] and me["college_key"] == syllabus.college_key)})
+    questions.sort(key=lambda q: (-len(q["years"]), -q["votes"], -(q["years"][0] if q["years"] else 0), q["id"]))
+    papers = sorted({y for q in questions for y in q["years"]}, reverse=True)
+    return {"syllabus_id": syllabus_id, "questions": questions, "papers": papers}
+
+@app.post("/api/prep/questions")
+async def add_exam_question(body: ExamQuestionBody, current_user_id: int = Depends(get_current_user_id)):
+    """A question from a past paper. If the same question is already listed, only the year is added to it."""
+    me = await prep_identity(current_user_id)
+    await load_syllabus(body.syllabus_id, me)
+    text_value = clean_required(body.text, 2000, "question")
+    key = fold_key(text_value)
+    if len(key) < 8:
+        raise HTTPException(status_code=400, detail="Type the whole question as it was asked.")
+    if body.marks is not None and body.marks not in PREP_MARKS:
+        raise HTTPException(status_code=400, detail="Pick the marks the question carried.")
+    year = clean_year(body.year)
+    if body.unit_id:
+        unit = await fetch_one_off(select(DBSyllabusUnit.id).where(DBSyllabusUnit.id == body.unit_id, DBSyllabusUnit.syllabus_id == body.syllabus_id))
+        if not unit:
+            raise HTTPException(status_code=400, detail="That unit is not in this syllabus.")
+    now_iso = utc_now_iso()
+    same = await fetch_one_off(select(DBExamQuestion.id).where(DBExamQuestion.syllabus_id == body.syllabus_id, DBExamQuestion.text_key == key,
+                                                               func.coalesce(DBExamQuestion.removed, 0) == 0))
+    merged = bool(same)
+    if same:
+        question_id = same[0][0]
+    else:
+        rows = await run_returning(DBExamQuestion.__table__.insert().values(
+            syllabus_id=body.syllabus_id, unit_id=body.unit_id or None, text=text_value, text_key=key, marks=body.marks,
+            source_note_id=body.source_note_id or None, added_by=current_user_id, removed=0, created_at=now_iso).returning(DBExamQuestion.id))
+        question_id = rows[0][0]
+    if year:
+        await run_one_off(pg_insert(DBExamQuestionYear).values(question_id=question_id, year=year, added_by=current_user_id, created_at=now_iso)
+                          .on_conflict_do_nothing(index_elements=["question_id", "year"]))
+    xp = await award_xp(current_user_id, "contribute", f"question:{question_id}:{year or 0}", 5)
+    return {"id": question_id, "merged": merged, "xp": xp}
+
+@app.post("/api/prep/questions/{question_id}/years")
+async def add_question_year(question_id: int, body: QuestionYearBody, current_user_id: int = Depends(get_current_user_id)):
+    await load_question(question_id, await prep_identity(current_user_id))
+    year = clean_year(body.year)
+    saved = await run_returning(pg_insert(DBExamQuestionYear).values(question_id=question_id, year=year, added_by=current_user_id, created_at=utc_now_iso())
+                                .on_conflict_do_nothing(index_elements=["question_id", "year"]).returning(DBExamQuestionYear.id))
+    xp = await award_xp(current_user_id, "contribute", f"question:{question_id}:{year}", 5) if saved else {"xp": 0}
+    return {"id": question_id, "year": year, "added": bool(saved), "xp": xp}
+
+@app.post("/api/prep/questions/{question_id}/vote")
+async def vote_question(question_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Toggles 'important'."""
+    await load_question(question_id, await prep_identity(current_user_id))
+    removed = await run_returning(delete(DBExamQuestionVote).where(DBExamQuestionVote.question_id == question_id, DBExamQuestionVote.user_id == current_user_id)
+                                  .returning(DBExamQuestionVote.id))
+    if not removed:
+        await run_one_off(pg_insert(DBExamQuestionVote).values(question_id=question_id, user_id=current_user_id).on_conflict_do_nothing(index_elements=["question_id", "user_id"]))
+    return {"id": question_id, "voted": not removed}
+
+@app.put("/api/prep/questions/{question_id}")
+async def edit_exam_question(question_id: int, body: QuestionEditBody, current_user_id: int = Depends(get_current_user_id)):
+    """The person who added it (or a teacher, the founder) fixes the unit, the marks or a typo."""
+    me = await prep_identity(current_user_id)
+    question, syllabus = await load_question(question_id, me)
+    if question.added_by != current_user_id and not ((me["teacher"] and me["college_key"] == syllabus.college_key) or me["founder"]):
+        raise HTTPException(status_code=403, detail="Only the person who added this question or a teacher can change it.")
+    values: dict = {}
+    if body.unit_id is not None:
+        if body.unit_id and not await fetch_one_off(select(DBSyllabusUnit.id).where(DBSyllabusUnit.id == body.unit_id, DBSyllabusUnit.syllabus_id == syllabus.id)):
+            raise HTTPException(status_code=400, detail="That unit is not in this syllabus.")
+        values["unit_id"] = body.unit_id or None
+    if body.marks is not None:
+        if body.marks and body.marks not in PREP_MARKS:
+            raise HTTPException(status_code=400, detail="Pick the marks the question carried.")
+        values["marks"] = body.marks or None
+    if body.text is not None:
+        values["text"] = clean_required(body.text, 2000, "question")
+        values["text_key"] = fold_key(values["text"])
+    if values:
+        await run_one_off(update(DBExamQuestion).where(DBExamQuestion.id == question_id).values(**values))
+    return {"id": question_id}
+
+@app.delete("/api/prep/questions/{question_id}")
+async def delete_exam_question(question_id: int, current_user_id: int = Depends(get_current_user_id)):
+    me = await prep_identity(current_user_id)
+    question, syllabus = await load_question(question_id, me)
+    if question.added_by != current_user_id and not ((me["teacher"] and me["college_key"] == syllabus.college_key) or me["founder"]):
+        raise HTTPException(status_code=403, detail="Only the person who added this question or a teacher can remove it. You can report it.")
+    await run_one_off(update(DBExamQuestion).where(DBExamQuestion.id == question_id).values(removed=1))
+    return {"removed": question_id}
+
+
+# ---------- flashcard decks ----------
+class DeckBody(BaseModel):
+    title: str
+    syllabus_id: Optional[int] = None
+    unit_id: Optional[int] = None
+    subject: Optional[str] = ""
+    public: Optional[bool] = False
+
+class CardBody(BaseModel):
+    front: str
+    back: str
+
+class CardsBody(BaseModel):
+    cards: List[CardBody]
+
+class ReviewBody(BaseModel):
+    card_id: int
+    grade: int
+
+def clean_card(card: CardBody) -> dict:
+    return {"front": clean_required(card.front, 600, "front of the card"), "back": clean_required(card.back, 2000, "back of the card")}
+
+async def load_deck(deck_id: int, user_id: int, me: Optional[dict] = None, owner: bool = False):
+    """A deck the person may see: their own, or a public one of their college. owner=True: only their own (or the founder)."""
+    rows = await fetch_one_off(select(DBCardDeck).where(DBCardDeck.id == deck_id, func.coalesce(DBCardDeck.removed, 0) == 0))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That deck is no longer here.")
+    deck = rows[0][0]
+    if deck.owner_id == user_id:
+        return deck
+    me = me or await prep_identity(user_id)
+    if owner and not me["founder"]:
+        raise HTTPException(status_code=403, detail="Only the person who made this deck can change it.")
+    if not me["founder"] and not (deck.public and deck.college_key == me["college_key"]):
+        raise HTTPException(status_code=404, detail="That deck is private, or it is for another college.")
+    return deck
+
+def deck_card(deck, cards: int = 0, followers: int = 0, following: bool = False, me_id: int = 0) -> dict:
+    return {"id": deck.id, "title": deck.title or "", "syllabus_id": deck.syllabus_id, "unit_id": deck.unit_id, "subject": deck.subject or "",
+            "public": bool(deck.public), "mine": deck.owner_id == me_id, "made_by_ai": bool(deck.made_by_ai), "cards": cards,
+            "followers": followers, "following": following, "updated_at": deck.updated_at or ""}
+
+async def deck_syllabus_fields(body: DeckBody, me: dict) -> dict:
+    subject = clean_text(body.subject, 120, "subject")
+    if body.syllabus_id:
+        syllabus = await load_syllabus(body.syllabus_id, me)
+        subject = syllabus.subject or subject
+        if body.unit_id and not await fetch_one_off(select(DBSyllabusUnit.id).where(DBSyllabusUnit.id == body.unit_id, DBSyllabusUnit.syllabus_id == syllabus.id)):
+            raise HTTPException(status_code=400, detail="That unit is not in this syllabus.")
+    return {"syllabus_id": body.syllabus_id or None, "unit_id": (body.unit_id or None) if body.syllabus_id else None, "subject": subject}
+
+@app.get("/api/prep/decks")
+async def browse_decks(syllabus_id: Optional[int] = None, q: Optional[str] = "", current_user_id: int = Depends(get_current_user_id)):
+    """Public decks of my college (for a syllabus, or by search), most followed first."""
+    me = await prep_identity(current_user_id)
+    followers = select(func.count()).where(DBCardFollow.deck_id == DBCardDeck.id, DBCardFollow.user_id != DBCardDeck.owner_id).scalar_subquery()
+    count = select(func.count()).where(DBCard.deck_id == DBCardDeck.id).scalar_subquery()
+    following = exists().where(DBCardFollow.deck_id == DBCardDeck.id, DBCardFollow.user_id == current_user_id)
+    conditions = [DBCardDeck.public == 1, DBCardDeck.college_key == me["college_key"], func.coalesce(DBCardDeck.removed, 0) == 0, count > 0]
+    if syllabus_id:
+        conditions.append(DBCardDeck.syllabus_id == syllabus_id)
+    if (q or "").strip():
+        like = f"%{q.strip()[:60]}%"
+        conditions.append(or_(DBCardDeck.title.ilike(like), DBCardDeck.subject.ilike(like)))
+    rows = await fetch_one_off(select(DBCardDeck, count, followers, following).where(*conditions).order_by(followers.desc(), DBCardDeck.id.desc()).limit(60))
+    return {"decks": [deck_card(d, c, f, bool(g), current_user_id) for d, c, f, g in rows]}
+
+@app.get("/api/prep/decks/{deck_id}")
+async def get_deck(deck_id: int, current_user_id: int = Depends(get_current_user_id)):
+    deck = await load_deck(deck_id, current_user_id)
+    cards, followers, following = await asyncio.gather(
+        fetch_one_off(select(DBCard.id, DBCard.front, DBCard.back).where(DBCard.deck_id == deck_id).order_by(DBCard.position, DBCard.id)),
+        fetch_one_off(select(func.count()).where(DBCardFollow.deck_id == deck_id, DBCardFollow.user_id != deck.owner_id)),
+        fetch_one_off(select(DBCardFollow.id).where(DBCardFollow.deck_id == deck_id, DBCardFollow.user_id == current_user_id)))
+    card = deck_card(deck, len(cards), followers[0][0], bool(following), current_user_id)
+    card["items"] = [{"id": i, "front": f or "", "back": b or ""} for i, f, b in cards]
+    return card
+
+@app.post("/api/prep/decks")
+async def create_deck(body: DeckBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await prep_identity(current_user_id)
+    owned = await fetch_one_off(select(func.count()).select_from(DBCardDeck).where(DBCardDeck.owner_id == current_user_id, func.coalesce(DBCardDeck.removed, 0) == 0))
+    if owned[0][0] >= PREP_MAX_DECKS:
+        raise HTTPException(status_code=400, detail=f"You can keep up to {PREP_MAX_DECKS} decks.")
+    fields = await deck_syllabus_fields(body, me)
+    if body.public and not me["college_key"]:
+        raise HTTPException(status_code=400, detail="Add your college on your profile to share a deck with it.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBCardDeck.__table__.insert().values(
+        owner_id=current_user_id, title=clean_required(body.title, 120, "deck name"), college_key=me["college_key"], public=1 if body.public else 0,
+        made_by_ai=0, removed=0, created_at=now_iso, updated_at=now_iso, **fields).returning(DBCardDeck.id))
+    deck_id = rows[0][0]
+    await run_one_off(pg_insert(DBCardFollow).values(user_id=current_user_id, deck_id=deck_id, created_at=now_iso).on_conflict_do_nothing(index_elements=["user_id", "deck_id"]))
+    return {"id": deck_id}
+
+@app.put("/api/prep/decks/{deck_id}")
+async def edit_deck(deck_id: int, body: DeckBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await prep_identity(current_user_id)
+    await load_deck(deck_id, current_user_id, me, owner=True)
+    fields = await deck_syllabus_fields(body, me)
+    await run_one_off(update(DBCardDeck).where(DBCardDeck.id == deck_id).values(
+        title=clean_required(body.title, 120, "deck name"), public=1 if body.public else 0, updated_at=utc_now_iso(), **fields))
+    return {"id": deck_id}
+
+@app.delete("/api/prep/decks/{deck_id}")
+async def delete_deck(deck_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """The owner's delete removes it for its followers too (their review history of it goes)."""
+    await load_deck(deck_id, current_user_id, owner=True)
+    await remove_deck(deck_id)
+    return {"removed": deck_id}
+
+async def remove_deck(deck_id: int):
+    await run_one_off(update(DBCardDeck).where(DBCardDeck.id == deck_id).values(removed=1, updated_at=utc_now_iso()))
+    await run_one_off(delete(DBCardFollow).where(DBCardFollow.deck_id == deck_id))
+    await run_one_off(delete(DBCardState).where(DBCardState.deck_id == deck_id))
+
+@app.post("/api/prep/decks/{deck_id}/cards")
+async def add_cards(deck_id: int, body: CardsBody, current_user_id: int = Depends(get_current_user_id)):
+    await load_deck(deck_id, current_user_id, owner=True)
+    cards = [clean_card(card) for card in body.cards]
+    if not cards:
+        raise HTTPException(status_code=400, detail="Add at least one card.")
+    count = (await fetch_one_off(select(func.count(), func.coalesce(func.max(DBCard.position), 0)).where(DBCard.deck_id == deck_id)))[0]
+    if count[0] + len(cards) > PREP_MAX_CARDS:
+        raise HTTPException(status_code=400, detail=f"A deck holds up to {PREP_MAX_CARDS} cards. Start a second deck for the rest.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBCard.__table__.insert().values([{"deck_id": deck_id, "position": count[1] + i + 1, "created_at": now_iso, **card}
+                                                                 for i, card in enumerate(cards)]).returning(DBCard.id))
+    await run_one_off(update(DBCardDeck).where(DBCardDeck.id == deck_id).values(updated_at=now_iso))
+    return {"ids": [row[0] for row in rows]}
+
+async def load_own_card(card_id: int, user_id: int):
+    rows = await fetch_one_off(select(DBCard.deck_id).where(DBCard.id == card_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That card is no longer here.")
+    await load_deck(rows[0][0], user_id, owner=True)
+    return rows[0][0]
+
+@app.put("/api/prep/cards/{card_id}")
+async def edit_card(card_id: int, body: CardBody, current_user_id: int = Depends(get_current_user_id)):
+    await load_own_card(card_id, current_user_id)
+    await run_one_off(update(DBCard).where(DBCard.id == card_id).values(**clean_card(body)))
+    return {"id": card_id}
+
+@app.delete("/api/prep/cards/{card_id}")
+async def delete_card(card_id: int, current_user_id: int = Depends(get_current_user_id)):
+    await load_own_card(card_id, current_user_id)
+    await run_one_off(delete(DBCard).where(DBCard.id == card_id))
+    await run_one_off(delete(DBCardState).where(DBCardState.card_id == card_id))
+    return {"removed": card_id}
+
+@app.post("/api/prep/decks/{deck_id}/follow")
+async def follow_deck(deck_id: int, current_user_id: int = Depends(get_current_user_id)):
+    deck = await load_deck(deck_id, current_user_id)
+    saved = await run_returning(pg_insert(DBCardFollow).values(user_id=current_user_id, deck_id=deck_id, created_at=utc_now_iso())
+                                .on_conflict_do_nothing(index_elements=["user_id", "deck_id"]).returning(DBCardFollow.id))
+    if saved and deck.owner_id != current_user_id:
+        spawn_background(award_xp(deck.owner_id, "contribute", f"follow:{deck_id}:{current_user_id}", 5))
+    return {"id": deck_id, "following": True}
+
+@app.delete("/api/prep/decks/{deck_id}/follow")
+async def unfollow_deck(deck_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Stops reviewing a deck (and forgets where I was with it). Own decks are deleted instead."""
+    rows = await fetch_one_off(select(DBCardDeck.owner_id).where(DBCardDeck.id == deck_id))
+    if rows and rows[0][0] == current_user_id:
+        raise HTTPException(status_code=400, detail="This is your own deck. Delete it instead.")
+    await run_one_off(delete(DBCardFollow).where(DBCardFollow.deck_id == deck_id, DBCardFollow.user_id == current_user_id))
+    await run_one_off(delete(DBCardState).where(DBCardState.deck_id == deck_id, DBCardState.user_id == current_user_id))
+    return {"id": deck_id, "following": False}
+
+
+# ---------- reviewing ----------
+REVIEW_SQL = text("""
+SELECT c.id, c.deck_id, c.front, c.back, d.title, cs.reps, cs.interval_days, cs.due_day
+FROM card_states cs JOIN cards c ON c.id = cs.card_id JOIN card_decks d ON d.id = c.deck_id
+JOIN card_follows f ON f.user_id = :me AND f.deck_id = d.id
+WHERE cs.user_id = :me AND cs.due_day <= :today AND coalesce(d.removed, 0) = 0 AND (:deck = 0 OR d.id = :deck)
+ORDER BY cs.due_day, cs.interval_days, c.id LIMIT :batch
+""")
+NEW_CARDS_SQL = text("""
+SELECT c.id, c.deck_id, c.front, c.back, d.title
+FROM cards c JOIN card_decks d ON d.id = c.deck_id JOIN card_follows f ON f.user_id = :me AND f.deck_id = d.id
+WHERE coalesce(d.removed, 0) = 0 AND (:deck = 0 OR d.id = :deck)
+  AND NOT EXISTS (SELECT 1 FROM card_states cs WHERE cs.user_id = :me AND cs.card_id = c.id)
+ORDER BY d.id, c.position, c.id LIMIT :room
+""")
+
+@app.get("/api/prep/review")
+async def review_queue(deck: Optional[int] = 0, current_user_id: int = Depends(get_current_user_id)):
+    """Today's cards: the due ones first, then new ones up to the new-cards-a-day limit."""
+    today = site_now().date().isoformat()
+    due, new_today = await asyncio.gather(
+        fetch_one_off(REVIEW_SQL.bindparams(me=current_user_id, today=today, deck=deck or 0, batch=PREP_REVIEW_BATCH)),
+        fetch_one_off(select(func.count()).select_from(DBCardState).where(DBCardState.user_id == current_user_id, DBCardState.first_day == today)))
+    room = max(0, min(PREP_NEW_CARDS_A_DAY - new_today[0][0], PREP_REVIEW_BATCH - len(due)))
+    fresh = await fetch_one_off(NEW_CARDS_SQL.bindparams(me=current_user_id, deck=deck or 0, room=room)) if room else []
+    as_card = lambda row, new: {"id": row.id, "deck_id": row.deck_id, "front": row.front or "", "back": row.back or "", "deck": row.title or "", "new": new}
+    return {"today": today, "cards": [as_card(row, False) for row in due] + [as_card(row, True) for row in fresh],
+            "new_left": room, "new_a_day": PREP_NEW_CARDS_A_DAY}
+
+@app.post("/api/prep/review")
+async def review_card(body: ReviewBody, current_user_id: int = Depends(get_current_user_id)):
+    if body.grade not in CARD_GRADES:
+        raise HTTPException(status_code=400, detail="Grade the card from 1 (again) to 4 (easy).")
+    rows, state_rows = await asyncio.gather(
+        fetch_one_off(select(DBCard.deck_id).join(DBCardFollow, and_(DBCardFollow.deck_id == DBCard.deck_id, DBCardFollow.user_id == current_user_id))
+                      .where(DBCard.id == body.card_id)),
+        fetch_one_off(select(DBCardState).where(DBCardState.user_id == current_user_id, DBCardState.card_id == body.card_id)))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That card is not in a deck you review.")
+    today = site_now().date()
+    old = state_rows[0][0] if state_rows else None
+    state = sm2_next({"ease": old.ease, "interval_days": old.interval_days, "reps": old.reps, "lapses": old.lapses} if old else None, body.grade, today)
+    values = {**state, "last_day": today.isoformat()}
+    await run_one_off(pg_insert(DBCardState).values(user_id=current_user_id, card_id=body.card_id, deck_id=rows[0][0], first_day=today.isoformat(), **values)
+                      .on_conflict_do_update(index_elements=["user_id", "card_id"], set_=values))
+    xp = await award_xp(current_user_id, "card", f"card:{body.card_id}:{today.isoformat()}", 1)
+    return {"card_id": body.card_id, "grade": CARD_GRADES[body.grade], **state, "again_today": state["interval_days"] == 0, "xp": xp}
+
+
+# ---------- reports ----------
+async def syllabus_report_target(target_id: int, reporter_id: int) -> tuple:
+    me = await prep_identity(reporter_id)
+    syllabus = await load_syllabus(target_id, me)
+    return syllabus.created_by, f"Syllabus: {syllabus.subject} ({syllabus.department}, semester {syllabus.semester or '?'})", "prep.html"
+
+async def question_report_target(target_id: int, reporter_id: int) -> tuple:
+    question, _ = await load_question(target_id, await prep_identity(reporter_id))
+    return question.added_by, snapshot_text(question.text), "prep.html"
+
+async def deck_report_target(target_id: int, reporter_id: int) -> tuple:
+    deck = await load_deck(target_id, reporter_id)
+    return deck.owner_id, f"Flashcard deck: {deck.title}", "prep.html"
+
+async def remove_question(target_id: int):
+    await run_one_off(update(DBExamQuestion).where(DBExamQuestion.id == target_id).values(removed=1))
+
+EXTRA_REPORT_TARGETS.update({"syllabus": (syllabus_report_target, remove_syllabus), "exam_question": (question_report_target, remove_question),
+                             "card_deck": (deck_report_target, remove_deck)})
+
+
+# ==========================================
+# 34. AI STUDY TUTOR (tutor.html)
+# ==========================================
+# Doubts, exam-style answers (2, 5, 10 marks), past-paper questions explained, and AI-made flashcards and quizzes for
+# a syllabus unit or a shared note. Uses the same Claude client as the helper bot (ANTHROPIC_API_KEY in .env), with the
+# cheapest fast model the founder picked. Every call's tokens are written to ai_usage; when the month's estimated spend
+# reaches AI_MONTHLY_BUDGET_INR the free accounts pause first (at 80%), then everyone (at 100%).
+class DBTutorThread(Base):
+    __tablename__ = "tutor_threads"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    subject_id = Column(Integer, nullable=True)
+    title = Column(String, default="")
+    mode = Column(String, default="doubt")
+    created_at = Column(String)
+    updated_at = Column(String, index=True)
+
+class DBTutorMessage(Base):
+    __tablename__ = "tutor_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    thread_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    role = Column(String)                          # user, assistant
+    content = Column(String)
+    created_at = Column(String)
+
+class DBTutorQuiz(Base):
+    __tablename__ = "tutor_quizzes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    title = Column(String, default="")
+    questions = Column(String)                     # JSON list of {q, options, answer, why}
+    score = Column(Integer, nullable=True)
+    created_at = Column(String)
+    finished_at = Column(String, default="")
+
+class DBAiUsage(Base):
+    """One model call: who, what for, tokens and the estimated cost (millionths of a US dollar)."""
+    __tablename__ = "ai_usage"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    day = Column(String, index=True)
+    month = Column(String, index=True)
+    feature = Column(String)                       # doubt, answer, explain, cards, quiz, draft
+    model = Column(String)
+    input_tokens = Column(Integer, default=0)
+    output_tokens = Column(Integer, default=0)
+    cache_read_tokens = Column(Integer, default=0)
+    cache_write_tokens = Column(Integer, default=0)
+    cost_micro_usd = Column(Integer, default=0)
+    created_at = Column(String)
+
+USER_DATA_ERASED.update({"tutor_threads": ("user_id",), "tutor_messages": ("user_id",), "tutor_quizzes": ("user_id",)})
+USER_DATA_KEPT.update({"ai_usage": ("user_id",)})        # a cost record, like payments; it holds no content
+for _registry in (USER_DATA_ERASED, USER_DATA_KEPT):
+    for _table in ("tutor_threads", "tutor_messages", "tutor_quizzes", "ai_usage"):
+        assert all(column in Base.metadata.tables[_table].c for column in _registry.get(_table, ()))
+SCHEMA_UPGRADES.append("CREATE INDEX IF NOT EXISTS ix_tutor_messages_thread ON tutor_messages (thread_id, id)")
+
+TUTOR_MODEL = "claude-haiku-5-5"       # the cheapest fast model (the founder's choice); quality per rupee
+# US dollars per million tokens for TUTOR_MODEL (prompts under 100K tokens). Cache prices are estimates (10% and 125% of input).
+TUTOR_PRICE = {"input": 0.10, "output": 0.50, "cache_read": 0.01, "cache_write": 0.125}
+USD_TO_INR = float(os.getenv("USD_TO_INR", "88") or 88)
+AI_BUDGET_DEFAULT_INR = 1000
+TUTOR_MODES = ("doubt", "answer", "explain")
+TUTOR_ANSWER_MARKS = (2, 3, 5, 8, 10, 15)
+TUTOR_HISTORY = 12                     # earlier messages of a thread sent back to the model
+TUTOR_KEEP_DAYS = 90
+TUTOR_MAX_QUESTION = 3000
+TUTOR_NOTE_MAX_BYTES = 8 * 1024 * 1024
+TUTOR_NOTE_TYPES = {".pdf": ("document", "application/pdf"), ".png": ("image", "image/png"), ".jpg": ("image", "image/jpeg"), ".jpeg": ("image", "image/jpeg"), ".webp": ("image", "image/webp")}
+tutor_state = {"spend_month": "", "spend_micro": 0, "spend_at": 0.0}
+
+TUTOR_SYSTEM = (
+    "You are the Connect2Minds study tutor: a patient, sharp tutor for Indian college students (engineering, science, commerce, "
+    "arts, diploma). Students come to you the night before exams, after a confusing lecture, or while solving previous-year papers.\n\n"
+    "How you teach:\n"
+    "- Plain, clear English that a second-year student follows on the first read. Define a term the first time you use it.\n"
+    "- Start with the direct answer, then the explanation. Use a small worked example whenever it helps.\n"
+    "- For a doubt, stay focused: usually 2 to 4 short paragraphs or a short list. Offer to go deeper instead of writing everything.\n"
+    "- Use the syllabus units given below as the scope. If the student's university or syllabus differs from what you expect, "
+    "follow the syllabus given. Do not invent syllabus facts, university rules, exam dates or marking schemes.\n"
+    "- If you are not sure of something (a formula constant, a date, a definition that varies between textbooks), say so briefly.\n"
+    "- Code: give it in a fenced block with the language named, keep it short and runnable, and explain the key lines.\n"
+    "- Maths: write it in plain text (x^2, sqrt(n), a/b). The page does not render LaTeX.\n"
+    "- Help the student learn. When a message is clearly an assignment someone will submit for marks, explain the method and walk "
+    "through it with them rather than handing over a finished submission. Past papers, practice and exam preparation are fine to "
+    "answer in full.\n\n"
+    "Writing an exam answer (when the student asks for an N-mark answer):\n"
+    "- Write it the way a well-prepared student would write it in the answer booklet of an Indian university exam.\n"
+    "- 2 marks: a precise definition or statement plus one example or key point, 3 to 5 lines.\n"
+    "- 3 to 5 marks: a one-line introduction, then 4 to 6 numbered points with **bold** key terms, a small example or diagram "
+    "described in words, about 150 to 250 words.\n"
+    "- 8 to 15 marks: a heading, an introduction, the explanation in numbered sub-points under ### sub-headings, a labelled diagram "
+    "described in words (or a simple text diagram in a code block), an example, advantages and disadvantages or a comparison table "
+    "where the topic has them, and a short conclusion. About 400 to 700 words for 10 marks.\n"
+    "- After the answer, add one line starting 'Examiner tip:' with what earns the marks for this question.\n\n"
+    "Formatting: Markdown with ### headings, bullet or numbered lists, **bold** for key terms, tables with | when comparing, "
+    "fenced code blocks for code. No HTML."
+)
+
+
+def tutor_cost_micro(usage) -> int:
+    """Estimated cost of one call in millionths of a dollar, from the response's usage."""
+    get = lambda name: int(getattr(usage, name, 0) or 0)
+    dollars = (get("input_tokens") * TUTOR_PRICE["input"] + get("output_tokens") * TUTOR_PRICE["output"]
+               + get("cache_read_input_tokens") * TUTOR_PRICE["cache_read"] + get("cache_creation_input_tokens") * TUTOR_PRICE["cache_write"]) / 1_000_000
+    return round(dollars * 1_000_000)
+
+async def record_ai_usage(user_id: int, feature: str, usage, model: str = TUTOR_MODEL):
+    try:
+        cost = tutor_cost_micro(usage)
+        now = site_now()
+        await run_one_off(DBAiUsage.__table__.insert().values(
+            user_id=user_id, day=now.date().isoformat(), month=now.strftime("%Y-%m"), feature=feature, model=model,
+            input_tokens=int(getattr(usage, "input_tokens", 0) or 0), output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
+            cache_read_tokens=int(getattr(usage, "cache_read_input_tokens", 0) or 0), cache_write_tokens=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
+            cost_micro_usd=cost, created_at=utc_now_iso()))
+        if tutor_state["spend_month"] == now.strftime("%Y-%m"):
+            tutor_state["spend_micro"] += cost
+    except Exception as e:
+        print("Could not record AI usage:", e)
+
+def ai_budget_inr() -> float:
+    load_dotenv(override=False)
+    try:
+        return float(os.getenv("AI_MONTHLY_BUDGET_INR") or AI_BUDGET_DEFAULT_INR)
+    except ValueError:
+        return float(AI_BUDGET_DEFAULT_INR)
+
+async def ai_month_spend_inr() -> float:
+    """This month's estimated AI spend in rupees, read from ai_usage at most once a minute."""
+    month = site_now().strftime("%Y-%m")
+    now = datetime.now(timezone.utc).timestamp()
+    if tutor_state["spend_month"] != month or now - tutor_state["spend_at"] > 60:
+        rows = await fetch_one_off(select(func.coalesce(func.sum(DBAiUsage.cost_micro_usd), 0)).where(DBAiUsage.month == month))
+        tutor_state.update(spend_month=month, spend_micro=int(rows[0][0] or 0), spend_at=now)
+    return tutor_state["spend_micro"] / 1_000_000 * USD_TO_INR
+
+async def tutor_gate(user_id: int, metric: str) -> tuple:
+    """Refuses when AI is off, the month's budget is used up for this person's plan, or their daily quota is spent.
+    Returns (founder, plan_key)."""
+    if helpbot_client() is None:
+        raise HTTPException(status_code=503, detail="The AI tutor is not switched on yet. Your flashcards, units and past-paper questions all work without it.")
+    founder, plan_key = await personal_plan(user_id)
+    spend, budget = await ai_month_spend_inr(), ai_budget_inr()
+    paid = founder or plan_key != "free"
+    if spend >= budget or (not paid and spend >= 0.8 * budget):
+        raise HTTPException(status_code=429, detail="The AI tutor is resting until the 1st of next month. Your flashcards, units, tests and past-paper questions still work.")
+    await check_limit(user_id, metric)
+    return founder, plan_key
+
+async def tutor_quota(user_id: int) -> dict:
+    founder, plan_key = await personal_plan(user_id)
+    rows = await fetch_one_off(select(DBUsageCounter.metric, DBUsageCounter.count).where(
+        DBUsageCounter.user_id == user_id, DBUsageCounter.metric.in_(("tutor_daily", "ai_gen_daily")), DBUsageCounter.period == site_now().date().isoformat()))
+    used = dict(rows)
+    limit = lambda metric: None if founder else limit_of(plan_key, metric)
+    return {"plan": "founder" if founder else plan_key, "paid": founder or plan_key != "free",
+            "questions": {"used": used.get("tutor_daily", 0), "limit": limit("tutor_daily")},
+            "generations": {"used": used.get("ai_gen_daily", 0), "limit": limit("ai_gen_daily")},
+            "note_files": founder or bool(limit_of(plan_key, "ai_note_files"))}
+
+async def tutor_subject_context(user_id: int, subject_id: Optional[int], unit_id: Optional[int] = None) -> tuple:
+    """(subject name, context text) for one of my My Study subjects, with its linked syllabus units."""
+    if not subject_id:
+        return "", ""
+    rows = await fetch_one_off(select(DBStudySubject.name, DBStudySubject.syllabus_id, DBStudySubject.exam_date)
+                               .where(DBStudySubject.id == subject_id, DBStudySubject.user_id == user_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That subject is not in your list.")
+    name, syllabus_id, exam_date = rows[0]
+    lines = [f"Subject: {name}"]
+    if syllabus_id:
+        syllabus, units = await asyncio.gather(
+            fetch_one_off(select(DBSyllabus.subject, DBSyllabus.department, DBSyllabus.semester, DBSyllabus.college_name).where(DBSyllabus.id == syllabus_id)),
+            fetch_one_off(select(DBSyllabusUnit).where(DBSyllabusUnit.syllabus_id == syllabus_id).order_by(DBSyllabusUnit.number)))
+        if syllabus:
+            s = syllabus[0]
+            lines.append(f"Course: {s.subject}, {s.department or 'department not given'}, semester {s.semester or 'not given'}, {s.college_name or ''}".strip(", "))
+        for (unit,) in units:
+            topics = ", ".join(t for t in (unit.topics or "").split("\n") if t.strip())
+            marker = "  <- the student is asking about this unit" if unit_id and unit.id == unit_id else ""
+            lines.append(f"Unit {unit.number}: {unit.title}{f' ({topics})' if topics else ''}{marker}")
+    if exam_date:
+        lines.append(f"Exam date: {exam_date}")
+    return name, "\n".join(lines)
+
+
+# ---------- reading ----------
+@app.get("/api/tutor")
+async def tutor_home(current_user_id: int = Depends(get_current_user_id)):
+    """Whether AI is on, today's quota, my recent threads and my subjects to pick from."""
+    quota, threads, subjects = await asyncio.gather(
+        tutor_quota(current_user_id),
+        fetch_one_off(select(DBTutorThread.id, DBTutorThread.title, DBTutorThread.mode, DBTutorThread.subject_id, DBTutorThread.updated_at)
+                      .where(DBTutorThread.user_id == current_user_id).order_by(DBTutorThread.updated_at.desc()).limit(30)),
+        fetch_one_off(select(DBStudySubject.id, DBStudySubject.name, DBStudySubject.syllabus_id).where(
+            DBStudySubject.user_id == current_user_id, func.coalesce(DBStudySubject.archived, 0) == 0).order_by(DBStudySubject.id)))
+    syllabus_ids = [sid for _, _, sid in subjects if sid]
+    units = await fetch_one_off(select(DBSyllabusUnit.id, DBSyllabusUnit.syllabus_id, DBSyllabusUnit.number, DBSyllabusUnit.title)
+                                .where(DBSyllabusUnit.syllabus_id.in_(syllabus_ids)).order_by(DBSyllabusUnit.number)) if syllabus_ids else []
+    by_syllabus: dict = {}
+    for unit_id, syllabus_id, number, title in units:
+        by_syllabus.setdefault(syllabus_id, []).append({"id": unit_id, "number": number, "title": title or ""})
+    spend, budget = await ai_month_spend_inr(), ai_budget_inr()
+    paused = spend >= budget or (not quota["paid"] and spend >= 0.8 * budget)
+    return {"ai_on": helpbot_client() is not None, "paused": paused, "quota": quota, "marks": list(TUTOR_ANSWER_MARKS),
+            "threads": [{"id": i, "title": t or "Untitled", "mode": m, "subject_id": s, "updated_at": u or ""} for i, t, m, s, u in threads],
+            "subjects": [{"id": i, "name": n or "", "syllabus_id": sid, "units": by_syllabus.get(sid, [])} for i, n, sid in subjects]}
+
+@app.get("/api/tutor/threads/{thread_id}")
+async def tutor_thread(thread_id: int, current_user_id: int = Depends(get_current_user_id)):
+    rows, messages = await asyncio.gather(
+        fetch_one_off(select(DBTutorThread).where(DBTutorThread.id == thread_id, DBTutorThread.user_id == current_user_id)),
+        fetch_one_off(select(DBTutorMessage.id, DBTutorMessage.role, DBTutorMessage.content, DBTutorMessage.created_at)
+                      .where(DBTutorMessage.thread_id == thread_id, DBTutorMessage.user_id == current_user_id).order_by(DBTutorMessage.id)))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That conversation is no longer here.")
+    t = rows[0][0]
+    return {"id": t.id, "title": t.title or "", "mode": t.mode, "subject_id": t.subject_id,
+            "messages": [{"id": i, "role": r, "text": c or "", "at": a or ""} for i, r, c, a in messages]}
+
+@app.delete("/api/tutor/threads/{thread_id}")
+async def delete_tutor_thread(thread_id: int, current_user_id: int = Depends(get_current_user_id)):
+    await run_one_off(delete(DBTutorMessage).where(DBTutorMessage.thread_id == thread_id, DBTutorMessage.user_id == current_user_id))
+    await run_one_off(delete(DBTutorThread).where(DBTutorThread.id == thread_id, DBTutorThread.user_id == current_user_id))
+    return {"removed": thread_id}
+
+
+# ---------- asking ----------
+class TutorAskBody(BaseModel):
+    text: str
+    mode: Optional[str] = "doubt"
+    thread_id: Optional[int] = None
+    subject_id: Optional[int] = None
+    unit_id: Optional[int] = None
+    marks: Optional[int] = None
+    question_id: Optional[int] = None      # a past-paper question (section 33)
+
+def tutor_request_text(body: TutorAskBody, question_text: str) -> str:
+    text = (body.text or "").strip()[:TUTOR_MAX_QUESTION]
+    if body.mode == "answer":
+        marks = body.marks or 5
+        return f"Write a {marks}-mark exam answer for this question:\n\n{question_text or text}" + (f"\n\nMy note: {text}" if question_text and text else "")
+    if body.mode == "explain":
+        return (f"This question came in my university exam:\n\n{question_text or text}\n\nExplain what it is asking, which topic it tests, "
+                f"and how to plan a good answer (the points to cover, roughly how long). Then give a model answer"
+                f"{f' worth {body.marks} marks' if body.marks else ''}.") + (f"\n\nMy note: {text}" if question_text and text else "")
+    return text
+
+@app.post("/api/tutor/ask")
+@limiter.limit("20/minute", key_func=account_rate_key)
+async def tutor_ask(request: Request, body: TutorAskBody, current_user_id: int = Depends(get_current_user_id)):
+    """Streams the tutor's answer (server-sent events: text, then done with the thread id; or error)."""
+    if body.mode not in TUTOR_MODES:
+        raise HTTPException(status_code=400, detail="Pick what you want: a doubt, an exam answer or a past-paper question explained.")
+    if body.marks is not None and body.marks not in TUTOR_ANSWER_MARKS:
+        raise HTTPException(status_code=400, detail="Pick the marks the answer is for.")
+    question_text = ""
+    if body.question_id:
+        question, _ = await load_question(body.question_id, await prep_identity(current_user_id))
+        question_text = question.text or ""
+        body.marks = body.marks or (question.marks if question.marks in TUTOR_ANSWER_MARKS else None)
+    if not question_text and len((body.text or "").strip()) < 3:
+        raise HTTPException(status_code=400, detail="Type your question first.")
+    history = []
+    if body.thread_id:
+        rows = await fetch_one_off(select(DBTutorThread.subject_id).where(DBTutorThread.id == body.thread_id, DBTutorThread.user_id == current_user_id))
+        if not rows:
+            raise HTTPException(status_code=404, detail="That conversation is no longer here.")
+        body.subject_id = body.subject_id or rows[0][0]
+        earlier = await fetch_one_off(select(DBTutorMessage.role, DBTutorMessage.content).where(DBTutorMessage.thread_id == body.thread_id)
+                                      .order_by(DBTutorMessage.id.desc()).limit(TUTOR_HISTORY))
+        history = [{"role": role, "content": content or ""} for role, content in reversed(earlier) if role in ("user", "assistant") and content]
+        while history and history[0]["role"] != "user":
+            history.pop(0)
+    await tutor_gate(current_user_id, "tutor_daily")
+    subject_name, context = await tutor_subject_context(current_user_id, body.subject_id, body.unit_id)
+    asked = tutor_request_text(body, question_text)
+    client = helpbot_client()
+    today = site_now().strftime("%A %d %B %Y")
+    params = {
+        "model": TUTOR_MODEL,
+        "max_tokens": 8000,
+        "output_config": {"effort": "medium" if body.mode != "doubt" else "low"},
+        "system": [{"type": "text", "text": TUTOR_SYSTEM, "cache_control": {"type": "ephemeral"}},
+                   {"type": "text", "text": f"Today is {today} (India).\n{context or 'The student did not pick a subject.'}"}],
+        "messages": history + [{"role": "user", "content": asked}],
+    }
+    shown = (body.text or "").strip()[:TUTOR_MAX_QUESTION] or question_text
+    if body.mode == "answer":
+        shown = f"{body.marks or 5}-mark answer: {question_text or shown}"
+    elif body.mode == "explain":
+        shown = f"Explain this exam question: {question_text or shown}"
+
+    async def stream():
+        import anthropic
+        parts = []
+        try:
+            async with client.messages.stream(**params) as reply:
+                async for event in reply:
+                    if event.type == "text":
+                        parts.append(event.text)
+                        yield helpbot_event({"type": "text", "text": event.text})
+                message = await reply.get_final_message()
+            await record_ai_usage(current_user_id, body.mode, message.usage)
+            if message.stop_reason == "refusal":
+                parts.append("\n\nI can't help with that one. Ask me about your subjects.")
+                yield helpbot_event({"type": "text", "text": parts[-1]})
+            elif message.stop_reason == "max_tokens":
+                parts.append("\n\n(That was getting long, so I stopped here. Ask me to continue.)")
+                yield helpbot_event({"type": "text", "text": parts[-1]})
+            answer = "".join(parts).strip()
+            if not answer:
+                yield helpbot_event({"type": "error", "code": "empty"})
+                return
+            await bump_usage(current_user_id, "tutor_daily")
+            now_iso = utc_now_iso()
+            thread_id = body.thread_id
+            if not thread_id:
+                title = (subject_name + ": " if subject_name else "") + re.sub(r"\s+", " ", shown)[:80]
+                rows = await run_returning(DBTutorThread.__table__.insert().values(
+                    user_id=current_user_id, subject_id=body.subject_id or None, title=title, mode=body.mode, created_at=now_iso, updated_at=now_iso)
+                    .returning(DBTutorThread.id))
+                thread_id = rows[0][0]
+            else:
+                await run_one_off(update(DBTutorThread).where(DBTutorThread.id == thread_id).values(updated_at=now_iso))
+            await run_one_off(DBTutorMessage.__table__.insert().values([
+                {"thread_id": thread_id, "user_id": current_user_id, "role": "user", "content": asked if body.mode != "doubt" else shown, "created_at": now_iso},
+                {"thread_id": thread_id, "user_id": current_user_id, "role": "assistant", "content": answer, "created_at": now_iso}]))
+            yield helpbot_event({"type": "done", "thread_id": thread_id, "shown": shown})
+        except anthropic.RateLimitError:
+            yield helpbot_event({"type": "error", "code": "busy"})
+        except anthropic.AuthenticationError:
+            yield helpbot_event({"type": "error", "code": "ai_off"})
+        except anthropic.APIConnectionError:
+            yield helpbot_event({"type": "error", "code": "offline"})
+        except anthropic.APIStatusError as e:
+            print("Tutor API error:", e.status_code, getattr(e, "message", e))
+            yield helpbot_event({"type": "error", "code": "error"})
+
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ---------- AI-made flashcards and quizzes ----------
+class TutorGenerateBody(BaseModel):
+    kind: str                              # cards, quiz
+    subject_id: Optional[int] = None
+    unit_id: Optional[int] = None
+    note_id: Optional[int] = None
+    topic: Optional[str] = ""
+    count: Optional[int] = 10
+
+CARDS_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["title", "cards"], "properties": {
+    "title": {"type": "string"},
+    "cards": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["front", "back"],
+                                          "properties": {"front": {"type": "string"}, "back": {"type": "string"}}}}}}
+QUIZ_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["title", "questions"], "properties": {
+    "title": {"type": "string"},
+    "questions": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["q", "options", "answer", "why"],
+                                              "properties": {"q": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}},
+                                                             "answer": {"type": "integer"}, "why": {"type": "string"}}}}}}
+
+async def note_block(note_id: int, user_id: int) -> tuple:
+    """(content block, note title) for a shared note's file: a PDF as a document, a photo as an image."""
+    rows = await fetch_one_off(select(DBNote.title, DBNote.file_url, DBNote.file_size).where(DBNote.id == note_id, func.coalesce(DBNote.removed, 0) == 0))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That note is no longer shared.")
+    title, url, size = rows[0]
+    match = re.search(r"(static/uploads/notes/note_\d+_[0-9a-f]{12}(\.[a-z0-9]+))$", url or "")
+    if not match or match.group(2) not in TUTOR_NOTE_TYPES:
+        raise HTTPException(status_code=400, detail="The tutor can read PDF files and photos of notes. This note is another kind of file.")
+    path = match.group(1)
+    if not os.path.isfile(path) or os.path.getsize(path) > TUTOR_NOTE_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="That file is too big for the tutor to read (8 MB at most).")
+    data = await asyncio.to_thread(lambda: base64.standard_b64encode(open(path, "rb").read()).decode("ascii"))
+    kind, media = TUTOR_NOTE_TYPES[match.group(2)]
+    return {"type": kind, "source": {"type": "base64", "media_type": media, "data": data}}, title or "the note"
+
+def clean_cards(raw: list, limit: int) -> list:
+    cards = []
+    for card in raw or []:
+        front, back = str(card.get("front", "")).strip()[:600], str(card.get("back", "")).strip()[:2000]
+        if front and back:
+            cards.append({"front": front, "back": back})
+    return cards[:limit]
+
+def clean_quiz(raw: list, limit: int) -> list:
+    questions = []
+    for q in raw or []:
+        options = [str(o).strip()[:300] for o in (q.get("options") or []) if str(o).strip()][:5]
+        answer = q.get("answer")
+        if str(q.get("q", "")).strip() and len(options) >= 2 and isinstance(answer, int) and 0 <= answer < len(options) and len(set(options)) == len(options):
+            questions.append({"q": str(q["q"]).strip()[:1200], "options": options, "answer": answer, "why": str(q.get("why", "")).strip()[:1500]})
+    return questions[:limit]
+
+@app.post("/api/tutor/generate")
+@limiter.limit("10/minute", key_func=account_rate_key)
+async def tutor_generate(request: Request, body: TutorGenerateBody, current_user_id: int = Depends(get_current_user_id)):
+    """Flashcards (checked by the student, then saved as a deck) or a 10-question quiz, for a unit, a topic or a note."""
+    if body.kind not in ("cards", "quiz"):
+        raise HTTPException(status_code=400, detail="Pick flashcards or a quiz.")
+    count = max(5, min(body.count or 10, 30 if body.kind == "cards" else 15))
+    topic = clean_text(body.topic, 200, "topic")
+    if not (body.unit_id or body.note_id or topic or body.subject_id):
+        raise HTTPException(status_code=400, detail="Pick a unit or a note, or type a topic.")
+    if body.note_id and not await has_feature(current_user_id, "ai_note_files"):
+        raise HTTPException(status_code=402, detail="Making cards from a note's file is part of Student Pro and the Exam Pass. You can still make them from a unit or a topic.")
+    await tutor_gate(current_user_id, "ai_gen_daily")
+    subject_name, context = await tutor_subject_context(current_user_id, body.subject_id, body.unit_id)
+    unit_line = ""
+    if body.unit_id and context:
+        unit_line = next((line for line in context.split("\n") if "<- the student is asking about this unit" in line), "").replace("  <- the student is asking about this unit", "")
+    what = unit_line or topic or subject_name or "the attached notes"
+    content: list = []
+    note_title = ""
+    if body.note_id:
+        block, note_title = await note_block(body.note_id, current_user_id)
+        content.append(block)
+        what = f"the attached notes ({note_title})" + (f", focusing on {topic}" if topic else "")
+    if body.kind == "cards":
+        ask = (f"Make {count} flashcards for revising {what}. Each card tests one idea that is likely in an exam: a definition, a "
+               f"difference, a formula with what its terms mean, a step of an algorithm, a key fact or a short why-question. The front is a "
+               f"question or term (under 20 words); the back is the answer in 1 to 3 short sentences a student can recall. No duplicates. "
+               f"Give the deck a short title.")
+        schema = CARDS_SCHEMA
+    else:
+        ask = (f"Make a {count}-question multiple-choice quiz on {what} for revision before a university exam. Four options each, one "
+               f"right answer (its index in 'answer', from 0), plausible wrong options, a mix of easy and harder questions, and a one- or "
+               f"two-sentence explanation in 'why'. Give the quiz a short title.")
+        schema = QUIZ_SCHEMA
+    content.append({"type": "text", "text": ask})
+    import anthropic
+    client = helpbot_client()
+    try:
+        message = await client.messages.create(
+            model=TUTOR_MODEL, max_tokens=12000,
+            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": schema}},
+            system=[{"type": "text", "text": TUTOR_SYSTEM, "cache_control": {"type": "ephemeral"}},
+                    {"type": "text", "text": context or "The student did not pick a subject."}],
+            messages=[{"role": "user", "content": content}])
+    except anthropic.RateLimitError:
+        raise HTTPException(status_code=429, detail="The tutor is busy right now. Try again in a minute.")
+    except anthropic.APIConnectionError:
+        raise HTTPException(status_code=503, detail="Could not reach the AI service. Check the internet connection and try again.")
+    except anthropic.APIStatusError as e:
+        print("Tutor generate error:", e.status_code, getattr(e, "message", e))
+        raise HTTPException(status_code=502, detail="The tutor could not make that. Try again, or pick a smaller topic.")
+    await record_ai_usage(current_user_id, body.kind, message.usage)
+    if message.stop_reason == "refusal":
+        raise HTTPException(status_code=400, detail="The tutor can't make cards for that one.")
+    text_out = next((b.text for b in message.content if b.type == "text"), "")
+    try:
+        data = json.loads(text_out)
+    except ValueError:
+        raise HTTPException(status_code=502, detail="The tutor's answer came back cut short. Try again with fewer cards.")
+    await bump_usage(current_user_id, "ai_gen_daily")
+    title = str(data.get("title") or what).strip()[:120]
+    if body.kind == "cards":
+        cards = clean_cards(data.get("cards"), count)
+        if not cards:
+            raise HTTPException(status_code=502, detail="No cards came back. Try again.")
+        return {"kind": "cards", "title": title, "cards": cards, "subject_id": body.subject_id, "unit_id": body.unit_id}
+    questions = clean_quiz(data.get("questions"), count)
+    if not questions:
+        raise HTTPException(status_code=502, detail="No questions came back. Try again.")
+    rows = await run_returning(DBTutorQuiz.__table__.insert().values(user_id=current_user_id, title=title, questions=json.dumps(questions),
+                                                                     created_at=utc_now_iso(), finished_at="").returning(DBTutorQuiz.id))
+    return {"kind": "quiz", "id": rows[0][0], "title": title, "questions": questions}
+
+class SaveAiDeckBody(BaseModel):
+    title: str
+    subject_id: Optional[int] = None
+    unit_id: Optional[int] = None
+    public: Optional[bool] = False
+    cards: List[CardBody]
+
+@app.post("/api/tutor/save-deck")
+async def save_ai_deck(body: SaveAiDeckBody, current_user_id: int = Depends(get_current_user_id)):
+    """The cards the student kept, as a new deck marked 'made with the AI tutor'."""
+    cards = [clean_card(card) for card in body.cards][:PREP_MAX_CARDS]
+    if not cards:
+        raise HTTPException(status_code=400, detail="Keep at least one card.")
+    syllabus_id = None
+    if body.subject_id:
+        rows = await fetch_one_off(select(DBStudySubject.syllabus_id).where(DBStudySubject.id == body.subject_id, DBStudySubject.user_id == current_user_id))
+        syllabus_id = rows[0][0] if rows else None
+    deck = await create_deck(DeckBody(title=body.title, syllabus_id=syllabus_id, unit_id=body.unit_id if syllabus_id else None,
+                                      public=bool(body.public)), current_user_id)
+    await run_one_off(update(DBCardDeck).where(DBCardDeck.id == deck["id"]).values(made_by_ai=1))
+    await add_cards(deck["id"], CardsBody(cards=[CardBody(**card) for card in cards]), current_user_id)
+    return {"id": deck["id"], "cards": len(cards)}
+
+class QuizDoneBody(BaseModel):
+    score: int
+
+@app.post("/api/tutor/quizzes/{quiz_id}/done")
+async def finish_quiz(quiz_id: int, body: QuizDoneBody, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBTutorQuiz.questions, DBTutorQuiz.finished_at).where(DBTutorQuiz.id == quiz_id, DBTutorQuiz.user_id == current_user_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That quiz is no longer here.")
+    total = len(json_list(rows[0][0]))
+    if not (0 <= body.score <= total):
+        raise HTTPException(status_code=400, detail="That score does not fit the quiz.")
+    if not rows[0][1]:
+        await run_one_off(update(DBTutorQuiz).where(DBTutorQuiz.id == quiz_id).values(score=body.score, finished_at=utc_now_iso()))
+    xp = await award_xp(current_user_id, "quiz", f"quiz:{quiz_id}", 5)
+    return {"id": quiz_id, "score": body.score, "total": total, "xp": xp}
+
+
+# ---------- the founder's view and tidying ----------
+@app.get("/api/founder/ai-usage")
+async def founder_ai_usage(founder_id: int = Depends(require_founder)):
+    """This month's AI calls and estimated spend against the budget, by feature."""
+    month = site_now().strftime("%Y-%m")
+    rows, people = await asyncio.gather(
+        fetch_one_off(select(DBAiUsage.feature, func.count(), func.sum(DBAiUsage.cost_micro_usd)).where(DBAiUsage.month == month).group_by(DBAiUsage.feature)),
+        fetch_one_off(select(func.count(func.distinct(DBAiUsage.user_id))).where(DBAiUsage.month == month)))
+    spend = sum(int(cost or 0) for _, _, cost in rows) / 1_000_000 * USD_TO_INR
+    return {"month": month, "spend_inr": round(spend, 2), "budget_inr": ai_budget_inr(), "people": people[0][0] or 0, "model": TUTOR_MODEL,
+            "ai_on": helpbot_client() is not None,
+            "features": [{"feature": f, "calls": n, "spend_inr": round(int(c or 0) / 1_000_000 * USD_TO_INR, 2)} for f, n, c in rows]}
+
+async def tutor_cleanup():
+    """Conversations not touched for TUTOR_KEEP_DAYS are deleted (called once a day from study_watch)."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=TUTOR_KEEP_DAYS)).isoformat()
+    old = select(DBTutorThread.id).where(DBTutorThread.updated_at < cutoff)
+    await run_one_off(delete(DBTutorMessage).where(DBTutorMessage.thread_id.in_(old)))
+    await run_one_off(delete(DBTutorThread).where(DBTutorThread.updated_at < cutoff))
+    await run_one_off(delete(DBTutorQuiz).where(DBTutorQuiz.created_at < cutoff))
+
+
+# ==========================================
+# 35. MOCK TESTS AND THE PLACEMENT TRACK (tests.html)
+# ==========================================
+# Timed tests drawn from the practice questions (the daily ones plus mock_bank.json, loaded with daily = 0), untimed
+# topic practice, and a report: score and section scores for everyone; weak topics, time per question and the trend
+# with Student Pro or the Exam Pass. The clock is the server's: answers after ends_at (plus a short grace) are not taken.
+class DBMockAttempt(Base):
+    __tablename__ = "mock_attempts"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    test_key = Column(String)
+    question_ids = Column(String)                  # JSON list
+    parts = Column(String)                         # JSON list of [label, first index, count]
+    answers = Column(String)                       # JSON list: the chosen option or null
+    seconds = Column(String)                       # JSON list: seconds spent on each question
+    started_at = Column(String)
+    ends_at = Column(String)                       # UTC ISO
+    submitted_at = Column(String, default="")
+    score = Column(Integer, nullable=True)
+    total = Column(Integer, default=0)
+    part_scores = Column(String, default="")       # JSON list of [label, right, count]
+
+class DBTopicAnswer(Base):
+    """One answer in untimed topic practice."""
+    __tablename__ = "topic_answers"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    question_id = Column(Integer, index=True)
+    chosen = Column(Integer)
+    correct = Column(Integer, default=0)
+    answered_at = Column(String)
+
+SCHEMA_UPGRADES.extend([
+    "ALTER TABLE practice_questions ADD COLUMN IF NOT EXISTS section VARCHAR DEFAULT ''",
+    "ALTER TABLE practice_questions ADD COLUMN IF NOT EXISTS difficulty INTEGER",
+    "ALTER TABLE practice_questions ADD COLUMN IF NOT EXISTS daily INTEGER DEFAULT 1",
+    "ALTER TABLE practice_questions ADD COLUMN IF NOT EXISTS lang VARCHAR DEFAULT ''",
+    "ALTER TABLE practice_questions ADD COLUMN IF NOT EXISTS draft INTEGER DEFAULT 0",
+    "CREATE INDEX IF NOT EXISTS ix_mock_attempts_user ON mock_attempts (user_id, id)",
+])
+USER_DATA_ERASED.update({"mock_attempts": ("user_id",), "topic_answers": ("user_id",)})
+for _table in ("mock_attempts", "topic_answers"):
+    assert all(column in Base.metadata.tables[_table].c for column in USER_DATA_ERASED[_table])
+
+MOCK_BANK_FILE = "mock_bank.json"
+
+
+def json_data(raw: Optional[str]) -> list:
+    """A JSON list as stored, keeping numbers and nulls (json_list turns every item into text)."""
+    try:
+        value = json.loads(raw or "[]")
+        return value if isinstance(value, list) else []
+    except (ValueError, TypeError):
+        return []
+MOCK_GRACE_SECONDS = 30
+MOCK_TOPIC_BATCH = 10
+SECTION_LABELS = {"quant": "Quantitative", "logical": "Logical reasoning", "verbal": "Verbal ability", "technical": "Computer science"}
+# The daily questions came before sections: their aptitude topics are sorted here
+OLD_LOGICAL_TOPICS = ("Family relations", "Logic", "Directions", "Codes", "Seating", "Calendars")
+DSA_TOPICS = ("Data structures", "Graphs", "Sorting", "Searching", "Complexity", "Dynamic programming", "Greedy algorithms",
+              "Algorithms", "Recursion", "Trees", "Bit operations")
+CORE_TOPICS = ("Operating systems", "DBMS", "SQL", "Computer networks", "Networks")
+CODE_TOPICS = ("Python", "C", "Java", "OOP", "Loops", "Scope", "Number systems", "Git", "Web")
+# key: title, kind (topic or pattern), minutes, parts [(label, section, topics or None, count)], blurb
+MOCK_TESTS = {
+    "quant": {"title": "Quantitative aptitude", "kind": "topic", "minutes": 25, "parts": [("Quantitative", "quant", None, 20)],
+              "blurb": "Percentages, profit, time and work, speed, interest, ratios, probability."},
+    "logical": {"title": "Logical reasoning", "kind": "topic", "minutes": 20, "parts": [("Logical reasoning", "logical", None, 15)],
+                "blurb": "Coding, blood relations, directions, seating, syllogisms, puzzles."},
+    "verbal": {"title": "Verbal ability", "kind": "topic", "minutes": 15, "parts": [("Verbal ability", "verbal", None, 15)],
+               "blurb": "Synonyms, error spotting, fill in the blanks, idioms, reading."},
+    "dsa": {"title": "Data structures and algorithms", "kind": "topic", "minutes": 20, "parts": [("DSA", "technical", DSA_TOPICS, 15)],
+            "blurb": "Stacks, trees, graphs, sorting, searching and complexity."},
+    "core": {"title": "CS core: OS, DBMS and networks", "kind": "topic", "minutes": 20, "parts": [("Core CS", "technical", CORE_TOPICS, 18)],
+             "blurb": "Processes, memory, deadlocks, normal forms, SQL, TCP/IP and subnets."},
+    "code": {"title": "Programming and code output", "kind": "topic", "minutes": 20, "parts": [("Programming", "technical", CODE_TOPICS, 15)],
+             "blurb": "Predict the output in Python, C and Java, plus OOP."},
+    "service": {"title": "Service company aptitude round", "kind": "pattern", "minutes": 50,
+                "parts": [("Quantitative", "quant", None, 15), ("Logical reasoning", "logical", None, 10), ("Verbal ability", "verbal", None, 10)],
+                "blurb": "In the style of mass-recruiter aptitude rounds: 35 questions in 50 minutes."},
+    "product": {"title": "Product company screening round", "kind": "pattern", "minutes": 45,
+                "parts": [("DSA", "technical", DSA_TOPICS, 12), ("Programming", "technical", CODE_TOPICS, 8), ("Core CS", "technical", CORE_TOPICS, 10)],
+                "blurb": "In the style of online screening tests: 30 technical questions in 45 minutes."},
+    "full": {"title": "Full placement mock", "kind": "pattern", "minutes": 75,
+             "parts": [("Quantitative", "quant", None, 15), ("Logical reasoning", "logical", None, 10), ("Verbal ability", "verbal", None, 10),
+                       ("Computer science", "technical", None, 20)],
+             "blurb": "Aptitude and CS fundamentals together: 55 questions in 75 minutes."},
+}
+MOCK_PATTERN_NOTE = "Practice patterns written by Connect2Minds, modelled on public descriptions of common placement rounds. Not real papers of any company."
+
+
+def question_section(question) -> str:
+    if question.section:
+        return question.section
+    if question.track == "coding":
+        return "technical"
+    return "logical" if (question.topic or "") in OLD_LOGICAL_TOPICS else "quant"
+
+async def seed_mock_bank():
+    """Adds the mock_bank.json questions that are not in the table yet (daily = 0), and gives the old daily questions
+    their section. Runs at startup; safe to run again."""
+    try:
+        if not os.path.exists(MOCK_BANK_FILE):
+            return
+        with open(MOCK_BANK_FILE, encoding="utf-8") as bank_file:
+            bank = json.load(bank_file)
+        rows = await fetch_one_off(select(DBPracticeQuestion.question, DBPracticeQuestion.code, DBPracticeQuestion.options))
+        have = {(q or "", c or "", o or "") for q, c, o in rows}
+        now_iso = utc_now_iso()
+        new = [{"track": item["track"], "topic": item.get("topic", ""), "question": item["q"], "code": item.get("code", ""), "lang": item.get("lang", ""),
+                "options": json.dumps(item["options"]), "answer": item["answer"], "explanation": item.get("why", ""), "active": 1, "daily": 0, "draft": 0,
+                "section": item.get("section", ""), "difficulty": item.get("difficulty"), "created_at": now_iso}
+               for item in bank if (item["q"], item.get("code", ""), json.dumps(item["options"])) not in have]
+        if new:
+            await run_one_off(DBPracticeQuestion.__table__.insert().values(new))
+        await run_one_off(update(DBPracticeQuestion).where(func.coalesce(DBPracticeQuestion.section, "") == "", DBPracticeQuestion.track == "coding").values(section="technical"))
+        await run_one_off(update(DBPracticeQuestion).where(func.coalesce(DBPracticeQuestion.section, "") == "", DBPracticeQuestion.track == "aptitude",
+                                                           DBPracticeQuestion.topic.in_(OLD_LOGICAL_TOPICS)).values(section="logical"))
+        await run_one_off(update(DBPracticeQuestion).where(func.coalesce(DBPracticeQuestion.section, "") == "", DBPracticeQuestion.track == "aptitude").values(section="quant"))
+        practice_cache["at"] = 0.0
+        if new:
+            print(f"Mock-test questions added: {len(new)}")
+    except Exception as e:
+        print("Could not load the mock-test questions:", e)
+
+@app.on_event("startup")
+async def mock_startup():
+    spawn_background(seed_mock_bank())
+
+def test_pool(cache: dict, section: str, topics) -> list:
+    return [q for q in cache["by_id"].values() if not q.draft and question_section(q) == section and (topics is None or (q.topic or "") in topics)]
+
+def test_card(key: str, cache: dict) -> dict:
+    test = MOCK_TESTS[key]
+    questions = sum(count for _, _, _, count in test["parts"])
+    pool = min(len(test_pool(cache, section, topics)) for _, section, topics, _ in test["parts"])
+    return {"key": key, "title": test["title"], "kind": test["kind"], "minutes": test["minutes"], "questions": questions, "blurb": test["blurb"],
+            "parts": [{"label": label, "count": count} for label, _, _, count in test["parts"]], "ready": pool > 0}
+
+def question_payload(question, index: int) -> dict:
+    """A question as the test page gets it: never the answer."""
+    return {"index": index, "id": question.id, "topic": question.topic or "", "question": question.question or "", "code": question.code or "",
+            "lang": question.lang or "", "options": json_list(question.options)}
+
+def utc_after(seconds: int) -> str:
+    return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
+
+def is_past(iso: str, grace: int = 0) -> bool:
+    return datetime.now(timezone.utc) > datetime.fromisoformat(iso) + timedelta(seconds=grace)
+
+def score_attempt(attempt, cache: dict) -> tuple:
+    """(score, part scores) from the saved answers."""
+    ids, answers = json_data(attempt.question_ids), json_data(attempt.answers)
+    right = [i < len(answers) and answers[i] is not None and cache["by_id"].get(qid) is not None and answers[i] == cache["by_id"][qid].answer
+             for i, qid in enumerate(ids)]
+    parts = [[label, sum(right[start:start + count]), count] for label, start, count in json_data(attempt.parts)]
+    return sum(right), parts
+
+async def finish_attempt(attempt, cache: dict) -> dict:
+    score, parts = score_attempt(attempt, cache)
+    await run_one_off(update(DBMockAttempt).where(DBMockAttempt.id == attempt.id, func.coalesce(DBMockAttempt.submitted_at, "") == "")
+                      .values(submitted_at=utc_now_iso(), score=score, part_scores=json.dumps(parts)))
+    xp = await award_xp(attempt.user_id, "mock", f"mock:{attempt.id}", 20)
+    return {"score": score, "parts": parts, "xp": xp}
+
+async def close_expired(user_id: int, cache: dict):
+    """Scores tests whose time ran out while the page was closed."""
+    rows = await fetch_one_off(select(DBMockAttempt).where(DBMockAttempt.user_id == user_id, func.coalesce(DBMockAttempt.submitted_at, "") == ""))
+    for (attempt,) in rows:
+        if is_past(attempt.ends_at, MOCK_GRACE_SECONDS):
+            await finish_attempt(attempt, cache)
+
+def attempt_summary(attempt) -> dict:
+    return {"id": attempt.id, "test_key": attempt.test_key, "title": MOCK_TESTS.get(attempt.test_key, {}).get("title", "Test"),
+            "started_at": attempt.started_at, "submitted_at": attempt.submitted_at or "", "score": attempt.score, "total": attempt.total,
+            "percent": round(attempt.score * 100 / attempt.total) if attempt.total and attempt.score is not None else None,
+            "parts": [{"label": label, "right": right, "count": count} for label, right, count in json_data(attempt.part_scores)]}
+
+async def my_answers(user_id: int, cache: dict) -> list:
+    """(question, correct, seconds or None) for everything the person answered: daily questions, topic practice and tests."""
+    daily, topic, attempts = await asyncio.gather(
+        fetch_one_off(select(DBPracticeAnswer.question_id, DBPracticeAnswer.correct).where(DBPracticeAnswer.user_id == user_id)),
+        fetch_one_off(select(DBTopicAnswer.question_id, DBTopicAnswer.correct).where(DBTopicAnswer.user_id == user_id)),
+        fetch_one_off(select(DBMockAttempt).where(DBMockAttempt.user_id == user_id, func.coalesce(DBMockAttempt.submitted_at, "") != "")))
+    out = [(cache["by_id"].get(qid), bool(ok), None) for qid, ok in list(daily) + list(topic)]
+    for (attempt,) in attempts:
+        answers, seconds = json_data(attempt.answers), json_data(attempt.seconds)
+        for i, qid in enumerate(json_data(attempt.question_ids)):
+            question = cache["by_id"].get(qid)
+            chosen = answers[i] if i < len(answers) else None
+            if question is not None and chosen is not None:
+                out.append((question, chosen == question.answer, seconds[i] if i < len(seconds) else None))
+    return [row for row in out if row[0] is not None]
+
+def insights(rows: list, attempts: list) -> dict:
+    """Accuracy per topic, the weakest topics, the slowest topics in tests and the trend over the last tests."""
+    topics: dict = {}
+    for question, correct, seconds in rows:
+        entry = topics.setdefault(question.topic or "Other", {"topic": question.topic or "Other", "section": question_section(question), "answered": 0,
+                                                              "correct": 0, "seconds": [], })
+        entry["answered"] += 1
+        entry["correct"] += 1 if correct else 0
+        if seconds:
+            entry["seconds"].append(seconds)
+    table = []
+    for entry in topics.values():
+        times = entry.pop("seconds")
+        entry["accuracy"] = round(entry["correct"] * 100 / entry["answered"])
+        entry["avg_seconds"] = round(sum(times) / len(times)) if times else None
+        table.append(entry)
+    table.sort(key=lambda e: (e["accuracy"], -e["answered"]))
+    weak = [e for e in table if e["answered"] >= 3 and e["accuracy"] < 70][:4]
+    slow = sorted([e for e in table if e["avg_seconds"]], key=lambda e: -e["avg_seconds"])[:3]
+    trend = [{"id": a["id"], "title": a["title"], "percent": a["percent"], "at": a["submitted_at"]} for a in reversed(attempts) if a["percent"] is not None][-10:]
+    return {"topics": table, "weak": weak, "slow": slow, "trend": trend}
+
+
+# ---------- endpoints ----------
+@app.get("/api/tests")
+async def get_tests(current_user_id: int = Depends(get_current_user_id)):
+    """The tests, this week's free test, an unfinished test to go back to, my results and (with the full report) my insights."""
+    cache = await practice_questions()
+    await close_expired(current_user_id, cache)
+    (founder, plan_key), rows, used = await asyncio.gather(
+        personal_plan(current_user_id),
+        fetch_one_off(select(DBMockAttempt).where(DBMockAttempt.user_id == current_user_id).order_by(DBMockAttempt.id.desc()).limit(30)),
+        usage_count(current_user_id, "mock_weekly"))
+    attempts = [attempt_summary(a) for (a,) in rows if a.submitted_at]
+    running = next(({"id": a.id, "test_key": a.test_key, "title": MOCK_TESTS.get(a.test_key, {}).get("title", "Test"), "ends_at": a.ends_at}
+                    for (a,) in rows if not a.submitted_at), None)
+    full = founder or bool(limit_of(plan_key, "full_test_report"))
+    limit = None if founder else limit_of(plan_key, "mock_weekly")
+    answered = await my_answers(current_user_id, cache)
+    report = insights(answered, attempts)
+    sections = {}
+    for question, correct, _ in answered:
+        s = sections.setdefault(question_section(question), [0, 0])
+        s[0] += 1
+        s[1] += 1 if correct else 0
+    return {
+        "tests": [test_card(key, cache) for key in MOCK_TESTS], "pattern_note": MOCK_PATTERN_NOTE,
+        "week": {"used": used, "limit": limit}, "running": running, "attempts": attempts, "full_report": full,
+        "sections": [{"section": key, "label": SECTION_LABELS[key], "answered": n, "accuracy": round(c * 100 / n) if n else None}
+                     for key, (n, c) in sorted(sections.items(), key=lambda kv: list(SECTION_LABELS).index(kv[0]) if kv[0] in SECTION_LABELS else 9)],
+        "insights": report if full else {"locked": True, "weak_count": len(report["weak"]), "answered": len(answered)},
+        "topics": sorted({(question_section(q), q.topic or "") for q in cache["by_id"].values() if not q.draft and q.topic}),
+        "founder": founder,
+    }
+
+@app.post("/api/tests/{test_key}/start")
+@limiter.limit("10/minute", key_func=account_rate_key)
+async def start_test(request: Request, test_key: str, current_user_id: int = Depends(get_current_user_id)):
+    """Starts a timed test (or goes back to the one already running). Counts against the weekly free test."""
+    if test_key not in MOCK_TESTS:
+        raise HTTPException(status_code=404, detail="There is no such test.")
+    cache = await practice_questions()
+    await close_expired(current_user_id, cache)
+    running = await fetch_one_off(select(DBMockAttempt).where(DBMockAttempt.user_id == current_user_id, func.coalesce(DBMockAttempt.submitted_at, "") == ""))
+    if running:
+        attempt = running[0][0]
+        if attempt.test_key != test_key:
+            raise HTTPException(status_code=409, detail=f"Finish or submit your {MOCK_TESTS.get(attempt.test_key, {}).get('title', 'other')} test first.")
+        return await attempt_view(attempt, cache)
+    await check_limit(current_user_id, "mock_weekly")
+    test = MOCK_TESTS[test_key]
+    # Questions from the person's tests of the last 30 days are used again only when a pool runs short
+    since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    recent = await fetch_one_off(select(DBMockAttempt.question_ids).where(DBMockAttempt.user_id == current_user_id, DBMockAttempt.started_at >= since))
+    seen = {qid for (ids,) in recent for qid in json_data(ids)}
+    chosen_ids, parts = [], []
+    for label, section, topics, count in test["parts"]:
+        pool = [q for q in test_pool(cache, section, topics) if q.id not in chosen_ids]
+        fresh = [q for q in pool if q.id not in seen]
+        pick = random.sample(fresh, min(count, len(fresh)))
+        if len(pick) < count:
+            rest = [q for q in pool if q not in pick]
+            pick += random.sample(rest, min(count - len(pick), len(rest)))
+        if not pick:
+            raise HTTPException(status_code=503, detail="This test's questions are still being loaded. Try again in a minute.")
+        parts.append([label, len(chosen_ids), len(pick)])
+        chosen_ids += [q.id for q in pick]
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBMockAttempt.__table__.insert().values(
+        user_id=current_user_id, test_key=test_key, question_ids=json.dumps(chosen_ids), parts=json.dumps(parts), answers=json.dumps([None] * len(chosen_ids)),
+        seconds=json.dumps([0] * len(chosen_ids)), started_at=now_iso, ends_at=utc_after(test["minutes"] * 60), submitted_at="", total=len(chosen_ids))
+        .returning(DBMockAttempt.id))
+    await bump_usage(current_user_id, "mock_weekly")
+    attempt = (await fetch_one_off(select(DBMockAttempt).where(DBMockAttempt.id == rows[0][0])))[0][0]
+    return await attempt_view(attempt, cache)
+
+async def attempt_view(attempt, cache: dict) -> dict:
+    ids = json_data(attempt.question_ids)
+    return {"id": attempt.id, "test_key": attempt.test_key, "title": MOCK_TESTS.get(attempt.test_key, {}).get("title", "Test"),
+            "ends_at": attempt.ends_at, "server_now": utc_now_iso(), "answers": json_data(attempt.answers), "seconds": json_data(attempt.seconds),
+            "parts": [{"label": label, "start": start, "count": count} for label, start, count in json_data(attempt.parts)],
+            "questions": [question_payload(cache["by_id"][qid], i) for i, qid in enumerate(ids) if qid in cache["by_id"]]}
+
+async def own_attempt(attempt_id: int, user_id: int):
+    rows = await fetch_one_off(select(DBMockAttempt).where(DBMockAttempt.id == attempt_id, DBMockAttempt.user_id == user_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That test is not yours or no longer here.")
+    return rows[0][0]
+
+class TestAnswerBody(BaseModel):
+    index: int
+    chosen: Optional[int] = None           # None clears the answer
+    seconds: Optional[int] = 0             # time spent on this question since the last save
+
+@app.put("/api/tests/attempts/{attempt_id}/answer")
+async def save_test_answer(attempt_id: int, body: TestAnswerBody, current_user_id: int = Depends(get_current_user_id)):
+    """Saves one answer while the test runs, so nothing is lost if the page closes."""
+    attempt = await own_attempt(attempt_id, current_user_id)
+    if attempt.submitted_at:
+        raise HTTPException(status_code=409, detail="This test is already submitted.")
+    if is_past(attempt.ends_at, MOCK_GRACE_SECONDS):
+        raise HTTPException(status_code=409, detail="Time is up. Your saved answers are being marked.")
+    answers = json_data(attempt.answers)
+    if not (0 <= body.index < len(answers)):
+        raise HTTPException(status_code=400, detail="There is no such question in this test.")
+    question = (await practice_questions())["by_id"].get(json_data(attempt.question_ids)[body.index])
+    if body.chosen is not None and not (question and 0 <= body.chosen < len(json_list(question.options))):
+        raise HTTPException(status_code=400, detail="Pick one of the choices.")
+    # One statement, so two quick saves cannot overwrite each other's question: the JSON is rebuilt from the stored row
+    await run_one_off(text("""
+        UPDATE mock_attempts SET answers = jsonb_set(answers::jsonb, ARRAY[CAST(:i AS text)], coalesce(to_jsonb(CAST(:chosen AS integer)), 'null'::jsonb))::text,
+                                 seconds = jsonb_set(seconds::jsonb, ARRAY[CAST(:i AS text)], to_jsonb(coalesce((seconds::jsonb ->> CAST(:n AS integer))::integer, 0) + :add))::text
+        WHERE id = :id AND coalesce(submitted_at, '') = ''""").bindparams(i=str(body.index), n=body.index, chosen=body.chosen, add=max(0, min(body.seconds or 0, 3600)), id=attempt_id))
+    return {"index": body.index, "chosen": body.chosen}
+
+class TestSubmitBody(BaseModel):
+    seconds: Optional[int] = 0             # time on the question that was open at the end
+    index: Optional[int] = None
+
+@app.post("/api/tests/attempts/{attempt_id}/submit")
+async def submit_test(attempt_id: int, body: TestSubmitBody, current_user_id: int = Depends(get_current_user_id)):
+    attempt = await own_attempt(attempt_id, current_user_id)
+    cache = await practice_questions()
+    if not attempt.submitted_at:
+        if body.index is not None and body.seconds and not is_past(attempt.ends_at, MOCK_GRACE_SECONDS):
+            await save_test_answer(attempt_id, TestAnswerBody(index=body.index, chosen=json_data(attempt.answers)[body.index] if 0 <= body.index < attempt.total else None,
+                                                              seconds=body.seconds), current_user_id)
+        attempt = await own_attempt(attempt_id, current_user_id)
+        result = await finish_attempt(attempt, cache)
+    else:
+        result = {"xp": {"xp": 0}}
+    return {**(await test_result(attempt_id, current_user_id)), "xp": result["xp"]}
+
+@app.get("/api/tests/attempts/{attempt_id}")
+async def test_result(attempt_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """A finished test: the score, the parts, every question with the right answer and why. Time per question and
+    topic accuracy only with the full report."""
+    attempt = await own_attempt(attempt_id, current_user_id)
+    if not attempt.submitted_at:
+        raise HTTPException(status_code=409, detail="This test is still running.")
+    cache = await practice_questions()
+    full = await has_feature(current_user_id, "full_test_report")
+    answers, seconds = json_data(attempt.answers), json_data(attempt.seconds)
+    review = []
+    for i, qid in enumerate(json_data(attempt.question_ids)):
+        q = cache["by_id"].get(qid)
+        if q is None:
+            continue
+        chosen = answers[i] if i < len(answers) else None
+        item = {**question_payload(q, i), "chosen": chosen, "answer": q.answer, "correct": chosen == q.answer, "why": q.explanation or ""}
+        if full:
+            item["seconds"] = seconds[i] if i < len(seconds) else 0
+        review.append(item)
+    summary = attempt_summary(attempt)
+    by_topic: dict = {}
+    for item in review:
+        t = by_topic.setdefault(item["topic"] or "Other", [0, 0])
+        t[0] += 1
+        t[1] += 1 if item["correct"] else 0
+    return {**summary, "review": review, "full_report": full, "unanswered": sum(1 for item in review if item["chosen"] is None),
+            "topics": [{"topic": t, "count": n, "right": r} for t, (n, r) in sorted(by_topic.items(), key=lambda kv: kv[1][1] / kv[1][0])] if full else None,
+            "time_used": round((datetime.fromisoformat(attempt.submitted_at) - datetime.fromisoformat(attempt.started_at)).total_seconds()),
+            "minutes": MOCK_TESTS.get(attempt.test_key, {}).get("minutes")}
+
+
+# ---------- untimed topic practice ----------
+class TopicAnswerBody(BaseModel):
+    question_id: int
+    chosen: int
+
+@app.get("/api/tests/practice")
+async def topic_practice(section: Optional[str] = "", topic: Optional[str] = "", current_user_id: int = Depends(get_current_user_id)):
+    """Ten questions of a section or topic, ones not answered yet first. Free and unlimited."""
+    cache = await practice_questions()
+    pool = [q for q in cache["by_id"].values() if not q.draft and (not section or question_section(q) == section) and (not topic or (q.topic or "") == topic)]
+    if not pool:
+        raise HTTPException(status_code=404, detail="No questions for that topic yet.")
+    done = {qid for (qid,) in await fetch_one_off(select(DBTopicAnswer.question_id).where(DBTopicAnswer.user_id == current_user_id))}
+    fresh = [q for q in pool if q.id not in done]
+    pick = random.sample(fresh, min(MOCK_TOPIC_BATCH, len(fresh)))
+    if len(pick) < MOCK_TOPIC_BATCH:
+        rest = [q for q in pool if q not in pick]
+        pick += random.sample(rest, min(MOCK_TOPIC_BATCH - len(pick), len(rest)))
+    return {"section": section, "topic": topic, "left_new": max(0, len(fresh) - len(pick)), "questions": [question_payload(q, i) for i, q in enumerate(pick)]}
+
+@app.post("/api/tests/practice/answer")
+async def answer_topic_question(body: TopicAnswerBody, current_user_id: int = Depends(get_current_user_id)):
+    question = (await practice_questions())["by_id"].get(body.question_id)
+    if not question or question.draft:
+        raise HTTPException(status_code=404, detail="That question is no longer here.")
+    if not (0 <= body.chosen < len(json_list(question.options))):
+        raise HTTPException(status_code=400, detail="Pick one of the choices.")
+    correct = body.chosen == question.answer
+    await run_one_off(DBTopicAnswer.__table__.insert().values(user_id=current_user_id, question_id=question.id, chosen=body.chosen,
+                                                              correct=1 if correct else 0, answered_at=utc_now_iso()))
+    xp = await award_xp(current_user_id, "topic", f"t{question.id}:{site_now().date().isoformat()}", 2)
+    return {"question_id": question.id, "correct": correct, "answer": question.answer, "why": question.explanation or "", "xp": xp}
+
+
+# ---------- the founder: AI drafts for the bank ----------
+class DraftBody(BaseModel):
+    section: str
+    topic: str
+    count: Optional[int] = 10
+
+class DraftDecisionBody(BaseModel):
+    action: str                             # approve, reject
+
+DRAFT_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["questions"], "properties": {
+    "questions": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["q", "options", "answer", "why", "difficulty"],
+                                             "properties": {"q": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}},
+                                                            "answer": {"type": "integer"}, "why": {"type": "string"}, "difficulty": {"type": "integer"}}}}}}
+
+@app.post("/api/founder/practice-drafts")
+async def draft_questions(body: DraftBody, founder_id: int = Depends(require_founder)):
+    """The AI writes questions for a topic; they wait (active = 0, draft = 1) until the founder approves each one."""
+    if body.section not in SECTION_LABELS:
+        raise HTTPException(status_code=400, detail="Pick a section.")
+    topic = clean_required(body.topic, 60, "topic")
+    client = helpbot_client()
+    if client is None:
+        raise HTTPException(status_code=503, detail="AI is not switched on (ANTHROPIC_API_KEY).")
+    count = max(3, min(body.count or 10, 20))
+    import anthropic
+    try:
+        message = await client.messages.create(
+            model=TUTOR_MODEL, max_tokens=12000, output_config={"effort": "high", "format": {"type": "json_schema", "schema": DRAFT_SCHEMA}},
+            messages=[{"role": "user", "content": (
+                f"Write {count} original multiple-choice questions for Indian campus placement preparation. Section: {SECTION_LABELS[body.section]}. "
+                f"Topic: {topic}. Four options each, exactly one correct (its index from 0 in 'answer'), plausible wrong options, difficulty 1 to 3, "
+                f"and a one- or two-sentence explanation that shows the working. Work every answer out carefully before writing it; "
+                f"use Indian rupees (₹) for money. Do not copy questions from any company's real papers.")}])
+    except anthropic.APIError as e:
+        print("Draft questions error:", e)
+        raise HTTPException(status_code=502, detail="The AI could not write them. Try again.")
+    await record_ai_usage(founder_id, "draft", message.usage)
+    data = json.loads(next((b.text for b in message.content if b.type == "text"), "{}") or "{}")
+    rows = [{"track": "coding" if body.section == "technical" else "aptitude", "section": body.section, "topic": topic, "question": q["q"][:1200],
+             "code": "", "lang": "", "options": json.dumps(q["options"]), "answer": q["answer"], "explanation": q.get("why", "")[:1500],
+             "difficulty": max(1, min(3, q.get("difficulty") or 2)), "active": 0, "daily": 0, "draft": 1, "created_by": founder_id, "created_at": utc_now_iso()}
+            for q in clean_quiz(data.get("questions"), count)]
+    if rows:
+        await run_one_off(DBPracticeQuestion.__table__.insert().values(rows))
+    return {"added": len(rows)}
+
+@app.get("/api/founder/practice-drafts")
+async def list_drafts(founder_id: int = Depends(require_founder)):
+    rows = await fetch_one_off(select(DBPracticeQuestion).where(DBPracticeQuestion.draft == 1).order_by(DBPracticeQuestion.id.desc()).limit(200))
+    return {"drafts": [{"id": q.id, "section": q.section, "topic": q.topic, "question": q.question, "options": json_list(q.options), "answer": q.answer,
+                        "why": q.explanation or "", "difficulty": q.difficulty} for (q,) in rows]}
+
+@app.post("/api/founder/practice-drafts/{question_id}")
+async def decide_draft(question_id: int, body: DraftDecisionBody, founder_id: int = Depends(require_founder)):
+    if body.action == "approve":
+        await run_one_off(update(DBPracticeQuestion).where(DBPracticeQuestion.id == question_id, DBPracticeQuestion.draft == 1).values(draft=0, active=1))
+    elif body.action == "reject":
+        await run_one_off(delete(DBPracticeQuestion).where(DBPracticeQuestion.id == question_id, DBPracticeQuestion.draft == 1))
+    else:
+        raise HTTPException(status_code=400, detail="Approve or reject.")
+    practice_cache["at"] = 0.0
+    return {"id": question_id, "action": body.action}
+
+
+# ==========================================
+# 36. STUDYING TOGETHER: WHO IS STUDYING NOW, STUDY ROOMS, THE WEEKLY LEAGUE (rooms.html, progress.html)
+# ==========================================
+# Presence and live rooms are kept in memory (one server process; the same note as the socket managers: several
+# processes would need Redis). Rooms themselves are rows, so a room survives a restart; its members just rejoin.
+# Room events go over the notification socket as type "room_state", "room_reaction" or "room_nudge" (never "content").
+class DBStudyRoom(Base):
+    __tablename__ = "study_rooms"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    college_key = Column(String, index=True)
+    subject = Column(String, default="")
+    created_by = Column(Integer, index=True)
+    public = Column(Integer, default=1)            # 1: anyone of the college sees it; 0: by invite code only
+    invite_code = Column(String, index=True)
+    focus_minutes = Column(Integer, default=25)
+    break_minutes = Column(Integer, default=5)
+    closed = Column(Integer, default=0)
+    created_at = Column(String)
+    last_used_at = Column(String)
+
+class DBLeagueBadge(Base):
+    """A top-three finish in a college's weekly league."""
+    __tablename__ = "league_badges"
+    __table_args__ = (UniqueConstraint("user_id", "week", name="ux_league_badges"),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    week = Column(String)                          # the Monday, YYYY-MM-DD
+    college_key = Column(String)
+    rank = Column(Integer)
+    xp = Column(Integer)
+    created_at = Column(String)
+
+USER_DATA_ERASED.update({"league_badges": ("user_id",)})
+USER_DATA_KEPT.update({"study_rooms": ("created_by",)})
+for _registry in (USER_DATA_ERASED, USER_DATA_KEPT):
+    for _table in ("league_badges", "study_rooms"):
+        assert all(column in Base.metadata.tables[_table].c for column in _registry.get(_table, ()))
+
+ROOM_MAX_MEMBERS = 30
+ROOM_STALE_SECONDS = 75               # a member whose page has not pinged for this long has left
+ROOM_REACTIONS = ("👍", "🔥", "💪", "☕", "🎉", "😴")
+ROOM_WATCH_SECONDS = 5
+ROOM_KEEP_DAYS = 30                   # rooms nobody used for this long are closed
+STUDYING_MAX_MINUTES = 180
+LEAGUE_SIZE = 20
+LEAGUE_MIN_XP = 10                    # to be told about your finish
+LEAGUE_HOUR = 6                       # Monday morning (India time): last week's results go out
+studying_now: dict = {}               # user_id -> {"college", "until" (timestamp), "subject", "room"}
+league_state: dict = {}               # {"done": the week whose results went out}, so Mondays do not ask the database every 5 s
+rooms_live: dict = {}                 # room_id -> {"members": {user_id: {...}}, "phase", "ends_at", "started_by"}
+
+
+def now_ts() -> float:
+    return datetime.now(timezone.utc).timestamp()
+
+def studying_count(college_key: str, but: int = 0) -> int:
+    t = now_ts()
+    return sum(1 for uid, s in list(studying_now.items()) if s["until"] > t and s["college"] == college_key and uid != but)
+
+class StudyingBody(BaseModel):
+    minutes: Optional[int] = 25
+    subject: Optional[str] = ""
+
+@app.post("/api/study/now")
+async def start_studying(body: StudyingBody, current_user_id: int = Depends(get_current_user_id)):
+    """The focus timer started: count me as studying until it ends."""
+    me = await prep_identity(current_user_id)
+    minutes = max(1, min(body.minutes or 25, STUDYING_MAX_MINUTES))
+    studying_now[current_user_id] = {"college": me["college_key"], "until": now_ts() + minutes * 60, "subject": (body.subject or "").strip()[:80],
+                                     "room": studying_now.get(current_user_id, {}).get("room")}
+    return {"studying_now": studying_count(me["college_key"], current_user_id)}
+
+@app.delete("/api/study/now")
+async def stop_studying(current_user_id: int = Depends(get_current_user_id)):
+    studying_now.pop(current_user_id, None)
+    return {"stopped": True}
+
+
+# ---------- rooms ----------
+class RoomBody(BaseModel):
+    name: str
+    subject: Optional[str] = ""
+    public: Optional[bool] = True
+    focus_minutes: Optional[int] = 25
+    break_minutes: Optional[int] = 5
+
+class RoomTimerBody(BaseModel):
+    action: str                           # start, pause, skip
+class RoomReactBody(BaseModel):
+    emoji: str
+class RoomNudgeBody(BaseModel):
+    user_id: int
+class RoomCodeBody(BaseModel):
+    code: str
+class RoomPingBody(BaseModel):
+    subject: Optional[str] = ""
+
+def room_live(room_id: int) -> dict:
+    return rooms_live.setdefault(room_id, {"members": {}, "phase": "idle", "ends_at": 0.0, "started_by": None, "round": 0})
+
+def room_state(room, live: dict, me_id: int = 0) -> dict:
+    t = now_ts()
+    return {"id": room.id, "name": room.name or "", "subject": room.subject or "", "public": bool(room.public), "owner_id": room.created_by,
+            "mine": room.created_by == me_id, "code": room.invite_code if room.created_by == me_id or me_id in live["members"] else "",
+            "focus_minutes": room.focus_minutes or 25, "break_minutes": room.break_minutes or 5,
+            "phase": live["phase"], "seconds_left": max(0, round(live["ends_at"] - t)) if live["phase"] in ("focus", "break") else 0,
+            "paused_left": live.get("paused_left", 0), "round": live["round"],
+            "members": sorted([{"id": uid, **{k: m[k] for k in ("name", "pic", "subject")}} for uid, m in live["members"].items()], key=lambda m: m["name"].lower())}
+
+async def load_room(room_id: int, me: dict):
+    rows = await fetch_one_off(select(DBStudyRoom).where(DBStudyRoom.id == room_id, func.coalesce(DBStudyRoom.closed, 0) == 0))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That room is closed.")
+    room = rows[0][0]
+    if room.college_key != me["college_key"] and not me["founder"]:
+        raise HTTPException(status_code=404, detail="That room is for another college.")
+    return room
+
+async def room_broadcast(room, payload_type: str = "room_state", extra: Optional[dict] = None, only: Optional[int] = None):
+    live = room_live(room.id)
+    for uid in ([only] if only else list(live["members"])):
+        message = {"type": payload_type, "room_id": room.id, **(extra or {})}
+        if payload_type == "room_state":
+            message["room"] = room_state(room, live, uid)
+        await notification_manager.send_personal_message(json.dumps(message), uid)
+
+@app.get("/api/rooms")
+async def list_rooms(current_user_id: int = Depends(get_current_user_id)):
+    """Open rooms of my college with who is in them, my own rooms, and how many people of my college are studying now."""
+    me = await prep_identity(current_user_id)
+    rows = await fetch_one_off(select(DBStudyRoom).where(func.coalesce(DBStudyRoom.closed, 0) == 0, or_(
+        and_(DBStudyRoom.college_key == me["college_key"], DBStudyRoom.public == 1), DBStudyRoom.created_by == current_user_id))
+        .order_by(DBStudyRoom.last_used_at.desc()).limit(60))
+    rooms = [room_state(room, room_live(room.id), current_user_id) for (room,) in rows]
+    rooms.sort(key=lambda r: (-len(r["members"]), not r["mine"]))
+    t = now_ts()
+    return {"college": me["college"], "rooms": rooms, "studying_now": studying_count(me["college_key"], current_user_id),
+            "studying_people": sum(1 for s in studying_now.values() if s["until"] > t and s["college"] == me["college_key"]),
+            "reactions": list(ROOM_REACTIONS), "in_room": studying_now.get(current_user_id, {}).get("room")}
+
+@app.post("/api/rooms")
+async def create_room(body: RoomBody, current_user_id: int = Depends(get_current_user_id)):
+    me = await prep_identity(current_user_id)
+    if not me["college_key"]:
+        raise HTTPException(status_code=400, detail="Add your college on your profile first. Rooms are for classmates.")
+    focus, rest = body.focus_minutes or 25, body.break_minutes or 5
+    if not (10 <= focus <= 120 and 1 <= rest <= 30):
+        raise HTTPException(status_code=400, detail="Focus is 10 to 120 minutes and a break 1 to 30.")
+    open_rooms = await fetch_one_off(select(func.count()).select_from(DBStudyRoom).where(DBStudyRoom.created_by == current_user_id, func.coalesce(DBStudyRoom.closed, 0) == 0))
+    if open_rooms[0][0] >= 5:
+        raise HTTPException(status_code=400, detail="You can keep 5 rooms open. Close one first.")
+    now_iso = utc_now_iso()
+    rows = await run_returning(DBStudyRoom.__table__.insert().values(
+        name=clean_required(body.name, 60, "room name"), college_key=me["college_key"], subject=clean_text(body.subject, 80, "subject"), created_by=current_user_id,
+        public=1 if body.public else 0, invite_code=uuid.uuid4().hex[:6].upper(), focus_minutes=focus, break_minutes=rest, closed=0,
+        created_at=now_iso, last_used_at=now_iso).returning(DBStudyRoom.id))
+    return {"id": rows[0][0]}
+
+async def member_card(user_id: int, subject: str = "") -> dict:
+    rows = await fetch_one_off(select(DBUser.name, case((func.length(DBUser.profile_pic) > 1000, ""), else_=DBUser.profile_pic)).where(DBUser.id == user_id))
+    name, pic = rows[0] if rows else ("Someone", "")
+    return {"name": name or "Someone", "pic": pic or "", "subject": subject[:80], "seen": now_ts()}
+
+async def join_room_by(room, current_user_id: int, subject: str = "") -> dict:
+    live = room_live(room.id)
+    if current_user_id not in live["members"] and len(live["members"]) >= ROOM_MAX_MEMBERS:
+        raise HTTPException(status_code=409, detail="This room is full.")
+    # One room at a time
+    for other_id, other in rooms_live.items():
+        if other_id != room.id and current_user_id in other["members"]:
+            other["members"].pop(current_user_id, None)
+    live["members"][current_user_id] = await member_card(current_user_id, subject)
+    me_now = studying_now.get(current_user_id)
+    if me_now:
+        me_now["room"] = room.id
+    await run_one_off(update(DBStudyRoom).where(DBStudyRoom.id == room.id).values(last_used_at=utc_now_iso()))
+    spawn_background(room_broadcast(room))
+    return room_state(room, live, current_user_id)
+
+@app.get("/api/rooms/{room_id}")
+async def get_room(room_id: int, current_user_id: int = Depends(get_current_user_id)):
+    room = await load_room(room_id, await prep_identity(current_user_id))
+    if not room.public and room.created_by != current_user_id and current_user_id not in room_live(room_id)["members"]:
+        raise HTTPException(status_code=403, detail="This room is private. Ask for its code.")
+    return room_state(room, room_live(room_id), current_user_id)
+
+@app.post("/api/rooms/{room_id}/join")
+async def join_room(room_id: int, body: RoomPingBody, current_user_id: int = Depends(get_current_user_id)):
+    room = await load_room(room_id, await prep_identity(current_user_id))
+    if not room.public and room.created_by != current_user_id and current_user_id not in room_live(room_id)["members"]:
+        raise HTTPException(status_code=403, detail="This room is private. Ask for its code.")
+    return await join_room_by(room, current_user_id, body.subject or "")
+
+@app.post("/api/rooms/join-code")
+async def join_room_code(body: RoomCodeBody, current_user_id: int = Depends(get_current_user_id)):
+    code = (body.code or "").strip().upper()[:12]
+    rows = await fetch_one_off(select(DBStudyRoom).where(DBStudyRoom.invite_code == code, func.coalesce(DBStudyRoom.closed, 0) == 0))
+    if not rows:
+        raise HTTPException(status_code=404, detail="No open room has that code.")
+    room = rows[0][0]
+    me = await prep_identity(current_user_id)
+    if room.college_key != me["college_key"] and not me["founder"]:
+        raise HTTPException(status_code=404, detail="That room is for another college.")
+    return await join_room_by(room, current_user_id)
+
+@app.post("/api/rooms/{room_id}/ping")
+async def ping_room(room_id: int, body: RoomPingBody, current_user_id: int = Depends(get_current_user_id)):
+    """The room page says it is still open (every 30 s). Changing what I study updates my card."""
+    live = rooms_live.get(room_id)
+    if not live or current_user_id not in live["members"]:
+        raise HTTPException(status_code=409, detail="You are not in this room any more.")
+    member = live["members"][current_user_id]
+    member["seen"] = now_ts()
+    if body.subject is not None and (body.subject or "")[:80] != member["subject"]:
+        member["subject"] = (body.subject or "")[:80]
+        room = await load_room(room_id, await prep_identity(current_user_id))
+        spawn_background(room_broadcast(room))
+    return {"ok": True}
+
+@app.post("/api/rooms/{room_id}/leave")
+async def leave_room(room_id: int, current_user_id: int = Depends(get_current_user_id)):
+    live = rooms_live.get(room_id)
+    if live and live["members"].pop(current_user_id, None) is not None:
+        rows = await fetch_one_off(select(DBStudyRoom).where(DBStudyRoom.id == room_id))
+        if rows:
+            spawn_background(room_broadcast(rows[0][0]))
+    if studying_now.get(current_user_id, {}).get("room") == room_id:
+        studying_now[current_user_id]["room"] = None
+    return {"left": room_id}
+
+@app.post("/api/rooms/{room_id}/timer")
+async def room_timer(room_id: int, body: RoomTimerBody, current_user_id: int = Depends(get_current_user_id)):
+    """The room's shared timer. The owner runs it; when the owner is not in the room, any member can."""
+    room = await load_room(room_id, await prep_identity(current_user_id))
+    live = room_live(room_id)
+    if current_user_id not in live["members"]:
+        raise HTTPException(status_code=409, detail="Join the room first.")
+    if room.created_by != current_user_id and room.created_by in live["members"]:
+        raise HTTPException(status_code=403, detail="The person who made the room runs its timer.")
+    t = now_ts()
+    if body.action == "start":
+        if live["phase"] == "paused":
+            live.update(phase=live.get("paused_phase", "focus"), ends_at=t + live.get("paused_left", 0))
+        else:
+            live.update(phase="focus", ends_at=t + (room.focus_minutes or 25) * 60, round=live["round"] + 1)
+        live["started_by"] = current_user_id
+    elif body.action == "pause":
+        if live["phase"] in ("focus", "break"):
+            live.update(paused_phase=live["phase"], paused_left=max(0, live["ends_at"] - t), phase="paused")
+    elif body.action == "skip":
+        advance_room(room, live, t)
+    elif body.action == "stop":
+        live.update(phase="idle", ends_at=0.0)
+    else:
+        raise HTTPException(status_code=400, detail="Start, pause, skip or stop.")
+    spawn_background(room_broadcast(room))
+    return room_state(room, live, current_user_id)
+
+def advance_room(room, live: dict, t: float):
+    """Focus ends -> break; break ends -> the next focus starts by itself."""
+    if live["phase"] == "focus":
+        live.update(phase="break", ends_at=t + (room.break_minutes or 5) * 60)
+        live["focus_done"] = live["round"]
+    elif live["phase"] == "break":
+        live.update(phase="focus", ends_at=t + (room.focus_minutes or 25) * 60, round=live["round"] + 1)
+
+@app.post("/api/rooms/{room_id}/react")
+async def room_react(room_id: int, body: RoomReactBody, current_user_id: int = Depends(get_current_user_id)):
+    if body.emoji not in ROOM_REACTIONS:
+        raise HTTPException(status_code=400, detail="Pick one of the reactions.")
+    room = await load_room(room_id, await prep_identity(current_user_id))
+    if current_user_id not in room_live(room_id)["members"]:
+        raise HTTPException(status_code=409, detail="Join the room first.")
+    spawn_background(room_broadcast(room, "room_reaction", {"emoji": body.emoji, "from": current_user_id}))
+    return {"ok": True}
+
+@app.post("/api/rooms/{room_id}/nudge")
+async def room_nudge(room_id: int, body: RoomNudgeBody, current_user_id: int = Depends(get_current_user_id)):
+    """A friendly 'back to work' to one member, once a minute at most."""
+    room = await load_room(room_id, await prep_identity(current_user_id))
+    live = room_live(room_id)
+    if current_user_id not in live["members"] or body.user_id not in live["members"] or body.user_id == current_user_id:
+        raise HTTPException(status_code=409, detail="You can nudge someone in the same room.")
+    key = (room_id, current_user_id, body.user_id)
+    last = live.setdefault("nudges", {}).get(key, 0)
+    if now_ts() - last < 60:
+        raise HTTPException(status_code=429, detail="Give them a minute.")
+    live["nudges"][key] = now_ts()
+    spawn_background(room_broadcast(room, "room_nudge", {"from": current_user_id, "from_name": live["members"][current_user_id]["name"]}, only=body.user_id))
+    return {"ok": True}
+
+@app.delete("/api/rooms/{room_id}")
+async def close_room(room_id: int, current_user_id: int = Depends(get_current_user_id)):
+    rows = await fetch_one_off(select(DBStudyRoom).where(DBStudyRoom.id == room_id))
+    if not rows or rows[0][0].created_by != current_user_id:
+        raise HTTPException(status_code=403, detail="Only the person who made the room can close it.")
+    await run_one_off(update(DBStudyRoom).where(DBStudyRoom.id == room_id).values(closed=1))
+    live = rooms_live.pop(room_id, None)
+    if live:
+        for uid in live["members"]:
+            await notification_manager.send_personal_message(json.dumps({"type": "room_closed", "room_id": room_id}), uid)
+    return {"closed": room_id}
+
+async def rooms_pass():
+    """Moves timers on, drops members who left without saying so. Returns the rooms that changed."""
+    t = now_ts()
+    changed = set()
+    for room_id, live in list(rooms_live.items()):
+        stale = [uid for uid, m in live["members"].items() if t - m["seen"] > ROOM_STALE_SECONDS]
+        for uid in stale:
+            live["members"].pop(uid, None)
+            changed.add(room_id)
+        if live["phase"] in ("focus", "break") and t >= live["ends_at"]:
+            changed.add(room_id)
+        if not live["members"] and live["phase"] != "idle":
+            live.update(phase="idle", ends_at=0.0)
+    if changed:
+        rows = await fetch_one_off(select(DBStudyRoom).where(DBStudyRoom.id.in_(changed)))
+        for (room,) in rows:
+            live = rooms_live.get(room.id)
+            if live and live["phase"] in ("focus", "break") and t >= live["ends_at"]:
+                advance_room(room, live, t)
+            await room_broadcast(room)
+    for uid, s in list(studying_now.items()):
+        if s["until"] < t:
+            studying_now.pop(uid, None)
+    return changed
+
+async def rooms_watch():
+    last_tidy = ""
+    while True:
+        try:
+            await rooms_pass()
+            today = site_now().date().isoformat()
+            if today != last_tidy:
+                last_tidy = today
+                cutoff = (datetime.now(timezone.utc) - timedelta(days=ROOM_KEEP_DAYS)).isoformat()
+                await run_one_off(update(DBStudyRoom).where(DBStudyRoom.last_used_at < cutoff, func.coalesce(DBStudyRoom.closed, 0) == 0).values(closed=1))
+            await league_pass()
+        except Exception as e:
+            print("Error in study rooms:", e)
+        await asyncio.sleep(ROOM_WATCH_SECONDS)
+
+@app.on_event("startup")
+async def rooms_startup():
+    spawn_background(rooms_watch())
+
+
+# ---------- the weekly league ----------
+LEAGUE_SQL = text("""
+SELECT u.id, u.name, CASE WHEN length(coalesce(u.profile_pic, '')) > 1000 THEN '' ELSE coalesce(u.profile_pic, '') END, sum(x.points) AS xp
+FROM xp_events x JOIN users u ON u.id = x.user_id
+WHERE x.day >= :from AND x.day < :to AND lower(trim(coalesce(u.college_name, ''))) = :college
+  AND coalesce(u.account_status, '') NOT IN ('rejected', 'closing', 'deleted')
+GROUP BY u.id, u.name, u.profile_pic HAVING sum(x.points) > 0
+ORDER BY xp DESC, u.id LIMIT :limit
+""")
+LEAGUE_FOLLOWING_SQL = text("""
+SELECT u.id, u.name, CASE WHEN length(coalesce(u.profile_pic, '')) > 1000 THEN '' ELSE coalesce(u.profile_pic, '') END,
+       coalesce((SELECT sum(points) FROM xp_events x WHERE x.user_id = u.id AND x.day >= :from AND x.day < :to), 0) AS xp
+FROM users u
+WHERE (u.id = :me OR u.id IN (SELECT followed_id FROM follows WHERE follower_id = :me))
+  AND coalesce(u.account_status, '') NOT IN ('rejected', 'closing', 'deleted')
+ORDER BY xp DESC, u.id LIMIT 50
+""")
+
+def league_week(day=None) -> tuple:
+    """(monday, next monday) as YYYY-MM-DD for the week holding day (default: today, India time)."""
+    day = day or site_now().date()
+    monday = day - timedelta(days=day.weekday())
+    return monday.isoformat(), (monday + timedelta(days=7)).isoformat()
+
+def league_rows(rows, me_id: int) -> list:
+    return [{"rank": i + 1, "id": uid, "name": name or "Someone", "pic": pic or "", "xp": int(xp or 0), "me": uid == me_id} for i, (uid, name, pic, xp) in enumerate(rows)]
+
+@app.get("/api/league")
+async def get_league(current_user_id: int = Depends(get_current_user_id)):
+    """This week's league for my college and among the people I follow, my place, last week's finish and my badges."""
+    me = await prep_identity(current_user_id)
+    start, end = league_week()
+    last_start, last_end = league_week(site_now().date() - timedelta(days=7))
+    college_rows, following_rows, my_xp, badges, last_rows = await asyncio.gather(
+        fetch_one_off(LEAGUE_SQL.bindparams(**{"from": start, "to": end, "college": me["college_key"], "limit": 500})) if me["college_key"] else asyncio.sleep(0, []),
+        fetch_one_off(LEAGUE_FOLLOWING_SQL.bindparams(**{"from": start, "to": end, "me": current_user_id})),
+        fetch_one_off(select(func.coalesce(func.sum(DBXpEvent.points), 0)).where(DBXpEvent.user_id == current_user_id, DBXpEvent.day >= start, DBXpEvent.day < end)),
+        fetch_one_off(select(DBLeagueBadge.week, DBLeagueBadge.rank, DBLeagueBadge.xp).where(DBLeagueBadge.user_id == current_user_id).order_by(DBLeagueBadge.week.desc()).limit(20)),
+        fetch_one_off(LEAGUE_SQL.bindparams(**{"from": last_start, "to": last_end, "college": me["college_key"], "limit": 500})) if me["college_key"] else asyncio.sleep(0, []))
+    table = league_rows(college_rows, current_user_id)
+    mine = next((row for row in table if row["me"]), None)
+    last = next((row for row in league_rows(last_rows, current_user_id) if row["me"]), None)
+    days_left = (datetime.fromisoformat(end).date() - site_now().date()).days
+    above = table[mine["rank"] - 2] if mine and mine["rank"] > 1 else None
+    return {"college": me["college"], "week_start": start, "days_left": days_left, "my_xp": int(my_xp[0][0] or 0),
+            "my_rank": mine["rank"] if mine else None, "players": len(table),
+            "to_next": (above["xp"] - mine["xp"] + 1) if above and mine else None,
+            "college_table": table[:LEAGUE_SIZE] + ([mine] if mine and mine["rank"] > LEAGUE_SIZE else []),
+            "following_table": league_rows(following_rows, current_user_id),
+            "last_week": {"rank": last["rank"], "xp": last["xp"], "players": len(last_rows)} if last else None,
+            "badges": [{"week": w, "rank": r, "xp": x} for w, r, x in badges]}
+
+async def league_badges_of(user_ids) -> dict:
+    """user id -> number of top-three weekly finishes (for profile badges)."""
+    if not user_ids:
+        return {}
+    rows = await fetch_one_off(select(DBLeagueBadge.user_id, func.count(), func.min(DBLeagueBadge.rank)).where(DBLeagueBadge.user_id.in_(list(user_ids))).group_by(DBLeagueBadge.user_id))
+    return {uid: {"count": n, "best": best} for uid, n, best in rows}
+
+async def league_pass(send=None, now=None) -> int:
+    """Once a week (Monday morning): last week's results per college. Top three get a badge; everyone with at least
+    LEAGUE_MIN_XP is told their place. Returns how many people were told."""
+    now = now or site_now()
+    if now.weekday() != 0 or now.hour < LEAGUE_HOUR:
+        return 0
+    start, end = league_week(now.date() - timedelta(days=7))
+    if league_state.get("done") == start and send is None:
+        return 0
+    claimed = await claim_reminders([(0, f"league:{start}")])
+    league_state["done"] = start
+    if not claimed:
+        return 0
+    send = send or (lambda uid, text, link: create_notification(uid, "study", text, utc_now_iso(), link))
+    colleges = await fetch_one_off(text("""
+        SELECT DISTINCT lower(trim(coalesce(u.college_name, ''))), max(u.college_name) FROM xp_events x JOIN users u ON u.id = x.user_id
+        WHERE x.day >= :from AND x.day < :to AND trim(coalesce(u.college_name, '')) <> '' GROUP BY 1""").bindparams(**{"from": start, "to": end}))
+    told = 0
+    for key, name in colleges:
+        rows = league_rows(await fetch_one_off(LEAGUE_SQL.bindparams(**{"from": start, "to": end, "college": key, "limit": 500})), 0)
+        top = [row for row in rows[:3]]
+        if top:
+            await run_one_off(pg_insert(DBLeagueBadge).values([{"user_id": r["id"], "week": start, "college_key": key, "rank": r["rank"], "xp": r["xp"],
+                                                                 "created_at": utc_now_iso()} for r in top]).on_conflict_do_nothing(index_elements=["user_id", "week"]))
+        for row in rows:
+            if row["xp"] < LEAGUE_MIN_XP:
+                continue
+            medal = {1: "You won", 2: "You came 2nd in", 3: "You came 3rd in"}.get(row["rank"])
+            text_out = (f"{medal} last week's league at {name} with {row['xp']} XP. A badge is on your profile." if medal
+                        else f"You finished #{row['rank']} of {len(rows)} at {name} last week with {row['xp']} XP. A new week has started.")
+            await send(row["id"], text_out, "progress.html")
+            told += 1
+    return told
+
+@app.get("/api/league/badges/{user_id}")
+async def get_league_badges(user_id: int, current_user_id: int = Depends(get_current_user_id)):
+    """Top-three weekly finishes of anyone, for their profile."""
+    return (await league_badges_of([user_id])).get(user_id) or {"count": 0, "best": None}
