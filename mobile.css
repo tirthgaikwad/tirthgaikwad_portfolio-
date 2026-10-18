@@ -78,12 +78,12 @@
 
 /* ---------- Page by page ---------- */
 @media (max-width: 767px) {
-  /* Profile: the three top actions share one row; card titles stay on one line next to their edit button */
-  #profileActions { display: flex !important; flex-wrap: nowrap !important; gap: 8px !important; width: 100%; }
-  #profileActions > button { flex: 1 1 0; min-width: 0; justify-content: center; min-height: 40px; padding-left: 6px !important; padding-right: 6px !important; white-space: nowrap; }
-  #profileActions > button > .material-symbols-outlined { display: none; }
-  #profileContent section > div:first-child h2 { white-space: nowrap; font-size: 18px !important; line-height: 26px !important; }
-  #profileContent section > div:first-child > button, #profileContent section > div:first-child > div:last-child button { white-space: nowrap; flex-shrink: 0; }
+  /* Profile: the header buttons share one row (the "more" button keeps its size); card titles stay on one line */
+  #actionBtnsContainer { flex-wrap: nowrap !important; width: 100%; }
+  #actionBtnsContainer > .pf-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; }
+  #actionBtnsContainer > .pf-menu-wrap { flex: 0 0 auto; }
+  #actionBtnsContainer > .pf-btn > .material-symbols-outlined { display: none; }
+  #profileContent .pf-card-head h2 { font-size: 18px; line-height: 26px; }
 
   /* Founder console and institution analytics: figures two per row */
   .in-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }

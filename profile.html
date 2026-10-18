@@ -42,6 +42,94 @@ body.is-own .visitor-only { display: none !important; }
 .chat-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #0b1c30; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 13px; z-index: 10002; box-shadow: 0 8px 24px rgba(0,0,0,0.25); max-width: 90vw; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
+/* Profile layout: header card, section cards, buttons */
+.pf-hero, .pf-card { background: #ffffff; border: 1px solid rgba(199,196,216,0.45); border-radius: 16px; box-shadow: 0 1px 3px rgba(11,28,48,0.05); }
+.pf-banner { position: relative; height: 200px; overflow: hidden; border-radius: 15px 15px 0 0; background: linear-gradient(120deg, #3525cd 0%, #4f46e5 45%, #68dba9 130%); }
+.pf-banner::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 85% 20%, rgba(255,255,255,0.18), transparent 45%); pointer-events: none; }
+.pf-banner-btn { position: absolute; top: 12px; right: 12px; z-index: 1; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.92); color: #0b1c30; font: 600 12px/16px Inter, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.pf-banner-btn:hover { background: #ffffff; }
+.pf-hero-body { padding: 0 32px 24px; }
+.pf-avatar { position: relative; width: 152px; height: 152px; margin-top: -84px; border-radius: 999px; border: 4px solid #ffffff; background: #ffffff; box-shadow: 0 2px 8px rgba(11,28,48,0.12); }
+.pf-avatar-inner { width: 100%; height: 100%; border-radius: 999px; display: flex; align-items: center; justify-content: center; font: 800 44px/1 'Plus Jakarta Sans', sans-serif; }
+.pf-avatar-btn { position: absolute; inset: 0; border-radius: 999px; background: rgba(0,0,0,0.45); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; opacity: 0; transition: opacity .15s; font: 600 11px/14px Inter, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.pf-avatar:hover .pf-avatar-btn, .pf-avatar-btn:focus-visible { opacity: 1; }
+.pf-name { font: 800 30px/38px 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; color: #0b1c30; margin: 0; overflow-wrap: anywhere; }
+.pf-verified { color: #047857; font-size: 24px; font-variation-settings: 'FILL' 1; }
+.pf-headline { margin: 4px 0 0; font: 500 17px/26px Inter, sans-serif; color: #0b1c30; overflow-wrap: anywhere; }
+.pf-meta { margin: 4px 0 0; font: 400 14px/22px Inter, sans-serif; color: #464555; }
+.pf-meta:empty { display: none; }
+.pf-counts { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; font: 500 14px/22px Inter, sans-serif; color: #464555; }
+.pf-counts button { color: #3525cd; font-weight: 600; }
+.pf-counts button b { font-weight: 700; }
+.pf-counts button:hover { text-decoration: underline; }
+.pf-notice { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: #eff4ff; color: #0b1c30; font: 500 14px/20px Inter, sans-serif; }
+.pf-open-to { border-radius: 0 0 15px 15px; display: flex; align-items: flex-start; gap: 10px; padding: 14px 32px; border-top: 1px solid rgba(199,196,216,0.45); background: #f8f9ff; font: 400 14px/22px Inter, sans-serif; color: #0b1c30; }
+.pf-open-to .material-symbols-outlined { color: #3525cd; font-size: 20px; margin-top: 1px; }
+
+.pf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 18px; border-radius: 999px; font: 600 14px/1 Inter, sans-serif; white-space: nowrap; transition: background .15s, border-color .15s, color .15s; }
+.pf-btn:disabled { opacity: .6; cursor: default; }
+.pf-btn-primary { background: #3525cd; color: #ffffff; border: 1px solid #3525cd; }
+.pf-btn-primary:hover:not(:disabled) { background: #2b1ea6; }
+.pf-btn-outline { background: #ffffff; color: #3525cd; border: 1px solid #3525cd; }
+.pf-btn-outline:hover:not(:disabled) { background: #eff4ff; }
+.pf-btn-quiet { background: #ffffff; color: #0b1c30; border: 1px solid #c7c4d8; }
+.pf-btn-quiet:hover:not(:disabled) { background: #f8f9ff; border-color: #777587; }
+.pf-btn-icon { width: 40px; padding: 0; }
+.pf-btn-sm { height: 34px; padding: 0 14px; font-size: 13px; }
+.pf-icon-btn { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: #464555; flex-shrink: 0; }
+.pf-icon-btn:hover { background: #eff4ff; color: #3525cd; }
+.pf-menu-wrap { position: relative; }
+.pf-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 210px; padding: 6px; background: #ffffff; border: 1px solid rgba(199,196,216,0.6); border-radius: 12px; box-shadow: 0 12px 32px rgba(11,28,48,0.14); }
+.pf-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; text-align: left; font: 500 14px/20px Inter, sans-serif; color: #0b1c30; }
+.pf-menu button:hover { background: #eff4ff; }
+.pf-menu button .material-symbols-outlined { font-size: 20px; color: #464555; }
+.pf-menu button.is-danger:hover, .pf-menu button.is-danger:hover .material-symbols-outlined { color: #ba1a1a; background: #fff5f4; }
+
+.pf-card { padding: 24px; }
+.pf-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; min-height: 36px; }
+.pf-card-head h2 { font: 700 19px/26px 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.01em; color: #0b1c30; margin: 0; white-space: nowrap; }
+.pf-about { margin: 0; font: 400 15px/25px Inter, sans-serif; color: #0b1c30; white-space: pre-line; overflow-wrap: anywhere; }
+.pf-about.is-empty { color: #464555; }
+.pf-strong { margin: 0; font: 600 15px/22px Inter, sans-serif; color: #0b1c30; }
+.pf-body { margin: 2px 0 0; font: 400 14px/22px Inter, sans-serif; color: #0b1c30; }
+.pf-small { margin: 2px 0 0; font: 400 13px/18px Inter, sans-serif; color: #464555; }
+.pf-school-icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; background: #e5eeff; color: #3525cd; display: flex; align-items: center; justify-content: center; }
+.pf-details { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.pf-details > div { display: flex; justify-content: space-between; gap: 12px; font: 400 14px/20px Inter, sans-serif; }
+.pf-details dt { display: flex; align-items: center; gap: 8px; color: #464555; flex-shrink: 0; }
+.pf-details dt .material-symbols-outlined { font-size: 18px; color: #777587; }
+.pf-details dd { margin: 0; color: #0b1c30; font-weight: 600; text-align: right; overflow-wrap: anywhere; min-width: 0; }
+.pf-skill { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; border: 1px solid #c7c4d8; background: #ffffff; color: #0b1c30; font: 500 13px/18px Inter, sans-serif; }
+.pf-tech { display: inline-flex; padding: 2px 8px; border-radius: 6px; background: #eff4ff; color: #3323cc; font: 500 12px/16px Inter, sans-serif; }
+.pf-empty { padding: 28px 12px; text-align: center; color: #464555; font: 400 14px/22px Inter, sans-serif; }
+.pf-empty .material-symbols-outlined.pf-empty-icon { width: 48px; height: 48px; border-radius: 999px; background: #eff4ff; color: #3525cd; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 8px; }
+.pf-empty p { margin: 0 0 12px; }
+.pf-empty p:last-child { margin-bottom: 0; }
+.pf-project { border: 1px solid rgba(199,196,216,0.55); border-radius: 14px; overflow: hidden; background: #ffffff; display: flex; flex-direction: column; transition: border-color .15s, box-shadow .15s; }
+.pf-project:hover { border-color: rgba(53,37,205,0.4); box-shadow: 0 4px 14px rgba(11,28,48,0.07); }
+.pf-project-cover { height: 148px; width: 100%; object-fit: cover; background: #eff4ff; }
+.pf-project-ph { height: 88px; display: flex; align-items: center; padding: 0 18px; background: linear-gradient(120deg, #e2dfff, #e5eeff 60%, #d8f8ea); color: #3525cd; font: 800 30px/1 'Plus Jakarta Sans', sans-serif; }
+.pf-stat { padding: 12px; border-radius: 12px; background: #f8f9ff; text-align: center; }
+.pf-stat b { display: block; font: 700 20px/26px 'Plus Jakarta Sans', sans-serif; color: #0b1c30; }
+.pf-stat span { font: 500 12px/16px Inter, sans-serif; color: #464555; }
+.pf-strength-pct { font: 700 15px/20px Inter, sans-serif; color: #3525cd; }
+.pf-strength-bar { height: 8px; border-radius: 999px; background: #e5eeff; overflow: hidden; }
+.pf-strength-bar span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #3525cd, #4f46e5); transition: width .4s ease; }
+.pf-notice.hidden, .pf-open-to.hidden, .pf-details > div.hidden { display: none; }
+.pf-todo { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; text-align: left; font: 500 13px/18px Inter, sans-serif; color: #0b1c30; }
+.pf-todo:hover { background: #eff4ff; color: #3525cd; }
+.pf-todo .material-symbols-outlined { font-size: 18px; color: #3525cd; }
+@media (max-width: 767px) {
+  .pf-banner { height: 120px; }
+  .pf-hero-body { padding: 0 16px 20px; }
+  .pf-avatar { width: 108px; height: 108px; margin-top: -56px; }
+  .pf-avatar-inner { font-size: 32px; }
+  .pf-name { font-size: 24px; line-height: 30px; }
+  .pf-headline { font-size: 15px; line-height: 22px; }
+  .pf-open-to { padding: 12px 16px; }
+  .pf-card { padding: 18px 16px; }
+}
+
 /* Resume: a clean sheet that only exists on paper */
 #resumeSheet { display: none; }
 @media print {
@@ -66,7 +154,6 @@ body.is-own .visitor-only { display: none !important; }
 <header class="app-header" id="appHeader"></header>
 <script>renderAppHeader()</script>
 <main class="w-full pt-16 bg-surface min-h-screen">
-<div class="flex flex-col w-full">
 
 <!-- Shown while you look at your own profile the way visitors see it -->
 <div id="previewBanner" class="hidden w-full bg-primary text-on-primary">
@@ -76,36 +163,6 @@ body.is-own .visitor-only { display: none !important; }
   </div>
 </div>
 
-<!-- Profile Header Hero / Context Action Bar -->
-<section class="w-full bg-surface-container-lowest border-b border-outline-variant/30 py-space-md">
-<div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row md:items-center md:justify-between gap-space-sm">
-  <div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md min-w-0">
-    <a class="hover:text-primary transition-colors flex items-center gap-1 shrink-0" href="college.html">
-      <span class="material-symbols-outlined text-[16px]">school</span>
-      Campus Network
-    </a>
-    <span class="text-outline-variant">/</span>
-    <span id="breadcrumbKind" class="shrink-0">Profile</span>
-    <span class="text-outline-variant">/</span>
-    <span class="text-primary font-bold truncate" id="breadcrumbName">Loading...</span>
-  </div>
-  <div class="flex items-center gap-space-xs flex-wrap" id="profileActions">
-    <button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" id="copyProfileBtn" type="button" onclick="shareProfile()">
-      <span class="material-symbols-outlined text-[16px] text-secondary">share</span>
-      <span>Share Profile</span>
-    </button>
-    <button class="own-only inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg transition-colors" id="publicViewBtn" type="button" onclick="togglePublicView()">
-      <span class="material-symbols-outlined text-[16px] text-secondary">visibility</span>
-      <span>Public View</span>
-    </button>
-    <button class="inline-flex items-center gap-1.5 px-space-sm py-1.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-95 shadow-sm transition-all" type="button" id="exportResumeBtn" onclick="exportResume()">
-      <span class="material-symbols-outlined text-[16px]">download</span>
-      <span>Export Resume</span>
-    </button>
-  </div>
-</div>
-</section>
-
 <!-- Problem loading the profile -->
 <div id="profileProblem" class="hidden max-w-container-max mx-auto px-gutter-desktop py-16 w-full text-center">
   <span class="material-symbols-outlined text-[48px] text-outline mb-3" id="profileProblemIcon">cloud_off</span>
@@ -114,156 +171,140 @@ body.is-own .visitor-only { display: none !important; }
   <div class="mt-4 flex items-center justify-center gap-3" id="profileProblemActions"></div>
 </div>
 
-<!-- Main Profile Workspace Grid -->
-<div class="max-w-container-max mx-auto px-gutter-desktop py-space-xl w-full" id="profileContent">
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<div class="max-w-container-max mx-auto px-gutter-desktop py-space-lg w-full" id="profileContent">
 
-<!-- Left Column: Identity Card (Sticky on Desktop) -->
-<aside class="lg:col-span-4 w-full">
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden lg:sticky lg:top-20 transition-all">
-  <!-- Banner -->
-  <div class="relative h-36 w-full overflow-hidden bg-gradient-to-r from-primary/30 via-primary/15 to-tertiary/30">
+<!-- Header card: banner, picture, name, headline and the main buttons -->
+<section class="pf-hero" aria-labelledby="profileName">
+  <div class="pf-banner">
     <img id="displayBanner" class="w-full h-full object-cover object-center hidden" alt="Profile banner" src=""/>
-    <button id="cardBannerBtn" class="own-only absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-surface-container-lowest/90 hover:bg-surface-container-lowest text-on-surface font-label-sm text-label-sm px-2.5 py-1 rounded-md shadow-sm transition-colors" type="button" onclick="choosePicture('banner')">
-      <span class="material-symbols-outlined text-[14px]">photo_camera</span>
-      <span>Edit Banner</span>
+    <button id="cardBannerBtn" class="own-only pf-banner-btn" type="button" onclick="choosePicture('banner')">
+      <span class="material-symbols-outlined text-[16px]">photo_camera</span>
+      <span>Edit banner</span>
     </button>
   </div>
-  <!-- Avatar & identity -->
-  <div class="px-space-lg pb-space-lg pt-0 relative flex flex-col items-center text-center">
-    <div class="relative -mt-14 mb-space-sm group">
-      <div class="w-24 h-24 rounded-full p-1 bg-surface-container-lowest shadow-md">
-        <div id="avatarPlaceholder" class="w-full h-full rounded-full bg-primary flex items-center justify-center ring-2 ring-primary-fixed text-on-primary font-bold text-2xl"></div>
-        <img id="displayAvatar" class="w-full h-full rounded-full object-cover object-center ring-2 ring-primary-fixed hidden" alt="Profile picture" src=""/>
+  <div class="pf-hero-body">
+    <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+      <div class="pf-avatar group order-1">
+        <div id="avatarPlaceholder" class="pf-avatar-inner bg-primary text-on-primary"></div>
+        <img id="displayAvatar" class="pf-avatar-inner object-cover object-center hidden" alt="Profile picture" src=""/>
+        <button id="cardAvatarBtn" aria-label="Change profile picture" class="own-only pf-avatar-btn" type="button" onclick="choosePicture('profile')">
+          <span class="material-symbols-outlined text-[22px]">photo_camera</span>
+          <span>Update</span>
+        </button>
       </div>
-      <button id="cardAvatarBtn" aria-label="Change profile picture" class="own-only absolute inset-1 rounded-full bg-black/40 text-on-primary opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex flex-col items-center justify-center" type="button" onclick="choosePicture('profile')">
-        <span class="material-symbols-outlined text-[20px]">photo_camera</span>
-        <span class="font-label-sm text-[9px] uppercase tracking-wider font-semibold">Update</span>
-      </button>
-      <div id="verifiedTick" class="hidden absolute bottom-1 right-1 w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shadow-sm" title="Verified student">
-        <span class="material-symbols-outlined text-[13px] font-bold">verified</span>
+      <div id="profileActions" class="order-3 md:order-2 basis-full md:basis-auto">
+        <div id="actionBtnsContainer" class="flex flex-wrap items-center gap-2"></div>
+      </div>
+      <div class="order-2 md:order-3 basis-full min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 id="profileName" class="pf-name">Loading...</h1>
+          <span id="verifiedTick" class="hidden material-symbols-outlined pf-verified" title="Verified student">verified</span>
+        </div>
+        <p id="profileHeadline" class="pf-headline"></p>
+        <p id="profileMeta" class="pf-meta"></p>
+        <p class="pf-counts">
+          <button type="button" onclick="openConnections('followers')"><b id="followersCount">—</b> <span id="followersWord">followers</span></button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onclick="openConnections('following')"><b id="followingCount">—</b> following</button>
+        </p>
+        <div class="mt-3 flex items-center gap-1.5 flex-wrap empty:hidden" id="profileBadges"></div>
       </div>
     </div>
-    <h1 id="profileName" class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Loading...</h1>
-    <div class="mt-2 flex items-center justify-center gap-1.5 flex-wrap" id="profileBadges"></div>
-    <p id="profileBio" class="mt-space-xs font-body-md text-body-md text-on-surface-variant whitespace-pre-line break-words"></p>
-
-    <!-- Follower & following counts open the real lists -->
-    <div class="grid grid-cols-2 gap-space-sm w-full mt-space-md py-space-sm px-space-xs bg-surface-container-low rounded-xl">
-      <button type="button" class="flex flex-col items-center hover:opacity-80 transition-opacity" onclick="openConnections('followers')">
-        <span id="followersCount" class="font-headline-md text-headline-md font-bold text-on-surface">—</span>
-        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Followers</span>
-      </button>
-      <button type="button" class="flex flex-col items-center hover:opacity-80 transition-opacity" onclick="openConnections('following')">
-        <span id="followingCount" class="font-headline-md text-headline-md font-bold text-on-surface">—</span>
-        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Following</span>
-      </button>
-    </div>
-    <div class="flex items-center justify-center gap-2 mt-space-sm text-on-surface-variant font-body-sm text-body-sm">
-      <span class="material-symbols-outlined text-[16px] text-secondary">badge</span>
-      <span class="font-medium text-on-surface">Roll no. <span id="profileRoll">—</span></span>
-    </div>
-    <!-- Primary actions (filled in by profile.js) -->
-    <div class="w-full mt-space-md flex flex-col gap-space-xs" id="actionBtnsContainer"></div>
+    <div id="profileNotice" class="hidden own-only pf-notice"></div>
   </div>
-</div>
-</aside>
+  <div id="profileOpenTo" class="hidden pf-open-to"></div>
+</section>
 
-<!-- Right Column -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start mt-space-lg">
+
+<!-- Main column -->
 <div class="lg:col-span-8 flex flex-col gap-space-lg min-w-0">
 
-<!-- Academic Profile -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
-        <span class="material-symbols-outlined text-[18px]">school</span>
-      </div>
-      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Academic Profile</h2>
-    </div>
-    <button class="own-only inline-flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="openEditModal('editCollege')">
-      <span class="material-symbols-outlined text-[15px]">edit</span>
-      <span>Edit Info</span>
-    </button>
+<section class="pf-card" id="aboutCard">
+  <div class="pf-card-head">
+    <h2>About</h2>
+    <button class="own-only pf-icon-btn" type="button" onclick="openEditModal('editBio')" title="Edit about" aria-label="Edit about"><span class="material-symbols-outlined text-[20px]">edit</span></button>
   </div>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-    <div class="md:col-span-2 p-space-sm bg-surface-container-low rounded-lg">
-      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Institution</span>
-      <p class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-1.5">
-        <span class="material-symbols-outlined text-[18px] text-primary">account_balance</span>
-        <span id="profileCollege">—</span>
-      </p>
-    </div>
-    <div class="p-space-sm bg-surface-container-low rounded-lg">
-      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Department</span>
-      <p id="profileDept" class="font-body-lg text-body-lg text-on-surface font-semibold">—</p>
-    </div>
-    <div class="p-space-sm bg-surface-container-low rounded-lg">
-      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Division</span>
-      <p id="profileDiv" class="font-headline-sm text-headline-sm text-on-surface font-bold">—</p>
-    </div>
-    <div class="p-space-sm bg-surface-container-low rounded-lg">
-      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">Base Location</span>
-      <p class="font-body-md text-body-md text-on-surface font-semibold flex items-center gap-1">
-        <span class="material-symbols-outlined text-[16px] text-secondary">location_on</span>
-        <span id="profileCity">—</span>
-      </p>
-    </div>
-  </div>
+  <p id="profileBio" class="pf-about"></p>
 </section>
 
-<!-- Technical Skills -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
-        <span class="material-symbols-outlined text-[18px]">terminal</span>
-      </div>
-      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Technical Skills</h2>
-    </div>
-    <button class="own-only inline-flex items-center gap-1 px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md rounded-lg transition-colors" type="button" onclick="openEditModal('editSkills')">
-      <span class="material-symbols-outlined text-[15px]">edit</span>
-      <span>Edit Skills</span>
-    </button>
-  </div>
-  <div class="flex items-center gap-2 flex-wrap" id="profileSkills"></div>
-</section>
-
-<!-- GitHub -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md gap-2">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center font-bold">
-        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path clip-rule="evenodd" fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-      </div>
-      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">GitHub</h2>
-    </div>
-    <div id="githubHeaderAction"></div>
-  </div>
-  <div id="githubBody"></div>
-</section>
-
-<!-- Project Portfolio -->
-<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
-  <div class="flex items-center justify-between pb-space-sm border-b border-outline-variant/20 mb-space-md gap-2">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center">
-        <span class="material-symbols-outlined text-[18px]">folder_special</span>
-      </div>
-      <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Project Portfolio</h2>
-    </div>
-    <button id="addProjectBtn" class="own-only inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-95 shadow-xs transition-opacity" type="button" onclick="openProjectModal()">
-      <span class="material-symbols-outlined text-[16px]">add</span>
-      <span>Add Project</span>
+<section class="pf-card">
+  <div class="pf-card-head">
+    <h2>Projects</h2>
+    <button id="addProjectBtn" class="own-only pf-btn pf-btn-outline pf-btn-sm" type="button" onclick="openProjectModal()">
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      <span>Add project</span>
     </button>
   </div>
   <div id="projectList" class="grid grid-cols-1 md:grid-cols-2 gap-space-md"></div>
 </section>
 
+<section class="pf-card" id="githubCard">
+  <div class="pf-card-head">
+    <h2 class="flex items-center gap-2">
+      <svg class="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path clip-rule="evenodd" fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </h2>
+    <div id="githubHeaderAction"></div>
+  </div>
+  <div id="githubBody"></div>
+</section>
+
+<section class="pf-card">
+  <div class="pf-card-head">
+    <h2>Skills</h2>
+    <button class="own-only pf-icon-btn" type="button" onclick="openEditModal('editSkills')" title="Edit skills" aria-label="Edit skills"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap" id="profileSkills"></div>
+</section>
+
+</div>
+
+<!-- Side column -->
+<aside class="lg:col-span-4 flex flex-col gap-space-lg min-w-0 lg:sticky lg:top-20">
+
+<section class="own-only pf-card" id="strengthCard">
+  <div class="pf-card-head">
+    <h2>Profile strength</h2>
+    <span id="strengthPercent" class="pf-strength-pct"></span>
+  </div>
+  <div class="pf-strength-bar"><span id="strengthFill"></span></div>
+  <p id="strengthText" class="pf-small mt-3"></p>
+  <div id="strengthTodo" class="flex flex-col gap-1 mt-2"></div>
+</section>
+
+<section class="pf-card">
+  <div class="pf-card-head">
+    <h2>Education</h2>
+    <button class="own-only pf-icon-btn" type="button" onclick="openEditModal('editCollege')" title="Edit education" aria-label="Edit education"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+  </div>
+  <div class="flex items-start gap-3">
+    <div class="pf-school-icon"><span class="material-symbols-outlined">account_balance</span></div>
+    <div class="min-w-0">
+      <p id="profileCollege" class="pf-strong break-words">—</p>
+      <p id="profileDept" class="pf-body break-words">—</p>
+      <p class="pf-small">Division <span id="profileDiv">—</span></p>
+      <p class="own-only pf-small mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">lock</span>Roll no. <span id="profileRoll">—</span> · only you see this</p>
+    </div>
+  </div>
+</section>
+
+<section class="pf-card">
+  <div class="pf-card-head">
+    <h2>Details</h2>
+  </div>
+  <dl class="pf-details">
+    <div><dt><span class="material-symbols-outlined">location_on</span>Location</dt><dd id="profileCity">—</dd></div>
+    <div><dt><span class="material-symbols-outlined">work</span>Profession</dt><dd id="profileProfession">—</dd></div>
+    <div id="profileExperienceRow" class="hidden"><dt><span class="material-symbols-outlined">timeline</span>Experience</dt><dd id="profileExperience"></dd></div>
+    <div><dt><span class="material-symbols-outlined">verified_user</span>Verification</dt><dd id="profileVerification">—</dd></div>
+  </dl>
+</section>
+
+</aside>
 </div>
 </div>
-</div>
-</div></main>
+</main>
 <footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a><a class="hover:text-primary transition-colors text-decoration-none" href="refund.html">Refunds</a><a class="hover:text-primary transition-colors text-decoration-none" href="contact.html">Contact</a></div></div></footer>
 
 <!-- ==================== EDIT PROFILE ==================== -->

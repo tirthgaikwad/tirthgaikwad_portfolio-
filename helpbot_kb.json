@@ -108,8 +108,8 @@
    "answer": "Your account is checked by an admin for your college department. Add or replace your college ID card from your own profile; if the admin asks a question you will see it there. Verified people get a tick on their card.",
    "highlight": [
     {
-     "sel": "#profileActions",
-     "text": "Your profile actions, including adding your ID card."
+     "sel": "#profileNotice:not(.hidden), #profileVerification",
+     "text": "Your verification status, with a button to send a new ID photo when an admin asks for one."
     }
    ]
   },

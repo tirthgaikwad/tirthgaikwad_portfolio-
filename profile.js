@@ -25,12 +25,13 @@ let projectImageUrl = '';
 // ==========================================
 async function initProfile() {
   document.body.classList.toggle('is-own', isOwnProfile);
-  el('breadcrumbKind').textContent = isOwnProfile ? 'My Profile' : 'Profile';
   el('editProfileForm').addEventListener('submit', saveProfile);
   el('projectForm').addEventListener('submit', saveProject);
   el('githubForm').addEventListener('submit', connectGithub);
   el('pictureFileInput').addEventListener('change', onPictureChosen);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProfileModals(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeProfileMenu(); closeProfileModals(); } });
+  // Capture phase: the report dialog (chat-common.js) stops the click before it bubbles
+  document.addEventListener('click', (e) => { if (!e.target.closest('#profileMoreBtn')) closeProfileMenu(); }, true);
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('mousedown', (e) => { if (e.target === overlay && overlay.id !== 'cropModal' && overlay.id !== 'systemModal') overlay.classList.remove('active'); });
   });
@@ -87,7 +88,7 @@ function showProblem(icon, title, text, actionsHtml) {
   el('profileProblemText').textContent = text;
   el('profileProblemActions').innerHTML = actionsHtml || '';
   el('profileProblem').classList.remove('hidden');
-  el('breadcrumbName').textContent = title;
+  document.title = `${title} | Connect2Minds`;
 }
 
 function hideProblem() {
@@ -117,21 +118,26 @@ function splitList(text) {
   return String(text || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 
-function pillsHtml(items, emptyText) {
-  if (items.length === 0) return `<span class="font-body-sm text-body-sm text-on-surface-variant">${escapeHtml(emptyText)}</span>`;
-  return items.map(item => `<span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(item)}</span>`).join('');
+// A friendly empty state: an icon, a line of text and, for the owner, a button to fill it in
+function emptyStateHtml(icon, text, buttonLabel, handler) {
+  return `<div class="pf-empty col-span-full">
+      <span class="material-symbols-outlined pf-empty-icon">${icon}</span>
+      <p>${escapeHtml(text)}</p>
+      ${buttonLabel ? `<p><button type="button" onclick="${handler}" class="pf-btn pf-btn-outline pf-btn-sm">${escapeHtml(buttonLabel)}</button></p>` : ''}
+    </div>`;
 }
 
 function renderProfile() {
   if (!profile) return;
+  const own = showsOwnerControls();
   document.title = `${profile.name || 'Profile'} | Connect2Minds`;
-  el('breadcrumbName').textContent = profile.name || 'Developer';
 
   // Identity
   el('profileName').textContent = profile.name || 'Unknown Developer';
-  el('profileBio').textContent = profile.bio || (showsOwnerControls() ? 'Add a short bio so people know what you are working on.' : 'No bio yet.');
-  el('profileRoll').textContent = profile.roll_no || 'N/A';
-  el('followersCount').textContent = profile.followers_count || 0;
+  const profession = professionOf(profile);
+  el('profileHeadline').textContent = profile.college_name ? `${profession} at ${profile.college_name}` : profession;
+  el('profileMeta').textContent = [profile.department, profile.city].filter(Boolean).join(' · ');
+  showFollowerCount();
   el('followingCount').textContent = profile.following_count || 0;
 
   const avatar = el('displayAvatar');
@@ -156,73 +162,155 @@ function renderProfile() {
   }
   banner.onerror = () => banner.classList.add('hidden');
 
-  // Badges come from the account itself, not decoration
+  // Badges come from the account itself, not decoration: role, plan, and the weekly league
   const verified = profile.account_status === 'verified';
   el('verifiedTick').classList.toggle('hidden', !verified);
-  const badges = [];
+  const badges = [roleBadgesHtml(profile)];
   if (profile.account_type && profile.account_type !== 'standard') {
     badges.push(`<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold uppercase">${escapeHtml(profile.account_type)}</span>`);
-  }
-  // What the person does, how long they have done it and what they welcome
-  badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">${escapeHtml(professionOf(profile))}</span>`);
-  if (profile.experience_years > 0) {
-    badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">${profile.experience_years} ${profile.experience_years === 1 ? 'yr' : 'yrs'} experience</span>`);
-  }
-  openToLabels(profile.open_to).forEach(label => {
-    badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">Open to ${escapeHtml(label.toLowerCase())}</span>`);
-  });
-  badges.unshift(roleBadgesHtml(profile));
-  if (verified) {
-    badges.push('<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed/40 text-tertiary font-label-sm text-label-sm font-bold">Verified student</span>');
-  } else if (showsOwnerControls() && profile.account_status) {
-    const label = { pending: 'Verification pending', rejected: 'Verification rejected', appealed: 'Appeal under review', needs_info: 'Verification needs a new ID photo' }[profile.account_status] || profile.account_status;
-    badges.push(`<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">${escapeHtml(label)}</span>`);
-    // An admin asked for a better photo, or rejected it: let the person send a new one from here
-    if (profile.account_status === 'needs_info' || profile.account_status === 'rejected') {
-      badges.push(`<button type="button" onclick="uploadNewIdCard()" class="px-2.5 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold">Upload a new ID photo</button>`);
-    }
   }
   el('profileBadges').innerHTML = badges.join('');
   addLeagueBadge(viewedUserId);
 
-  // Academics and skills
-  el('profileCollege').textContent = profile.college_name || 'Not listed';
-  el('profileDept').textContent = profile.department || 'Not listed';
+  // The owner's verification status, with a way to send a new ID photo when an admin asked for one
+  const notice = el('profileNotice');
+  const label = { pending: 'Your student verification is pending. An admin of your department will check your ID card.', rejected: 'Your verification was rejected. You can send a new ID photo.', appealed: 'Your appeal is under review.', needs_info: 'Verification needs a clearer ID photo.' }[profile.account_status];
+  if (own && label) {
+    const canUpload = profile.account_status === 'needs_info' || profile.account_status === 'rejected';
+    notice.innerHTML = `<span class="material-symbols-outlined text-[20px] text-primary">info</span><span class="flex-1 min-w-0">${escapeHtml(label)}</span>${canUpload ? '<button type="button" onclick="uploadNewIdCard()" class="pf-btn pf-btn-primary pf-btn-sm">Upload a new ID photo</button>' : ''}`;
+    notice.classList.remove('hidden');
+  } else {
+    notice.classList.add('hidden');
+  }
+
+  // What the person welcomes, in one line
+  const openTo = openToLabels(profile.open_to);
+  el('profileOpenTo').innerHTML = openTo.length
+    ? `<span class="material-symbols-outlined">handshake</span><span><b>Open to</b> ${escapeHtml(openTo.join(', ').toLowerCase())}</span>`
+    : '';
+  el('profileOpenTo').classList.toggle('hidden', !openTo.length);
+
+  // About
+  const bio = el('profileBio');
+  bio.textContent = profile.bio || (own ? 'Add a short summary: what you study, what you build and what you are looking for.' : '');
+  bio.classList.toggle('is-empty', !profile.bio);
+  el('aboutCard').classList.toggle('hidden', !profile.bio && !own);
+
+  // Education and details
+  el('profileCollege').textContent = profile.college_name || 'College not listed';
+  el('profileDept').textContent = profile.department || 'Department not listed';
   el('profileDiv').textContent = profile.division || '—';
+  el('profileRoll').textContent = profile.roll_no || 'N/A';
   el('profileCity').textContent = profile.city || 'Not listed';
-  el('profileSkills').innerHTML = pillsHtml(splitList(profile.skills), 'No skills listed yet.');
+  el('profileProfession').textContent = profession;
+  el('profileExperienceRow').classList.toggle('hidden', !(profile.experience_years > 0));
+  el('profileExperience').textContent = profile.experience_years > 0 ? `${profile.experience_years} ${profile.experience_years === 1 ? 'year' : 'years'}` : '';
+  el('profileVerification').innerHTML = verified
+    ? '<span class="inline-flex items-center gap-1 text-tertiary"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:\'FILL\' 1">verified</span>Verified student</span>'
+    : 'Not verified yet';
+
+  // Skills
+  const skills = splitList(profile.skills);
+  el('profileSkills').innerHTML = skills.length
+    ? skills.map(skill => `<span class="pf-skill">${escapeHtml(skill)}</span>`).join('')
+    : (own ? emptyStateHtml('psychology', 'List the skills you want people to find you for.', 'Add skills', "openEditModal('editSkills')")
+           : '<p class="pf-small">No skills listed yet.</p>');
 
   renderActions();
   renderProjects();
   renderGithub();
 }
 
-function actionButton(id, icon, label, handler, primary, extra) {
-  const style = primary
-    ? 'bg-primary hover:bg-primary-container text-on-primary shadow-sm'
-    : 'bg-surface-container-high hover:bg-surface-variant text-primary font-bold';
-  return `<button id="${id}" type="button" onclick="${handler}" ${extra || ''} class="w-full py-2 px-space-md ${style} font-label-md text-label-md rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60">
+function showFollowerCount() {
+  const count = profile.followers_count || 0;
+  el('followersCount').textContent = count;
+  el('followersWord').textContent = count === 1 ? 'follower' : 'followers';
+}
+
+// ===== HEADER BUTTONS AND THE "MORE" MENU =====
+function actionButton(id, icon, label, handler, style, extra) {
+  return `<button id="${id}" type="button" onclick="${handler}" ${extra || ''} class="pf-btn pf-btn-${style}">
       <span class="material-symbols-outlined text-[18px]">${icon}</span><span>${label}</span>
     </button>`;
 }
 
+function menuItem(id, icon, label, handler, extra) {
+  return `<button id="${id}" type="button" role="menuitem" ${handler ? `onclick="${handler}"` : ''} ${extra || ''}><span class="material-symbols-outlined">${icon}</span><span>${label}</span></button>`;
+}
+
+function moreMenuHtml(items) {
+  return `<div class="pf-menu-wrap">
+      <button id="profileMoreBtn" type="button" class="pf-btn pf-btn-quiet pf-btn-icon" onclick="toggleProfileMenu()" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">
+        <span class="material-symbols-outlined text-[20px]">more_horiz</span>
+      </button>
+      <div id="profileMenu" class="pf-menu hidden" role="menu">${items}</div>
+    </div>`;
+}
+
+function toggleProfileMenu() {
+  const menu = el('profileMenu');
+  if (!menu) return;
+  const open = menu.classList.toggle('hidden') === false;
+  el('profileMoreBtn').setAttribute('aria-expanded', String(open));
+}
+
+function closeProfileMenu() {
+  const menu = el('profileMenu');
+  if (!menu || menu.classList.contains('hidden')) return;
+  menu.classList.add('hidden');
+  el('profileMoreBtn').setAttribute('aria-expanded', 'false');
+}
+
 function renderActions() {
   const container = el('actionBtnsContainer');
+  const shareAndExport =
+    menuItem('copyProfileBtn', 'link', 'Copy profile link', 'shareProfile()') +
+    menuItem('exportResumeBtn', 'download', 'Export resume (PDF)', 'exportResume()');
   if (showsOwnerControls()) {
     container.innerHTML =
-      actionButton('editProfileBtn', 'edit_note', 'Edit Profile', 'openEditModal()', false) +
-      actionButton('logoutBtn', 'logout', 'Log Out', 'window.logout()', true);
+      actionButton('editProfileBtn', 'edit', 'Edit profile', 'openEditModal()', 'primary') +
+      actionButton('publicViewBtn', 'visibility', 'View as visitor', 'togglePublicView()', 'outline') +
+      moreMenuHtml(shareAndExport);
     return;
   }
   // What a visitor gets. In the owner's preview the buttons are shown but do nothing.
   const inert = previewingPublic ? 'disabled' : '';
   container.innerHTML =
-    actionButton('openMessageBtn', 'chat', 'Message', `window.location.href='inbox.html?user=${viewedUserId}'`, true, inert) +
-    actionButton('followBtn', profile.is_following ? 'person_remove' : 'person_add', profile.is_following ? 'Following' : 'Follow', 'toggleFollow()', false, inert) +
-    actionButton('saveProfileBtn', profile.is_saved ? 'bookmark_added' : 'bookmark_add', profile.is_saved ? 'Saved' : 'Save Profile', 'toggleSave()', false, inert) +
-    (previewingPublic ? '' : `<button type="button" id="reportProfileBtn" data-report-kind="user" data-report-id="${viewedUserId}" data-report-name="${escapeHtml(profile.name || '')}"
-      class="w-full py-1.5 font-label-sm text-label-sm text-on-surface-variant hover:text-error flex items-center justify-center gap-1 rounded-lg">
-      <span class="material-symbols-outlined text-[16px]">flag</span><span>Report profile</span></button>`);
+    actionButton('openMessageBtn', 'chat', 'Message', `window.location.href='inbox.html?user=${viewedUserId}'`, 'primary', inert) +
+    actionButton('followBtn', profile.is_following ? 'check' : 'person_add', profile.is_following ? 'Following' : 'Follow', 'toggleFollow()', 'outline', inert) +
+    actionButton('saveProfileBtn', profile.is_saved ? 'bookmark_added' : 'bookmark_add', profile.is_saved ? 'Saved' : 'Save', 'toggleSave()', 'quiet', inert) +
+    moreMenuHtml(shareAndExport + (previewingPublic ? '' : menuItem('reportProfileBtn', 'flag', 'Report profile', '',
+      `class="is-danger" data-report-kind="user" data-report-id="${viewedUserId}" data-report-name="${escapeHtml(profile.name || '')}"`)));
+}
+
+// ===== PROFILE STRENGTH (owner only) =====
+function strengthSteps() {
+  const p = profile;
+  return [
+    { done: !!p.profile_pic, label: 'Add a profile picture', action: "choosePicture('profile')" },
+    { done: !!p.banner_pic, label: 'Add a banner', action: "choosePicture('banner')" },
+    { done: !!p.bio, label: 'Write your About section', action: "openEditModal('editBio')" },
+    { done: !!(p.college_name && p.department), label: 'Add your college and department', action: "openEditModal('editCollege')" },
+    { done: splitList(p.skills).length >= 3, label: 'List at least 3 skills', action: "openEditModal('editSkills')" },
+    { done: !!p.open_to, label: 'Say what you are open to', action: 'openEditModal()' },
+    { done: (p.projects || []).length > 0, label: 'Add a project', action: 'openProjectModal()' },
+    { done: !!p.github_username, label: 'Connect GitHub', action: 'openGithubModal()' }
+  ];
+}
+
+function renderStrength() {
+  if (!isOwnProfile) return;
+  const steps = strengthSteps();
+  const done = steps.filter(step => step.done).length;
+  const percent = Math.round(done / steps.length * 100);
+  el('strengthPercent').textContent = `${percent}%`;
+  el('strengthFill').style.width = `${percent}%`;
+  const todo = steps.filter(step => !step.done);
+  el('strengthText').textContent = todo.length
+    ? 'Complete profiles get more follows and messages. Next steps:'
+    : 'Your profile is complete. Nice work!';
+  el('strengthTodo').innerHTML = todo.slice(0, 4).map(step =>
+    `<button type="button" class="pf-todo" onclick="${step.action}"><span class="material-symbols-outlined">add_circle</span>${escapeHtml(step.label)}</button>`).join('');
 }
 
 // ==========================================
@@ -237,7 +325,7 @@ async function toggleFollow() {
     if (nowFollowing !== profile.is_following) profile.followers_count = Math.max(0, (profile.followers_count || 0) + (nowFollowing ? 1 : -1));
     profile.is_following = nowFollowing;
     profileChanged();
-    el('followersCount').textContent = profile.followers_count;
+    showFollowerCount();
     showToast(nowFollowing ? `You are now following ${profile.name}.` : `You unfollowed ${profile.name}.`);
   } catch (err) {
     showToast(err.message);
@@ -614,14 +702,13 @@ async function applyCrop() {
 // 6. PROJECTS
 // ==========================================
 function renderProjects() {
+  renderStrength();
   const list = el('projectList');
   const projects = profile.projects || [];
   if (projects.length === 0) {
-    list.innerHTML = `
-      <div class="col-span-full py-8 text-center text-on-surface-variant">
-        <span class="material-symbols-outlined text-[32px] text-outline">folder_open</span>
-        <p class="mt-1">${showsOwnerControls() ? 'No projects yet. Add one to show what you have built.' : 'No projects yet.'}</p>
-      </div>`;
+    list.innerHTML = showsOwnerControls()
+      ? emptyStateHtml('folder_open', 'Show what you have built: class projects, hackathons, side projects.', 'Add your first project', 'openProjectModal()')
+      : emptyStateHtml('folder_open', 'No projects yet.');
     return;
   }
 
@@ -636,12 +723,14 @@ function renderProjects() {
           <button type="button" onclick="deleteProject(${p.id})" class="p-1 rounded text-on-surface-variant hover:text-error hover:bg-surface-container-low" title="Delete project"><span class="material-symbols-outlined text-[18px]">delete</span></button>
         </span>` : '';
     return `
-      <article class="rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest flex flex-col" data-project-id="${p.id}">
-        ${p.image_url ? `<img src="${escapeHtml(p.image_url)}" alt="" loading="lazy" class="w-full h-36 object-cover bg-surface-container-low" onerror="this.remove()">` : ''}
+      <article class="pf-project" data-project-id="${p.id}">
+        ${p.image_url
+          ? `<img src="${escapeHtml(p.image_url)}" alt="" loading="lazy" class="pf-project-cover" onerror="this.remove()">`
+          : `<div class="pf-project-ph" aria-hidden="true">${escapeHtml(getInitials(p.title || '?'))}</div>`}
         <div class="p-space-md flex flex-col gap-2 flex-1">
           <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface break-words">${escapeHtml(p.title)}</h3>
           ${p.description ? `<p class="font-body-sm text-body-sm text-on-surface-variant whitespace-pre-line break-words line-clamp-3">${escapeHtml(p.description)}</p>` : ''}
-          <div class="flex flex-wrap gap-1.5">${splitList(p.tech_stack).map(t => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(t)}</span>`).join('')}</div>
+          <div class="flex flex-wrap gap-1.5">${splitList(p.tech_stack).map(t => `<span class="pf-tech">${escapeHtml(t)}</span>`).join('')}</div>
           <div class="flex items-center gap-3 mt-auto pt-2">${links}${ownerButtons}</div>
         </div>
       </article>`;
@@ -742,18 +831,22 @@ let githubState = 'idle';   // idle | loading | ready | error
 let githubErrorText = '';
 
 function renderGithub() {
+  renderStrength();
   const body = el('githubBody');
   const action = el('githubHeaderAction');
   const username = profile.github_username;
 
+  // Visitors only see the card when there is something to show
+  el('githubCard').classList.toggle('hidden', !username && !showsOwnerControls());
   if (!username) {
     action.innerHTML = '';
     body.innerHTML = showsOwnerControls()
-      ? `<div class="py-6 text-center">
-           <p class="font-body-md text-body-md text-on-surface-variant mb-3">Connect your GitHub account to show your repositories and contribution chart.</p>
-           <button type="button" id="githubConnectBtn" onclick="openGithubModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg">Connect GitHub</button>
+      ? `<div class="pf-empty">
+           <span class="material-symbols-outlined pf-empty-icon">code</span>
+           <p>Connect your GitHub account to show your repositories and contribution chart.</p>
+           <p><button type="button" id="githubConnectBtn" onclick="openGithubModal()" class="pf-btn pf-btn-outline pf-btn-sm">Connect GitHub</button></p>
          </div>`
-      : `<p class="py-4 font-body-md text-body-md text-on-surface-variant">${escapeHtml(profile.name || 'This person')} has not connected a GitHub account.</p>`;
+      : '';
     return;
   }
 
@@ -776,13 +869,13 @@ function renderGithub() {
   }
 
   const g = githubStats;
-  const stat = (value, label) => `<div class="p-space-sm bg-surface-container-low rounded-lg text-center"><span class="font-headline-sm text-headline-sm text-on-surface font-bold block">${value}</span><span class="font-label-sm text-label-sm text-on-surface-variant">${label}</span></div>`;
+  const stat = (value, label) => `<div class="pf-stat"><b>${value}</b><span>${label}</span></div>`;
   const languages = Object.keys(g.languages || {});
   body.innerHTML = `
     <div class="grid grid-cols-3 gap-space-sm mb-space-md">
       ${stat(g.public_repos, 'Repositories')}${stat(g.total_stars, 'Stars')}${stat(g.followers, 'Followers')}
     </div>
-    ${languages.length ? `<div class="flex flex-wrap gap-1.5 mb-space-md">${languages.map(l => `<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-skill-pill text-skill-pill">${escapeHtml(l)}</span>`).join('')}</div>` : ''}
+    ${languages.length ? `<div class="flex flex-wrap gap-1.5 mb-space-md">${languages.map(l => `<span class="pf-tech">${escapeHtml(l)}</span>`).join('')}</div>` : ''}
     <div class="overflow-x-auto mb-space-md"><img src="${escapeHtml(g.heatmap_url)}" alt="GitHub contribution chart for ${escapeHtml(g.username)}" class="max-w-none" style="min-width: 640px; width: 100%;" loading="lazy" onerror="this.parentNode.remove()"></div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-space-sm">
       ${(g.top_repos || []).map(r => `

@@ -1388,12 +1388,15 @@ NUMBER_FIELDS = ("is_admin", "experience_years", "is_founder", "recruiter_contac
 def public_profile_columns():
     return [getattr(DBUser, field) for field in PUBLIC_PROFILE_FIELDS]
 
-def public_profile(row) -> dict:
-    """The profile fields anyone logged in may see. Never includes the password hash, email or ID documents."""
+def public_profile(row, own: bool = False) -> dict:
+    """The profile fields anyone logged in may see. Never includes the password hash, email or ID documents.
+    The roll number is sent only when the person is looking at their own profile (own=True)."""
     profile = {field: getattr(row, field) for field in PUBLIC_PROFILE_FIELDS}
     for field in PUBLIC_PROFILE_FIELDS:
         if profile[field] is None:
             profile[field] = 0 if field in NUMBER_FIELDS else ""
+    if not own:
+        profile["roll_no"] = ""
     return profile
 
 def serialize_project(project) -> dict:
@@ -1443,7 +1446,7 @@ async def load_profile(user_id: int, viewer_id: int, with_projects: bool) -> dic
 
     if not results[0]:
         raise HTTPException(status_code=404, detail="Developer not found.")
-    profile = public_profile(results[0][0])
+    profile = public_profile(results[0][0], own=viewer_id == user_id)
     followers, following, is_following, is_saved = results[1][0]
     profile["followers_count"] = followers or 0
     profile["following_count"] = following or 0
@@ -1463,7 +1466,7 @@ async def get_me(db: AsyncSession = Depends(get_fast_db), current_user_id: int =
     row = (await db.execute(select(*public_profile_columns(), DBUser.consent_version, *SAFETY_FLAG_COLUMNS()).filter(DBUser.id == current_user_id))).first()
     if not row:
         raise HTTPException(status_code=401, detail="User account no longer exists.")
-    me = public_profile(row)
+    me = public_profile(row, own=True)
     me.update(safety_flags(row))   # section 31: email, two-step login, age, terms
     me["consent_needed"] = (row.consent_version or "") != PRIVACY_VERSION or me.get("terms_needed", False)   # the notice bar in shared.js
     return me
@@ -1764,7 +1767,7 @@ async def update_profile(
         raise HTTPException(status_code=404, detail="Developer not found.")
     spawn_background(log_activity_later(user_id, "Profile Updated", "You updated your profile information."))
     spawn_background(broadcast_directory({"type": "profile_updated", "profile": directory_card(row)}))
-    return {"message": "Profile updated successfully.", "user_id": user_id, "profile": public_profile(row)}
+    return {"message": "Profile updated successfully.", "user_id": user_id, "profile": public_profile(row, own=True)}
 
 
 @app.get("/api/search", response_model=List[ProfileResponse])
