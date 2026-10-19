@@ -1384,24 +1384,76 @@
   },
   {
    "id": "research",
-   "title": "Research Collab",
+   "title": "Gap Finder",
    "audience": "member",
    "page": "research.html",
    "keywords": [
     "research",
+    "gap finder",
+    "research gap",
+    "project idea",
+    "research idea",
     "papers",
-    "sources",
     "literature",
+    "what to research",
+    "untouched",
+    "novel idea",
+    "research collab",
+    "sources",
+    "research sources",
     "references",
     "citations",
-    "wikipedia",
-    "journal"
+    "journal",
+    "research topic",
+    "topic research"
    ],
-   "answer": "Research Collab collects sources for a topic from Wikipedia, OpenAlex and Crossref into one report you can save and share. It gathers sources; it does not write the research for you.",
+   "answer": "Gap Finder (the Research page) finds research nobody has done yet. Type a field, like agriculture: it reads millions of papers from OpenAlex and shows sub-topics crossed with 16 methods (drones, IoT, language models...) where both are busy but almost no paper combines them. Each gap shows its few papers, people on Connect2Minds with the skills to build it, and teams already on it. Tick 'Make it local' for India-focused gaps.",
    "highlight": [
     {
-     "sel": "#researchQuery",
-     "text": "Type a topic and press Go."
+     "sel": "#gfField",
+     "text": "Type a field and press Find gaps."
+    }
+   ]
+  },
+  {
+   "id": "gap-project",
+   "title": "Start a project from a gap",
+   "audience": "member",
+   "page": "research.html",
+   "keywords": [
+    "start project from gap",
+    "gap wall",
+    "claim gap",
+    "team on gap",
+    "join gap team",
+    "research project team",
+    "who is working on"
+   ],
+   "answer": "Open a gap and press Start this project: you get a Project Hub workspace with a research plan (sprints, tasks, milestones), a brief that states the gap and a reading list of its papers. Your team then shows on the Gap wall, so others working on the same gap can message you instead of starting the same thing twice.",
+   "highlight": [
+    {
+     "sel": "#gfSide",
+     "text": "The Gap wall: teams working on gaps."
+    }
+   ]
+  },
+  {
+   "id": "gap-queue",
+   "title": "Why a field is queued",
+   "audience": "member",
+   "page": "research.html",
+   "keywords": [
+    "gap finder queued",
+    "field queued",
+    "ready in hours",
+    "gap finder busy",
+    "gaps not ready"
+   ],
+   "answer": "Gap Finder uses a free research database with a daily allowance. Fields someone already looked up open instantly (marked with a lightning sign) and stay ready for 30 days. A brand-new field on a busy day is queued and scanned within a few hours; you get a notification when its gaps are ready.",
+   "highlight": [
+    {
+     "sel": "#gfReady",
+     "text": "Fields marked with a lightning sign open instantly."
     }
    ]
   },

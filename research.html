@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 
 <html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="favicon.svg" type="image/svg+xml"/><link rel="icon" href="favicon.ico" sizes="48x48"/><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/><link rel="manifest" href="site.webmanifest"/><meta name="theme-color" content="#3525cd"/>
-<title>Connect2Minds | Research Collab</title>
+<title>Connect2Minds | Gap Finder</title>
 <script>
 // Ask for this page's data right away, while styles and scripts are still downloading. The page script picks up the result.
 (function () {
   if (!localStorage.getItem('currentUserId')) return;
   var apiBase = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000' : location.origin);
-  window.__pagePrefetch = fetch(apiBase + '/api/research', { credentials: 'include' })
+  window.__pagePrefetch = fetch(apiBase + '/api/gaps/fields', { credentials: 'include' })
     .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
     .catch(function () { return null; });
 })();
@@ -41,65 +41,43 @@
 .filter-toggle[aria-pressed="true"] { background: #3525cd; border-color: #3525cd; color: #fff; }
 .skeleton { background: linear-gradient(90deg, #e5eeff 25%, #f3f7ff 50%, #e5eeff 75%); background-size: 200% 100%; animation: skeletonShimmer 1.2s linear infinite; border-radius: 8px; }
 @keyframes skeletonShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-/* Research Collab page */
-.source-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: #eff4ff; color: #464555; border: 1px solid rgba(199,196,216,0.5); }
-.source-chip[data-state="loading"] .dot { background: #f59e0b; animation: sourcePulse 1s ease-in-out infinite; }
-.source-chip[data-state="ok"] { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
-.source-chip[data-state="ok"] .dot { background: #10b981; }
-.source-chip[data-state="empty"] .dot { background: #94a3b8; }
-.source-chip[data-state="failed"] { background: #ffdad6; color: #93000a; border-color: #ffb4ab; }
-.source-chip[data-state="failed"] .dot { background: #ba1a1a; }
-.source-chip .dot { width: 8px; height: 8px; border-radius: 9999px; background: #cbd5e1; }
-@keyframes sourcePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.report-text { font-size: 15px; line-height: 1.75; color: #0b1c30; }
-.report-text p + p { margin-top: 0.9em; }
-.saved-report[aria-current="true"] { background: #e2dfff; }
-@media print {
-  header, footer, .no-print, #researchSidebar, .chat-toast { display: none !important; }
-  main { padding-top: 0 !important; }
-  body, main, #researchReport { background: #fff !important; box-shadow: none !important; border: none !important; }
-  a[href]::after { content: " (" attr(href) ")"; font-size: 11px; color: #555; word-break: break-all; }
-}
-</style><script src="https://cdn.tailwindcss.com"></script><link href="header.css" rel="stylesheet"/><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="app-header" id="appHeader"></header>
-<script>renderAppHeader()</script><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
-<div class="max-w-container-max mx-auto w-full px-gutter-mobile md:px-gutter-desktop py-space-xl flex flex-col gap-space-lg">
-<!-- Section 1: Header and search -->
-<div class="flex flex-col items-center text-center max-w-3xl mx-auto space-y-space-sm no-print">
-<div class="inline-flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wider shadow-sm">
-<span class="material-symbols-outlined text-[14px]">biotech</span>
-<span>Research Collab</span>
-</div>
-<h1 class="font-display-hero text-display-hero-mobile md:text-display-hero font-extrabold text-on-surface tracking-tight leading-tight">Start a topic with real sources</h1>
-<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Type a topic and get a background briefing from Wikipedia plus the most relevant papers from OpenAlex and Crossref, with links to every source. Save it, or share it with your team.</p>
-<form class="w-full mt-space-md p-1.5 bg-surface-container-lowest rounded-3xl md:rounded-full shadow-md flex flex-col md:flex-row items-center gap-space-xs" id="researchForm">
-<div class="flex items-center gap-space-xs pl-space-md pr-space-xs flex-1 w-full">
-<span class="material-symbols-outlined text-primary text-[24px]">search</span>
-<input autocomplete="off" class="w-full bg-transparent border-none text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-0 py-2" id="researchQuery" maxlength="200" placeholder="A topic, method or technology (e.g. federated learning, CRISPR, swarm robotics)..." type="text"/>
-</div>
-<button class="w-full md:w-auto px-space-lg py-3 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all duration-200 shrink-0 disabled:opacity-60" id="researchGo" type="submit">
-<span>Research</span>
-<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-</button>
-</form>
-<div class="flex flex-wrap items-center justify-center gap-space-xs min-h-[28px]" id="researchExamples"></div>
-</div>
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
-<!-- Section 2: Saved reports -->
-<aside class="lg:col-span-3 bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-space-md no-print" id="researchSidebar">
-<div class="flex items-center justify-between mb-space-xs">
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Saved reports</h2>
-<span class="font-body-sm text-body-sm text-outline" id="savedReportCount"></span>
-</div>
-<div class="flex flex-col gap-1" id="savedReports"></div>
-</aside>
-<!-- Section 3: The report -->
-<section class="lg:col-span-9 flex flex-col gap-space-md">
-<div class="hidden flex-wrap items-center gap-space-xs no-print" id="sourceStatus"></div>
-<article class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-space-md md:p-space-xl" id="researchReport"></article>
+
+</style><script src="https://cdn.tailwindcss.com"></script><link href="header.css" rel="stylesheet"/><link href="gaps.css" rel="stylesheet"/><script src="shared.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-error-container":"#93000a","tertiary-container":"#006e4c","tertiary-fixed-dim":"#68dba9","on-primary":"#ffffff","on-primary-fixed-variant":"#3323cc","on-tertiary-fixed":"#002114","error":"#ba1a1a","surface-container-high":"#dce9ff","inverse-on-surface":"#eaf1ff","on-primary-container":"#dad7ff","outline":"#777587","primary-fixed-dim":"#c3c0ff","on-tertiary-fixed-variant":"#005137","secondary-container":"#dae2fd","secondary":"#565e74","surface-container":"#e5eeff","tertiary":"#005338","surface-dim":"#cbdbf5","on-tertiary":"#ffffff","inverse-primary":"#c3c0ff","secondary-fixed-dim":"#bec6e0","outline-variant":"#c7c4d8","tertiary-fixed":"#85f8c4","surface-container-lowest":"#ffffff","inverse-surface":"#213145","secondary-fixed":"#dae2fd","surface-variant":"#d3e4fe","on-primary-fixed":"#0f0069","primary-fixed":"#e2dfff","on-secondary-container":"#5c647a","error-container":"#ffdad6","surface-container-highest":"#d3e4fe","on-background":"#0b1c30","on-surface":"#0b1c30","surface-bright":"#f8f9ff","on-surface-variant":"#464555","surface":"#f8f9ff","on-error":"#ffffff","on-secondary":"#ffffff","surface-tint":"#4d44e3","surface-container-low":"#eff4ff","primary-container":"#4f46e5","on-tertiary-container":"#7df1bd","background":"#f8f9ff","primary":"#3525cd","on-secondary-fixed":"#131b2e","on-secondary-fixed-variant":"#3f465c"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"container-max":"1280px","space-2xs":"0.25rem","gutter-mobile":"1rem","space-xl":"2rem","space-xs":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.5rem","space-3xl":"4.5rem","space-sm":"0.75rem","space-md":"1rem","space-2xl":"3rem"},"fontFamily":{"display-hero":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Inter"],"body-lg":["Inter"],"display-hero-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"label-sm":["Inter"],"body-md":["Inter"],"label-md":["Inter"],"skill-pill":["Inter"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.025em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"display-hero-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"800"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"600"}],"skill-pill":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="app-header" id="appHeader"></header>
+<script>renderAppHeader()</script><main class="w-full pt-16 bg-surface min-h-screen"><div class="gf-page">
+<!-- The search -->
+<section class="gf-hero">
+  <span class="gf-badge"><span class="material-symbols-outlined">travel_explore</span>Gap Finder</span>
+  <h1>Find research nobody has done yet</h1>
+  <p>Type a field. Gap Finder reads millions of research papers and shows the combinations that are busy on their own but almost never studied together, who on Connect2Minds can build each one, and which teams already started.</p>
+  <form id="gfForm" class="gf-search" autocomplete="off">
+    <span class="material-symbols-outlined gf-search-icon">search</span>
+    <input id="gfField" maxlength="60" placeholder="A field, like agriculture, healthcare or education" aria-label="Field to search for gaps"/>
+    <label class="gf-local" title="Only papers about India, Indian languages or low-cost solutions"><input type="checkbox" id="gfLocal"/><span>Make it local (India)</span></label>
+    <button type="submit" id="gfGo" class="gf-btn"><span>Find gaps</span><span class="material-symbols-outlined">arrow_forward</span></button>
+  </form>
+  <div class="gf-ready" id="gfReady" aria-live="polite"></div>
 </section>
+
+<div class="gf-layout">
+  <!-- Results -->
+  <section class="gf-results" id="gfResults" aria-live="polite"></section>
+
+  <!-- Saved gaps and the gap wall -->
+  <aside class="gf-side" id="gfSide">
+    <div class="gf-tabs" role="tablist">
+      <button type="button" role="tab" class="gf-tab is-on" data-side="wall" aria-selected="true"><span class="material-symbols-outlined">groups</span>Gap wall</button>
+      <button type="button" role="tab" class="gf-tab" data-side="saved" aria-selected="false"><span class="material-symbols-outlined">bookmark</span>Saved <span id="gfSavedCount"></span></button>
+    </div>
+    <div id="gfWall" class="gf-side-body"></div>
+    <div id="gfSaved" class="gf-side-body" hidden></div>
+  </aside>
 </div>
 </div>
-</div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a><a class="hover:text-primary transition-colors text-decoration-none" href="refund.html">Refunds</a><a class="hover:text-primary transition-colors text-decoration-none" href="contact.html">Contact</a></div></div></footer>
+
+<!-- One gap, opened -->
+<div class="gf-panel-backdrop" id="gfBackdrop" hidden></div>
+<aside class="gf-panel" id="gfPanel" role="dialog" aria-modal="true" aria-labelledby="gfPanelTitle" hidden></aside>
+</main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/40 py-space-xl"><div class="max-w-container-max mx-auto px-gutter-desktop flex flex-col md:flex-row items-center justify-between gap-space-md font-body-sm text-body-sm text-on-surface-variant"><div class="flex items-center gap-space-xs"><img alt="Connect2Minds Logo" class="h-5 w-auto object-contain opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLYIVUTWgawVVcDf_AfO3osE5aQelSrQ-BiqZCvpbzadGqYt7RtjKuzKYtNzfOW-oW-6uJ8eSUDVEMDSBc_fUiLQjgWl837nw2mEMwiXz5c0mKkUYfQE2dbsmzbhRVZOjIy3Ds3vVzS319wCOCj9COqFm303zTmlcG9IfKWC6GtY75OxB_hkdbyS0D1vDdI1OkWuXELojjbtqR_tKJu-Q9_B0SX5XmdV9oiZSqvej275TiiIHhxGQD"/><span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Connect2Minds</span><span>© 2026 EdTech Network. All rights reserved.</span></div><div class="flex items-center gap-space-lg"><a class="hover:text-primary transition-colors text-decoration-none" href="privacy.html">Privacy</a><a class="hover:text-primary transition-colors text-decoration-none" href="dpdp.html">DPDP Act</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html">Terms</a><a class="hover:text-primary transition-colors text-decoration-none" href="terms.html#honour-code">Honour code</a><a class="hover:text-primary transition-colors text-decoration-none" href="support.html">Support</a><a class="hover:text-primary transition-colors text-decoration-none" href="cookies.html">Cookies</a><a class="hover:text-primary transition-colors text-decoration-none" href="refund.html">Refunds</a><a class="hover:text-primary transition-colors text-decoration-none" href="contact.html">Contact</a></div></div></footer>
 
 <!-- CUSTOM SYSTEM ALERTS MODAL -->
 <div class="modal-overlay" id="systemModal">
@@ -114,6 +92,6 @@
 </div>
 
 <script src="chat-common.js"></script>
-<script src="research.js"></script>
+<script src="gaps.js"></script>
 </body>
 </html>

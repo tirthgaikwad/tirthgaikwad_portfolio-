@@ -97,9 +97,9 @@ The header bell on every page is in `shared.js`. `GET /api/notifications` return
 
 ## Research Collab
 
-`research.html` loads `research.js`. A search asks Wikipedia (background and main sections), OpenAlex and Crossref (papers) directly from the browser, side by side; a source that fails is marked and the report is built from the rest. No AI model is called and nothing is checked: the page says so and links every source.
-
-- Reports can be saved (`/api/research`, up to 50 per person, private), copied as text, printed to PDF, or shared as a short summary to a team's first text channel.
+`research.html` is **Gap Finder** (`gaps.js`, `gaps.css`, server in `gaps.py`). A field is scanned in OpenAlex (open research data, no AI): its sub-topics are crossed with 16 methods (drones, IoT, computer vision, language models...), and pairs that are busy on their own but rarely studied together are shown as gaps, on a map and as ranked cards. A gap shows its few papers, people on Connect2Minds with the skills to build it (own college first), and teams already on it (the gap wall). "Start this project" makes a Project Hub workspace with the research template, a brief stating the gap and a reading list.
+- OpenAlex has a daily budget (about 1,000 calls with a free `OPENALEX_API_KEY` in `.env`, about 100 without). Results are shared by everyone and kept 30 days (`gap_cache`); fields asked for when the budget is low are queued and the asker is notified; popular fields are scanned in the background. `OPENALEX_MAILTO` is optional.
+- Gaps are saved with `/api/research` (the old saved briefings still open, read only).
 - arXiv is not used because its API does not allow requests from a web page.
 
 ## Admin dashboard

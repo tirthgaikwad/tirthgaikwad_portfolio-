@@ -19,7 +19,7 @@ const NEXT_PAGE = (() => {
 const PAGE_NAMES = {
   'home.html': 'Home', 'search.html': 'Discover Talent', 'board.html': 'the Opportunities Board', 'college.html': 'Campus Network',
   'network.html': 'My Network', 'saved.html': 'Saved Profiles', 'team.html': 'My Teams', 'project_management.html': 'Project Hub',
-  'research.html': 'Research Collab', 'inbox.html': 'Messages', 'study.html': 'My Study', 'notes.html': 'Notes and papers',
+  'research.html': 'Gap Finder', 'inbox.html': 'Messages', 'study.html': 'My Study', 'notes.html': 'Notes and papers',
   'practice.html': 'Daily practice', 'resume.html': 'the Resume builder', 'college-hub.html': 'College Hub', 'professionals.html': 'Professionals',
   'profile.html': 'that profile', 'account.html': 'Account & privacy', 'pricing.html': 'Plans', 'progress.html': 'Your progress', 'prep.html': 'Exam Prep', 'tutor.html': 'the AI Tutor', 'tests.html': 'Mock tests', 'rooms.html': 'Study rooms',
   'events.html': 'Events', 'event.html': 'that event', 'my-events.html': 'My events', 'ticket.html': 'your ticket', 'event-create.html': 'Create an event',

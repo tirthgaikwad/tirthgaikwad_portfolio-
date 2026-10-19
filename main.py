@@ -4996,6 +4996,8 @@ async def get_github_repo(owner: str, repo: str, current_user_id: int = Depends(
     return data
 
 
+TEAM_PURGE_HOOKS: list = []      # async functions(team_id) from other modules (gaps.py) that remove their own rows of a deleted team
+
 async def purge_team(db: AsyncSession, team_id: int):
     """Delete a team and everything in it. Used by My Teams and by College Hub."""
     # Reactions are found through the team's channels, so they go first; the rest can go at the same time.
@@ -5022,6 +5024,8 @@ async def purge_team(db: AsyncSession, team_id: int):
     )
     await asyncio.to_thread(shutil.rmtree, canvas_image_folder(team_id), True)
     CANVAS_LAST_VERSION.pop(team_id, None)
+    for hook in TEAM_PURGE_HOOKS:
+        await hook(team_id)
 
 
 @app.delete("/api/teams/{team_id}")
@@ -16572,3 +16576,10 @@ async def get_league_badges(user_id: int, current_user_id: int = Depends(get_cur
 # ==========================================
 from events import router as events_router  # noqa: E402
 app.include_router(events_router)
+
+
+# ==========================================
+# 38. GAP FINDER: in gaps.py (its own router), imported last like events.py.
+# ==========================================
+from gaps import router as gaps_router  # noqa: E402
+app.include_router(gaps_router)

@@ -147,7 +147,7 @@ const HEADER_NAV = [
     { label: 'Workspace', pages: [
         { label: 'My Teams', href: 'team.html', icon: 'teams', text: 'Channels, chat and calls' },
         { label: 'Project Hub', href: 'project_management.html', icon: 'kanban', text: 'Task board and planning canvas' },
-        { label: 'Research Collab', href: 'research.html', icon: 'book', text: 'Collect sources for a topic' }
+        { label: 'Gap Finder', href: 'research.html', icon: 'book', text: 'Find untouched research ideas' }
     ] },
     { label: 'Network', pages: [
         { label: 'Campus Network', href: 'college.html', icon: 'campus', text: 'People at your college' },
