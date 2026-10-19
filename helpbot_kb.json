@@ -907,13 +907,144 @@
    "keywords": [
     "canvas",
     "whiteboard",
-    "draw",
     "diagram",
     "flowchart",
     "sketch",
-    "architecture"
+    "architecture",
+    "draw on canvas"
    ],
-   "answer": "The Canvas is a shared whiteboard for diagrams: rectangles, circles, databases, sticky notes, text and arrows. Changes save by themselves and appear for teammates; export it as an image."
+   "answer": "The Canvas is your team's shared whiteboard. Draw with the pen and highlighter, add shapes (rectangle, ellipse, diamond, triangle, hexagon, star, speech bubble, database), sticky notes, text, pictures and frames, and join shapes with arrows that stay attached. Everything saves by itself and teammates see your cursor and changes live. Press ? on the canvas for every shortcut.",
+   "highlight": [
+    {
+     "sel": "#canvas-tools",
+     "text": "Every drawing tool. Each has a one-key shortcut."
+    }
+   ]
+  },
+  {
+   "id": "canvas-drawing",
+   "title": "Drawing on the canvas",
+   "audience": "member",
+   "page": "project_management.html?tab=canvas",
+   "keywords": [
+    "pen tool",
+    "freehand",
+    "draw freehand",
+    "highlighter",
+    "eraser",
+    "erase drawing",
+    "canvas shapes",
+    "canvas colour",
+    "canvas color",
+    "stroke",
+    "fill colour",
+    "undo canvas",
+    "group shapes",
+    "align shapes",
+    "lock shape"
+   ],
+   "answer": "Pick a tool on the left: P pen, M highlighter, E eraser (drag across what you want gone), R/O/D for shapes (the small arrow on the shape button shows all nine), T text, N sticky note. Select something to get the style bar: colour, fill, stroke width and style, opacity, text size, alignment, plus front/back, group, align, lock, duplicate and delete. Ctrl+Z undoes and Ctrl+Shift+Z redoes. Hold Shift for squares, circles and 45° lines; Alt stops snapping.",
+   "highlight": [
+    {
+     "sel": "#canvas-tools",
+     "text": "Pen, highlighter, eraser and shapes are here."
+    }
+   ]
+  },
+  {
+   "id": "canvas-connectors",
+   "title": "Connecting shapes",
+   "audience": "member",
+   "page": "project_management.html?tab=canvas",
+   "keywords": [
+    "connect shapes",
+    "connector",
+    "arrow between shapes",
+    "flowchart arrow",
+    "elbow arrow",
+    "curved arrow",
+    "arrow label",
+    "line label"
+   ],
+   "answer": "Pick the arrow (A) and drag from one shape to another: both ends stay attached, so the arrow follows when you move the shapes. The small arrow on the line button gives a straight line, an elbow connector and a curved one; the style bar changes the arrowheads. Double-click an arrow to give it a label such as Yes or No.",
+   "highlight": [
+    {
+     "sel": "#canvas-tools [data-group=lines]",
+     "text": "Arrows, lines, elbow and curved connectors."
+    }
+   ]
+  },
+  {
+   "id": "canvas-present",
+   "title": "Frames and present mode",
+   "audience": "member",
+   "page": "project_management.html?tab=canvas",
+   "keywords": [
+    "present canvas",
+    "canvas slides",
+    "slideshow",
+    "frames",
+    "frame tool",
+    "present to team",
+    "follow presenter",
+    "laser pointer"
+   ],
+   "answer": "Draw a frame (F) round each part of your board. Present shows the frames one after another in full screen: use the arrow keys or Space, Esc to stop. Number frame names (1 Problem, 2 Idea) to set the order. Teammates on the canvas get a Follow button so their view moves with your slides, and the laser pointer (K) shows them where to look.",
+   "highlight": [
+    {
+     "sel": "[onclick=\"cvStartPresenting()\"]",
+     "text": "Start presenting your frames."
+    }
+   ]
+  },
+  {
+   "id": "canvas-pictures-tasks",
+   "title": "Pictures, templates and tasks on the canvas",
+   "audience": "member",
+   "page": "project_management.html?tab=canvas",
+   "keywords": [
+    "canvas picture",
+    "image on canvas",
+    "paste image canvas",
+    "canvas template",
+    "swot",
+    "retro board",
+    "user journey",
+    "sticky to task",
+    "turn into task",
+    "canvas task"
+   ],
+   "answer": "Paste a picture, drop it on the board or press I to add one; only your workspace can see it. Templates adds a ready starter (flowchart, SWOT, user journey, system design, retro, impact vs effort, weekly plan). Select a sticky note and use the task button in the style bar to turn it into a Project Hub task; the note then shows whether the task is to do, in progress or done.",
+   "highlight": [
+    {
+     "sel": "[onclick=\"cvOpenTemplates()\"]",
+     "text": "Ready-made starters."
+    }
+   ]
+  },
+  {
+   "id": "canvas-export",
+   "title": "Saving, versions and export",
+   "audience": "member",
+   "page": "project_management.html?tab=canvas",
+   "keywords": [
+    "export canvas",
+    "canvas pdf",
+    "canvas png",
+    "canvas svg",
+    "download canvas",
+    "canvas version",
+    "restore canvas",
+    "canvas history",
+    "cleared canvas"
+   ],
+   "answer": "The canvas saves by itself, and two people drawing at once both keep their work. File → Version history keeps the canvas every 10 minutes while people draw and always before it is cleared or replaced (the last 30), and restores any of them. File also exports PNG, SVG or a PDF with one page per frame, copies the board as a picture, and can export only what you selected.",
+   "highlight": [
+    {
+     "sel": "#file-menu-container",
+     "text": "Export, copy and version history."
+    }
+   ]
   },
   {
    "id": "integrations",

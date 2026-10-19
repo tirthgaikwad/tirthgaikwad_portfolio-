@@ -8,6 +8,8 @@ import hmac
 import hashlib
 import secrets
 import math
+import time
+import shutil
 import asyncio
 import urllib.request
 import urllib.error
@@ -370,6 +372,17 @@ class DBTeamBoard(Base):
     github_repo = Column(String, default="")       # owner/repo
     figma_url = Column(String, default="")
     updated_at = Column(String)
+
+class DBCanvasVersion(Base):
+    """Earlier states of a team's planning canvas, so a clear, a bad restore or a mistake can be undone (last 30 kept)."""
+    __tablename__ = "team_canvas_versions"
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, index=True)
+    shapes = Column(String, default="[]")
+    shape_count = Column(Integer, default=0)
+    reason = Column(String, default="")           # "", "clear", "open_copy", "restore", "template"
+    created_by = Column(Integer, nullable=True)
+    created_at = Column(String)
 
 class DBCommunity(Base):
     __tablename__ = "communities"
@@ -4201,6 +4214,39 @@ async def team_websocket_endpoint(websocket: WebSocket, team_id: int, user_id: i
                         user["view"] = tab
                         await team_hub.broadcast(team_id, {"type": "hub_presence", "viewers": team_hub.hub_viewers(team_id)})
 
+                elif msg_type == "canvas_cursor":
+                    # Where this person's pointer is on the canvas, plus their laser trail, selection or presenting view.
+                    # Relayed to teammates who have the canvas open; never stored.
+                    now = time.monotonic()
+                    window = user.setdefault("cursor_window", [now, 0])
+                    if now - window[0] >= 1:
+                        window[0], window[1] = now, 0
+                    window[1] += 1
+                    if window[1] > 30 or (user.get("view") != "canvas" and not msg.get("gone")):
+                        continue
+                    payload = {"type": "canvas_cursor", "from": user_id, "name": user["name"]}
+                    if msg.get("gone"):
+                        payload["gone"] = True
+                    else:
+                        x, y = msg.get("x"), msg.get("y")
+                        if all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in (x, y)):
+                            payload["x"], payload["y"] = round(x, 1), round(y, 1)
+                        if msg.get("laser"):
+                            payload["laser"] = True
+                        if isinstance(msg.get("sel"), list):
+                            payload["sel"] = [str(shape_id)[:40] for shape_id in msg["sel"][:50]]
+                        view = msg.get("view")
+                        if isinstance(view, dict) and all(isinstance(view.get(k), (int, float)) and not isinstance(view.get(k), bool)
+                                                          and math.isfinite(view.get(k)) for k in ("x", "y", "w", "h")):
+                            payload["view"] = {k: round(view[k], 1) for k in ("x", "y", "w", "h")}
+                    message = json.dumps(payload)
+                    for other, other_user in list(team_hub.teams.get(team_id, {}).items()):
+                        if other is not websocket and other_user.get("view") == "canvas":
+                            try:
+                                await other.send_text(message)
+                            except Exception:
+                                pass
+
                 elif msg_type == "rtc":
                     # WebRTC set-up messages go only to another person in the same room
                     room = team_hub.room_of(websocket)
@@ -4248,9 +4294,33 @@ async def leave_team(team_id: int, db: AsyncSession = Depends(get_db), current_u
 # ==========================================
 TASK_COLUMNS = ("todo", "inprogress", "review", "done")
 TASK_PRIORITIES = ("low", "medium", "high")
-CANVAS_SHAPE_TYPES = ("rectangle", "circle", "database", "sticky", "text", "arrow", "line")
-CANVAS_COLORS = ("indigo", "green", "amber", "rose", "slate")
-MAX_CANVAS_SHAPES = 500
+CANVAS_SHAPE_TYPES = ("rectangle", "circle", "database", "sticky", "text", "arrow", "line", "diamond", "triangle", "parallelogram", "hexagon",
+                      "star", "callout", "pen", "highlighter", "frame", "image")
+CANVAS_COLORS = ("indigo", "green", "amber", "rose", "slate", "violet", "sky", "teal", "orange", "black")
+MAX_CANVAS_SHAPES = 2000
+MAX_CANVAS_BYTES = 2 * 1024 * 1024           # the stored JSON of one canvas
+MAX_CANVAS_POINTS = 4000                     # numbers in one pen stroke (x, y pairs)
+# Optional style fields: name -> the values allowed. Missing or not allowed means the drawing default.
+CANVAS_CHOICES = {
+    "fill": ("none", "light", "solid"),
+    "stroke_width": (1, 2, 4, 8),
+    "dash": ("solid", "dashed", "dotted"),
+    "font": ("S", "M", "L", "XL"),
+    "align": ("left", "center", "right"),
+    "route": ("straight", "elbow", "curved"),
+    "head_start": ("none", "arrow", "triangle", "dot"),
+    "head_end": ("none", "arrow", "triangle", "dot"),
+    "corners": ("sharp", "round"),
+}
+CANVAS_REF_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
+CANVAS_IMAGE_PATTERN = re.compile(r"^[a-f0-9]{32}\.(png|jpg|webp|gif)$")
+CANVAS_IMAGE_DIR = os.path.join("private_uploads", "canvas")
+MAX_CANVAS_IMAGE_BYTES = 3 * 1024 * 1024
+MAX_CANVAS_IMAGES = 200                      # per workspace
+MAX_CANVAS_IMAGE_TOTAL = 100 * 1024 * 1024
+CANVAS_VERSIONS_KEPT = 30
+CANVAS_VERSION_EVERY = 600                   # seconds: while people edit, an automatic version at most this often
+CANVAS_LAST_VERSION: dict = {}               # team_id -> when its last version was kept (this server only)
 GITHUB_REPO_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$")
 FIGMA_URL_PATTERN = re.compile(r"^https://(?:www\.)?figma\.com/(?:file|design|proto|board)/[A-Za-z0-9]+(?:/[^\s]*)?$")
 
@@ -4298,6 +4368,16 @@ class BoardUpdate(BaseModel):
 
 class CanvasSave(BaseModel):
     shapes: list
+    client_id: Optional[str] = None
+    reason: Optional[str] = ""          # "clear", "open_copy" or "template": the old canvas is kept as a version first
+
+class CanvasPatch(BaseModel):
+    upsert: Optional[list] = None
+    delete: Optional[List[str]] = None
+    order: Optional[List[str]] = None   # every shape id, bottom to top, when the stacking order changed
+    client_id: Optional[str] = None
+
+class CanvasRestore(BaseModel):
     client_id: Optional[str] = None
 
 
@@ -4552,34 +4632,306 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_fast_db), cur
     return {"status": "deleted"}
 
 
+async def require_canvas_member(team_id: int, user_id: int):
+    """The membership check for the canvas routes. It runs on a connection of its own that is given back at once, so a save
+    waiting for the board lock holds no connection (the pool has 8, and many saves can arrive together)."""
+    rows = await fetch_one_off(select(DBTeam.id, DBTeamMember.role)
+                               .outerjoin(DBTeamMember, and_(DBTeamMember.team_id == DBTeam.id, DBTeamMember.user_id == user_id))
+                               .where(DBTeam.id == team_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="Team not found.")
+    if rows[0][1] is None:
+        raise HTTPException(status_code=403, detail="You are not a member of this team.")
+
+
+def canvas_number(value, low=-20000, high=20000) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise HTTPException(status_code=400, detail="The canvas contains a shape with an invalid position.")
+    return round(max(low, min(high, value)), 1)
+
+
 def clean_canvas_shapes(shapes: list) -> list:
-    """Keep only well-formed shapes of known types. Text is stored as plain text and escaped when drawn."""
+    """Keep only well-formed shapes of known types. Text is stored as plain text and escaped when drawn.
+    Style fields with a value the board does not know are dropped, so the shape is drawn with its default."""
+    if not isinstance(shapes, list):
+        raise HTTPException(status_code=400, detail="The canvas must be a list of shapes.")
     if len(shapes) > MAX_CANVAS_SHAPES:
         raise HTTPException(status_code=400, detail=f"A canvas can hold up to {MAX_CANVAS_SHAPES} shapes.")
-    cleaned = []
+    cleaned, seen = [], set()
     for shape in shapes:
         if not isinstance(shape, dict) or shape.get("type") not in CANVAS_SHAPE_TYPES:
             raise HTTPException(status_code=400, detail="The canvas contains a shape this board does not support.")
         item = {"id": str(shape.get("id") or uuid.uuid4().hex[:12])[:40], "type": shape["type"]}
+        if item["id"] in seen:
+            continue
+        seen.add(item["id"])
         for key in ("x", "y", "w", "h", "x2", "y2"):
-            value = shape.get(key, 0)
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-                raise HTTPException(status_code=400, detail="The canvas contains a shape with an invalid position.")
-            item[key] = round(max(-20000, min(20000, value)), 1)
+            item[key] = canvas_number(shape.get(key, 0))
         item["text"] = str(shape.get("text") or "")[:500]
         item["color"] = shape.get("color") if shape.get("color") in CANVAS_COLORS else "indigo"
+        for key, allowed in CANVAS_CHOICES.items():
+            if shape.get(key) in allowed and not isinstance(shape.get(key), bool):
+                item[key] = shape[key]
+        if shape.get("opacity") is not None:
+            item["opacity"] = round(canvas_number(shape["opacity"], 0.1, 1), 2)
+        if shape.get("rot"):
+            item["rot"] = canvas_number(shape["rot"], -360, 360)
+        if shape.get("locked") is True:
+            item["locked"] = True
+        for key in ("start_id", "end_id", "group_id"):
+            if isinstance(shape.get(key), str) and CANVAS_REF_PATTERN.match(shape[key]):
+                item[key] = shape[key]
+        if shape.get("label"):
+            item["label"] = str(shape["label"])[:100]
+        if isinstance(shape.get("task_id"), int) and not isinstance(shape.get("task_id"), bool) and shape["task_id"] > 0:
+            item["task_id"] = shape["task_id"]
+        if item["type"] in ("pen", "highlighter"):
+            points = shape.get("points")
+            if not isinstance(points, list) or len(points) < 2 or len(points) % 2 or len(points) > MAX_CANVAS_POINTS:
+                raise HTTPException(status_code=400, detail="The canvas contains a drawing with too many or invalid points.")
+            item["points"] = [canvas_number(value) for value in points]
+        if item["type"] == "image":
+            if not isinstance(shape.get("src"), str) or not CANVAS_IMAGE_PATTERN.match(shape["src"]):
+                raise HTTPException(status_code=400, detail="The canvas contains a picture that was not uploaded to this workspace.")
+            item["src"] = shape["src"]
         cleaned.append(item)
     return cleaned
 
 
+def finish_canvas(shapes: list) -> str:
+    """Drop links to shapes that are gone, check the size and return the JSON to store."""
+    ids = {shape["id"] for shape in shapes}
+    for shape in shapes:
+        for key in ("start_id", "end_id"):
+            if shape.get(key) and shape[key] not in ids:
+                del shape[key]
+    if len(shapes) > MAX_CANVAS_SHAPES:
+        raise HTTPException(status_code=400, detail=f"A canvas can hold up to {MAX_CANVAS_SHAPES} shapes.")
+    stored = json.dumps(shapes, separators=(",", ":"))
+    if len(stored) > MAX_CANVAS_BYTES:
+        raise HTTPException(status_code=400, detail="The canvas is too large to save. Remove some drawings or pictures.")
+    return stored
+
+
+async def drop_foreign_task_links(team_id: int, shapes: list):
+    """A shape may only point at a task of this workspace."""
+    wanted = {shape["task_id"] for shape in shapes if shape.get("task_id")}
+    if not wanted:
+        return
+    rows = await fetch_one_off(select(DBTeamTask.id).where(DBTeamTask.team_id == team_id, DBTeamTask.id.in_(wanted)))
+    known = {row[0] for row in rows}
+    for shape in shapes:
+        if shape.get("task_id") and shape["task_id"] not in known:
+            del shape["task_id"]
+
+
+def parse_canvas(stored: Optional[str]) -> list:
+    try:
+        shapes = json.loads(stored) if stored else []
+        return shapes if isinstance(shapes, list) else []
+    except ValueError:
+        return []
+
+
+async def change_canvas(team_id: int, user_id: int, change, reason: str = "") -> list:
+    """Apply change(current shapes) -> new shapes to the stored canvas, with the board row locked so two saves at the same
+    moment are applied one after the other. Before the change, the old canvas is kept as a version: always when a reason
+    is given (a clear, opening a copy, a restore), otherwise at most every CANVAS_VERSION_EVERY seconds."""
+    now = utc_now_iso()
+    async with SessionLocal() as db:
+        async with db.begin():
+            await db.execute(pg_insert(DBTeamBoard).values(team_id=team_id, canvas="[]", updated_at=now).on_conflict_do_nothing(index_elements=[DBTeamBoard.team_id]))
+            board = (await db.execute(select(DBTeamBoard).where(DBTeamBoard.team_id == team_id).with_for_update())).scalar_one()
+            current = parse_canvas(board.canvas)
+            shapes = change([dict(shape) for shape in current if isinstance(shape, dict)])
+            stored = finish_canvas(shapes)
+            if current and stored != board.canvas:
+                # When the last version was kept is remembered, so most saves skip this query
+                last = CANVAS_LAST_VERSION.get(team_id)
+                if not reason and (not last or (parse_timestamp(now) - parse_timestamp(last)).total_seconds() >= CANVAS_VERSION_EVERY):
+                    last = (await db.execute(select(DBCanvasVersion.created_at).where(DBCanvasVersion.team_id == team_id)
+                                             .order_by(DBCanvasVersion.id.desc()).limit(1))).scalar()
+                if reason or not last or (parse_timestamp(now) - parse_timestamp(last)).total_seconds() >= CANVAS_VERSION_EVERY:
+                    db.add(DBCanvasVersion(team_id=team_id, shapes=board.canvas, shape_count=len(current), reason=reason,
+                                           created_by=user_id, created_at=now))
+                    last = now
+                CANVAS_LAST_VERSION[team_id] = last
+            board.canvas = stored
+            board.updated_at = now
+    spawn_background(prune_canvas_versions(team_id))
+    return shapes
+
+
+async def prune_canvas_versions(team_id: int):
+    keep = select(DBCanvasVersion.id).where(DBCanvasVersion.team_id == team_id).order_by(DBCanvasVersion.id.desc()).limit(CANVAS_VERSIONS_KEPT)
+    await run_one_off(delete(DBCanvasVersion).where(DBCanvasVersion.team_id == team_id, DBCanvasVersion.id.not_in(keep.scalar_subquery())))
+
+
 @app.put("/api/teams/{team_id}/canvas")
-async def save_team_canvas(team_id: int, data: CanvasSave, db: AsyncSession = Depends(get_fast_db), current_user_id: int = Depends(get_current_user_id)):
-    await get_team_role(db, team_id, current_user_id)
+async def save_team_canvas(team_id: int, data: CanvasSave, current_user_id: int = Depends(get_current_user_id)):
+    """Replace the whole canvas (clear, open a copy). Everyday drawing is saved with PATCH, which merges."""
+    await require_canvas_member(team_id, current_user_id)
     shapes = clean_canvas_shapes(data.shapes)
-    await touch_board(team_id, canvas=json.dumps(shapes, separators=(",", ":")))
+    await drop_foreign_task_links(team_id, shapes)
+    reason = data.reason if data.reason in ("clear", "open_copy", "template") else ""
+    shapes = await change_canvas(team_id, current_user_id, lambda current: shapes, reason)
     # client_id lets the page that saved recognise its own change coming back
     await team_hub.broadcast(team_id, {"type": "canvas_updated", "shapes": shapes, "by": current_user_id, "client_id": data.client_id})
     return {"status": "saved", "count": len(shapes)}
+
+
+@app.patch("/api/teams/{team_id}/canvas")
+async def patch_team_canvas(team_id: int, data: CanvasPatch, current_user_id: int = Depends(get_current_user_id)):
+    """Save only what this person changed: shapes added or edited, shapes removed and, when it changed, the stacking order.
+    Teammates drawing at the same time keep their own work."""
+    await require_canvas_member(team_id, current_user_id)
+    upserts = clean_canvas_shapes(data.upsert or [])
+    await drop_foreign_task_links(team_id, upserts)
+    removed = {str(shape_id)[:40] for shape_id in (data.delete or [])[:MAX_CANVAS_SHAPES]}
+    order = [str(shape_id)[:40] for shape_id in data.order[:MAX_CANVAS_SHAPES]] if data.order is not None else None
+
+    def merge(current: list) -> list:
+        by_id = {shape.get("id"): index for index, shape in enumerate(current)}
+        for shape in upserts:
+            if shape["id"] in by_id:
+                current[by_id[shape["id"]]] = shape
+            else:
+                by_id[shape["id"]] = len(current)
+                current.append(shape)
+        current = [shape for shape in current if shape.get("id") not in removed]
+        if order is not None:
+            rank = {shape_id: index for index, shape_id in enumerate(order)}
+            # Shapes this person did not know about yet (a teammate's new ones) stay on top
+            current.sort(key=lambda shape: rank.get(shape.get("id"), len(rank)))
+        return current
+
+    shapes = await change_canvas(team_id, current_user_id, merge)
+    upserted = {shape["id"] for shape in upserts}
+    await team_hub.broadcast(team_id, {
+        "type": "canvas_patch", "by": current_user_id, "client_id": data.client_id,
+        # the stored copies: a link to a shape that was deleted meanwhile has been dropped
+        "upsert": [shape for shape in shapes if shape["id"] in upserted],
+        "delete": sorted(removed),
+        "order": [shape["id"] for shape in shapes] if order is not None else None,
+    })
+    return {"status": "saved", "count": len(shapes)}
+
+
+# ---------- earlier versions ----------
+@app.get("/api/teams/{team_id}/canvas/versions")
+async def list_canvas_versions(team_id: int, current_user_id: int = Depends(get_current_user_id)):
+    await require_canvas_member(team_id, current_user_id)
+    rows = await fetch_one_off(select(DBCanvasVersion.id, DBCanvasVersion.shape_count, DBCanvasVersion.reason, DBCanvasVersion.created_by, DBCanvasVersion.created_at)
+                               .where(DBCanvasVersion.team_id == team_id).order_by(DBCanvasVersion.id.desc()).limit(CANVAS_VERSIONS_KEPT))
+    return [{"id": row.id, "shape_count": row.shape_count, "reason": row.reason or "", "created_by": row.created_by, "created_at": row.created_at} for row in rows]
+
+
+async def canvas_version_of(team_id: int, version_id: int) -> DBCanvasVersion:
+    rows = await fetch_one_off(select(DBCanvasVersion).where(DBCanvasVersion.id == version_id, DBCanvasVersion.team_id == team_id))
+    if not rows:
+        raise HTTPException(status_code=404, detail="That version is no longer kept.")
+    return rows[0][0]
+
+
+@app.get("/api/teams/{team_id}/canvas/versions/{version_id}")
+async def get_canvas_version(team_id: int, version_id: int, current_user_id: int = Depends(get_current_user_id)):
+    await require_canvas_member(team_id, current_user_id)
+    version = await canvas_version_of(team_id, version_id)
+    return {"id": version.id, "created_at": version.created_at, "shapes": parse_canvas(version.shapes)}
+
+
+@app.post("/api/teams/{team_id}/canvas/versions/{version_id}/restore")
+async def restore_canvas_version(team_id: int, version_id: int, data: CanvasRestore, current_user_id: int = Depends(get_current_user_id)):
+    """Put an earlier version back. The canvas as it is now is kept as a version first, so a restore can be undone too."""
+    await require_canvas_member(team_id, current_user_id)
+    version = await canvas_version_of(team_id, version_id)
+    restored = parse_canvas(version.shapes)
+    shapes = await change_canvas(team_id, current_user_id, lambda current: restored, "restore")
+    await team_hub.broadcast(team_id, {"type": "canvas_updated", "shapes": shapes, "by": current_user_id, "client_id": data.client_id})
+    return {"status": "restored", "shapes": shapes}
+
+
+# ---------- pictures on the canvas ----------
+CANVAS_IMAGE_MAGIC = ((b"\xff\xd8\xff", "jpg"), (b"\x89PNG\r\n\x1a\n", "png"), (b"GIF87a", "gif"), (b"GIF89a", "gif"))
+
+def canvas_image_kind(head: bytes) -> str:
+    for magic, kind in CANVAS_IMAGE_MAGIC:
+        if head.startswith(magic):
+            return kind
+    return "webp" if head[:4] == b"RIFF" and head[8:12] == b"WEBP" else ""
+
+
+def canvas_image_folder(team_id: int) -> str:
+    return os.path.join(CANVAS_IMAGE_DIR, str(team_id))
+
+
+@app.post("/api/teams/{team_id}/canvas/images")
+@limiter.limit("60/hour", key_func=lambda request: account_rate_key(request))
+async def upload_canvas_image(request: Request, team_id: int, file: UploadFile = File(...),
+                              current_user_id: int = Depends(get_current_user_id)):
+    """A picture for the canvas. The browser already shrank it; here the bytes must really be a picture. Only members can open it."""
+    await require_canvas_member(team_id, current_user_id)
+    head = file.file.read(16)
+    file.file.seek(0)
+    kind = canvas_image_kind(head)
+    if not kind:
+        raise HTTPException(status_code=400, detail="That file is not a JPG, PNG, WebP or GIF picture.")
+    folder = canvas_image_folder(team_id)
+    existing = [entry for entry in os.scandir(folder) if entry.is_file()] if os.path.isdir(folder) else []
+    if len(existing) >= MAX_CANVAS_IMAGES or sum(entry.stat().st_size for entry in existing) >= MAX_CANVAS_IMAGE_TOTAL:
+        raise HTTPException(status_code=400, detail="This workspace has no room for more pictures. Remove some from the canvas; unused ones are cleared within a day.")
+    file.filename = f"picture.{kind}"
+    location = save_upload(file, folder, secrets.token_hex(16), {kind}, MAX_CANVAS_IMAGE_BYTES)
+    return {"src": os.path.basename(location)}
+
+
+@app.get("/api/teams/{team_id}/canvas/images/{name}")
+async def canvas_image(team_id: int, name: str, current_user_id: int = Depends(get_current_user_id)):
+    if not CANVAS_IMAGE_PATTERN.match(name):
+        raise HTTPException(status_code=404, detail="Picture not found.")
+    await require_canvas_member(team_id, current_user_id)
+    path = os.path.join(canvas_image_folder(team_id), name)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Picture not found.")
+    # A name is never reused for other content, so the browser may keep it
+    return FileResponse(path, headers={"Cache-Control": "private, max-age=604800, immutable"})
+
+
+async def clear_unused_canvas_images():
+    """Once a day: remove pictures that neither the canvas nor any kept version uses, if they are more than a day old
+    (a picture is uploaded a moment before the shape that shows it is saved)."""
+    if not os.path.isdir(CANVAS_IMAGE_DIR):
+        return
+    for entry in os.scandir(CANVAS_IMAGE_DIR):
+        if not entry.is_dir() or not entry.name.isdigit():
+            continue
+        team_id = int(entry.name)
+        boards, versions = await asyncio.gather(
+            fetch_one_off(select(DBTeamBoard.canvas).where(DBTeamBoard.team_id == team_id)),
+            fetch_one_off(select(DBCanvasVersion.shapes).where(DBCanvasVersion.team_id == team_id)),
+        )
+        used = set()
+        for (stored,) in list(boards) + list(versions):
+            used.update(re.findall(r'"src":"([a-f0-9]{32}\.(?:png|jpg|webp|gif))"', stored or ""))
+        cutoff = time.time() - 86400
+        for picture in os.scandir(entry.path):
+            if picture.is_file() and picture.name not in used and picture.stat().st_mtime < cutoff:
+                os.remove(picture.path)
+
+
+async def canvas_image_watch():
+    await asyncio.sleep(600)
+    while True:
+        try:
+            await clear_unused_canvas_images()
+        except Exception as e:
+            print("Error clearing unused canvas pictures:", e)
+        await asyncio.sleep(86400)
+
+
+@app.on_event("startup")
+async def canvas_startup():
+    spawn_background(canvas_image_watch())
 
 
 def fetch_github_repo(repo: str) -> dict:
@@ -4666,7 +5018,10 @@ async def purge_team(db: AsyncSession, team_id: int):
         run_one_off(delete(DBTaskActivity).where(DBTaskActivity.team_id == team_id)),
         run_one_off(delete(DBTimeEntry).where(DBTimeEntry.team_id == team_id)),
         run_one_off(delete(DBProjectItem).where(DBProjectItem.team_id == team_id)),
+        run_one_off(delete(DBCanvasVersion).where(DBCanvasVersion.team_id == team_id)),
     )
+    await asyncio.to_thread(shutil.rmtree, canvas_image_folder(team_id), True)
+    CANVAS_LAST_VERSION.pop(team_id, None)
 
 
 @app.delete("/api/teams/{team_id}")
@@ -11271,6 +11626,7 @@ USER_DATA_KEPT = {
     "task_activity": ("user_id",),
     "time_entries": ("user_id",),
     "project_items": ("created_by", "updated_by"),
+    "team_canvas_versions": ("created_by",),
     # other people's own settings and decisions about this person: kept, and not part of the download
     "cleared_chats": ("cleared_with_user_id",),
     "archived_chats": ("archived_user_id",),
@@ -11278,7 +11634,8 @@ USER_DATA_KEPT = {
     "teacher_requests": ("decided_by",),
 }
 NOT_EXPORTED = {("cleared_chats", "cleared_with_user_id"), ("archived_chats", "archived_user_id"),
-                ("admin_requests", "decided_by"), ("teacher_requests", "decided_by")}
+                ("admin_requests", "decided_by"), ("teacher_requests", "decided_by"),
+                ("team_canvas_versions", "created_by")}   # a workspace's drawing, not the person's own data
 PROFILE_NOT_EXPORTED = {"hashed_password", "id_card_image", "invite_code", "status_before_delete", "totp_secret", "token_version"}
 
 

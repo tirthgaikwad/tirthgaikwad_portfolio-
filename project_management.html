@@ -60,16 +60,10 @@
             display: none;
         }
 
-        /* Tabs and canvas tools */
+        /* Tabs */
         .hub-tab { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #464555; transition: all 0.15s; white-space: nowrap; }
         .hub-tab:hover { color: #0b1c30; background: #e5eeff; }
         .hub-tab.is-active { background: #fff; color: #3525cd; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-        .canvas-tool { padding: 8px; border-radius: 8px; color: #464555; transition: all 0.15s; }
-        .canvas-tool:hover { color: #0b1c30; background: #e5eeff; }
-        .canvas-tool.is-active { background: #e2dfff; color: #3525cd; }
-        #canvas-svg .shape { cursor: move; }
-        #canvas-svg .handle { fill: #fff; stroke: #3525cd; stroke-width: 1.5; cursor: nwse-resize; }
-        #canvas-svg .handle.end { cursor: crosshair; }
 
         /* Board */
         .task-card.dragging { opacity: 0.4; }
@@ -115,7 +109,7 @@
     <script
         id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error-container": "#93000a", "tertiary-container": "#006e4c", "tertiary-fixed-dim": "#68dba9", "on-primary": "#ffffff", "on-primary-fixed-variant": "#3323cc", "on-tertiary-fixed": "#002114", "error": "#ba1a1a", "surface-container-high": "#dce9ff", "inverse-on-surface": "#eaf1ff", "on-primary-container": "#dad7ff", "outline": "#777587", "primary-fixed-dim": "#c3c0ff", "on-tertiary-fixed-variant": "#005137", "secondary-container": "#dae2fd", "secondary": "#565e74", "surface-container": "#e5eeff", "tertiary": "#005338", "surface-dim": "#cbdbf5", "on-tertiary": "#ffffff", "inverse-primary": "#c3c0ff", "secondary-fixed-dim": "#bec6e0", "outline-variant": "#c7c4d8", "tertiary-fixed": "#85f8c4", "surface-container-lowest": "#ffffff", "inverse-surface": "#213145", "secondary-fixed": "#dae2fd", "surface-variant": "#d3e4fe", "on-primary-fixed": "#0f0069", "primary-fixed": "#e2dfff", "on-secondary-container": "#5c647a", "error-container": "#ffdad6", "surface-container-highest": "#d3e4fe", "on-background": "#0b1c30", "on-surface": "#0b1c30", "surface-bright": "#f8f9ff", "on-surface-variant": "#464555", "surface": "#f8f9ff", "on-error": "#ffffff", "on-secondary": "#ffffff", "surface-tint": "#4d44e3", "surface-container-low": "#eff4ff", "primary-container": "#4f46e5", "on-tertiary-container": "#7df1bd", "background": "#f8f9ff", "primary": "#3525cd", "on-secondary-fixed": "#131b2e", "on-secondary-fixed-variant": "#3f465c" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "container-max": "1280px", "space-2xs": "0.25rem", "gutter-mobile": "1rem", "space-xl": "2rem", "space-xs": "0.5rem", "gutter-desktop": "1.5rem", "space-lg": "1.5rem", "space-3xl": "4.5rem", "space-sm": "0.75rem", "space-md": "1rem", "space-2xl": "3rem" }, "fontFamily": { "display-hero": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "body-lg": ["Inter"], "display-hero-mobile": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"], "skill-pill": ["Inter"], "headline-sm": ["Plus Jakarta Sans"] }, "fontSize": { "display-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.025em", "fontWeight": "800" }], "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "display-hero-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "label-md": ["13px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }], "skill-pill": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } };</script>
 
-    <link href="header.css" rel="stylesheet"/><link href="formsheet.css" rel="stylesheet"/><link href="project-hub-tools.css" rel="stylesheet"/><script src="shared.js"></script>
+    <link href="header.css" rel="stylesheet"/><link href="formsheet.css" rel="stylesheet"/><link href="project-hub-tools.css" rel="stylesheet"/><link href="hub-canvas.css" rel="stylesheet"/><script src="shared.js"></script>
 </head>
 
 <body class="bg-surface font-body-md text-on-surface antialiased">
@@ -211,73 +205,119 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md items-start" id="kanban-columns"></div>
                 </div>
 
-                <!-- TAB 2: PLANNING CANVAS -->
+                <!-- TAB 2: PLANNING CANVAS (hub-canvas*.js) -->
                 <div class="hidden flex-col gap-space-md" id="view-canvas">
-                    <div id="canvas-wrapper" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-md overflow-hidden flex flex-col">
-                        <div class="px-space-md py-space-sm border-b border-outline-variant/40 flex items-center justify-between flex-wrap gap-2 bg-surface-container-lowest">
-                            <div class="flex items-center gap-space-md">
+                    <div id="canvas-wrapper" class="cv-wrap">
+                        <div class="cv-top">
+                            <div class="cv-top-left">
                                 <div class="relative" id="file-menu-container">
-                                    <button class="flex items-center gap-1 font-label-md text-label-md text-on-surface hover:text-primary transition-colors" type="button" onclick="document.getElementById('file-dropdown').classList.toggle('hidden')">
-                                        <span>File</span>
-                                        <span class="material-symbols-outlined text-[16px]">expand_more</span>
+                                    <button class="cv-top-btn" type="button" onclick="toggleCanvasFileMenu(event)" aria-haspopup="true">
+                                        <span>File</span><span class="material-symbols-outlined">expand_more</span>
                                     </button>
-                                    <div id="file-dropdown" class="hidden absolute left-0 top-full mt-2 w-52 bg-surface-container-lowest border border-outline-variant/40 rounded-lg shadow-lg z-50 py-1 flex flex-col font-label-md text-label-md">
-                                        <button type="button" class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="canvasFileAction('save')"><span class="material-symbols-outlined text-[18px]">save</span> Save now</button>
-                                        <button type="button" class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="canvasFileAction('png')"><span class="material-symbols-outlined text-[18px]">image</span> Export as PNG</button>
-                                        <button type="button" class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="canvasFileAction('backup')"><span class="material-symbols-outlined text-[18px]">content_copy</span> Download a copy</button>
-                                        <button type="button" class="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors flex items-center gap-2" onclick="canvasFileAction('restore')"><span class="material-symbols-outlined text-[18px]">upload_file</span> Open a copy...</button>
+                                    <div id="file-dropdown" class="hidden cv-menu cv-file-menu" role="menu">
+                                        <button type="button" onclick="canvasFileAction('save')"><span class="material-symbols-outlined">save</span><span>Save now</span></button>
+                                        <button type="button" onclick="canvasFileAction('versions')"><span class="material-symbols-outlined">history</span><span>Version history…</span></button>
+                                        <span class="cv-menu-sep"></span>
+                                        <label class="cv-menu-check hidden" id="cv-export-selection-row"><input type="checkbox" id="cv-export-selection"> Export only the selection</label>
+                                        <button type="button" onclick="canvasFileAction('png')"><span class="material-symbols-outlined">image</span><span>Export as PNG</span></button>
+                                        <button type="button" onclick="canvasFileAction('svg')"><span class="material-symbols-outlined">polyline</span><span>Export as SVG</span></button>
+                                        <button type="button" onclick="canvasFileAction('pdf')"><span class="material-symbols-outlined">picture_as_pdf</span><span>Export as PDF (one page per frame)</span></button>
+                                        <button type="button" onclick="canvasFileAction('clipboard')"><span class="material-symbols-outlined">content_paste_go</span><span>Copy as a picture</span></button>
+                                        <span class="cv-menu-sep"></span>
+                                        <button type="button" onclick="canvasFileAction('backup')"><span class="material-symbols-outlined">download</span><span>Download a copy</span></button>
+                                        <button type="button" onclick="canvasFileAction('restore')"><span class="material-symbols-outlined">upload_file</span><span>Open a copy…</span></button>
                                         <input type="file" id="canvas-restore-input" accept="application/json,.json" class="hidden" onchange="restoreCanvasCopy(event)">
                                     </div>
                                 </div>
-                                <div class="h-4 w-[1px] bg-outline-variant/60"></div>
-                                <span class="font-headline-sm text-headline-sm font-semibold text-on-surface flex items-center gap-2">
-                                    <span id="canvas-title">Plan</span>
-                                    <span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded font-normal" id="canvas-save-status">Saved</span>
-                                </span>
+                                <span class="cv-top-sep"></span>
+                                <span class="cv-title"><span id="canvas-title">Plan</span><span class="cv-status" id="canvas-save-status">Saved</span></span>
                             </div>
-                            <div class="flex items-center gap-space-sm">
-                                <div class="flex items-center gap-1" id="canvas-colors" title="Colour of the selected shape"></div>
-                                <button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-surface-container rounded-lg" title="Delete selected shape (Delete key)" type="button" onclick="deleteSelectedShape()">
-                                    <span class="material-symbols-outlined text-[18px]">delete</span>
-                                </button>
-                                <button class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg" title="Toggle Fullscreen" type="button" onclick="toggleCanvasFullscreen()">
-                                    <span class="material-symbols-outlined text-[18px]">fullscreen</span>
-                                </button>
+                            <div class="cv-top-right">
+                                <div class="cv-peers" id="canvas-peers" aria-live="polite"></div>
+                                <button class="cv-top-icon" id="cv-undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo" type="button" onclick="canvasUndoStep(false)" disabled><span class="material-symbols-outlined">undo</span></button>
+                                <button class="cv-top-icon" id="cv-redo-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" type="button" onclick="canvasUndoStep(true)" disabled><span class="material-symbols-outlined">redo</span></button>
+                                <button class="cv-top-btn" title="Insert a ready-made starter" type="button" onclick="cvOpenTemplates()"><span class="material-symbols-outlined">dashboard_customize</span><span class="cv-hide-sm">Templates</span></button>
+                                <button class="cv-top-btn" title="Show the frames one after another" type="button" onclick="cvStartPresenting()"><span class="material-symbols-outlined">slideshow</span><span class="cv-hide-sm">Present</span></button>
+                                <button class="cv-top-icon" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" type="button" onclick="cvOpenShortcuts()"><span class="material-symbols-outlined">keyboard</span></button>
+                                <button class="cv-top-icon" title="Full screen" aria-label="Full screen" type="button" onclick="toggleCanvasFullscreen()"><span class="material-symbols-outlined">fullscreen</span></button>
                             </div>
                         </div>
-                        <div id="canvas-area" class="relative w-full h-[520px] bg-surface overflow-hidden select-none" style="background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px); background-size: 24px 24px;">
-                            <svg id="canvas-svg" class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                    <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
-                                        <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"></path>
-                                    </marker>
-                                </defs>
+                        <div id="canvas-area" class="cv-area" data-tool="select">
+                            <svg id="canvas-svg" class="cv-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Planning canvas">
+                                <defs></defs>
                                 <g id="canvas-layer"></g>
                             </svg>
-                            <p id="canvas-hint" class="absolute inset-0 flex items-center justify-center text-on-surface-variant font-body-md text-body-md pointer-events-none text-center px-8">Pick a tool on the left and drag on the canvas to start planning.</p>
+                            <div id="canvas-cursors" class="cv-cursors" aria-hidden="true"></div>
+                            <p id="canvas-hint" class="cv-hint">Pick a tool on the left and drag on the canvas to start planning, or insert a template. Double-click anywhere to type.</p>
                             <!-- Tools -->
-                            <div class="absolute top-4 left-4 z-20 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/50 p-1 flex flex-col gap-1" id="canvas-tools">
-                                <button class="canvas-tool" data-tool="select" title="Select / Move (drag empty space to pan)" type="button" onclick="selectCanvasTool('select')"><span class="material-symbols-outlined text-[20px]">near_me</span></button>
-                                <button class="canvas-tool" data-tool="rectangle" title="Rectangle" type="button" onclick="selectCanvasTool('rectangle')"><span class="material-symbols-outlined text-[20px]">crop_square</span></button>
-                                <button class="canvas-tool" data-tool="circle" title="Ellipse" type="button" onclick="selectCanvasTool('circle')"><span class="material-symbols-outlined text-[20px]">circle</span></button>
-                                <button class="canvas-tool" data-tool="database" title="Database" type="button" onclick="selectCanvasTool('database')"><span class="material-symbols-outlined text-[20px]">database</span></button>
-                                <button class="canvas-tool" data-tool="sticky" title="Sticky note" type="button" onclick="selectCanvasTool('sticky')"><span class="material-symbols-outlined text-[20px]">sticky_note_2</span></button>
-                                <button class="canvas-tool" data-tool="text" title="Text" type="button" onclick="selectCanvasTool('text')"><span class="material-symbols-outlined text-[20px]">title</span></button>
-                                <button class="canvas-tool" data-tool="arrow" title="Arrow" type="button" onclick="selectCanvasTool('arrow')"><span class="material-symbols-outlined text-[20px]">arrow_right_alt</span></button>
-                                <button class="canvas-tool" data-tool="line" title="Line" type="button" onclick="selectCanvasTool('line')"><span class="material-symbols-outlined text-[20px]">horizontal_rule</span></button>
-                                <div class="h-px bg-outline-variant/40 my-0.5"></div>
-                                <button class="p-2 rounded-lg text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors" title="Clear canvas" type="button" onclick="clearCanvas()"><span class="material-symbols-outlined text-[20px]">delete_sweep</span></button>
+                            <div class="cv-toolbar" id="canvas-tools" role="toolbar" aria-label="Canvas tools">
+                                <button class="cv-tool" data-tool="select" title="Select and move (V)" aria-label="Select and move" aria-pressed="false" type="button" onclick="selectCanvasTool('select')"><span class="material-symbols-outlined">near_me</span></button>
+                                <button class="cv-tool" data-tool="hand" title="Move around the canvas (H)" aria-label="Move around the canvas" aria-pressed="false" type="button" onclick="selectCanvasTool('hand')"><span class="material-symbols-outlined">pan_tool</span></button>
+                                <span class="cv-tool-sep"></span>
+                                <button class="cv-tool" data-tool="pen" title="Pen (P)" aria-label="Pen" aria-pressed="false" type="button" onclick="selectCanvasTool('pen')"><span class="material-symbols-outlined">edit</span></button>
+                                <button class="cv-tool" data-tool="highlighter" title="Highlighter (M)" aria-label="Highlighter" aria-pressed="false" type="button" onclick="selectCanvasTool('highlighter')"><span class="material-symbols-outlined">ink_highlighter</span></button>
+                                <button class="cv-tool" data-tool="eraser" title="Eraser (E)" aria-label="Eraser" aria-pressed="false" type="button" onclick="selectCanvasTool('eraser')"><span class="material-symbols-outlined">ink_eraser</span></button>
+                                <span class="cv-tool-sep"></span>
+                                <div class="cv-tool-group">
+                                    <button class="cv-tool" data-group="shapes" data-tool="rectangle" title="Shapes (R, O, D)" aria-label="Shapes" aria-pressed="false" type="button" onclick="selectCanvasTool(this.dataset.tool)"><span class="cv-tool-icon"></span></button>
+                                    <button class="cv-tool-more" data-flyout-toggle type="button" title="More shapes" aria-label="More shapes" onclick="cvToggleFlyout('shapes', event)"><span class="material-symbols-outlined">arrow_right</span></button>
+                                    <div class="cv-flyout" id="cv-flyout-shapes" hidden>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="rectangle" title="Rectangle" onclick="selectCanvasTool('rectangle')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="circle" title="Ellipse" onclick="selectCanvasTool('circle')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="diamond" title="Diamond (decision)" onclick="selectCanvasTool('diamond')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="triangle" title="Triangle" onclick="selectCanvasTool('triangle')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="parallelogram" title="Parallelogram (input or output)" onclick="selectCanvasTool('parallelogram')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="hexagon" title="Hexagon" onclick="selectCanvasTool('hexagon')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="star" title="Star" onclick="selectCanvasTool('star')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="callout" title="Speech bubble" onclick="selectCanvasTool('callout')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="database" title="Database" onclick="selectCanvasTool('database')"></button>
+                                    </div>
+                                </div>
+                                <div class="cv-tool-group">
+                                    <button class="cv-tool" data-group="lines" data-tool="arrow" title="Arrows and lines (A, L)" aria-label="Arrows and lines" aria-pressed="false" type="button" onclick="selectCanvasTool(this.dataset.tool)"><span class="cv-tool-icon"></span></button>
+                                    <button class="cv-tool-more" data-flyout-toggle type="button" title="More lines" aria-label="More lines" onclick="cvToggleFlyout('lines', event)"><span class="material-symbols-outlined">arrow_right</span></button>
+                                    <div class="cv-flyout" id="cv-flyout-lines" hidden>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="arrow" title="Arrow" onclick="selectCanvasTool('arrow')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="line" title="Line" onclick="selectCanvasTool('line')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="elbow" title="Elbow connector" onclick="selectCanvasTool('elbow')"></button>
+                                    <button type="button" class="cv-flyout-item" data-flyout-item="curve" title="Curved connector" onclick="selectCanvasTool('curve')"></button>
+                                    </div>
+                                </div>
+                                <button class="cv-tool" data-tool="text" title="Text (T)" aria-label="Text" aria-pressed="false" type="button" onclick="selectCanvasTool('text')"><span class="material-symbols-outlined">title</span></button>
+                                <button class="cv-tool" data-tool="sticky" title="Sticky note (N)" aria-label="Sticky note" aria-pressed="false" type="button" onclick="selectCanvasTool('sticky')"><span class="material-symbols-outlined">sticky_note_2</span></button>
+                                <button class="cv-tool" data-tool="frame" title="Frame (a section, and a slide in present mode) (F)" aria-label="Frame (a section, and a slide in present mode)" aria-pressed="false" type="button" onclick="selectCanvasTool('frame')"><span class="material-symbols-outlined">crop_free</span></button>
+                                <button class="cv-tool" title="Add a picture (I)" aria-label="Add a picture" type="button" onclick="cvPickImage()"><span class="material-symbols-outlined">add_photo_alternate</span></button>
+                                <button class="cv-tool" data-tool="laser" title="Laser pointer (K)" aria-label="Laser pointer" aria-pressed="false" type="button" onclick="selectCanvasTool('laser')"><span class="material-symbols-outlined">stylus_laser_pointer</span></button>
+                                <span class="cv-tool-sep"></span>
+                                <button class="cv-tool" id="cv-keep-tool" title="Keep the tool after drawing (Q)" aria-label="Keep the tool after drawing" aria-pressed="false" type="button" onclick="cvToggleKeepTool()"><span class="material-symbols-outlined">lock_open</span></button>
+                                <button class="cv-tool is-danger" title="Clear canvas" aria-label="Clear canvas" type="button" onclick="clearCanvas()"><span class="material-symbols-outlined">delete_sweep</span></button>
                             </div>
+                            <div class="cv-stylebar" id="cv-stylebar" role="toolbar" aria-label="Style" hidden></div>
+                            <div class="cv-popover" id="cv-popover" hidden></div>
+                            <div class="cv-menu cv-context" id="cv-context" role="menu" hidden></div>
+                            <textarea id="cv-editor" class="cv-editor" hidden spellcheck="true" aria-label="Shape text"></textarea>
+                            <canvas id="cv-minimap" class="cv-minimap" title="Overview: click to jump"></canvas>
                             <!-- Zoom -->
-                            <div class="absolute bottom-4 right-4 z-20 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/50 p-1 flex items-center gap-1">
-                                <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container" title="Zoom out" type="button" onclick="zoomCanvas(-0.1)"><span class="material-symbols-outlined text-[18px]">remove</span></button>
-                                <span class="font-label-sm text-label-sm text-on-surface w-12 text-center" id="zoom-label">100%</span>
-                                <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container" title="Zoom in" type="button" onclick="zoomCanvas(0.1)"><span class="material-symbols-outlined text-[18px]">add</span></button>
-                                <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container" title="Fit to screen" type="button" onclick="fitCanvas()"><span class="material-symbols-outlined text-[18px]">aspect_ratio</span></button>
+                            <div class="cv-zoom">
+                                <button class="cv-zoom-btn" id="cv-grid-btn" title="Snap to the grid (Shift+G)" aria-label="Snap to the grid" aria-pressed="false" type="button" onclick="cvToggleGrid()"><span class="material-symbols-outlined">grid_4x4</span></button>
+                                <button class="cv-zoom-btn cv-hide-sm" id="cv-minimap-btn" title="Show or hide the overview" aria-label="Overview map" type="button" onclick="cvToggleMinimap()"><span class="material-symbols-outlined">map</span></button>
+                                <span class="cv-zoom-sep"></span>
+                                <button class="cv-zoom-btn" title="Zoom out" aria-label="Zoom out" type="button" onclick="zoomCanvas(-1)"><span class="material-symbols-outlined">remove</span></button>
+                                <button class="cv-zoom-label" id="zoom-label" title="Back to 100% (0)" type="button" onclick="cvZoomTo(1, el('canvas-svg').clientWidth / 2, el('canvas-svg').clientHeight / 2)">100%</button>
+                                <button class="cv-zoom-btn" title="Zoom in" aria-label="Zoom in" type="button" onclick="zoomCanvas(1)"><span class="material-symbols-outlined">add</span></button>
+                                <button class="cv-zoom-btn" title="Fit everything (1)" aria-label="Fit everything" type="button" onclick="fitCanvas()"><span class="material-symbols-outlined">fit_screen</span></button>
                             </div>
+                            <div class="cv-present-bar" id="cv-present-bar" hidden>
+                                <button type="button" class="cv-zoom-btn" id="cv-present-prev" aria-label="Previous frame" onclick="cvShowFrame(cvPresent.index - 1)"><span class="material-symbols-outlined">chevron_left</span></button>
+                                <span id="cv-present-label">1 / 1</span>
+                                <button type="button" class="cv-zoom-btn" id="cv-present-next" aria-label="Next frame" onclick="cvShowFrame(cvPresent.index + 1)"><span class="material-symbols-outlined">chevron_right</span></button>
+                                <button type="button" class="cv-present-stop" onclick="cvStopPresenting(false)">Stop presenting</button>
+                            </div>
+                            <input type="file" id="cv-image-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
                         </div>
+                        <div class="cv-modal" id="cv-modal" hidden></div>
                     </div>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant">Double-click a shape to edit its text. Select a shape and press Delete to remove it. Changes save automatically and appear for teammates.</p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">Double-click to type. Connect shapes with the arrow tool: ends dropped on a shape stay attached. Ctrl + scroll zooms, Space + drag moves around, ? shows every shortcut. Changes save automatically and appear live for teammates.</p>
                 </div>
 
                 <!-- The other tools draw themselves into these (hub-*.js) -->
@@ -440,20 +480,6 @@
         </div>
     </div>
 
-    <!-- ==================== Text on a canvas shape ==================== -->
-    <div id="shape-text-modal" class="hub-modal hidden" style="z-index: 2147483000;">
-        <div class="hub-dialog max-w-sm">
-            <h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-3">Shape text</h3>
-            <form id="shape-text-form" class="flex flex-col gap-3">
-                <textarea id="shape-text-input" maxlength="500" class="hub-input h-24 resize-none" placeholder="Type a label..."></textarea>
-                <div class="flex justify-end gap-3">
-                    <button type="button" class="hub-btn-plain" onclick="closeHubModal('shape-text-modal')">Cancel</button>
-                    <button type="submit" class="hub-btn-primary">Apply</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- System modal (used by shared.js for confirmations) -->
     <div id="systemModal" class="modal-overlay">
         <div class="hub-dialog max-w-sm">
@@ -473,6 +499,10 @@
     <script src="formsheet.js"></script>
     <script src="hub-tools.js"></script>
     <script src="project-hub.js"></script>
+    <script src="hub-canvas.js"></script>
+    <script src="hub-canvas-tools.js"></script>
+    <script src="hub-canvas-extras.js"></script>
+    <script src="hub-canvas-templates.js"></script>
     <script src="hub-task.js"></script>
     <script src="hub-views.js"></script>
     <script src="hub-timeline.js"></script>

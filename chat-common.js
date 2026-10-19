@@ -218,6 +218,44 @@ function newTempId() {
   return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// Shrinks a picture in the browser before it is uploaded: at most maxSide pixels on the long side.
+// PNGs stay PNG (they may be see-through) unless that makes them large; a small GIF is sent as it is, so it keeps moving.
+// Resolves to { blob, width, height }.
+function shrinkImageFile(file, maxSide = 1600) {
+  return new Promise((resolve, reject) => {
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) return reject(new Error('Choose a JPG, PNG, WebP or GIF picture.'));
+    if (file.size > 15 * 1024 * 1024) return reject(new Error('That picture is too large. Choose one under 15 MB.'));
+    const image = new Image();
+    const address = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(address);
+      const width = image.naturalWidth;
+      const height = image.naturalHeight;
+      if (file.type === 'image/gif' && file.size <= 3 * 1024 * 1024) return resolve({ blob: file, width, height });
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const asJpeg = () => {
+        // JPEG has no see-through parts: put white behind them instead of black
+        context.globalCompositeOperation = 'destination-over';
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => (blob ? resolve({ blob, width: canvas.width, height: canvas.height }) : reject(new Error('That picture could not be read.'))), 'image/jpeg', 0.86);
+      };
+      if (file.type !== 'image/png') return asJpeg();
+      canvas.toBlob(blob => {
+        if (blob && blob.size <= 2.5 * 1024 * 1024) resolve({ blob, width: canvas.width, height: canvas.height });
+        else asJpeg();
+      }, 'image/png');
+    };
+    image.onerror = () => { URL.revokeObjectURL(address); reject(new Error('That file is not a picture we can read.')); };
+    image.src = address;
+  });
+}
+
 // ==========================================
 // 2. MESSAGE CONTENT
 // ==========================================
