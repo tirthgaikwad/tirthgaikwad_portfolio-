@@ -865,6 +865,10 @@ function cvInitExtras() {
     e.preventDefault();
     cvAddImageFiles(files, canvasPoint(e));
   });
+  // Every dialog (shortcuts, templates, versions) closes with its × button or a click on the dark backdrop
+  el('cv-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget || e.target.closest('[data-modal-close]')) cvCloseModal();
+  });
   area.addEventListener('pointerdown', cvPresentPointer, true);
   area.addEventListener('pointerup', cvPresentPointer, true);
   el('canvas-peers').addEventListener('click', (e) => {
