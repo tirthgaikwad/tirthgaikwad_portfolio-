@@ -1,0 +1,59 @@
+/* ==========================================
+   EVENT-PRINT.CSS — the printable sheets of event-print.html: an A4 QR poster, the attendance sheet and certificates
+   (A4 landscape). On screen they show as paper on a grey desk; "Print" or "Save as PDF" prints just the sheets.
+   ========================================== */
+#prRoot { display: flex; flex-direction: column; align-items: center; gap: 20px; padding-bottom: 30px; }
+.pr-sheet { background: #fff; box-shadow: 0 6px 24px rgba(11,28,48,.12); color: #0b1c30; position: relative; overflow: hidden; }
+.pr-a4 { width: 210mm; min-height: 297mm; padding: 18mm; box-sizing: border-box; }
+.pr-a4-land { width: 297mm; height: 210mm; padding: 14mm; box-sizing: border-box; }
+
+/* poster */
+.pr-poster { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8mm; }
+.pr-poster .pr-kind { font: 700 14pt Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #3525cd; }
+.pr-poster h1 { font: 800 34pt/1.1 'Plus Jakarta Sans', sans-serif; margin: 0; }
+.pr-poster .pr-tag { font: 500 15pt Inter, sans-serif; color: #464555; margin: 0; }
+.pr-poster .pr-facts { font: 600 15pt/1.5 Inter, sans-serif; }
+.pr-poster .pr-qr { padding: 6mm; border: 2px solid #0b1c30; border-radius: 6mm; }
+.pr-poster .pr-qr img, .pr-poster .pr-qr canvas { width: 80mm !important; height: 80mm !important; }
+.pr-poster .pr-scan { font: 800 20pt 'Plus Jakarta Sans', sans-serif; }
+.pr-poster img.pr-img { width: 100%; max-height: 80mm; object-fit: cover; border-radius: 4mm; }
+.pr-foot { position: absolute; bottom: 8mm; left: 0; right: 0; text-align: center; font: 500 9pt Inter, sans-serif; color: #777587; }
+
+/* attendance */
+.pr-att h1 { font: 800 18pt 'Plus Jakarta Sans', sans-serif; margin: 0 0 2mm; }
+.pr-att p { margin: 0 0 6mm; font: 400 10pt Inter, sans-serif; color: #464555; }
+.pr-att table { width: 100%; border-collapse: collapse; font: 400 10pt Inter, sans-serif; }
+.pr-att th, .pr-att td { border: 1px solid #777587; padding: 2.4mm 2mm; text-align: left; }
+.pr-att th { background: #eff4ff; font-weight: 700; }
+.pr-att td.pr-sign { width: 38mm; }
+.pr-att td.pr-n { width: 10mm; text-align: center; }
+
+/* certificate */
+.pr-cert { display: flex; }
+.pr-cert-frame { flex: 1; border: 3mm double #3525cd; border-radius: 3mm; padding: 10mm 16mm; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+.pr-cert .pr-brand { font: 800 12pt 'Plus Jakarta Sans', sans-serif; color: #3525cd; letter-spacing: .04em; }
+.pr-cert h1 { font: 800 30pt 'Plus Jakarta Sans', sans-serif; margin: 6mm 0 2mm; letter-spacing: .02em; }
+.pr-cert .pr-lead { font: 400 13pt Inter, sans-serif; color: #464555; margin: 4mm 0 0; }
+.pr-cert .pr-name { font: 800 28pt 'Plus Jakarta Sans', sans-serif; margin: 3mm 0; border-bottom: 1px solid #c7c4d8; padding: 0 12mm 2mm; }
+.pr-cert .pr-for { font: 400 13pt/1.6 Inter, sans-serif; max-width: 210mm; margin: 2mm 0 0; }
+.pr-cert .pr-bottom { margin-top: auto; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; }
+.pr-cert .pr-sigline { border-top: 1px solid #0b1c30; padding-top: 2mm; min-width: 60mm; font: 600 10pt Inter, sans-serif; text-align: center; }
+.pr-cert .pr-verify { display: flex; align-items: center; gap: 3mm; text-align: left; font: 400 8.5pt Inter, sans-serif; color: #464555; }
+.pr-cert .pr-verify img, .pr-cert .pr-verify canvas { width: 22mm !important; height: 22mm !important; }
+.pr-cert .pr-code { font: 700 10pt Inter, sans-serif; color: #0b1c30; letter-spacing: .05em; }
+
+@media screen and (max-width: 900px) {
+  #prRoot { overflow-x: auto; align-items: flex-start; }
+  .pr-sheet { transform-origin: top left; }
+}
+@media print {
+  @page { size: A4; margin: 0; }
+  @page land { size: A4 landscape; margin: 0; }
+  html, body { background: #fff !important; }
+  .app-header, .app-tabbar, footer, .no-print, .hm-hero, .chat-toast, #helpbotRoot, .ck-banner { display: none !important; }
+  main { padding: 0 !important; }
+  .hm-page { padding: 0 !important; max-width: none !important; }
+  #prRoot { display: block; padding: 0; }
+  .pr-sheet { box-shadow: none; margin: 0; break-after: page; }
+  .pr-a4-land { page: land; }
+}

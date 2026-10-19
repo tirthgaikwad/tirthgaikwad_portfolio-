@@ -25,7 +25,7 @@ if (IN_CALL_DOCK) {
 
 // Pages anyone may read without logging in; an expired login does not send them to login.html
 const PUBLIC_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'support.html', 'cookies.html',
-    'refund.html', 'contact.html', 'copyright.html', 'reset.html', 'guardian.html', '404.html'];
+    'refund.html', 'contact.html', 'copyright.html', 'reset.html', 'guardian.html', '404.html', 'event.html', 'certificate-check.html'];
 // An under-18 whose guardian has not agreed yet may only open these (guardian.html explains the wait)
 const GUARDIAN_WAIT_PAGES = PUBLIC_PAGES.concat(['account.html']);
 const CURRENT_PAGE = window.location.pathname.split('/').pop();
@@ -117,7 +117,9 @@ const HEADER_ICONS = {
     exam: '<rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5v-1h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/>',
     plus: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
     home: '<path d="M4 11l8-6.5 8 6.5v7.5a1.5 1.5 0 01-1.5 1.5H5.5A1.5 1.5 0 014 18.5z"/><path d="M9.5 20v-5.5h5V20"/>',
-    lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>'
+    lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h3"/>',
+    ticket: '<path d="M4 7.5a1.5 1.5 0 011.5-1.5h13A1.5 1.5 0 0120 7.5V10a2 2 0 000 4v2.5a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 16.5V14a2 2 0 000-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/>'
 };
 const headerIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${HEADER_ICONS[name]}</svg>`;
 
@@ -126,6 +128,11 @@ const HEADER_NAV = [
     { label: 'Home', href: 'home.html', icon: 'home', text: 'What is waiting for you today' },
     { label: 'Discover', href: 'search.html', icon: 'compass', text: 'Find people by skill' },
     { label: 'Opportunities', href: 'board.html', icon: 'board', text: 'Open roles and project ideas' },
+    { label: 'Events', pages: [
+        { label: 'Discover events', href: 'events.html', icon: 'calendar', text: 'Seminars, workshops, hackathons and fests' },
+        { label: 'My events', href: 'my-events.html', icon: 'ticket', text: 'Your tickets, waitlists and certificates' },
+        { label: 'Create an event', href: 'event-create.html', icon: 'plus', text: 'Host one for your department, club or team' }
+    ] },
     { label: 'Study', pages: [
         { label: 'My Study', href: 'study.html', icon: 'book', text: 'Timetable, attendance, planner, grades, timer' },
         { label: 'Exam Prep', href: 'prep.html', icon: 'exam', text: 'Syllabus, past-paper questions, flashcards' },
@@ -224,7 +231,8 @@ window.renderAppHeader = function() {
 // Opportunities and College Hub are not tabs of their own: Home shows what is new in both and links to them
 
 const TABBAR_ITEMS = [
-    { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html'] },
+    { label: 'Home', href: 'home.html', icon: 'home', also: ['board.html', 'college-hub.html', 'events.html', 'event.html', 'my-events.html', 'ticket.html', 'host.html',
+        'event-create.html', 'event-manage.html', 'event-checkin.html', 'event-print.html'] },
     { label: 'Study', href: 'study.html', icon: 'book', also: ['notes.html', 'practice.html', 'resume.html'] },
     { label: 'Discover', href: 'search.html', icon: 'compass', also: ['professionals.html', 'college.html', 'network.html', 'saved.html'] },
     { label: 'Messages', href: 'inbox.html', icon: 'chat', also: [] },

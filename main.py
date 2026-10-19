@@ -3395,7 +3395,9 @@ async def create_team(
     name = team_data.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Team name is required.")
-    owned = (await db.execute(select(func.count()).select_from(DBTeam).where(DBTeam.created_by == current_user_id, func.coalesce(DBTeam.college_key, "") == ""))).scalar() or 0
+    # College Hub groups and event teams (topic "event:<id>", events.py) do not count towards a person's own team limit
+    owned = (await db.execute(select(func.count()).select_from(DBTeam).where(DBTeam.created_by == current_user_id, func.coalesce(DBTeam.college_key, "") == "",
+                                                                             ~func.coalesce(DBTeam.topic, "").like("event:%")))).scalar() or 0
     await check_limit(current_user_id, "teams", used=owned)
     now_iso = utc_now_iso()
     new_team = DBTeam(
@@ -9328,6 +9330,18 @@ HOME_SKILL_GOAL = 3
 def home_item(kind: str, title: str, detail: str, link: str, due: str = "", urgent: bool = False) -> dict:
     return {"kind": kind, "title": title, "detail": detail, "link": link, "due": due, "urgent": urgent}
 
+# Later modules (events.py) add async functions here: user_id -> list of home_item "needs". A failing one is skipped.
+HOME_NEED_SOURCES: list = []
+
+async def home_extra_needs(user_id: int) -> list:
+    async def safe(source):
+        try:
+            return await source(user_id)
+        except Exception as e:
+            print("Error in a Home source:", e)
+            return []
+    return [item for items in await asyncio.gather(*[safe(source) for source in HOME_NEED_SOURCES]) for item in items]
+
 async def home_hub_items(me: dict, today) -> tuple:
     """What College Hub is waiting on this person for, and what came back for them (marks). One round of reads."""
     key, user_id, student = me["key"], me["id"], me["role"] == "student"
@@ -9448,14 +9462,15 @@ async def build_home(user_id: int) -> dict:
         fetch_one_off(person_cards_query(user_id, DBUser.id.not_in(i_follow)).order_by(DBUser.id.desc()).limit(200)),
     )
     row, counts = me_rows[0], number_rows[0]
-    (needs, news), study, practice, progress, prep = await asyncio.gather(
+    (needs, news), study, practice, progress, prep, extra_needs = await asyncio.gather(
         home_hub_items(me, today) if me["role"] != "none" else asyncio.sleep(0, ([], [])),
         home_study(user_id),
         practice_glance(user_id),
         progress_glance(user_id),
         prep_glance(user_id),
+        home_extra_needs(user_id),
     )
-    needs = study["needs"] + needs
+    needs = study["needs"] + needs + extra_needs
 
     unread_count, unread_people = unread_rows[0][0] or 0, unread_rows[0][1] or 0
     if unread_count:
@@ -16193,3 +16208,10 @@ async def league_pass(send=None, now=None) -> int:
 async def get_league_badges(user_id: int, current_user_id: int = Depends(get_current_user_id)):
     """Top-three weekly finishes of anyone, for their profile."""
     return (await league_badges_of([user_id])).get(user_id) or {"count": 0, "best": None}
+
+
+# ==========================================
+# 37. EVENTS: in events.py (its own router). Imported last, so every helper it uses above already exists.
+# ==========================================
+from events import router as events_router  # noqa: E402
+app.include_router(events_router)

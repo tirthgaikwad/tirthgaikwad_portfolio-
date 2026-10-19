@@ -21,7 +21,9 @@ const PAGE_NAMES = {
   'network.html': 'My Network', 'saved.html': 'Saved Profiles', 'team.html': 'My Teams', 'project_management.html': 'Project Hub',
   'research.html': 'Research Collab', 'inbox.html': 'Messages', 'study.html': 'My Study', 'notes.html': 'Notes and papers',
   'practice.html': 'Daily practice', 'resume.html': 'the Resume builder', 'college-hub.html': 'College Hub', 'professionals.html': 'Professionals',
-  'profile.html': 'that profile', 'account.html': 'Account & privacy', 'pricing.html': 'Plans', 'progress.html': 'Your progress', 'prep.html': 'Exam Prep', 'tutor.html': 'the AI Tutor', 'tests.html': 'Mock tests', 'rooms.html': 'Study rooms'
+  'profile.html': 'that profile', 'account.html': 'Account & privacy', 'pricing.html': 'Plans', 'progress.html': 'Your progress', 'prep.html': 'Exam Prep', 'tutor.html': 'the AI Tutor', 'tests.html': 'Mock tests', 'rooms.html': 'Study rooms',
+  'events.html': 'Events', 'event.html': 'that event', 'my-events.html': 'My events', 'ticket.html': 'your ticket', 'event-create.html': 'Create an event',
+  'event-manage.html': 'the event dashboard', 'event-checkin.html': 'event check-in', 'host.html': 'that host'
 };
 const nextPageName = () => PAGE_NAMES[NEXT_PAGE.split(/[?#]/)[0]] || 'that page';
 // A link to the other auth page that keeps ?next= along

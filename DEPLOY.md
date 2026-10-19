@@ -56,6 +56,11 @@ before `shared.js` / `auth.js` on every page, and add the pages' address to `ALL
   must never be reachable from the web. Serve only `*.html`, `*.js`, `*.css`, `*.json` used by pages
   (`helpbot_kb.json`, `practice_bank.json`), `icons/`, `favicon.*`, `site.webmanifest`, `robots.txt`, `sitemap.xml`, `sw.js`.
 - Unknown addresses should answer with `404.html`.
+- Event share links (`/e/<slug>`, events.py) are answered by the API, not by a page file: send `/e/*` to the API too.
+  They give WhatsApp, LinkedIn and Google the event's title, description and poster, then forward people to `event.html`.
+  The list of public events for search engines is `/api/events-sitemap.xml` (named in `robots.txt`).
+- Event uploads: posters go to `static/uploads/events/`; files people attach to a registration go to
+  `private_uploads/event_files/` (never served directly; organisers open them through the API).
 
 ### Headers the page host must send
 

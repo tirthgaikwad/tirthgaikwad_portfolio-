@@ -13,57 +13,7 @@ const tuIcon = (name) => `<span class="material-symbols-outlined" aria-hidden="t
 const TUTOR_MODES = [['doubt', 'Ask a doubt', 'help'], ['answer', 'Exam answer', 'edit_note'], ['cards', 'Make flashcards', 'style'], ['quiz', 'Quiz me', 'quiz']];
 const STARTERS = ['Explain normalisation with a simple example', 'What is the difference between a process and a thread?', 'How do I solve recurrence relations?'];
 
-// ---------- a small, safe Markdown renderer: everything is escaped first ----------
-function mdInline(text) {
-  return text
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>');
-}
-
-function mdToHtml(source) {
-  const out = [];
-  const blocks = String(source || '').split(/```/);
-  blocks.forEach((block, i) => {
-    if (i % 2 === 1) {                       // a fenced code block; its first line may name the language
-      const code = block.replace(/^[a-zA-Z0-9+#-]*\n/, '');
-      out.push(`<pre><code>${escapeHtml(code.replace(/\n$/, ''))}</code></pre>`);
-      return;
-    }
-    const lines = escapeHtml(block).split('\n');
-    let list = null, para = [], table = [];
-    const flushPara = () => { if (para.length) { out.push(`<p>${mdInline(para.join('<br>'))}</p>`); para = []; } };
-    const flushList = () => { if (list) { out.push(`<${list.tag}>${list.items.map(item => `<li>${mdInline(item)}</li>`).join('')}</${list.tag}>`); list = null; } };
-    const flushTable = () => {
-      if (!table.length) return;
-      const rows = table.filter(row => !/^\|?\s*:?-{2,}/.test(row)).map(row => row.replace(/^\||\|$/g, '').split('|').map(cell => mdInline(cell.trim())));
-      out.push(`<table>${rows.map((cells, r) => `<tr>${cells.map(cell => r === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`).join('')}</tr>`).join('')}</table>`);
-      table = [];
-    };
-    for (const raw of lines) {
-      const line = raw.trimEnd();
-      const heading = line.match(/^(#{1,4})\s+(.+)$/);
-      const bullet = line.match(/^\s*[-*•]\s+(.+)$/);
-      const numbered = line.match(/^\s*(\d+)[.)]\s+(.+)$/);
-      if (/^\s*\|.*\|\s*$/.test(line)) { flushPara(); flushList(); table.push(line.trim()); continue; }
-      flushTable();
-      if (!line.trim()) { flushPara(); flushList(); continue; }
-      if (heading) { flushPara(); flushList(); out.push(`<h${heading[1].length <= 3 ? 3 : 4}>${mdInline(heading[2])}</h${heading[1].length <= 3 ? 3 : 4}>`); continue; }
-      if (bullet || numbered) {
-        flushPara();
-        const tag = bullet ? 'ul' : 'ol';
-        if (!list || list.tag !== tag) { flushList(); list = { tag, items: [] }; }
-        list.items.push(bullet ? bullet[1] : numbered[2]);
-        continue;
-      }
-      if (list && /^\s{2,}\S/.test(raw)) { list.items[list.items.length - 1] += `<br>${line.trim()}`; continue; }
-      flushList();
-      para.push(line);
-    }
-    flushPara(); flushList(); flushTable();
-  });
-  return out.join('');
-}
+// mdToHtml (the safe Markdown renderer) is in markdown.js, shared with the event pages
 
 // ---------- loading ----------
 function initTutor() {

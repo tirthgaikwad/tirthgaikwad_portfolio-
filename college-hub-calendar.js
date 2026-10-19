@@ -22,7 +22,8 @@ const cal = { month: '', dept: '', division: '' };   // month is YYYY-MM
 // ==========================================
 // Teachers' events and the dates activities set, as one list sorted by date and time
 function calendarItems() {
-  const items = (hub.events || []).map(event => ({ ...event, source: 'event', key: `event-${event.id}` }));
+  const items = (hub.events || []).map(event => ({ ...event, source: 'event', key: `event-${event.id}` }))
+    .concat(hubPlatformEvents);   // published Connect2Minds events of this college (college-hub-events.js)
   activities().forEach(post => {
     const common = { department: post.department, division: post.division, location: '', start_time: '', end_time: '', post_id: post.id, source: 'activity' };
     if (post.deadline) items.push({ ...common, key: `groups-${post.id}`, kind: 'groups', date: post.deadline, title: post.title, details: 'Last day to form groups.' });
@@ -150,6 +151,7 @@ hubActions['cal-day'] = (button) => {
 hubActions['cal-item'] = (button) => {
   const item = calendarItems().find(entry => entry.key === button.dataset.key);
   if (!item) return;
+  if (item.source === 'platform') { window.location.href = `event.html?id=${item.id}`; return; }
   const kind = EVENT_KINDS[item.kind] || EVENT_KINDS.other;
   const event = item.source === 'event' ? item : null;
   openHubModal({

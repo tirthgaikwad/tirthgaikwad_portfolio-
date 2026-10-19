@@ -2077,6 +2077,220 @@
      "text": "The Exam Pass is at the top."
     }
    ]
+  },
+  {
+   "id": "events_find",
+   "title": "Find events",
+   "audience": "member",
+   "page": "events.html",
+   "keywords": [
+    "events",
+    "event",
+    "seminar",
+    "workshop",
+    "hackathon",
+    "fest",
+    "competition",
+    "webinar",
+    "what is happening",
+    "upcoming events",
+    "find events",
+    "calendar of events",
+    "guest lecture"
+   ],
+   "answer": "Open Events in the top bar. Upcoming shows what your college and others have planned; switch to the calendar view, search, or filter by type, date and seats. Save an event with the bookmark to get a reminder before registration closes.",
+   "highlight": [
+    {
+     "sel": "#evTabs",
+     "text": "Upcoming, happening now, past, and your own events."
+    },
+    {
+     "sel": "#evQ",
+     "text": "Search by title, host, tag or college."
+    }
+   ]
+  },
+  {
+   "id": "events_register",
+   "title": "Register for an event",
+   "audience": "all",
+   "page": "events.html",
+   "keywords": [
+    "register for event",
+    "sign up for event",
+    "join event",
+    "event registration",
+    "waitlist",
+    "event full",
+    "how do i register",
+    "cancel registration"
+   ],
+   "answer": "Open the event and press Register. Your name and college are filled in from your profile; answer the organiser's questions and agree to share your details with them. If the event is full you join the waitlist and move up automatically when a seat opens. You can cancel from the event page until shortly before the start.",
+   "highlight": [
+    {
+     "sel": "#evList",
+     "text": "Open any event to register."
+    }
+   ]
+  },
+  {
+   "id": "events_ticket",
+   "title": "Your event ticket and QR code",
+   "audience": "member",
+   "page": "my-events.html",
+   "keywords": [
+    "ticket",
+    "qr code",
+    "event ticket",
+    "entry pass",
+    "check in",
+    "show qr",
+    "my tickets",
+    "entrance"
+   ],
+   "answer": "Your tickets are in My events. Open one and show its QR code at the entrance. The ticket is saved on your phone, so it opens without internet. If someone got a screenshot of it, press New code: the old one stops working.",
+   "highlight": [
+    {
+     "sel": "#myTabs",
+     "text": "Upcoming shows your tickets."
+    }
+   ]
+  },
+  {
+   "id": "events_create",
+   "title": "Create an event",
+   "audience": "member",
+   "page": "event-create.html",
+   "keywords": [
+    "create event",
+    "host event",
+    "organise event",
+    "organize event",
+    "new event",
+    "post an event",
+    "make an event",
+    "event permission",
+    "permission letter"
+   ],
+   "answer": "Choose Events, then Create an event. Pick a template, fill in the six steps (it saves as you go) and submit. Teachers publish at once. A student's event goes to a teacher of their college first; a public one also to the college admin. You must be a verified student, a teacher or a professional to create events.",
+   "highlight": [
+    {
+     "sel": "#wzRoot",
+     "text": "Start from a template or copy an earlier event."
+    }
+   ]
+  },
+  {
+   "id": "events_manage",
+   "title": "Run your event: registrations, announcements, staff",
+   "audience": "member",
+   "page": "my-events.html?tab=organising",
+   "keywords": [
+    "manage event",
+    "event dashboard",
+    "registrations list",
+    "download registrations",
+    "announcement",
+    "volunteers",
+    "event staff",
+    "organiser dashboard",
+    "export csv"
+   ],
+   "answer": "My events, Organising, opens each event's dashboard: who registered (approve, waitlist, download a CSV), announcements to everyone or to one group, volunteers and managers, certificates, and an activity log of every change and download.",
+   "highlight": [
+    {
+     "sel": "#myTabs",
+     "text": "Organising lists the events you run."
+    }
+   ]
+  },
+  {
+   "id": "events_checkin",
+   "title": "Check people in at the door",
+   "audience": "member",
+   "page": "my-events.html?tab=organising",
+   "keywords": [
+    "scan tickets",
+    "scanner",
+    "check in people",
+    "attendance",
+    "volunteer",
+    "door",
+    "walk in",
+    "no internet at venue"
+   ],
+   "answer": "Open the event dashboard and press Scanner (volunteers go straight there). Point the camera at tickets; a green screen means let them in, red says why not, including tickets already used. Search by name works too. Without internet the scans are kept and sent later; the printed attendance sheet is the backup.",
+   "highlight": [
+    {
+     "sel": "#myTabs",
+     "text": "Open an event you organise, then the Scanner."
+    }
+   ]
+  },
+  {
+   "id": "events_certificates",
+   "title": "Event certificates",
+   "audience": "all",
+   "page": "certificate-check.html",
+   "keywords": [
+    "certificate",
+    "participation certificate",
+    "verify certificate",
+    "fake certificate",
+    "certificate code",
+    "check certificate",
+    "download certificate"
+   ],
+   "answer": "Everyone checked in at an event gets a participation certificate with a code like C2M-ABCD-EFGH. Find and print yours in My events, Certificates, and choose whether it shows on your profile. Anyone can check a certificate on the certificate check page.",
+   "highlight": [
+    {
+     "sel": "#ccForm",
+     "text": "Type or scan a certificate code here."
+    }
+   ]
+  },
+  {
+   "id": "events_approve",
+   "title": "Approve student events (teachers)",
+   "audience": "member",
+   "page": "college-hub.html?tab=events",
+   "keywords": [
+    "approve event",
+    "event approval",
+    "student event request",
+    "approve club",
+    "host request",
+    "pending events"
+   ],
+   "answer": "Teachers find student events and club requests in College Hub, Events. Approve, ask for changes or reject, always with a note the student sees. Bigger changes to a live event (date, place, seats) come back here too. Home reminds you when something is waiting.",
+   "highlight": [
+    {
+     "sel": "#hubTabs",
+     "text": "The Events tab is shown to teachers."
+    }
+   ]
+  },
+  {
+   "id": "events_host",
+   "title": "Clubs and departments as event hosts",
+   "audience": "member",
+   "page": "host.html?new=1",
+   "keywords": [
+    "club",
+    "host",
+    "department page",
+    "create a club",
+    "society",
+    "follow a club",
+    "event host"
+   ],
+   "answer": "A host is the department, club or company behind events. Create one from the event wizard's Host field; a teacher's host is live at once, a student's is approved by a teacher. Follow a host to hear about its new events.",
+   "highlight": [
+    {
+     "sel": "#hoRoot",
+     "text": "Name the host and add a logo."
+    }
+   ]
   }
  ],
  "tour": {
@@ -2090,6 +2304,11 @@
     "page": "search.html",
     "sel": "#talent-search-input",
     "text": "Discover: find people by skill, college or project, then follow, save or message them."
+   },
+   {
+    "page": "events.html",
+    "sel": "#evTabs",
+    "text": "Events: seminars, workshops and hackathons. Register in one tap and keep your ticket on your phone."
    },
    {
     "page": "study.html",

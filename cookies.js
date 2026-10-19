@@ -38,8 +38,10 @@
   const allows = (kind) => !!(choice && choice[kind]);
 
   // ---------- preferences: the browser storage that only makes the site nicer ----------
-  // Login state (currentUserId, userRole, adminToken) and "already offered the tour" are essential and always kept.
-  const isPreference = (key) => (/^c2m:/.test(key) && !/:helpbotTourOffered$/.test(key)) || key === 'callDockSplit' || key === 'callDockBar';
+  // Login state (currentUserId, userRole, adminToken), "already offered the tour", an event ticket the person opened (so it
+  // shows at the door without internet) and check-ins a volunteer scanned offline (they must still reach the server) are
+  // essential and always kept.
+  const isPreference = (key) => (/^c2m:/.test(key) && !/:(helpbotTourOffered|ticket:\d+|checkin-queue:\d+)$/.test(key)) || key === 'callDockSplit' || key === 'callDockBar';
   try {
     const realSetItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {

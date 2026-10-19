@@ -520,7 +520,8 @@
   // ==========================================
   // This page always shows Log in and Sign up, so its links to members-only pages (feature cards, footer) open the
   // login page first. Someone already logged in on this browser is asked there whether to continue as themselves.
-  const OPEN_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'cookies.html', 'support.html'];
+  const OPEN_PAGES = ['', 'index.html', 'login.html', 'register.html', 'privacy.html', 'dpdp.html', 'terms.html', 'cookies.html', 'support.html',
+    'event.html', 'certificate-check.html'];
   document.querySelectorAll('a[href]').forEach(link => {
     const href = link.getAttribute('href');
     const page = href.split(/[?#]/)[0];

@@ -21,7 +21,7 @@
   const MEMBER = !!UID;
   const STORE = `c2m:helpbot:${UID || 'guest'}`;
   const MAX_HISTORY = 30;
-  const MEMBER_PAGES_FREE = ['index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html', 'cookies.html', 'pricing.html'];
+  const MEMBER_PAGES_FREE = ['index.html', 'login.html', 'register.html', 'privacy.html', 'terms.html', 'support.html', 'cookies.html', 'pricing.html', 'event.html', 'certificate-check.html'];
   const TAB_PAGES = { 'study.html': 'tab', 'project_management.html': 'tab', 'college-hub.html': 'tab' };
 
   let kb = null;

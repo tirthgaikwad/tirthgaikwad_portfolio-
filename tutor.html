@@ -7,7 +7,7 @@
 (function () {
   if (!localStorage.getItem('currentUserId')) return;
   var apiBase = window.C2M_API_BASE || ((/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || location.port === '5500') ? location.protocol + '//' + (location.hostname || '127.0.0.1') + ':8000' : location.origin);
-  window.__pagePrefetch = fetch(apiBase + 'C:/Program Files/Git/api/tutor', { credentials: 'include' })
+  window.__pagePrefetch = fetch(apiBase + '/api/tutor', { credentials: 'include' })
     .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
     .catch(function () { return null; });
 })();
@@ -72,6 +72,7 @@
 </div>
 
 <script src="chat-common.js"></script>
+<script src="markdown.js"></script>
 <script src="tutor.js"></script>
 </body>
 </html>

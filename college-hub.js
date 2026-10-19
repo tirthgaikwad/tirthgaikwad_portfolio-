@@ -9,7 +9,7 @@
 const HUB_REFRESH_MS = 60000;
 const HUB_COLLEGE_ROOM = 'college';
 const HUB_MAX_GROUP_SIZE = 50;      // the server's limit for a group that belongs to no activity
-const HUB_TABS = ['board', 'groups', 'calendar', 'chat', 'resources', 'qa', 'attendance', 'students'];
+const HUB_TABS = ['board', 'groups', 'calendar', 'chat', 'resources', 'qa', 'attendance', 'students', 'events'];   // events: teachers only (college-hub-events.js)
 
 let hub = null;                     // what /api/college-hub returned, or null before the first load
 let hubLoading = false;
@@ -65,6 +65,7 @@ function setHub(data) {
   peopleById = new Map((hub.people || []).map(person => [person.id, person]));
   if (hub.online_user_ids) onlineUserIds = new Set(hub.online_user_ids);
   renderHub();
+  loadPlatformEvents();
 }
 
 // Several changes can arrive close together (a teacher filling groups); one reload covers them
@@ -164,6 +165,8 @@ function renderHub() {
     [students().length, 'students'], [hub.groups.length, 'groups'], [activities().length, 'activities']
   ].map(([count, label]) => `<div class="ch-stat"><b>${count}</b><span>${label}</span></div>`).join('');
 
+  el('hubEventsTab').classList.toggle('ch-hidden', !isTeacher());
+  if (view.tab === 'events' && !isTeacher()) view.tab = 'board';
   document.querySelectorAll('#hubTabs [data-tab]').forEach(tab => tab.setAttribute('aria-selected', String(tab.dataset.tab === view.tab)));
   if (view.tab === 'board') renderBoard();
   if (view.tab === 'groups') renderGroups();
@@ -172,6 +175,7 @@ function renderHub() {
   if (view.tab === 'resources') renderResources();
   if (view.tab === 'qa') renderQa();
   if (view.tab === 'attendance') renderAttendance();
+  if (view.tab === 'events') renderEventsTab();
   if (view.tab === 'chat') {
     renderChat();
     if (!roomState(chat.room).loaded) openRoom(chat.room);   // the page was opened straight on the chat tab

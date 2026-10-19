@@ -842,7 +842,7 @@ const REPORT_REASON_LIST = [
   ['fake_profile', 'Fake profile'], ['impersonation', 'Pretending to be someone else'], ['privacy', "Shares someone's private information"],
   ['copyright', 'Copyright'], ['other', 'Something else'],
 ];
-const REPORT_WHAT = { user: 'this person', message: 'this message', team_message: 'this message', college_message: 'this message', board_post: 'this post', team: 'this team' };
+const REPORT_WHAT = { user: 'this person', message: 'this message', team_message: 'this message', college_message: 'this message', board_post: 'this post', team: 'this team', event: 'this event' };
 
 function reportButtonHtml(kind, id, name) {
   if (!id) return '';

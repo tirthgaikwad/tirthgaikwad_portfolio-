@@ -7,14 +7,14 @@
 // Loaded after shared.js, chat-common.js and pages-common.js.
 // ==========================================
 
-const TABS = ['overview', 'safety', 'admins', 'teachers', 'verification', 'plans', 'enquiries', 'sponsored'];
+const TABS = ['overview', 'safety', 'admins', 'teachers', 'verification', 'plans', 'enquiries', 'sponsored', 'events'];   // events: founder-events.js
 const F = { tab: 'overview', cache: {} };
 const PERIOD_LABEL = { month: 'Monthly', year: 'Yearly', one_time: 'One-off', trial: 'Trial' };
 
 function switchTab(tab) {
   F.tab = tab;
   el('fcBody').innerHTML = '<div class="skeleton" style="height:140px"></div><div class="skeleton" style="height:220px;margin-top:14px"></div>';
-  ({ overview: renderOverview, safety: renderSafety, admins: renderAdmins, teachers: renderTeachers, verification: renderVerification, plans: renderPlans, enquiries: renderEnquiries, sponsored: renderSponsored })[tab]();
+  ({ overview: renderOverview, safety: renderSafety, admins: renderAdmins, teachers: renderTeachers, verification: renderVerification, plans: renderPlans, enquiries: renderEnquiries, sponsored: renderSponsored, events: renderFounderEvents })[tab]();
 }
 
 function guard(err) {
@@ -392,7 +392,7 @@ async function renderSponsored() {
 // ==========================================
 // 5b. SAFETY: REPORTS, SUSPENSIONS, GUARDIANS, RESET LINKS (section 31)
 // ==========================================
-const REPORT_KIND = { user: 'Person', message: 'Message', team_message: 'Team chat', college_message: 'College chat', board_post: 'Board post', team: 'Team' };
+const REPORT_KIND = { user: 'Person', message: 'Message', team_message: 'Team chat', college_message: 'College chat', board_post: 'Board post', team: 'Team', event: 'Event' };
 const REPORT_STATUS = { open: ['warn', 'Open'], reviewing: ['indigo', 'Looking at it'], actioned: ['green', 'Action taken'], dismissed: ['', 'No breach'] };
 
 function dueChip(iso, label) {
@@ -404,7 +404,7 @@ function dueChip(iso, label) {
 function reportCard(r) {
   const open = r.status === 'open' || r.status === 'reviewing';
   const chip = REPORT_STATUS[r.status] || ['', r.status];
-  const removable = ['message', 'team_message', 'college_message', 'board_post'].includes(r.kind);
+  const removable = ['message', 'team_message', 'college_message', 'board_post', 'event'].includes(r.kind);
   return `<article class="ch-panel fc-app">
     <div class="fc-app-top"><span class="ch-chip navy">${escapeHtml(REPORT_KIND[r.kind] || r.kind)}</span><h3 style="flex:1">#${r.id} · ${escapeHtml(r.reason_label)}</h3>
       ${open && r.status === 'open' ? dueChip(r.ack_by, 'Acknowledge') : ''}${open ? dueChip(r.resolve_by, 'Decide') : ''}<span class="ch-chip ${chip[0]}">${escapeHtml(chip[1])}</span></div>

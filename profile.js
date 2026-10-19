@@ -171,6 +171,7 @@ function renderProfile() {
   }
   el('profileBadges').innerHTML = badges.join('');
   addLeagueBadge(viewedUserId);
+  addEventRecord(viewedUserId);
 
   // The owner's verification status, with a way to send a new ID photo when an admin asked for one
   const notice = el('profileNotice');
@@ -1009,4 +1010,24 @@ async function addLeagueBadge(userId) {
     const title = league.best === 1 ? 'Won the weekly league of their college' : 'Finished in the top three of the weekly league at their college';
     box.insertAdjacentHTML('beforeend', `<a data-league href="progress.html" title="${title}" class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold" style="text-decoration:none">🏆 ${league.count === 1 ? (league.best === 1 ? 'Weekly league winner' : 'Weekly league top 3') : `${league.count}× weekly top 3`}</a>`);
   } catch (e) { /* the badge is a nice extra */ }
+}
+
+// Events (events.py): an "Organiser" chip for people who ran events that went ahead, and the certificates the person chose to
+// show (the owner sees all of theirs, with the hidden ones marked)
+async function addEventRecord(userId) {
+  if (!userId) return;
+  try {
+    const record = await api(`/api/users/${userId}/event-record`);
+    const box = el('profileBadges');
+    if (record.organised && box && !box.querySelector('[data-organiser]')) {
+      box.insertAdjacentHTML('beforeend', `<span data-organiser class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold" title="Organised ${record.organised} event${record.organised === 1 ? '' : 's'} on Connect2Minds">Organiser · ${record.organised} event${record.organised === 1 ? '' : 's'}</span>`);
+    }
+    const shown = showsOwnerControls() ? record.certificates : record.certificates.filter(c => c.on_profile);
+    el('certCard').classList.toggle('hidden', !shown.length);
+    el('certList').innerHTML = shown.map(c => `<a href="${escapeHtml(c.verify_url)}" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-xl border border-outline-variant/40 hover:border-primary/50 transition-colors" style="text-decoration:none">
+        <span class="material-symbols-outlined text-primary">workspace_premium</span>
+        <span class="flex-1 min-w-0"><b class="block text-on-surface font-label-md text-label-md truncate">${escapeHtml(c.event_title)}</b>
+        <span class="font-body-sm text-body-sm text-on-surface-variant">${escapeHtml(c.kind === 'participation' ? 'Participation' : c.kind)} · ${escapeHtml(new Date(c.event_date || c.issued_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }))} · ${escapeHtml(c.code)}</span></span>
+        ${showsOwnerControls() && !c.on_profile ? '<span class="font-label-sm text-label-sm text-on-surface-variant">Hidden from others</span>' : '<span class="material-symbols-outlined text-[18px] text-on-surface-variant">verified</span>'}</a>`).join('');
+  } catch (e) { /* the record is a nice extra */ }
 }

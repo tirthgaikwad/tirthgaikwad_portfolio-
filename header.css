@@ -107,6 +107,11 @@
   .app-search { width: 170px; }
   .app-brand { margin-right: 8px; }
 }
+@media (max-width: 1360px) {
+  /* Six menus (Events joined) fit down to 1024 px with tighter links */
+  .app-nav { gap: 2px; }
+  .app-nav-link { padding: 0 9px !important; gap: 4px; }
+}
 @media (min-width: 1024px) and (max-width: 1100px) {
   /* The narrowest width that still shows the full menu: the search field shrinks to its icon so everything fits */
   .app-search { width: 38px; padding: 0 !important; justify-content: center; }
