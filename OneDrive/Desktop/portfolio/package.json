@@ -1,0 +1,17 @@
+{
+  "name": "portfolio",
+  "version": "1.0.0",
+  "description": "Tirth Gaikwad - AI & Data Science Portfolio",
+  "main": "index.html",
+  "scripts": {
+    "dev": "lite-server --port=3000",
+    "start": "lite-server --port=3000",
+    "serve": "npx http-server . -p 3000 -c-1"
+  },
+  "keywords": ["portfolio", "developer", "ai", "data-science"],
+  "author": "Tirth Gaikwad",
+  "license": "MIT",
+  "devDependencies": {
+    "lite-server": "^2.6.1"
+  }
+}

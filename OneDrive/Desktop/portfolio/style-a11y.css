@@ -1,0 +1,355 @@
+/* ============================================================
+   ACCESSIBILITY ENHANCEMENTS — WCAG 2.1 AA/AAA Compliance
+   Loaded after style.css to layer accessibility improvements
+   ============================================================ */
+
+/* ── Focus-Visible States ─────────────────────────────────── */
+
+*:focus {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px solid var(--color-ring, #F1F0EC);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm, 4px);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-ring, #F1F0EC);
+    outline-offset: 3px;
+}
+
+.btn:focus-visible {
+    outline-offset: 4px;
+    box-shadow: 0 0 0 4px rgba(241, 240, 236, 0.15);
+}
+
+.nav-links a:focus-visible {
+    outline-offset: 2px;
+    border-radius: var(--radius-md, 8px);
+}
+
+.social-link:focus-visible {
+    outline-offset: 2px;
+    border-color: var(--color-ring, #F1F0EC);
+}
+
+.filter-pill:focus-visible,
+.project-filter:focus-visible {
+    outline-offset: 2px;
+}
+
+.project-card:focus-visible {
+    outline-offset: 4px;
+    border-color: var(--color-ring, #F1F0EC);
+}
+
+/* ── Reduced Motion ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .particles-container {
+        display: none !important;
+    }
+
+    .cursor-dot,
+    .cursor-ring {
+        display: none !important;
+    }
+
+    .scroll-line::after {
+        animation: none !important;
+    }
+
+    .hero-bg-gradient,
+    .hero-mesh {
+        opacity: 0.5;
+    }
+
+    .project-card:hover .project-image img {
+        transform: none !important;
+    }
+
+    .skill-progress {
+        transition: none !important;
+        width: var(--progress-width) !important;
+    }
+
+    .section-title {
+        clip-path: none !important;
+    }
+}
+
+/* ── High Contrast Mode (Windows) ─────────────────────────── */
+
+@media (forced-colors: active) {
+    :root {
+        --bg-primary: Canvas;
+        --bg-secondary: Canvas;
+        --text-primary: CanvasText;
+        --text-secondary: CanvasText;
+        --text-muted: GrayText;
+        --border-color: CanvasText;
+        --color-primary: Highlight;
+    }
+
+    .btn-primary {
+        background: Highlight;
+        color: HighlightText;
+        forced-color-adjust: none;
+    }
+
+    .btn-secondary {
+        border-color: CanvasText;
+    }
+
+    .skill-progress {
+        background: Highlight;
+        forced-color-adjust: none;
+    }
+
+    .nav-toggle span {
+        background: CanvasText;
+    }
+
+    .project-overlay {
+        background: Canvas;
+        border: 2px solid CanvasText;
+    }
+
+    .preloader-spinner,
+    .intro-loading-spinner,
+    .github-loading-spinner {
+        border-color: GrayText;
+        border-top-color: CanvasText;
+    }
+
+    .status-dot {
+        background: Highlight;
+        forced-color-adjust: none;
+    }
+
+    .learning-dot {
+        background: Highlight;
+        forced-color-adjust: none;
+    }
+
+    a {
+        color: LinkText;
+    }
+
+    a:visited {
+        color: VisitedText;
+    }
+
+    .social-link {
+        border-color: CanvasText;
+        color: CanvasText;
+    }
+
+    .social-link:hover {
+        background: Highlight;
+        color: HighlightText;
+    }
+
+    .tag {
+        border-color: CanvasText;
+        color: CanvasText;
+    }
+
+    .filter-pill.active,
+    .project-filter.active {
+        background: Highlight;
+        color: HighlightText;
+        forced-color-adjust: none;
+    }
+
+    .back-to-top {
+        border-color: CanvasText;
+        color: CanvasText;
+    }
+
+    .scroll-line {
+        background: CanvasText;
+    }
+
+    .intro-skip-btn {
+        border-color: CanvasText;
+        color: CanvasText;
+    }
+
+    .cursor-dot,
+    .cursor-ring {
+        display: none !important;
+    }
+}
+
+/* ── Contrast Enhancements ────────────────────────────────── */
+
+@media (prefers-contrast: more) {
+    :root {
+        --text-secondary: #D4D4D8;
+        --text-muted: #A1A1AA;
+        --border-color: #52525B;
+        --border-hover: #71717A;
+    }
+
+    .highlight-card,
+    .project-card,
+    .achievement-card,
+    .service-card,
+    .skill-category,
+    .skill-radar,
+    .timeline-content,
+    .resume-card,
+    .contact-info-card,
+    .github-repo-card,
+    .github-profile {
+        border-width: 2px;
+    }
+
+    .tag {
+        border-width: 2px;
+    }
+
+    .skill-bar {
+        border: 1px solid var(--border-color);
+    }
+
+    .project-info p,
+    .achievement-card p,
+    .service-card p {
+        color: var(--text-secondary);
+    }
+}
+
+/* ── Screen Reader Utilities ──────────────────────────────── */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* ── Skip to Content Link ─────────────────────────────────── */
+
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-primary, #F1F0EC);
+    color: var(--bg-primary, #101114);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md, 8px);
+    font-weight: 600;
+    font-size: 0.85rem;
+    z-index: 100001;
+    text-decoration: none;
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    top: 1rem;
+}
+
+/* ── Touch Target Sizes ───────────────────────────────────── */
+
+@media (pointer: coarse) {
+    .social-link {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .filter-pill,
+    .project-filter {
+        min-height: 44px;
+        padding: 0.6rem 1.25rem;
+    }
+
+    .nav-toggle {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .back-to-top {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .intro-skip-btn {
+        min-height: 44px;
+        padding: 0.75rem 1.5rem;
+    }
+
+    .overlay-btn {
+        min-height: 44px;
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+/* ── Text Readability ─────────────────────────────────────── */
+
+.about-text,
+.timeline-content li,
+.project-info p,
+.contact-info-card p {
+    max-width: 75ch;
+}
+
+.section-title {
+    text-wrap: balance;
+}
+
+/* ── Image Accessibility ──────────────────────────────────── */
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+img[alt=""] {
+    /* Decorative images */
+}
+
+img:not([alt]) {
+    outline: 3px solid red;
+    /* Flag images missing alt text during development */
+}

@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tirth Gaikwad - AI & Data Science Portfolio. AI & Data Science Engineering student building skills in programming, AI, web development, and real-world projects.">
+    <meta name="theme-color" content="#101114">
+    <title>Tirth Gaikwad | AI & Data Science Portfolio</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-a11y.css">
+</head>
+<body class="dark-mode">
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+
+    <!-- Intro Video Popup -->
+    <div class="intro-video-overlay" id="intro-video-overlay">
+        <div class="intro-video-container" id="intro-video-container">
+            <div class="intro-video-loading" id="intro-video-loading">
+                <div class="intro-loading-spinner"></div>
+                <p class="intro-loading-text">Initializing Experience...</p>
+            </div>
+            <video id="intro-video" class="intro-video" src="intro-video.mp4" muted playsinline preload="auto"></video>
+            <button class="intro-skip-btn" id="intro-skip-btn" aria-label="Skip intro">
+                <span class="intro-skip-text">SKIP</span>
+                <span class="intro-skip-icon">⟩⟩</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-spinner"></div>
+            <p class="preloader-text">Loading Portfolio...</p>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#home" class="nav-brand">
+                <span class="brand-code">&lt;TG /&gt;</span>
+                <span class="brand-name">Tirth Gaikwad</span>
+            </a>
+            
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#roadmap">Roadmap</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#achievements">Achievements</a></li>
+                <li><a href="#github">GitHub</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#resume">Resume</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="#contact" class="nav-cta-btn" id="nav-cta">Get in Touch</a>
+                <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section id="home" class="hero section">
+        <div id="particles" class="particles-container"></div>
+        <div class="hero-bg-gradient"></div>
+        <div class="hero-mesh"></div>
+        
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-status-badge">
+                    <span class="status-dot"></span>
+                    <span>2nd Year AI & DS Student</span>
+                    <span class="badge-divider">|</span>
+                    <span>Open for Collaborations</span>
+                </div>
+                
+                <h1 class="hero-name">Tirth Gaikwad</h1>
+                <p class="hero-title gradient-text">AI & Data Science Student | Java Learner | Future AI Developer</p>
+                <p class="hero-tagline">Building skills in programming, AI, web development, and real-world projects.</p>
+                
+                <div class="typing-container">
+                    <span class="typing-prefix">I am a </span>
+                    <span class="typing-text" id="typing-text"></span>
+                    <span class="cursor">|</span>
+                </div>
+                
+                <div class="hero-buttons">
+                    <a href="#projects" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        View Projects
+                    </a>
+                    <a href="Tirth.pdf" download class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        Download Resume
+                    </a>
+                </div>
+            </div>
+            
+            <div class="hero-image-container">
+                <div class="hero-image">
+                    <img src="photo.jpeg" alt="Tirth Gaikwad" class="profile-img">
+                </div>
+                <div class="hero-tech-chips">
+                    <span class="tech-chip">Java</span>
+                    <span class="tech-chip">Python</span>
+                    <span class="tech-chip">AI/ML</span>
+                    <span class="tech-chip">Web Dev</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scroll-indicator" id="scroll-indicator">
+            <div class="scroll-line"></div>
+            <span class="scroll-label">Scroll</span>
+        </div>
+    </section>
+
+    <!-- ABOUT SECTION -->
+    <section id="about" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">About Me <span class="title-line"></span></h2>
+            
+            <div class="about-content reveal">
+                <p class="about-text">
+                    I am a dedicated Engineering Student specializing in Artificial Intelligence & Data Science. I am highly motivated and consistently working towards mastering programming languages, data structures, and the foundational concepts of AI and Machine Learning.
+                </p>
+                
+                <div class="highlight-cards">
+                    <div class="highlight-card">
+                        <div class="card-icon">🧠</div>
+                        <h3>AI & DS Student</h3>
+                        <p>Core focus on data & modern AI fundamentals from the ground up.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Consistent Learner</h3>
+                        <p>Daily Java DSA, logic building & problem-solving practice.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <div class="card-icon">🛠️</div>
+                        <h3>Project-Based Mindset</h3>
+                        <p>Practical tools and real-world projects over dry theory.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS COUNTER SECTION -->
+    <section id="stats" class="stats-section">
+        <div class="container">
+            <div class="stats-grid reveal">
+                <div class="stat-card">
+                    <span class="stat-number" data-target="8" data-suffix="+">0+</span>
+                    <span class="stat-label">Projects Built</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="7" data-suffix="+">0+</span>
+                    <span class="stat-label">Technologies</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="500" data-suffix="+">0+</span>
+                    <span class="stat-label">Lines of Code</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="3" data-suffix="+">0+</span>
+                    <span class="stat-label">AI Projects</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SKILLS SECTION -->
+    <section id="skills" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">My Skills <span class="title-line"></span></h2>
+            
+            <div class="skill-filter-pills reveal">
+                <button class="filter-pill active" data-skill-filter="all">All</button>
+                <button class="filter-pill" data-skill-filter="languages">Languages</button>
+                <button class="filter-pill" data-skill-filter="learning">Currently Learning</button>
+                <button class="filter-pill" data-skill-filter="tools">Tools</button>
+                <button class="filter-pill" data-skill-filter="soft">Soft Skills</button>
+            </div>
+            
+            <div class="skills-container">
+                <div class="skill-radar reveal" data-skill-category="all languages">
+                    <h3>Skill Overview</h3>
+                    <div id="radar-chart"></div>
+                </div>
+                
+                <div class="skill-category reveal" data-skill-category="all languages">
+                    <h3><span>💻</span> Programming Languages</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>Java</span>
+                                <span>65%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="65"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>Python</span>
+                                <span>40%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="40"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>C++</span>
+                                <span>35%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="35"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>C</span>
+                                <span>30%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="30"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>HTML</span>
+                                <span>75%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="75"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>CSS</span>
+                                <span>70%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="70"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="skill-info">
+                                <span>JavaScript</span>
+                                <span>45%</span>
+                            </div>
+                            <div class="skill-bar">
+                                <div class="skill-progress" data-progress="45"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="skill-category reveal" data-skill-category="all learning">
+                    <h3><span>📚</span> Currently Learning</h3>
+                    <div class="currently-learning" id="currently-learning">
+                        <div class="learning-item"><span class="learning-dot"></span> Java Functions</div>
+                        <div class="learning-item"><span class="learning-dot"></span> Loops & Recursion</div>
+                        <div class="learning-item"><span class="learning-dot"></span> Data Structures & Algorithms</div>
+                        <div class="learning-item"><span class="learning-dot"></span> C++ DSA</div>
+                        <div class="learning-item"><span class="learning-dot"></span> AI/ML Basics</div>
+                    </div>
+                </div>
+                
+                <div class="skill-category reveal" data-skill-category="all tools">
+                    <h3><span>🔧</span> Tools & Platforms</h3>
+                    <div class="tools-grid">
+                        <div class="tool-item">📝 VS Code</div>
+                        <div class="tool-item">🐙 GitHub</div>
+                        <div class="tool-item">🎨 Adobe Express</div>
+                        <div class="tool-item">🧪 Google Colab</div>
+                        <div class="tool-item">🤗 Hugging Face</div>
+                        <div class="tool-item">🤖 AI Tools</div>
+                        <div class="tool-item">🐧 Linux Basics</div>
+                    </div>
+                </div>
+                
+                <div class="skill-category reveal" data-skill-category="all soft">
+                    <h3><span>🧠</span> Soft Skills</h3>
+                    <div class="soft-skills-grid">
+                        <div class="soft-skill-item">🧩 Problem Solving</div>
+                        <div class="soft-skill-item">💡 Creativity</div>
+                        <div class="soft-skill-item">🎯 Consistency</div>
+                        <div class="soft-skill-item">💬 Communication</div>
+                        <div class="soft-skill-item">📋 Project Planning</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROADMAP SECTION -->
+    <section id="roadmap" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">My Coding Journey <span class="title-line"></span></h2>
+            
+            <div class="timeline">
+                <div class="timeline-item left reveal">
+                    <div class="timeline-content">
+                        <span class="timeline-badge current">Current Phase</span>
+                        <h3>📘 Year 1 – Building Foundations</h3>
+                        <ul>
+                            <li>Mastering programming basics in C and Java.</li>
+                            <li>Diving deep into Java loops, functions, and recursion.</li>
+                            <li>Learning core Web Development (HTML, CSS, JS).</li>
+                            <li>Building beginner-level logic-focused projects.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="timeline-item right reveal">
+                    <div class="timeline-content">
+                        <span class="timeline-badge upcoming">Coming Up</span>
+                        <h3>📗 Year 2 – Going Deeper</h3>
+                        <ul>
+                            <li>C++ Data Structures and Algorithms.</li>
+                            <li>Python applied for AI/DS.</li>
+                            <li>Advanced DSA problem solving.</li>
+                            <li>Developing mini AI applications.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="timeline-item left reveal">
+                    <div class="timeline-content">
+                        <span class="timeline-badge future">Future</span>
+                        <h3>🚀 Future Horizon – Industry Ready</h3>
+                        <ul>
+                            <li>Machine Learning and Deep Learning fundamentals.</li>
+                            <li>Data analysis and visualization techniques.</li>
+                            <li>Open-source contributions.</li>
+                            <li>Getting internship-ready with real-world project portfolios.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="testimonial-card reveal">
+                <blockquote>
+                    "Motivated learner with a passion for turning ideas into functional code. Always ready to debug, design, and deploy."
+                </blockquote>
+                <cite>— Self-Assessment</cite>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROJECTS SECTION -->
+    <section id="projects" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">My Projects <span class="title-line"></span></h2>
+            
+            <div class="projects-filters reveal">
+                <button class="project-filter active" data-filter="all">All</button>
+                <button class="project-filter" data-filter="web">Web</button>
+                <button class="project-filter" data-filter="java">Java</button>
+                <button class="project-filter" data-filter="ai">AI</button>
+                <button class="project-filter" data-filter="ui-ux">UI/UX</button>
+            </div>
+            
+            <div class="projects-grid">
+                <!-- Project 1 -->
+                <div class="project-card reveal" data-category="web ui-ux">
+                    <div class="project-image">
+                        <img src="aapni.PNG" alt="Apani Dukan" loading="lazy">
+                        <div class="project-overlay">
+                            <a href="https://app-93a4xgnxzu2p.appmedo.com/" target="_blank" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Apani Dukan</h3>
+                        <p>A web UI/UX concept for a business storefront.</p>
+                        <div class="project-tags">
+                            <span class="tag">HTML</span>
+                            <span class="tag">CSS</span>
+                            <span class="tag">JavaScript</span>
+                            <span class="tag">UI/UX</span>
+                            <span class="tag">Business</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="project-card reveal" data-category="ai web">
+                    <div class="project-image">
+                        <div class="project-placeholder" style="background: linear-gradient(135deg, #202226, #303237); display: flex; align-items: center; justify-content: center; height: 200px; font-size: 4rem;">🤖</div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>AI Image/Text Detection</h3>
+                        <p>An AI-powered web application for detecting text in images.</p>
+                        <div class="project-tags">
+                            <span class="tag">AI</span>
+                            <span class="tag">Web App</span>
+                            <span class="tag">Detection</span>
+                            <span class="tag">API</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="project-card reveal" data-category="web java">
+                    <div class="project-image">
+                        <img src="number.PNG" alt="Number Guessing Game" loading="lazy">
+                        <div class="project-overlay">
+                            <a href="https://chroma-cipher-game.lovable.app" target="_blank" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Number Guessing Game</h3>
+                        <p>An interactive game UI built for logic building practice.</p>
+                        <div class="project-tags">
+                            <span class="tag">JavaScript</span>
+                            <span class="tag">Game UI</span>
+                            <span class="tag">Logic Building</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 4 -->
+                <div class="project-card reveal" data-category="web ui-ux">
+                    <div class="project-image">
+                        <div class="project-placeholder" style="background: linear-gradient(135deg, #202226, #303237); display: flex; align-items: center; justify-content: center; height: 200px; font-size: 4rem;">🍽️</div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Restaurant Website</h3>
+                        <p>A beautiful frontend design for a restaurant business.</p>
+                        <div class="project-tags">
+                            <span class="tag">Web Design</span>
+                            <span class="tag">UI/UX</span>
+                            <span class="tag">Frontend</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 5 -->
+                <div class="project-card reveal" data-category="java">
+                    <div class="project-image">
+                        <div class="project-placeholder" style="background: linear-gradient(135deg, #202226, #303237); display: flex; align-items: center; justify-content: center; height: 200px; font-size: 4rem;">☕</div>
+                        <div class="project-overlay">
+                            <a href="#" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Java Practice Programs</h3>
+                        <p>A collection of Java programs focusing on logic building.</p>
+                        <div class="project-tags">
+                            <span class="tag">Java</span>
+                            <span class="tag">Logic</span>
+                            <span class="tag">Beginner DSA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 6 -->
+                <div class="project-card reveal" data-category="java">
+                    <div class="project-image">
+                        <img src="plane.PNG" alt="Plane Shooting Game" loading="lazy">
+                        <div class="project-overlay">
+                            <a href="https://app-9vdtmhwmodfl.appmedo.com" target="_blank" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Plane Shooting Game</h3>
+                        <p>An action-packed space shooter level game.</p>
+                        <div class="project-tags">
+                            <span class="tag">space shooter</span>
+                            <span class="tag">level game</span>
+                            <span class="tag">action game</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 7 -->
+                <div class="project-card reveal" data-category="java">
+                    <div class="project-image">
+                        <img src="smart.PNG" alt="Smart Crop Detector" loading="lazy">
+                        <div class="project-overlay">
+                            <a href="https://app-aax46l9qooht.appmedo.com" target="_blank" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>Smart Crop Detector</h3>
+                        <p>AI-driven detection for farming and weather prediction concepts.</p>
+                        <div class="project-tags">
+                            <span class="tag">AI Detection</span>
+                            <span class="tag">Farming</span>
+                            <span class="tag">Weather Prediction</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 8 -->
+                <div class="project-card reveal" data-category="ai ui-ux">
+                    <div class="project-image">
+                        <img src="bot.PNG" alt="AI Portfolio Assistant" loading="lazy">
+                        <div class="project-overlay">
+                            <a href="https://huggingface.co/spaces/TirthGaikwad/gemini-elevenlabs-chatbot" target="_blank" class="overlay-btn">View Live</a>
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="overlay-btn outline">GitHub</a>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>AI Portfolio Assistant</h3>
+                        <p>An AI chatbot tool for interactive portfolio guidance.</p>
+                        <div class="project-tags">
+                            <span class="tag">AI Tools</span>
+                            <span class="tag">Chatbot</span>
+                            <span class="tag">Portfolio</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ACHIEVEMENTS SECTION -->
+    <section id="achievements" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">Achievements & Highlights <span class="title-line"></span></h2>
+            
+            <div class="achievements-grid reveal">
+                <div class="achievement-card">
+                    <div class="achievement-icon">✅</div>
+                    <h3>Programming Tasks</h3>
+                    <p>Successfully completed numerous Java and beginner programming tasks.</p>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">🏪</div>
+                    <h3>Business Websites</h3>
+                    <p>Designed and built functional landing pages for local businesses.</p>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">🧠</div>
+                    <h3>Early AI Explorer</h3>
+                    <p>Dived deep into AI models and practical integrations at an early stage.</p>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">⚡</div>
+                    <h3>AI Tools & Automation</h3>
+                    <p>Proficient in using modern AI tools for enhanced workflow productivity.</p>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">🎨</div>
+                    <h3>UI/UX Concepts</h3>
+                    <p>Created various UI/UX mockups focusing on user experience.</p>
+                </div>
+                <div class="achievement-card">
+                    <div class="achievement-icon">🔬</div>
+                    <h3>Real-World AI Projects</h3>
+                    <p>Experimented with real-world oriented AI projects and chatbots.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GITHUB ACTIVITY SECTION -->
+    <section id="github" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">GitHub Activity <span class="title-line"></span></h2>
+            
+            <div class="github-content reveal">
+                <div class="github-profile" id="github-profile">
+                    <div class="github-avatar">
+                        <img id="github-avatar-img" src="" alt="GitHub Avatar" loading="lazy">
+                    </div>
+                    <div class="github-info">
+                        <h3 id="github-name">Loading...</h3>
+                        <p id="github-bio" class="github-bio"></p>
+                        <div class="github-stats">
+                            <div class="github-stat">
+                                <span class="github-stat-number" id="github-repos-count">—</span>
+                                <span class="github-stat-label">Repos</span>
+                            </div>
+                            <div class="github-stat">
+                                <span class="github-stat-number" id="github-followers">—</span>
+                                <span class="github-stat-label">Followers</span>
+                            </div>
+                            <div class="github-stat">
+                                <span class="github-stat-number" id="github-following">—</span>
+                                <span class="github-stat-label">Following</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="github-repos-grid" id="github-repos">
+                    <div class="github-loading" id="github-loading">
+                        <div class="github-loading-spinner"></div>
+                        <p>Loading GitHub data...</p>
+                    </div>
+                </div>
+                
+                <div class="github-error" id="github-error" style="display:none;">
+                    <p>GitHub data is currently unavailable.</p>
+                    <a href="https://github.com/tirthgaikwad" target="_blank" class="btn btn-secondary">Visit GitHub Profile</a>
+                </div>
+                
+                <div class="github-cta">
+                    <a href="https://github.com/tirthgaikwad" target="_blank" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                        View All Repositories
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES SECTION -->
+    <section id="services" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">What I Can Build <span class="title-line"></span></h2>
+            
+            <div class="services-grid reveal">
+                <div class="service-card">
+                    <div class="service-icon">🌐</div>
+                    <h3>Personal Portfolio Websites</h3>
+                    <p>Custom-designed portfolio sites to showcase your work.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🏢</div>
+                    <h3>Business Landing Pages</h3>
+                    <p>Effective landing pages designed for conversion and clarity.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🛍️</div>
+                    <h3>Gift Shop / Restaurant Websites</h3>
+                    <p>Beautiful storefronts and menus for local shops and eateries.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">☕</div>
+                    <h3>Basic Java Programs</h3>
+                    <p>Logic-driven Java applications and scripts.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">✏️</div>
+                    <h3>UI/UX Website Concepts</h3>
+                    <p>Wireframes and design mockups for upcoming projects.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🤖</div>
+                    <h3>AI Tool Integration Ideas</h3>
+                    <p>Consultation and basic integrations for AI-powered tools.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🎨</div>
+                    <h3>Posters & Product Designs</h3>
+                    <p>Creative designs for digital marketing and product showcasing.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RESUME SECTION -->
+    <section id="resume" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">Resume <span class="title-line"></span></h2>
+            
+            <div class="resume-card reveal">
+                <div class="resume-header">
+                    <div class="resume-avatar">TG</div>
+                    <div class="resume-title-group">
+                        <h3 class="resume-name">Tirth Gaikwad</h3>
+                        <p class="resume-subtitle">Engineering Student – AI & Data Science</p>
+                    </div>
+                </div>
+                
+                <div class="resume-details">
+                    <h4>Current Focus Areas</h4>
+                    <div class="resume-skills-grid">
+                        <div class="resume-skill-item">☕ Java Programming</div>
+                        <div class="resume-skill-item">⚙️ C++ with DSA</div>
+                        <div class="resume-skill-item">🐍 Python for AI/DS</div>
+                        <div class="resume-skill-item">🌐 Web Development</div>
+                        <div class="resume-skill-item">🤖 AI Projects</div>
+                    </div>
+                </div>
+                
+                <div class="resume-download-wrapper">
+                    <a href="Tirth.pdf" download class="btn btn-primary btn-lg">
+                        <span class="btn-icon">📄</span> Download Resume
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT SECTION -->
+    <section id="contact" class="section">
+        <div class="container">
+            <h2 class="section-title reveal">Get In Touch <span class="title-line"></span></h2>
+            
+            <div class="contact-container">
+                <div class="contact-form-wrapper reveal">
+                    <form class="contact-form" id="contact-form">
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" required placeholder="Enter your name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" rows="5" required placeholder="Write your message here..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary submit-btn">Send Message</button>
+                    </form>
+                </div>
+                
+                <div class="contact-info-wrapper reveal">
+                    <div class="contact-info-card">
+                        <h3>Let's Connect</h3>
+                        <p>I am open to discussing new projects, creative ideas, or opportunities to be part of your visions.</p>
+                        
+                        <div class="social-links">
+                            <a href="https://github.com/tirthgaikwad" target="_blank" class="social-link" aria-label="GitHub">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                            </a>
+                            <a href="https://www.linkedin.com/in/tirth-gaikwad-858818416" target="_blank" class="social-link" aria-label="LinkedIn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                            </a>
+                            <a href="https://instagram.com/_tirth_11___" target="_blank" class="social-link" aria-label="Instagram">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                            </a>
+                            <a href="mailto:tirthgaikwad30@gmail.com" class="social-link" aria-label="Email">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">&lt;TG /&gt;</div>
+            <p class="footer-text">Designed & Built by <strong>Tirth Gaikwad</strong></p>
+            <p class="footer-subtitle">AI & Data Science Engineering Student</p>
+            
+            <div class="footer-links">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#projects">Projects</a>
+                <a href="#contact">Contact</a>
+            </div>
+            
+            <p class="footer-copyright">© 2025–2026 Tirth Gaikwad. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Easter Egg -->
+    <div class="easter-egg" id="easter-egg">🎮 You found the secret! Keep coding! 🚀</div>
+
+    <!-- Script -->
+    <script src="script.js"></script>
+</body>
+</html>
