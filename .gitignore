@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Local skills and tools
+ui-ux-pro-max-skill/
+.agents/
+
+# Backups and temporary files
+*.backup
+*.tmp
+.DS_Store
+Thumbs.db
